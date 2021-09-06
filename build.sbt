@@ -20,6 +20,10 @@ libraryDependencies += "com.ibm.wala" % "com.ibm.wala.util" % "1.5.5"
 
 libraryDependencies += "args4j" % "args4j" % "2.33"
 
+libraryDependencies += "org.jgrapht" % "jgrapht-core" % "1.5.1"
+// libraryDependencies += "org.jgrapht" % "jgrapht-ext" % "1.5.1"
+libraryDependencies += "org.jgrapht" % "jgrapht-io" % "1.5.1"
+
 // Add tools.jar such that sbt can find it
 unmanagedJars in Compile ~= {
   uj: Classpath =>
