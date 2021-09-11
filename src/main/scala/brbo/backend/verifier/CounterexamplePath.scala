@@ -1,7 +1,7 @@
 package brbo.backend.verifier
 
 import brbo.common.TypeUtils.BrboType.BOOL
-import brbo.common.ast.{BrboExpr, Command}
+import brbo.common.ast.{BrboAst, BrboExpr, BrboFunction, Command}
 import org.apache.logging.log4j.LogManager
 import org.jgrapht.Graph
 import org.jgrapht.graph.DefaultEdge
@@ -25,7 +25,7 @@ case class CounterexamplePath(nodes: List[Either[Command, BrboExpr]]) {
 object CounterexamplePath {
   private val logger = LogManager.getLogger("brbo.backend.verifier.CounterexamplePath")
 
-  def graphMLToCounterexamplePath(graphMLString: String): CounterexamplePath = {
+  def graphMLToCounterexamplePath(graphMLString: String, mainFunction: BrboFunction): CounterexamplePath = {
     val vertexAttributes = new mutable.HashMap[String, mutable.HashMap[String, Attribute]]
     val edgeAttributes = new mutable.HashMap[DefaultEdge, mutable.HashMap[String, Attribute]]
     val graph = readGraph(new java.io.StringReader(graphMLString), classOf[DefaultEdge], directed = true, weighted = false, vertexAttributes, edgeAttributes)
@@ -52,17 +52,21 @@ object CounterexamplePath {
       }
       lastVertex = Some(current)
     }
-    logger.error(path.reverse)
+    path = path.reverse
+    logger.error(path)
 
-    ???
+    val allExprs = BrboAst.getAllExprs(mainFunction.body)
+    val allCommands = BrboAst.getAllCommands(mainFunction.body)
+
+    ??? // TODO: Parse strings into BrboAst or BrboExpr by matching against the pretty print strings
   }
 
   // Copied from https://github.com/jgrapht/jgrapht/blob/6aba8e81053660997fe681c50974c07e312027d1/jgrapht-io/src/test/java/org/jgrapht/nio/graphml/GraphMLImporterTest.java
   @throws[ImportException]
   private def readGraph[E](input: java.io.StringReader, edgeClass: Class[E],
-                   directed: Boolean, weighted: Boolean,
-                   vertexAttributes: mutable.HashMap[String, mutable.HashMap[String, Attribute]],
-                   edgeAttributes: mutable.HashMap[E, mutable.HashMap[String, Attribute]]): Graph[String, E] = {
+                           directed: Boolean, weighted: Boolean,
+                           vertexAttributes: mutable.HashMap[String, mutable.HashMap[String, Attribute]],
+                           edgeAttributes: mutable.HashMap[E, mutable.HashMap[String, Attribute]]): Graph[String, E] = {
     val stringSupplier: Supplier[String] = SupplierUtil.createStringSupplier(1)
     val g: Graph[String, E] =
       if (directed) GraphTypeBuilder.directed[String, E].allowingMultipleEdges(true).allowingSelfLoops(true).weighted(weighted).vertexSupplier(stringSupplier).edgeClass(edgeClass).buildGraph

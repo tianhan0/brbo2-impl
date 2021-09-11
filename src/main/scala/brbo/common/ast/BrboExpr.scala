@@ -1,5 +1,6 @@
 package brbo.common.ast
 
+import brbo.common.TypeUtils.BrboType
 import brbo.common.TypeUtils.BrboType.{BOOL, BrboType, INT}
 
 abstract class BrboExpr(val typ: BrboType) {
@@ -8,6 +9,8 @@ abstract class BrboExpr(val typ: BrboType) {
 
 case class Identifier(identifier: String, typ2: BrboType) extends BrboExpr(typ2) {
   def prettyPrintToC(): String = identifier
+
+  def typeNamePairInC(): String = s"${BrboType.toCString(typ)} $identifier"
 }
 
 case class Bool(b: Boolean) extends BrboExpr(BOOL) {
@@ -66,14 +69,14 @@ case class LessThanOrEqualTo(left: BrboExpr, right: BrboExpr) extends BrboExpr(B
   def prettyPrintToC(): String = s"(${left.prettyPrintToC()} <= ${right.prettyPrintToC()})"
 }
 
-case class GreaterThan(left: BrboExpr, right: BrboExpr) extends BrboExpr(INT) {
+case class GreaterThan(left: BrboExpr, right: BrboExpr) extends BrboExpr(BOOL) {
   assert(left.typ == INT)
   assert(right.typ == INT)
 
   def prettyPrintToC(): String = s"(${left.prettyPrintToC()} > ${right.prettyPrintToC()})"
 }
 
-case class GreaterThanOrEqualTo(left: BrboExpr, right: BrboExpr) extends BrboExpr(INT) {
+case class GreaterThanOrEqualTo(left: BrboExpr, right: BrboExpr) extends BrboExpr(BOOL) {
   assert(left.typ == INT)
   assert(right.typ == INT)
 

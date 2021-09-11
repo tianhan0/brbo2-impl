@@ -1,12 +1,13 @@
 package brbo.backend.verifier
 
-import org.apache.logging.log4j.{LogManager, Logger}
 import brbo.backend.verifier.VerifierRawResult.VerifierRawResult
+import brbo.common.ast.BrboProgram
+import org.apache.logging.log4j.{LogManager, Logger}
 
 abstract class Verifier(val toolName: String, val toolPath: String) {
   protected val logger: Logger = LogManager.getLogger(classOf[Verifier])
 
-  def verify(program: String): VerifierResult
+  def verify(program: BrboProgram): VerifierResult
 }
 
 object VerifierRawResult extends Enumeration {

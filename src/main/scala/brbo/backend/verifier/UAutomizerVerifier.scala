@@ -2,6 +2,7 @@ package brbo.backend.verifier
 
 import brbo.backend.verifier.VerifierRawResult.VerifierRawResult
 import brbo.common.FileUtils
+import brbo.common.ast.BrboProgram
 
 import java.io.{File, PrintWriter}
 import java.nio.file.Files
@@ -12,10 +13,11 @@ import scala.sys.process.{ProcessLogger, _}
 
 class UAutomizerVerifier extends Verifier(toolName = "UAutomizer", toolPath = s"${System.getProperty("user.home")}/Documents/workspace/UAutomizer-linux") {
   private val VIOLATION_WITNESS = s"$toolPath/witness.graphml"
+  private val TIMEOUT = 60 // Unit: Seconds
 
-  override def verify(program: String): VerifierResult = {
+  override def verify(program: BrboProgram): VerifierResult = {
     val result: VerifierRawResult =
-      runAndGetStdOutput(program, timeout = 60) match {
+      runAndGetStdOutput(program.prettyPrintToC(indent = 0)) match {
         case Some(output) =>
           if (output.endsWith("Result:FALSE")) VerifierRawResult.FALSE
           else if (output.endsWith("Result:TRUE")) VerifierRawResult.TRUE
@@ -33,12 +35,12 @@ class UAutomizerVerifier extends Verifier(toolName = "UAutomizer", toolPath = s"
         assert(violationWitnessFile.exists())
 
         val counterexamplePath: String = FileUtils.readFromFile(VIOLATION_WITNESS)
-        VerifierResult(result, Some(CounterexamplePath.graphMLToCounterexamplePath(counterexamplePath)))
+        VerifierResult(result, Some(CounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, program.mainFunction)))
       case VerifierRawResult.TRUE | VerifierRawResult.UNKNOWN => VerifierResult(result, None)
     }
   }
 
-  private def runAndGetStdOutput(sourceCode: String, timeout: Int): Option[String] = {
+  private def runAndGetStdOutput(sourceCode: String): Option[String] = {
     val stdout = new StringBuilder
     val stderr = new StringBuilder
 
@@ -59,7 +61,7 @@ class UAutomizerVerifier extends Verifier(toolName = "UAutomizer", toolPath = s"
 
       val future = Future(blocking(process.exitValue())) // wrap in Future
       val actualTimeout = {
-        if (timeout >= 0) Duration(timeout, SECONDS)
+        if (TIMEOUT >= 0) Duration(TIMEOUT, SECONDS)
         else Duration.Inf
       }
       val result =
