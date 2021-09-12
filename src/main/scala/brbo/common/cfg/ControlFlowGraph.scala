@@ -112,11 +112,17 @@ object ControlFlowGraph {
           @tailrec
           def addJumpEdges(command: Command): Unit = {
             command match {
-              case Assert(_, _) | Assume(_, _) | VariableDeclaration(_, _, _) | Assignment(_, _, _) | Skip(_) =>
-              case FunctionCall(_, functionCallExpr, _) =>
-                val functionCFG = getCFGFromName(functionCallExpr.identifier)
-                addEdge(node, functionCFG.root)
-                functionCFG.exits.foreach(exit => addEdge(exit, node)) // TODO: When traversing, need to pair call and return edges.
+              case Assert(_, _) =>
+              case Assume(_, _) =>
+              case VariableDeclaration(_, _, _) =>
+              case Assignment(_, _, _) =>
+              case Skip(_) =>
+              case FunctionCall(_, _, _) =>
+
+              /**
+               * TODO: No edge is added for function calls. If we were to implement this,
+               * then we also need to add edges when function calls happen inside expressions
+               */
               case ReturnExpr(_, _) | ReturnVoid(_) => addEdge(node, jumpTarget.functionExit)
               case Break(_) => addEdge(node, jumpTarget.immediateLoopExit.get)
               case Continue(_) => addEdge(node, jumpTarget.immediateLoopCondition.get)
