@@ -5,7 +5,13 @@ import com.ibm.wala.util.graph.INodeWithNumberedEdges
 import com.ibm.wala.util.graph.impl.NodeWithNumber
 import com.ibm.wala.util.intset.{BimodalMutableIntSet, IntSet}
 
-case class CFGNode(value: Either[Command, BrboExpr], brboFunction: BrboFunction, id: Int) extends NodeWithNumber with INodeWithNumberedEdges {
+/**
+ *
+ * @param value        Every node is either a command or an expression
+ * @param functionName The function that this command or expression belongs to
+ * @param id           A unique ID among all commands and expressions in all functions
+ */
+case class CFGNode(value: Either[Command, BrboExpr], functionName: String, id: Int) extends NodeWithNumber with INodeWithNumberedEdges {
   private val predNumbers = new BimodalMutableIntSet()
   private val succNumbers = new BimodalMutableIntSet()
 
@@ -27,8 +33,8 @@ case class CFGNode(value: Either[Command, BrboExpr], brboFunction: BrboFunction,
 
   override def toString: String = {
     value match {
-      case Left(command) => s"$id: ${command.prettyPrintToC()}"
-      case Right(expr) => s"$id: ${expr.prettyPrintToC()}"
+      case Left(command) => s"($id) ${command.prettyPrintPrintToCFG}"
+      case Right(expr) => s"($id) ${expr.prettyPrintPrintToCFG}"
     }
   }
 }

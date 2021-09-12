@@ -2,6 +2,7 @@ package brbo.common.ast
 
 import brbo.{StringCompare, TestCase}
 import brbo.common.TypeUtils.BrboType
+import brbo.common.TypeUtils.BrboType.INT
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BrboExprUnitTest extends AnyFlatSpec {
@@ -30,6 +31,6 @@ object BrboExprUnitTest {
       TestCase("NotEqual", NotEqual(Number(2), Number(3)), "(2 != 3)"),
       TestCase("And", And(Bool(true), Bool(false)), "(true && false)"),
       TestCase("Or", Or(Bool(true), Bool(false)), "(true || false)"),
-      TestCase("FunctionCallExpr", FunctionCallExpr("f", List("a", "b", "c"), BrboType.INT), "f(a, b, c)")
+      TestCase("FunctionCallExpr", FunctionCallExpr("f", List(Identifier("a", INT), Identifier("b", INT), Identifier("c", INT)), BrboType.INT), "f(a, b, c)")
     )
 }

@@ -20,14 +20,13 @@ object UAutomizerVerifierUnitTest {
     val a = Identifier("a", INT)
     val b = Identifier("b", INT)
     val R = Identifier("R", INT)
-    val statement1 = VariableDeclaration("i", INT, Number(0))
-    val statement2 = VariableDeclaration("R", INT, Number(0))
+    val statement1 = VariableDeclaration(i, Number(0))
+    val statement2 = VariableDeclaration(R, Number(0))
     val statement3 = Assume(GreaterThan(n, Number(0)))
-    val statement4 = VariableDeclaration("dummy", INT, Number(0))
     val statement5 = FunctionCall(None, FunctionCallExpr("ndBool", Nil, INT)) // To test parsing counterexample paths when involving function calls
     val statement6 = {
       val e = Identifier("e", INT)
-      val statement1 = VariableDeclaration("e", INT, Number(0))
+      val statement1 = VariableDeclaration(e, Number(0))
       val statement2 = ITE(LessThan(i, Number(1)), Assignment(e, a), Assignment(e, b))
       val statement3 = Assignment(R, Addition(R, e))
       val statement4 = Assignment(i, Addition(i, Number(1)))
@@ -37,14 +36,14 @@ object UAutomizerVerifierUnitTest {
     val assertionFalse = Assert(LessThanOrEqualTo(R, a))
 
     val test01 = {
-      val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement4, statement5, statement6, assertionTrue)))
-      BrboProgram(function)
+      val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionTrue)))
+      BrboProgram("test01", function, PreDefinedBrboFunctions.allFunctions)
     }
     val test01Expected = """"""
 
     val test02 = {
-      val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement4, statement5, statement6, assertionFalse)))
-      BrboProgram(function, PreDefinedBrboFunctions.allFunctions)
+      val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionFalse)))
+      BrboProgram("test02", function, PreDefinedBrboFunctions.allFunctions)
     }
     val test02Expected = """"""
 

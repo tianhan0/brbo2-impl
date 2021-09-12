@@ -42,7 +42,7 @@ object PreDefinedBrboFunctions {
   val ndBool: BrboFunction = {
     val body = {
       val x = Identifier("x", INT)
-      val variableDeclaration = VariableDeclaration("x", INT, FunctionCallExpr("ndInt", Nil, INT))
+      val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
       val assume = Assume(Or(Equal(x, Number(0)), Equal(x, Number(1))))
       val returnExpr = ReturnExpr(x)
       Block(List(variableDeclaration, assume, returnExpr))
@@ -55,7 +55,7 @@ object PreDefinedBrboFunctions {
     val upper = Identifier("upper", INT)
     val body = {
       val x = Identifier("x", INT)
-      val variableDeclaration = VariableDeclaration("x", INT, FunctionCallExpr("ndInt", Nil, INT))
+      val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
       val assume = Assume(And(LessThanOrEqualTo(lower, x), LessThanOrEqualTo(x, upper)))
       val returnExpr = ReturnExpr(x)
       Block(List(variableDeclaration, assume, returnExpr))
