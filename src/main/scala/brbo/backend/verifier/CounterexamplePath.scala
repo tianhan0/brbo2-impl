@@ -1,7 +1,8 @@
 package brbo.backend.verifier
 
 import brbo.common.TypeUtils.BrboType.BOOL
-import brbo.common.ast.{BrboAst, BrboExpr, BrboFunction, Command}
+import brbo.common.ast._
+import brbo.common.cfg.CFGNode
 import org.apache.logging.log4j.LogManager
 import org.jgrapht.Graph
 import org.jgrapht.graph.DefaultEdge
@@ -15,8 +16,8 @@ import java.util.function.Supplier
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-case class CounterexamplePath(nodes: List[Either[Command, BrboExpr]]) {
-  nodes.foreach({
+case class CounterexamplePath(nodes: List[CFGNode]) {
+  nodes.map(node => node.value).foreach({
     case Left(_) =>
     case Right(expr) => assert(expr.typ == BOOL)
   })
@@ -25,7 +26,7 @@ case class CounterexamplePath(nodes: List[Either[Command, BrboExpr]]) {
 object CounterexamplePath {
   private val logger = LogManager.getLogger("brbo.backend.verifier.CounterexamplePath")
 
-  def graphMLToCounterexamplePath(graphMLString: String, mainFunction: BrboFunction): CounterexamplePath = {
+  def graphMLToCounterexamplePath(graphMLString: String, brboProgram: BrboProgram): CounterexamplePath = {
     val vertexAttributes = new mutable.HashMap[String, mutable.HashMap[String, Attribute]]
     val edgeAttributes = new mutable.HashMap[DefaultEdge, mutable.HashMap[String, Attribute]]
     val graph = readGraph(new java.io.StringReader(graphMLString), classOf[DefaultEdge], directed = true, weighted = false, vertexAttributes, edgeAttributes)
@@ -37,6 +38,7 @@ object CounterexamplePath {
       val current = iterator.next()
       lastVertex match {
         case Some(last) =>
+          // Get the edge between the last and the current nodes
           val edges = graph.getAllEdges(last, current).asScala
           assert(edges.size == 1)
 
@@ -55,10 +57,32 @@ object CounterexamplePath {
     path = path.reverse
     logger.error(path)
 
-    val allExprs = BrboAst.getAllExprs(mainFunction.body)
-    val allCommands = BrboAst.getAllCommands(mainFunction.body)
+    parsePathString(path, brboProgram)
+  }
 
-    ??? // TODO: Parse strings into BrboAst or BrboExpr by matching against the pretty print strings
+  /**
+   *
+   * @param path A counterexample path, which is a list of strings
+   * @param brboProgram The function to parse the counterexample path against
+   * @return Parse strings into BrboAst or BrboExpr by matching against the pretty print strings of the entry function
+   */
+  private def parsePathString(path: List[String], brboProgram: BrboProgram): CounterexamplePath = {
+    def helper(path: List[String], continuation: Set[Statement]): CounterexamplePath = {
+      path match {
+        case Nil => CounterexamplePath(Nil)
+        case ::(head, tail) =>
+          if (head.startsWith("[") && head.endsWith("]")) {
+            ???
+          }
+          else {
+            ???
+          }
+          val counterexamplePath = helper(tail, ???)
+          CounterexamplePath(??? :: counterexamplePath.nodes)
+      }
+    }
+
+    helper(path, Set(brboProgram.mainFunction.body))
   }
 
   // Copied from https://github.com/jgrapht/jgrapht/blob/6aba8e81053660997fe681c50974c07e312027d1/jgrapht-io/src/test/java/org/jgrapht/nio/graphml/GraphMLImporterTest.java

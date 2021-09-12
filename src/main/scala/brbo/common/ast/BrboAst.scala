@@ -2,16 +2,11 @@ package brbo.common.ast
 
 import brbo.common.TypeUtils.BrboType
 import brbo.common.TypeUtils.BrboType.{BOOL, BrboType, INT, VOID}
+import brbo.common.UniqueID
 
-import scala.collection.immutable.HashSet
+import java.util.UUID
 
-sealed trait PrettyPrintToC {
-  val DEFAULT_INDENT = 2
-
-  def prettyPrintToC(indent: Int): String
-}
-
-case class BrboProgram(mainFunction: BrboFunction, functions: List[BrboFunction] = Nil) extends PrettyPrintToC {
+case class BrboProgram(mainFunction: BrboFunction, functions: List[BrboFunction] = Nil) extends UniqueID(UUID.randomUUID()) with PrettyPrintToC {
   override def prettyPrintToC(indent: Int): String = {
     val macroes =
       """extern void __VERIFIER_error() __attribute__((noreturn));
@@ -24,49 +19,25 @@ case class BrboProgram(mainFunction: BrboFunction, functions: List[BrboFunction]
         |#define false 0
         |#define boolean int
         |#define MAX 8
-        |void __VERIFIER_assert(int cond) {
-        |  if (!(cond)) {
-        |    ERROR: __VERIFIER_error();
-        |  }
-        |  return;
-        |}
-        |void assert(int cond) {
-        |  if (!(cond)) {
-        |    ERROR: __VERIFIER_error();
-        |  }
-        |  return;
-        |}
-        |int ndInt() {
-        |  return __VERIFIER_nondet_int();
-        |}
-        |int ndBool() {
-        |  int x = ndInt();
-        |  assume(x == 1 || x == 0);
-        |  return x;
-        |}
-        |int ndInt2(int lower, int upper) {
-        |  int x = ndInt();
-        |  assume(lower <= x && x <= upper);
-        |  return x;
-        |}""".stripMargin
+        |""".stripMargin
 
-    val functionsString = (mainFunction :: functions).map(function => function.prettyPrintToC(indent)).mkString("\n")
+    val functionsString = (functions :+ mainFunction).map(function => function.prettyPrintToC(indent)).mkString("\n")
     s"$macroes\n\n$functionsString"
   }
 }
 
-case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier], body: Statement) extends PrettyPrintToC {
+case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier], body: Statement) extends UniqueID(UUID.randomUUID()) with PrettyPrintToC {
   override def prettyPrintToC(indent: Int): String = {
     val parametersString = parameters.map(pair => s"${pair.typeNamePairInC()}").mkString(", ")
     s"${BrboType.toCString(returnType)} $identifier($parametersString) {\n${body.prettyPrintToC(DEFAULT_INDENT)}\n}"
   }
 }
 
-sealed trait BrboAst extends PrettyPrintToC
+abstract class BrboAst extends UniqueID(UUID.randomUUID()) with PrettyPrintToC
 
-sealed trait Command extends BrboAst
+abstract class Command extends BrboAst with PrettyPrintPrintToCFG
 
-sealed trait Statement extends BrboAst
+abstract class Statement extends BrboAst
 
 case class Block(statements: List[BrboAst]) extends Statement {
   override def prettyPrintToC(indent: Int): String = {
@@ -102,6 +73,8 @@ case class Assert(condition: BrboExpr) extends Command {
     val indentString = " " * indent
     s"${indentString}assert($conditionString);"
   }
+
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 }
 
 case class Assume(condition: BrboExpr) extends Command {
@@ -112,6 +85,8 @@ case class Assume(condition: BrboExpr) extends Command {
     val indentString = " " * indent
     s"${indentString}assume($conditionString);"
   }
+
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 }
 
 case class VariableDeclaration(variable: String, typ: BrboType, initialValue: BrboExpr) extends Command {
@@ -125,6 +100,8 @@ case class VariableDeclaration(variable: String, typ: BrboType, initialValue: Br
     val indentString = " " * indent
     s"$indentString${BrboType.toCString(typ)} $variable = $initialValueString;"
   }
+
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 }
 
 case class Assignment(variable: Identifier, expression: BrboExpr) extends Command {
@@ -134,65 +111,86 @@ case class Assignment(variable: Identifier, expression: BrboExpr) extends Comman
     val indentString = " " * indent
     s"$indentString${variable.identifier} = ${expression.prettyPrintToC()};"
   }
+
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 }
 
-case class FunctionCall(functionCallExpr: FunctionCallExpr) extends Command {
+case class FunctionCall(identifier: Option[Identifier], functionCallExpr: FunctionCallExpr) extends Command {
   override def prettyPrintToC(indent: Int): String = {
     val indentString = " " * indent
-    s"$indentString${functionCallExpr.prettyPrintToC()};"
+    identifier match {
+      case Some(value) => s"$indentString${value.prettyPrintToC()} = ${functionCallExpr.prettyPrintToC()};"
+      case None => s"$indentString${functionCallExpr.prettyPrintToC()};"
+    }
   }
+
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 }
 
-case object Return extends Command {
+case class ReturnExpr(value: BrboExpr) extends Command {
+  override def prettyPrintToC(indent: Int): String = {
+    val indentString = " " * indent
+    s"${indentString}return ${value.prettyPrintToC()};"
+  }
+
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+}
+
+case class ReturnVoid() extends Command {
   override def prettyPrintToC(indent: Int): String = {
     val indentString = " " * indent
     s"${indentString}return;"
   }
+
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 }
 
-case object Skip extends Command {
+case class Skip() extends Command {
   override def prettyPrintToC(indent: Int): String = {
     val indentString = " " * indent
     s"$indentString;"
   }
+
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 }
 
-case object Break extends Command {
+case class Break() extends Command {
   override def prettyPrintToC(indent: Int): String = {
     val indentString = " " * indent
     s"${indentString}break;"
   }
+
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 }
 
-case object Continue extends Command {
+case class Continue() extends Command {
   override def prettyPrintToC(indent: Int): String = {
     val indentString = " " * indent
     s"${indentString}continue;"
   }
+
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 }
 
-object BrboAst {
-  def getAllExprs(ast: BrboAst): Set[BrboExpr] = {
-    ast match {
-      case _: Command => new HashSet[BrboExpr]
-      case statement: Statement =>
-        statement match {
-          case Block(statements) => statements.flatMap(statement => getAllExprs(statement)).toSet
-          case Loop(_, body) => getAllExprs(body)
-          case ITE(_, thenAst, elseAst) => getAllExprs(thenAst) ++ getAllExprs(elseAst)
-        }
-    }
+case class FunctionExit() extends Command {
+  override def prettyPrintToC(indent: Int): String = throw new Exception("FunctionExit only exists in Control Flow Graphs")
+
+  override def prettyPrintPrintToCFG: String = "[Function Exit]"
+}
+
+case class LoopExit() extends Command {
+  override def prettyPrintToC(indent: Int): String = throw new Exception("LoopExit only exists in Control Flow Graphs")
+
+  override def prettyPrintPrintToCFG: String = "[Loop Exit]"
+}
+
+case class LabeledCommand(label: String, command: Command) extends Command {
+  assert(!command.isInstanceOf[LabeledCommand])
+
+  override def prettyPrintToC(indent: Int): String = {
+    val indentString = " " * indent
+    s"$indentString$label: ${command.prettyPrintToC()}"
   }
 
-  def getAllCommands(ast: BrboAst): Set[Command] = {
-    ast match {
-      case command: Command => HashSet[Command](command)
-      case statement: Statement =>
-        statement match {
-          case Block(statements) => statements.flatMap(statement => getAllCommands(statement)).toSet
-          case Loop(_, body) => getAllCommands(body)
-          case ITE(_, thenAst, elseAst) => getAllCommands(thenAst) ++ getAllCommands(elseAst)
-        }
-    }
-  }
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 }

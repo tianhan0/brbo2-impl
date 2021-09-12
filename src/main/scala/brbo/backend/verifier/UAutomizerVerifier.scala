@@ -35,7 +35,7 @@ class UAutomizerVerifier extends Verifier(toolName = "UAutomizer", toolPath = s"
         assert(violationWitnessFile.exists())
 
         val counterexamplePath: String = FileUtils.readFromFile(VIOLATION_WITNESS)
-        VerifierResult(result, Some(CounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, program.mainFunction)))
+        VerifierResult(result, Some(CounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, program)))
       case VerifierRawResult.TRUE | VerifierRawResult.UNKNOWN => VerifierResult(result, None)
     }
   }

@@ -1,5 +1,5 @@
 package brbo.backend.verifier
 
-class SymbolicExecution {
+class SymbolicExecution(counterexamplePath: CounterexamplePath) {
 
 }
