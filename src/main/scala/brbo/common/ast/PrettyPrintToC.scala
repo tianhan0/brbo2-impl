@@ -5,7 +5,3 @@ trait PrettyPrintToC {
 
   def prettyPrintToC(indent: Int = 0): String
 }
-
-trait PrettyPrintPrintToCFG {
-  def prettyPrintPrintToCFG: String
-}

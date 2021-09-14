@@ -3,7 +3,24 @@ package brbo.common.ast
 import brbo.common.TypeUtils.BrboType.{BOOL, INT, VOID}
 
 object PreDefinedBrboFunctions {
-  val __VERIFIER_assert: BrboFunction = {
+  val VERIFIER_ERROR: String = "__VERIFIER_error"
+  val ABORT: String = "abort"
+  val VERIFIER_NONDET_INT: String = "__VERIFIER_nondet_int"
+  val UNDEFINED_FUNCTIONS: List[String] = List(VERIFIER_ERROR, ABORT, VERIFIER_NONDET_INT)
+
+  val UNDEFINED_FUNCTIONS_MACRO: String =
+    s"""extern void $VERIFIER_ERROR() __attribute__((noreturn));
+       |extern void $ABORT(void);
+       |extern int $VERIFIER_NONDET_INT ();""".stripMargin
+
+  val SYMBOLS_MACRO: String =
+    """#define true 1
+      |#define false 0
+      |#define boolean int
+      |#define MAX 8
+      |""".stripMargin
+
+  /*val __VERIFIER_assert: BrboFunction = {
     val cond = Identifier("cond", BOOL)
     val body = {
       val ite = {
@@ -12,10 +29,10 @@ object PreDefinedBrboFunctions {
         val elseStatement = Skip()
         ITE(condition, thenStatement, elseStatement)
       }
-      Block(List(ite, ReturnVoid()))
+      Block(List(ite, Return(None)))
     }
     BrboFunction("__VERIFIER_assert", VOID, List(cond), body)
-  }
+  }*/
 
   val assert: BrboFunction = {
     val cond = Identifier("cond", BOOL)
@@ -26,15 +43,29 @@ object PreDefinedBrboFunctions {
         val elseStatement = Skip()
         ITE(condition, thenStatement, elseStatement)
       }
-      Block(List(ite, ReturnVoid()))
+      Block(List(ite, Return(None)))
     }
     BrboFunction("assert", VOID, List(cond), body)
   }
 
+  val assume: BrboFunction = {
+    val cond = Identifier("cond", BOOL)
+    val body = {
+      val ite = {
+        val condition = Negative(cond)
+        val thenStatement = FunctionCall(None, FunctionCallExpr("abort", Nil, VOID))
+        val elseStatement = Skip()
+        ITE(condition, thenStatement, elseStatement)
+      }
+      Block(List(ite))
+    }
+    BrboFunction("assume", VOID, List(cond), body)
+  }
+
   val ndInt: BrboFunction = {
     val body = {
-      val returnExpr = ReturnExpr(FunctionCallExpr("__VERIFIER_nondet_int", Nil, INT))
-      Block(List(returnExpr))
+      val returnCommand = Return(Some(FunctionCallExpr("__VERIFIER_nondet_int", Nil, INT)))
+      Block(List(returnCommand))
     }
     BrboFunction("ndInt", INT, Nil, body)
   }
@@ -43,9 +74,9 @@ object PreDefinedBrboFunctions {
     val body = {
       val x = Identifier("x", INT)
       val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
-      val assume = Assume(Or(Equal(x, Number(0)), Equal(x, Number(1))))
-      val returnExpr = ReturnExpr(x)
-      Block(List(variableDeclaration, assume, returnExpr))
+      val assume = createAssume(Or(Equal(x, Number(0)), Equal(x, Number(1))))
+      val returnCommand = Return(Some(x))
+      Block(List(variableDeclaration, assume, returnCommand))
     }
     BrboFunction("ndBool", INT, Nil, body)
   }
@@ -56,12 +87,16 @@ object PreDefinedBrboFunctions {
     val body = {
       val x = Identifier("x", INT)
       val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
-      val assume = Assume(And(LessThanOrEqualTo(lower, x), LessThanOrEqualTo(x, upper)))
-      val returnExpr = ReturnExpr(x)
-      Block(List(variableDeclaration, assume, returnExpr))
+      val assume = createAssume(And(LessThanOrEqualTo(lower, x), LessThanOrEqualTo(x, upper)))
+      val returnCommand = Return(Some(x))
+      Block(List(variableDeclaration, assume, returnCommand))
     }
     BrboFunction("ndInt2", INT, List(lower, upper), body)
   }
 
-  val allFunctions = List(__VERIFIER_assert, assert, ndInt, ndBool, ndInt2)
+  val allFunctions = List(assert, assume, ndInt, ndBool, ndInt2)
+
+  def createAssert(expression: BrboExpr): FunctionCall = FunctionCall(None, FunctionCallExpr("assert", List(expression), BOOL))
+
+  def createAssume(expression: BrboExpr): FunctionCall = FunctionCall(None, FunctionCallExpr("assume", List(expression), BOOL))
 }

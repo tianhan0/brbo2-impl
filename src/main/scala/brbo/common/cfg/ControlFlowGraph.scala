@@ -1,20 +1,23 @@
 package brbo.common.cfg
 
 import brbo.BrboMain
+import brbo.common.MathUtils
+import brbo.common.TypeUtils.BrboType.BOOL
 import brbo.common.ast._
 import com.ibm.wala.util.graph.NumberedGraph
 import com.ibm.wala.util.graph.impl.DelegatingNumberedGraph
 import org.apache.logging.log4j.{LogManager, Logger}
-import org.jgrapht.graph.{DefaultEdge, SimpleDirectedGraph}
+import org.jgrapht.alg.connectivity.ConnectivityInspector
+import org.jgrapht.graph.{DefaultEdge, SimpleDirectedWeightedGraph}
 import org.jgrapht.nio.dot.DOTExporter
 import org.jgrapht.nio.{Attribute, AttributeType, DefaultAttribute}
 
 import java.io.{File, IOException, PrintWriter, StringWriter}
 import java.util
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
-
-case class InternalGraph(root: CFGNode, exits: Set[CFGNode])
+import scala.collection.mutable
 
 object ControlFlowGraph {
   val OUTPUT_DIRECTORY: String = {
@@ -25,6 +28,10 @@ object ControlFlowGraph {
   }
 
   val logger: Logger = LogManager.getLogger(ControlFlowGraph.getClass.getName)
+
+  val TRUE_BRANCH_WEIGHT: Double = 1
+  val FALSE_BRANCH_WEIGHT: Double = -1
+  val DEFAULT_WEIGHT: Double = 0
 
   case class JumpTarget(immediateLoopCondition: Option[CFGNode], immediateLoopExit: Option[CFGNode], functionExit: CFGNode)
 
@@ -37,7 +44,7 @@ object ControlFlowGraph {
     var nodes = new HashMap[Either[Command, BrboExpr], CFGNode]
     var cfgs = new HashMap[BrboFunction, InternalGraph]
     val walaGraph = new DelegatingNumberedGraph[CFGNode]()
-    val jgraphtGraph = new SimpleDirectedGraph[CFGNode, DefaultEdge](classOf[DefaultEdge])
+    val jgraphtGraph = new SimpleDirectedWeightedGraph[CFGNode, DefaultEdge](classOf[DefaultEdge])
 
     def addNode(node: CFGNode): Unit = {
       walaGraph.addNode(node)
@@ -47,6 +54,11 @@ object ControlFlowGraph {
     def addEdge(src: CFGNode, dst: CFGNode): Unit = {
       walaGraph.addEdge(src, dst)
       jgraphtGraph.addEdge(src, dst)
+      jgraphtGraph.setEdgeWeight(src, dst, DEFAULT_WEIGHT)
+    }
+
+    def setEdgeWeight(src: CFGNode, dst: CFGNode, trueBranch: Boolean): Unit = {
+      jgraphtGraph.setEdgeWeight(src, dst, if (trueBranch) TRUE_BRANCH_WEIGHT else FALSE_BRANCH_WEIGHT)
     }
 
     def getCFGFromName(functionName: String): InternalGraph = {
@@ -92,9 +104,9 @@ object ControlFlowGraph {
           nodeValue match {
             case Left(command) =>
               command match {
-                case ReturnExpr(_, _) | ReturnVoid(_) | Break(_) | Continue(_) => false
+                case Return(_, _) | Break(_) | Continue(_) => false
                 case LabeledCommand(_, command2, _) => shouldAddEdge(Left(command2))
-                case Assert(_, _) | Assume(_, _) | VariableDeclaration(_, _, _) | Assignment(_, _, _) | Skip(_) | FunctionCall(_, _, _) => true
+                case VariableDeclaration(_, _, _) | Assignment(_, _, _) | Skip(_) | FunctionCall(_, _, _) => true
                 case _: CFGOnly => true
               }
             case Right(_) => true
@@ -112,8 +124,6 @@ object ControlFlowGraph {
           @tailrec
           def addJumpEdges(command: Command): Unit = {
             command match {
-              case Assert(_, _) =>
-              case Assume(_, _) =>
               case VariableDeclaration(_, _, _) =>
               case Assignment(_, _, _) =>
               case Skip(_) =>
@@ -123,7 +133,7 @@ object ControlFlowGraph {
                * TODO: No edge is added for function calls. If we were to implement this,
                * then we also need to add edges when function calls happen inside expressions
                */
-              case ReturnExpr(_, _) | ReturnVoid(_) => addEdge(node, jumpTarget.functionExit)
+              case Return(_, _) => addEdge(node, jumpTarget.functionExit)
               case Break(_) => addEdge(node, jumpTarget.immediateLoopExit.get)
               case Continue(_) => addEdge(node, jumpTarget.immediateLoopCondition.get)
               case LabeledCommand(_, command2, _) => addJumpEdges(command2)
@@ -155,7 +165,9 @@ object ControlFlowGraph {
               val elseGraph = astToInternalGraph(elseAst, jumpTarget, brboFunction)
 
               addEdge(conditionNode, thenGraph.root)
+              setEdgeWeight(conditionNode, thenGraph.root, trueBranch = true)
               addEdge(conditionNode, elseGraph.root)
+              setEdgeWeight(conditionNode, elseGraph.root, trueBranch = false)
 
               InternalGraph(conditionNode, thenGraph.exits ++ elseGraph.exits)
             case Loop(condition, body, _) =>
@@ -164,7 +176,9 @@ object ControlFlowGraph {
               val bodyGraph = astToInternalGraph(body, JumpTarget(Some(conditionNode), Some(loopExit), jumpTarget.functionExit), brboFunction)
 
               addEdge(conditionNode, loopExit)
+              setEdgeWeight(conditionNode, loopExit, trueBranch = false)
               addEdge(conditionNode, bodyGraph.root)
+              setEdgeWeight(conditionNode, bodyGraph.root, trueBranch = true)
               addEdgesFromExitsToEntry(bodyGraph.exits, conditionNode)
 
               InternalGraph(conditionNode, Set(loopExit))
@@ -186,7 +200,7 @@ object ControlFlowGraph {
 
 /**
  *
- * @param entryNode    Root node of the CFG
+ * @param entryNode    Root node of the CFG. Every node is either a command or an expression.
  * @param cfgs         A mapping from functions to their entries and exits in the CFG
  * @param brboProgram  The program for which the CFG is generated
  * @param walaGraph    A CFG that connects CFGs of all functions, in WALA representation
@@ -196,7 +210,18 @@ case class ControlFlowGraph(entryNode: CFGNode,
                             cfgs: Map[BrboFunction, InternalGraph],
                             brboProgram: BrboProgram,
                             walaGraph: NumberedGraph[CFGNode],
-                            jgraphtGraph: SimpleDirectedGraph[CFGNode, DefaultEdge]) {
+                            jgraphtGraph: SimpleDirectedWeightedGraph[CFGNode, DefaultEdge]) {
+  private val connectivityInspector = new ConnectivityInspector(jgraphtGraph)
+
+  // Check if any two CFGs of two functions are disconnected
+  MathUtils.crossJoin2(cfgs, cfgs).foreach({
+    case (pair1, pair2) =>
+      if (pair1 != pair2) {
+        assert(!connectivityInspector.pathExists(pair1._2.root, pair2._2.root),
+          s"CFG of function ${pair1._1.identifier} is connected with that of function ${pair2._1.identifier}")
+      }
+  })
+
   def exportToDOT: String = {
     val exporter = new DOTExporter[CFGNode, DefaultEdge]
     val outputWriter = new StringWriter
@@ -211,9 +236,17 @@ case class ControlFlowGraph(entryNode: CFGNode,
                 case _: CFGOnly => "oval"
                 case _ => "rectangle"
               }
-            case Right(_) => "diamond"
+            case Right(expr) =>
+              assert(expr.typ == BOOL)
+              "diamond"
           }
         map.put("shape", new DefaultAttribute(shape, AttributeType.IDENTIFIER))
+        map
+    })
+    exporter.setEdgeAttributeProvider({
+      edge =>
+        val map = new util.HashMap[String, Attribute]()
+        map.put("label", DefaultAttribute.createAttribute(jgraphtGraph.getEdgeWeight(edge)))
         map
     })
     exporter.exportGraph(jgraphtGraph, outputWriter)
@@ -239,4 +272,32 @@ case class ControlFlowGraph(entryNode: CFGNode,
         System.exit(1)
     }
   }
+
+  def findSuccessorNodes(node: CFGNode): Set[CFGNode] = {
+    val edges: mutable.Iterable[DefaultEdge] = jgraphtGraph.outgoingEdgesOf(node).asScala
+    edges.map({ edge: DefaultEdge => jgraphtGraph.getEdgeTarget(edge) }).toSet
+  }
+
+  def findNextNodeNotSkipped(node: CFGNode): Option[CFGNode] = {
+    def helper(node2: CFGNode): Option[CFGNode] = {
+      val successorNodes = findSuccessorNodes(node2)
+      successorNodes.size match {
+        case 0 => None
+        case 1 => findNextNodeNotSkipped(successorNodes.head)
+        case _ => throw new Exception(s"Node `${node2.prettyPrintToC()}` must have 0 or 1 successor node!")
+      }
+    }
+
+    node.value match {
+      case Left(command) =>
+        command match {
+          case _: CFGOnly => helper(node)
+          case Skip(_) => helper(node)
+          case _ => Some(node)
+        }
+      case Right(_) => Some(node)
+    }
+  }
+
+  def pathExists(src: CFGNode, dst: CFGNode): Boolean = connectivityInspector.pathExists(src, dst)
 }

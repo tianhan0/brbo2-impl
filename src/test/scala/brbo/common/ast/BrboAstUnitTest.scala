@@ -11,13 +11,12 @@ class BrboAstUnitTest extends AnyFlatSpec {
     assert(createContinue != createContinue)
     assert(createBreak != createBreak)
     assert(createSkip != createSkip)
-    assert(createReturnExpr != createReturnExpr)
-    assert(createReturnVoid != createReturnVoid)
+    assert(createReturn != createReturn)
     assert(createFunctionCall != createFunctionCall)
     assert(createAssignment != createAssignment)
     assert(createVariableDeclaration != createVariableDeclaration)
-    assert(createAssert != createAssert)
-    assert(createAssume != createAssume)
+    // assert(createAssert != createAssert)
+    // assert(createAssume != createAssume)
     assert(createLabeledCommand != createLabeledCommand)
     assert(createITE != createITE)
     assert(createLoop != createLoop)
@@ -39,15 +38,14 @@ object BrboAstUnitTest {
       TestCase("Continue", createContinue, "  continue;"),
       TestCase("Break", createBreak, "  break;"),
       TestCase("Skip", createSkip, "  ;"),
-      TestCase("ReturnExpr", createReturnExpr, "  return x;"),
-      TestCase("ReturnVoid", createReturnVoid, "  return;"),
+      TestCase("Return", createReturn, "  return x;"),
       TestCase("FunctionCall", createFunctionCall, "  x = f(a, b);"),
       TestCase("Assignment", createAssignment, "  x = 0;"),
       TestCase("VariableDeclaration", createVariableDeclaration, "  int x = 1;"),
-      TestCase("Assert", createAssert, "  assert(false);"),
-      TestCase("Assume", createAssume, "  assume(false);"),
+      // TestCase("Assert", createAssert, "  assert(false);"),
+      // TestCase("Assume", createAssume, "  assume(false);"),
       TestCase("LabeledCommand", createLabeledCommand, "  label: return;"),
-      TestCase("ITE", createITE, "  if(true)\n    x = 0;\n  else\n    x = 1;"),
+      TestCase("ITE", createITE, "  if (true)\n    x = 0;\n  else\n    x = 1;"),
       TestCase("Loop", createLoop, "  while (0 < x)\n  {\n    x = 0;\n    x = 1;\n  }"),
       TestCase("Block", createBlock, "  {\n    x = 0;\n    x = 1;\n  }")
     )
@@ -58,9 +56,7 @@ object BrboAstUnitTest {
 
   def createSkip: Skip = Skip()
 
-  def createReturnExpr: ReturnExpr = ReturnExpr(Identifier("x", INT))
-
-  def createReturnVoid: ReturnVoid = ReturnVoid()
+  def createReturn: Return = Return(Some(Identifier("x", INT)))
 
   def createFunctionCall: FunctionCall = FunctionCall(Some(Identifier("x", INT)), FunctionCallExpr("f", List(Identifier("a", INT), Identifier("b", INT)), BrboType.INT))
 
@@ -68,11 +64,11 @@ object BrboAstUnitTest {
 
   def createVariableDeclaration: VariableDeclaration = VariableDeclaration(Identifier("x", BrboType.INT), Number(1))
 
-  def createAssert: Assert = Assert(Bool(false))
+  // def createAssert: Assert = Assert(Bool(false))
 
-  def createAssume: Assume = Assume(Bool(false))
+  // def createAssume: Assume = Assume(Bool(false))
 
-  def createLabeledCommand: LabeledCommand = LabeledCommand("label", ReturnVoid())
+  def createLabeledCommand: LabeledCommand = LabeledCommand("label", Return(None))
 
   def createITE: ITE = ITE(Bool(true), Assignment(Identifier("x", INT), Number(0)), Assignment(Identifier("x", INT), Number(1)))
 

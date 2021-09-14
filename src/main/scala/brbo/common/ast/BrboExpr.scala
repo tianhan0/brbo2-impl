@@ -5,8 +5,16 @@ import brbo.common.TypeUtils.BrboType.{BOOL, BrboType, INT}
 
 import java.util.UUID
 
-abstract class BrboExpr(val typ: BrboType) extends PrettyPrintToC with PrettyPrintPrintToCFG {
+abstract class BrboExpr(val typ: BrboType) extends PrettyPrintToC with PrettyPrintPrintToCFG with GetFunctionCalls {
   override def prettyPrintToC(indent: Int): String
+
+  override def toString: String = prettyPrintToC()
+
+  def prettyPrintToCNoOuterBrackets: String = {
+    val string = prettyPrintToC()
+    if (string.startsWith("(") && string.endsWith(")")) string.substring(1, string.length - 1)
+    else string
+  }
 }
 
 case class Identifier(identifier: String, typ2: BrboType, uuid: UUID = UUID.randomUUID()) extends BrboExpr(typ2) {
@@ -14,22 +22,25 @@ case class Identifier(identifier: String, typ2: BrboType, uuid: UUID = UUID.rand
 
   def typeNamePairInC(): String = s"${BrboType.toCString(typ)} $identifier"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = Nil
 }
 
 case class Bool(b: Boolean, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
   override def prettyPrintToC(indent: Int): String = b.toString
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = Nil
 }
 
 case class Number(n: Int, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
   override def prettyPrintToC(indent: Int): String = n.toString
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = Nil
 }
 
 case class Addition(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -38,8 +49,9 @@ case class Addition(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
 
   override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} + ${right.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 }
 
 case class Subtraction(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -48,8 +60,9 @@ case class Subtraction(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.random
 
   override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} - ${right.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 }
 
 case class Multiplication(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -58,8 +71,9 @@ case class Multiplication(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.ran
 
   override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} * ${right.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 }
 
 case class Division(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -68,8 +82,9 @@ case class Division(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
 
   override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} / ${right.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 }
 
 case class Negative(expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -77,8 +92,9 @@ case class Negative(expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extend
 
   override def prettyPrintToC(indent: Int): String = s"!(${expression.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = expression.getFunctionCalls
 }
 
 case class LessThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -87,8 +103,9 @@ case class LessThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
 
   override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} < ${right.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 }
 
 case class LessThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -97,8 +114,9 @@ case class LessThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.
 
   override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} <= ${right.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 }
 
 case class GreaterThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -107,8 +125,9 @@ case class GreaterThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.random
 
   override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} > ${right.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 }
 
 case class GreaterThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -117,8 +136,9 @@ case class GreaterThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UU
 
   override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} >= ${right.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 }
 
 case class Equal(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -126,8 +146,9 @@ case class Equal(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()
 
   override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} == ${right.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 }
 
 case class NotEqual(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -135,8 +156,9 @@ case class NotEqual(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
 
   override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} != ${right.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 }
 
 case class And(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -145,8 +167,9 @@ case class And(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) 
 
   override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} && ${right.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 }
 
 case class Or(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -155,16 +178,20 @@ case class Or(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) e
 
   override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} || ${right.prettyPrintToC()})"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 }
 
 case class FunctionCallExpr(identifier: String, arguments: List[BrboExpr], returnType: BrboType, uuid: UUID = UUID.randomUUID()) extends BrboExpr(returnType) {
   override def prettyPrintToC(indent: Int): String = {
-    val argumentsString = arguments.map(argument => argument.prettyPrintToC()).mkString(", ")
+    val argumentsString = arguments.map(argument => argument.prettyPrintToCNoOuterBrackets).mkString(", ")
     s"$identifier($argumentsString)"
   }
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC(0)
+  override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
+  override def getFunctionCalls: List[FunctionCallExpr] = {
+    arguments.flatMap(argument => argument.getFunctionCalls) :+ this
+  }
 }

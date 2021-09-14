@@ -16,8 +16,10 @@ class UAutomizerVerifier extends Verifier(toolName = "UAutomizer", toolPath = s"
   private val TIMEOUT = 60 // Unit: Seconds
 
   override def verify(program: BrboProgram): VerifierResult = {
-    val result: VerifierRawResult =
-      runAndGetStdOutput(program.prettyPrintToC(indent = 0)) match {
+    val result: VerifierRawResult = {
+      val cSourceCode = program.prettyPrintToC()
+      logger.debug(s"Input to UAutomizer:\n$cSourceCode")
+      runAndGetStdOutput(cSourceCode) match {
         case Some(output) =>
           if (output.endsWith("Result:FALSE")) VerifierRawResult.FALSE
           else if (output.endsWith("Result:TRUE")) VerifierRawResult.TRUE
@@ -28,6 +30,7 @@ class UAutomizerVerifier extends Verifier(toolName = "UAutomizer", toolPath = s"
           }
         case None => VerifierRawResult.UNKNOWN
       }
+    }
 
     result match {
       case VerifierRawResult.FALSE =>
