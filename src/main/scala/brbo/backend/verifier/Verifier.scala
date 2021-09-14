@@ -9,8 +9,7 @@ abstract class Verifier {
   val toolName: String
   val toolDirectory: String
 
-  protected val logger: Logger = LogManager.getLogger(classOf[Verifier])
-  val myLogger: MyLogger = MyLogger(logger, commandLineArguments.getDebugMode)
+  protected val logger: MyLogger = MyLogger(LogManager.getLogger(classOf[Verifier]), commandLineArguments.getDebugMode)
 
   def verify(program: BrboProgram): VerifierResult
 }

@@ -164,7 +164,7 @@ object CommandLineArguments {
     arguments
   }
 
-  val DEBUG_ARGUMENTS: CommandLineArguments = {
+  val DEBUG_MODE_ARGUMENTS: CommandLineArguments = {
     val arguments = new CommandLineArguments
     arguments.initialize(
       UNKNOWN,
