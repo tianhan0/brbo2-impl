@@ -20,9 +20,9 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 class ParseCounterexamplePath(debugMode: Boolean) {
-  private val logger = MyLogger(LogManager.getLogger(classOf[ParseCounterexamplePath]), debugMode)
+  private val logger = MyLogger.createLogger(classOf[ParseCounterexamplePath], debugMode)
 
-  def graphMLToCounterexamplePath(graphMLString: String, brboProgram: BrboProgram): CounterexamplePath = {
+  def graphMLToCounterexamplePath(graphMLString: String, brboProgram: BrboProgram): Path = {
     val vertexAttributes = new mutable.HashMap[String, mutable.HashMap[String, Attribute]]
     val edgeAttributes = new mutable.HashMap[DefaultEdge, mutable.HashMap[String, Attribute]]
     val graph = readGraph(new java.io.StringReader(graphMLString), classOf[DefaultEdge], directed = true, weighted = false, vertexAttributes, edgeAttributes)
@@ -65,7 +65,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
    * @param brboProgram The function to parse the counterexample path against
    * @return Parse strings into BrboAst or BrboExpr by matching against the pretty print strings of the entry function
    */
-  private def parsePathString(path: List[String], brboProgram: BrboProgram): CounterexamplePath = {
+  private def parsePathString(path: List[String], brboProgram: BrboProgram): Path = {
     val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
 
     val fakeNode = CFGNode(Left(Skip()), "???", 0)
@@ -228,7 +228,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     assert(state.subState.currentNode == fakeNode)
     assert(state.subState.currentFunction == fakeFunction)
     assert(!state.shouldContinue)
-    CounterexamplePath(state.matchedNodes.reverse)
+    Path(state.matchedNodes.reverse)
   }
 
   private case class MatchResult(matched: Boolean, matchedExpression: Boolean, matchedTrueBranch: Boolean)

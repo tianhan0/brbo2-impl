@@ -1,7 +1,7 @@
 package brbo.backend.verifier
 
-import brbo.backend.verifier.cex.CounterexamplePath
+import brbo.backend.verifier.cex.Path
 
-class SymbolicExecution(counterexamplePath: CounterexamplePath) {
+class SymbolicExecution(counterexamplePath: Path) {
 
 }

@@ -53,7 +53,7 @@ class CommandLineArguments {
       case "full" => FULL_AMORTIZE
       case "selective" => SELECTIVE_AMORTIZE
       case "all" => ALL_AMORTIZE
-      case "unknown" => UNKNOWN
+      case "unknown" => UNKNOWN_MODE
     }
   }
 
@@ -150,7 +150,7 @@ object CommandLineArguments {
   val DEFAULT_ARGUMENTS: CommandLineArguments = {
     val arguments = new CommandLineArguments
     arguments.initialize(
-      UNKNOWN,
+      UNKNOWN_MODE,
       debugMode = false,
       "",
       skipSanityCheck = false,
@@ -167,7 +167,7 @@ object CommandLineArguments {
   val DEBUG_MODE_ARGUMENTS: CommandLineArguments = {
     val arguments = new CommandLineArguments
     arguments.initialize(
-      UNKNOWN,
+      UNKNOWN_MODE,
       debugMode = true,
       "",
       skipSanityCheck = false,

@@ -1,8 +1,8 @@
 package brbo.backend.verifier
 
-import brbo.common.{CommandLineArguments, MyLogger}
 import brbo.common.ast.BrboProgram
-import org.apache.logging.log4j.{LogManager, Logger}
+import brbo.common.{CommandLineArguments, MyLogger}
+import org.apache.logging.log4j.LogManager
 
 abstract class Verifier {
   val commandLineArguments: CommandLineArguments

@@ -17,9 +17,9 @@ class UAutomizerVerifier(override val commandLineArguments: CommandLineArguments
   override val toolDirectory: String = commandLineArguments.getModelCheckerDirectory
   private val TIMEOUT = commandLineArguments.getModelCheckerTimeout // Unit: Seconds
 
-  private val VIOLATION_WITNESS = s"$toolDirectory/witness.graphml"
+  private val VIOLATION_WITNESS_FILE = s"$toolDirectory/witness.graphml"
   private val PROPERTY_FILE = s"$toolDirectory/unreach-call.prp"
-  private val EXECUTABLE = s"$toolDirectory/Ultimate.py"
+  private val EXECUTABLE_FILE = s"$toolDirectory/Ultimate.py"
 
   override def verify(program: BrboProgram): VerifierResult = {
     val result: VerifierRawResult = {
@@ -27,26 +27,27 @@ class UAutomizerVerifier(override val commandLineArguments: CommandLineArguments
       logger.debug(s"Input to UAutomizer:\n$cSourceCode")
       runAndGetStdOutput(cSourceCode) match {
         case Some(output) =>
-          if (output.endsWith("Result:FALSE")) VerifierRawResult.FALSE
-          else if (output.endsWith("Result:TRUE")) VerifierRawResult.TRUE
-          else if (output.endsWith("Result:UNKNOWN")) VerifierRawResult.UNKNOWN
+          if (output.endsWith("Result:FALSE")) VerifierRawResult.FALSE_RESULT
+          else if (output.endsWith("Result:TRUE")) VerifierRawResult.TRUE_RESULT
+          else if (output.endsWith("Result:UNKNOWN")) VerifierRawResult.UNKNOWN_RESULT
           else {
             logger.error(s"Cannot interpret results from `$toolName`:\n$output")
             throw new Exception
           }
-        case None => VerifierRawResult.UNKNOWN
+        case None => VerifierRawResult.UNKNOWN_RESULT
       }
     }
 
     result match {
-      case VerifierRawResult.FALSE =>
-        val violationWitnessFile = new File(VIOLATION_WITNESS)
+      case VerifierRawResult.FALSE_RESULT =>
+        val violationWitnessFile = new File(VIOLATION_WITNESS_FILE)
         assert(violationWitnessFile.exists())
 
-        val counterexamplePath: String = FileUtils.readFromFile(VIOLATION_WITNESS)
+        val counterexamplePath: String = FileUtils.readFromFile(VIOLATION_WITNESS_FILE)
         val parseCounterexamplePath = new ParseCounterexamplePath(commandLineArguments.getDebugMode)
         VerifierResult(result, Some(parseCounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, program)))
-      case VerifierRawResult.TRUE | VerifierRawResult.UNKNOWN => VerifierResult(result, None)
+      case VerifierRawResult.TRUE_RESULT | VerifierRawResult.UNKNOWN_RESULT => VerifierResult(result, None)
+      case VerifierRawResult.UNINITIALIZED => throw new Exception
     }
   }
 
@@ -61,11 +62,11 @@ class UAutomizerVerifier(override val commandLineArguments: CommandLineArguments
     }
 
     try {
-      val deleteCounterexampleFile = s"rm $VIOLATION_WITNESS"
+      val deleteCounterexampleFile = s"rm $VIOLATION_WITNESS_FILE"
       logger.trace(s"Delete violation witness file: `$deleteCounterexampleFile`")
       deleteCounterexampleFile.run(ProcessLogger(stdout append _, stderr append _))
 
-      val runVerifier = s"$EXECUTABLE --spec $PROPERTY_FILE --architecture 64bit --file ${file.toAbsolutePath} --witness-type violation_witness"
+      val runVerifier = s"$EXECUTABLE_FILE --spec $PROPERTY_FILE --architecture 64bit --file ${file.toAbsolutePath} --witness-type violation_witness"
       val process = runVerifier.run(ProcessLogger(stdout append _, stderr append _))
       logger.trace(s"Run `$toolName`: `$runVerifier`")
 

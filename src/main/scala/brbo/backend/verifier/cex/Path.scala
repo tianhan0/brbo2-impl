@@ -3,7 +3,7 @@ package brbo.backend.verifier.cex
 import brbo.common.TypeUtils.BrboType.BOOL
 import brbo.common.ast.PrettyPrintToC
 
-case class CounterexamplePath(pathNodes: List[PathNode]) extends PrettyPrintToC {
+case class Path(pathNodes: List[PathNode]) extends PrettyPrintToC {
   pathNodes.map(pathNode => pathNode.node.value).foreach({
     case Left(_) =>
     case Right(expr) => assert(expr.typ == BOOL)

@@ -1,6 +1,7 @@
 package brbo.common
 
-import org.apache.logging.log4j.Logger
+import brbo.backend.verifier.cex.ParseCounterexamplePath
+import org.apache.logging.log4j.{LogManager, Logger}
 
 case class MyLogger(logger: Logger, debugMode: Boolean) {
   def traceOrError(message: String): Unit = {
@@ -24,4 +25,8 @@ case class MyLogger(logger: Logger, debugMode: Boolean) {
   def info(message: String): Unit = logger.info(message)
 
   def error(message: String): Unit = logger.error(message)
+}
+
+object MyLogger {
+  def createLogger[T](clazz: Class[T], debugMode: Boolean): MyLogger = MyLogger(LogManager.getLogger(clazz), debugMode)
 }
