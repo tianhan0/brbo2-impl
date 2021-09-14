@@ -1,6 +1,8 @@
-package brbo.backend.verifier
+package brbo.backend.verifier.cex
 
-import brbo.common.TypeUtils.BrboType.{BOOL, VOID}
+import brbo.backend.verifier.cex
+import brbo.common.MyLogger
+import brbo.common.TypeUtils.BrboType.VOID
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 import org.apache.logging.log4j.LogManager
@@ -17,21 +19,8 @@ import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-case class CounterexamplePath(nodes: List[(BrboFunction, CFGNode)]) extends PrettyPrintToC {
-  nodes.map(node => node._2.value).foreach({
-    case Left(_) =>
-    case Right(expr) => assert(expr.typ == BOOL)
-  })
-
-  override def prettyPrintToC(indent: Int): String = {
-    nodes.map({
-      case (function, node) => s"${node.prettyPrintToC()} [Function `${function.identifier}`]"
-    }).mkString("\n")
-  }
-}
-
-object CounterexamplePath {
-  private val logger = LogManager.getLogger("brbo.backend.verifier.CounterexamplePath")
+class ParseCounterexamplePath(debugMode: Boolean) {
+  private val logger = MyLogger(LogManager.getLogger(classOf[ParseCounterexamplePath]), debugMode)
 
   def graphMLToCounterexamplePath(graphMLString: String, brboProgram: BrboProgram): CounterexamplePath = {
     val vertexAttributes = new mutable.HashMap[String, mutable.HashMap[String, Attribute]]
@@ -62,11 +51,11 @@ object CounterexamplePath {
       lastVertex = Some(current)
     }
     path = path.reverse
-    logger.error(s"Counterexample path (as a list of strings):\n${path.mkString("\n")}")
+    logger.intoOrError(s"Counterexample path (as a list of strings):\n${path.mkString("\n")}")
 
     val counterexamplePath = parsePathString(path, brboProgram)
-    logger.error(s"Counterexample path (as a list of CFG nodes):\n${counterexamplePath.prettyPrintToC()}")
-    assert(counterexamplePath.nodes.nonEmpty)
+    logger.intoOrError(s"Counterexample path (as a list of CFG nodes):\n${counterexamplePath.prettyPrintToC()}")
+    assert(counterexamplePath.pathNodes.nonEmpty)
     counterexamplePath
   }
 
@@ -89,8 +78,8 @@ object CounterexamplePath {
      * @param state The current state in the traversal
      * @return The state where we need to stop the traversal
      */
-    def bfs(state: State): State = {
-      logger.error(s"Current state:\n$state")
+    def matchPath(state: State): State = {
+      logger.traceOrError(s"Current state:\n$state")
       if (!state.shouldContinue) return state
 
       val currentNode = state.subState.currentNode
@@ -103,13 +92,14 @@ object CounterexamplePath {
             case FunctionExit(_) | Return(None, _) => // These commands need not to be matched, since they don't appear in UAutomizer's outputs
               if (state.callStack.isEmpty) {
                 if (state.remainingPath.nonEmpty)
-                  throw new Exception(s"Exiting function `${currentFunction.identifier}`, but the call stack is empty and the remaining path is not empty: `${state.remainingPath}`")
+                  throw new Exception(s"Exiting function `${currentFunction.identifier}`, " +
+                    s"but the call stack is empty and the remaining path is not empty: `${state.remainingPath}`")
                 return State(SubState(fakeNode, processFunctionCalls = true, fakeFunction), Nil, state.matchedNodes, Nil, shouldContinue = false)
               }
               else {
                 val top = state.callStack.head
-                logger.error(s"Return to `$top`")
-                return bfs(State(top, state.callStack.tail, state.matchedNodes, state.remainingPath, state.shouldContinue))
+                logger.traceOrError(s"Return to `$top`")
+                return matchPath(State(top, state.callStack.tail, state.matchedNodes, state.remainingPath, state.shouldContinue))
               }
             case _ =>
           }
@@ -118,20 +108,20 @@ object CounterexamplePath {
 
       val newState: State = {
         if (!state.subState.processFunctionCalls) {
-          logger.error(s"Not process function calls in node `$currentNode`")
+          logger.traceOrError(s"Not process function calls in node `$currentNode`")
           state
         }
         else {
           // First, match against the sequence of function calls in the current node
           val functionCalls: List[FunctionCallExpr] = currentNode.getFunctionCalls
-          if (functionCalls.nonEmpty) logger.error(s"Found function calls in `$currentNode`: `$functionCalls`")
+          if (functionCalls.nonEmpty) logger.traceOrError(s"Found function calls in `$currentNode`: `$functionCalls`")
           val functions: List[(CFGNode, BrboFunction)] =
             functionCalls.flatMap({
               functionCall =>
                 cfg.cfgs.find({ case (function, _) => function.identifier == functionCall.identifier }) match {
                   case Some(value) => Some((value._2.root, value._1))
                   case None =>
-                    logger.error(s"Calling a function that has no CFG: `${functionCall.identifier}`")
+                    logger.traceOrError(s"Calling a function that has no CFG: `${functionCall.identifier}`")
                     None
                 }
             })
@@ -139,7 +129,7 @@ object CounterexamplePath {
           var i = 0
           while (i < functions.size && newState.shouldContinue) {
             val (functionEntry, function) = functions(i)
-            logger.error(s"Calling function: `${function.identifier}`")
+            logger.traceOrError(s"Calling function: `${function.identifier}`")
             val (returnTarget, processFunctionCalls) = {
               val skipCurrentNodeWhenReturn: Boolean = {
                 currentNode.value match {
@@ -162,8 +152,8 @@ object CounterexamplePath {
               }
               else (currentNode, false) // If not skipping the current node, then there is no need to process the function calls again
             }
-            logger.error(s"Set the return target: `$returnTarget` in function `${currentFunction.identifier}`. Process function calls: $processFunctionCalls.")
-            newState = bfs(
+            logger.traceOrError(s"Set the return target: `$returnTarget` in function `${currentFunction.identifier}`. Process function calls: $processFunctionCalls.")
+            newState = matchPath(
               State(
                 SubState(functionEntry, processFunctionCalls = true, function),
                 SubState(returnTarget, processFunctionCalls, currentFunction) :: state.callStack, // Push into the call stack
@@ -189,7 +179,7 @@ object CounterexamplePath {
           case Nil => throw new Exception(s"Match node `$currentNode` with an empty path")
           case ::(head, tail) =>
             val matchResult = matchNode(head, currentNode)
-            logger.error(s"Current node `$currentNode` ${if (matchResult.matched) "indeed matches" else "does not match"} path node `$head`")
+            logger.traceOrError(s"Current node `$currentNode` ${if (matchResult.matched) "indeed matches" else "does not match"} path node `$head`")
             if (!matchResult.matched) newState
             else {
               val newCurrentNode: CFGNode = {
@@ -218,23 +208,23 @@ object CounterexamplePath {
                     successorNodes.head
                   }
                 }
-                logger.error(s"Successor node: `$successorNode`")
+                logger.traceOrError(s"Successor node: `$successorNode`")
                 cfg.findNextNodeNotSkipped(successorNode)
               }
-              logger.error(s"Successor node (non-CFGOnly): `$newCurrentNode`")
+              logger.traceOrError(s"Successor node (non-CFGOnly): `$newCurrentNode`")
 
-              val newState2 = bfs(State(SubState(newCurrentNode, processFunctionCalls = true, currentFunction), newState.callStack,
-                (currentFunction, currentNode) :: newState.matchedNodes, tail, newState.shouldContinue))
-              assert(newState2.callStack == state.callStack, s"New call stack: `${newState2.callStack}`. Current call stack: `${state.callStack}`.")
-              newState2
+              // The new call stack might be different from the current call stack, because it might have processed function returns
+              // Every call to this function is responsible for maintaining the call stack in order for a potential recursive call to itself to work properly
+              matchPath(State(SubState(newCurrentNode, processFunctionCalls = true, currentFunction), newState.callStack,
+                cex.PathNode(currentNode, currentFunction) :: newState.matchedNodes, tail, newState.shouldContinue))
             }
         }
       }
     }
 
     val entryNode = cfg.cfgs(brboProgram.mainFunction).root
-    val state = bfs(State(SubState(entryNode, processFunctionCalls = true, brboProgram.mainFunction), Nil, Nil, path, shouldContinue = true))
-    logger.error(s"State after matching:\n$state")
+    val state = matchPath(State(SubState(entryNode, processFunctionCalls = true, brboProgram.mainFunction), Nil, Nil, path, shouldContinue = true))
+    logger.traceOrError(s"State after matching:\n$state")
     assert(state.subState.currentNode == fakeNode)
     assert(state.subState.currentFunction == fakeFunction)
     assert(!state.shouldContinue)
@@ -251,12 +241,12 @@ object CounterexamplePath {
     node.value match {
       case Left(command) =>
         val expected = expectedUAutomizerString(command)
-        logger.error(s"Expected UAutomizer string: `$expected` (`${command.getClass}`)")
+        logger.traceOrError(s"Expected UAutomizer string: `$expected` (`${command.getClass}`)")
         MatchResult(expected == exactString, matchedExpression = false, matchedTrueBranch = false)
       case Right(brboExpr) =>
         val expected = brboExpr.prettyPrintToCNoOuterBrackets
         val negated = s"!($expected)"
-        logger.error(s"Expected UAutomizer string: `$expected`. Negated: `$negated`. Exact string: `$exactString`.")
+        logger.traceOrError(s"Expected UAutomizer string: `$expected`. Negated: `$negated`. Exact string: `$exactString`.")
         val matchedTrueBranch = expected == exactString
         val matchedFalseBranch = negated == exactString
         MatchResult(matchedTrueBranch || matchedFalseBranch, matchedExpression = true, matchedTrueBranch)
@@ -288,7 +278,7 @@ object CounterexamplePath {
    */
   private case class State(subState: SubState,
                            callStack: List[SubState],
-                           matchedNodes: List[(BrboFunction, CFGNode)],
+                           matchedNodes: List[PathNode],
                            remainingPath: List[String],
                            shouldContinue: Boolean) {
     override def toString: String = {
@@ -296,7 +286,7 @@ object CounterexamplePath {
       val s2 = s"Current function: `${subState.currentFunction.identifier}`"
       val s3 = s"Process function calls: `${subState.processFunctionCalls}`"
       val s4 = s"Call stack: `${callStack.map({ subState => subState.toString })}`"
-      val s5 = s"Matched nodes: `${matchedNodes.map({ pair => s"`${pair._2.prettyPrintToC()}`" }).reverse}`"
+      val s5 = s"Matched nodes: `${matchedNodes.map({ pathNode => s"`${pathNode.node.prettyPrintToC()}`" }).reverse}`"
       val s6 = s"Remaining path: `$remainingPath`"
       val s7 = s"Should continue: `$shouldContinue`"
       List(s1, s2, s3, s4, s5, s6, s7).mkString("\n")

@@ -206,7 +206,7 @@ class Z3Solver {
 }
 
 object Z3Solver {
-  private val logger = LogManager.getLogger("brbo.common.Z3Solver")
+  private val logger = LogManager.getLogger(Z3Solver.getClass.getName)
 
   private val configuration = new java.util.HashMap[String, String]
   configuration.put("model", "true")

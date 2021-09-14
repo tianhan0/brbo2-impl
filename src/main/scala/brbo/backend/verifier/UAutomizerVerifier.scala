@@ -1,8 +1,9 @@
 package brbo.backend.verifier
 
 import brbo.backend.verifier.VerifierRawResult.VerifierRawResult
-import brbo.common.FileUtils
+import brbo.backend.verifier.cex.ParseCounterexamplePath
 import brbo.common.ast.BrboProgram
+import brbo.common.{CommandLineArguments, FileUtils}
 
 import java.io.{File, PrintWriter}
 import java.nio.file.Files
@@ -11,9 +12,14 @@ import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, Future, TimeoutException, blocking}
 import scala.sys.process.{ProcessLogger, _}
 
-class UAutomizerVerifier extends Verifier(toolName = "UAutomizer", toolPath = s"${System.getProperty("user.home")}/Documents/workspace/UAutomizer-linux") {
-  private val VIOLATION_WITNESS = s"$toolPath/witness.graphml"
-  private val TIMEOUT = 60 // Unit: Seconds
+class UAutomizerVerifier(override val commandLineArguments: CommandLineArguments) extends Verifier {
+  override val toolName = "UAutomizer"
+  override val toolDirectory: String = commandLineArguments.getModelCheckerDirectory
+  private val TIMEOUT = commandLineArguments.getModelCheckerTimeout // Unit: Seconds
+
+  private val VIOLATION_WITNESS = s"$toolDirectory/witness.graphml"
+  private val PROPERTY_FILE = s"$toolDirectory/unreach-call.prp"
+  private val EXECUTABLE = s"$toolDirectory/Ultimate.py"
 
   override def verify(program: BrboProgram): VerifierResult = {
     val result: VerifierRawResult = {
@@ -38,7 +44,8 @@ class UAutomizerVerifier extends Verifier(toolName = "UAutomizer", toolPath = s"
         assert(violationWitnessFile.exists())
 
         val counterexamplePath: String = FileUtils.readFromFile(VIOLATION_WITNESS)
-        VerifierResult(result, Some(CounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, program)))
+        val parseCounterexamplePath = new ParseCounterexamplePath(commandLineArguments.getDebugMode)
+        VerifierResult(result, Some(parseCounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, program)))
       case VerifierRawResult.TRUE | VerifierRawResult.UNKNOWN => VerifierResult(result, None)
     }
   }
@@ -58,7 +65,7 @@ class UAutomizerVerifier extends Verifier(toolName = "UAutomizer", toolPath = s"
       logger.trace(s"Delete violation witness file: `$deleteCounterexampleFile`")
       deleteCounterexampleFile.run(ProcessLogger(stdout append _, stderr append _))
 
-      val runVerifier = s"$toolPath/Ultimate.py --spec $toolPath/unreach-call.prp --architecture 64bit --file ${file.toAbsolutePath} --witness-type violation_witness"
+      val runVerifier = s"$EXECUTABLE --spec $PROPERTY_FILE --architecture 64bit --file ${file.toAbsolutePath} --witness-type violation_witness"
       val process = runVerifier.run(ProcessLogger(stdout append _, stderr append _))
       logger.trace(s"Run `$toolName`: `$runVerifier`")
 
@@ -96,4 +103,8 @@ class UAutomizerVerifier extends Verifier(toolName = "UAutomizer", toolPath = s"
         throw new RuntimeException(s"Error when running `$toolName`")
     }
   }
+}
+
+object UAutomizerVerifier {
+  val TOOL_DIRECTORY = s"${System.getProperty("user.home")}/Documents/workspace/UAutomizer-linux"
 }

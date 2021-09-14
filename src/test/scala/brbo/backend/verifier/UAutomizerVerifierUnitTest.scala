@@ -1,6 +1,7 @@
 package brbo.backend.verifier
 
-import brbo.TestCase
+import brbo.common.CommandLineArguments
+import brbo.{StringCompare, TestCase}
 import brbo.common.TypeUtils.BrboType.{BOOL, INT, VOID}
 import brbo.common.ast._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -8,8 +9,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 class UAutomizerVerifierUnitTest extends AnyFlatSpec {
   UAutomizerVerifierUnitTest.testCases.foreach({
     testCase =>
-      val verifier = new UAutomizerVerifier
-      verifier.verify(testCase.input.asInstanceOf[BrboProgram])
+      val verifier = new UAutomizerVerifier(CommandLineArguments.DEFAULT_ARGUMENTS)
+      val result = verifier.verify(testCase.input.asInstanceOf[BrboProgram])
+      assert(StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"Test `${testCase.name}` failed"))
   })
 }
 
@@ -39,17 +41,17 @@ object UAutomizerVerifierUnitTest {
       val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionTrue)))
       BrboProgram("test01", function, PreDefinedBrboFunctions.allFunctions)
     }
-    val test01Expected = """"""
+    val test01Expected = """VerifierResult(UNKNOWN,None)"""
 
     val test02 = {
       val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionFalse)))
       BrboProgram("test02", function, PreDefinedBrboFunctions.allFunctions)
     }
-    val test02Expected = """"""
+    val test02Expected = """VerifierResult(FALSE,Some(CounterexamplePath(List(int i = 0; [Function `main`], int R = 0; [Function `main`], !(cond) [Function `assume`], return __VERIFIER_nondet_int(); [Function `ndInt`], int x = ndInt(); [Function `ndBool`], !(cond) [Function `assume`], return x; [Function `ndBool`], (i < n) [Function `main`], int e = 0; [Function `main`], (i < 1) [Function `main`], e = a; [Function `main`], R = R + e; [Function `main`], i = i + 1; [Function `main`], (i < n) [Function `main`], int e = 0; [Function `main`], (i < 1) [Function `main`], e = b; [Function `main`], R = R + e; [Function `main`], i = i + 1; [Function `main`], (i < n) [Function `main`], !(cond) [Function `assert`], ERROR: __VERIFIER_error(); [Function `assert`]))))"""
 
     List[TestCase](
-      TestCase("Test 1", test01, test01Expected),
-      TestCase("Test 2", test02, test02Expected),
+      TestCase("Must be unknown", test01, test01Expected),
+      TestCase("Must fail", test02, test02Expected),
     )
   }
 }
