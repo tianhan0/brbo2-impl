@@ -278,24 +278,24 @@ case class ControlFlowGraph(entryNode: CFGNode,
     edges.map({ edge: DefaultEdge => jgraphtGraph.getEdgeTarget(edge) }).toSet
   }
 
-  def findNextNodeNotSkipped(node: CFGNode): Option[CFGNode] = {
-    def helper(node2: CFGNode): Option[CFGNode] = {
+  def findNextNodeNotSkipped(node: CFGNode): CFGNode = {
+    def helper(node2: CFGNode): CFGNode = {
       val successorNodes = findSuccessorNodes(node2)
       successorNodes.size match {
-        case 0 => None
         case 1 => findNextNodeNotSkipped(successorNodes.head)
-        case _ => throw new Exception(s"Node `${node2.prettyPrintToC()}` must have 0 or 1 successor node!")
+        case _ => throw new Exception(s"Node `${node2.prettyPrintToC()}` must have 1 successor node!")
       }
     }
 
     node.value match {
       case Left(command) =>
         command match {
-          case _: CFGOnly => helper(node)
-          case Skip(_) => helper(node)
-          case _ => Some(node)
+          case FunctionExit(_) => node // Not skip function exit
+          case _: CFGOnly => helper(node) // Skip CFGOnly nodes, except for FunctionExit
+          case Skip(_) => helper(node) // Skip the empty command
+          case _ => node
         }
-      case Right(_) => Some(node)
+      case Right(_) => node
     }
   }
 

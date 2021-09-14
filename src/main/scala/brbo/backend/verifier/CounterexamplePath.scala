@@ -1,6 +1,6 @@
 package brbo.backend.verifier
 
-import brbo.common.TypeUtils.BrboType.BOOL
+import brbo.common.TypeUtils.BrboType.{BOOL, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 import org.apache.logging.log4j.LogManager
@@ -13,6 +13,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator
 import org.jgrapht.util.SupplierUtil
 
 import java.util.function.Supplier
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -69,24 +70,6 @@ object CounterexamplePath {
     counterexamplePath
   }
 
-  case class MatchResult(matched: Boolean, matchedExpression: Boolean, matchedTrueBranch: Boolean)
-
-  // TODO: Parse pathNode into an AST for comparison, unless we can assume UAutomizer outputs commands and expressions in a same syntax as brbo2
-  private def matchNode(pathNode: String, node: CFGNode): MatchResult = {
-    val exactString =
-      if (pathNode.startsWith("[") && pathNode.endsWith("]")) pathNode.substring(1, pathNode.length - 1)
-      else pathNode
-    node.value match {
-      case Left(_) => MatchResult(node.prettyPrintToC() == exactString, matchedExpression = false, matchedTrueBranch = false)
-      case Right(_) =>
-        val negated = s"!(${node.prettyPrintToC()})"
-        logger.error(s"Negated: `$negated`. Exact string: `$exactString`.")
-        val matchedTrueBranch = node.prettyPrintToC() == exactString
-        val matchedFalseBranch = negated == exactString
-        MatchResult(matchedTrueBranch || matchedFalseBranch, matchedExpression = true, matchedTrueBranch)
-    }
-  }
-
   /**
    *
    * @param path        A counterexample path, which is a list of strings
@@ -96,230 +79,238 @@ object CounterexamplePath {
   private def parsePathString(path: List[String], brboProgram: BrboProgram): CounterexamplePath = {
     val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
 
-    /*def findMatchedNodes(pathNode: String, nodesToMatch: Set[CFGNode]): Set[CFGNode] = {
-      val exactString =
-        if (pathNode.startsWith("[") && pathNode.endsWith("]")) pathNode.substring(1, pathNode.length - 2)
-        else pathNode
-      nodesToMatch.filter(node => matchNode(exactString, node))
-    }*/
-
-    /**
-     * @param currentNode     The node to be matched
-     * @param currentFunction The function that the current node belongs to
-     * @param callStack       The current call stack. The head is the immediate caller of the current function,
-     *                        together with the next node in this caller that needs to be matched (or, the return target)
-     * @param matchedNodes    The sequence of CFG nodes that have been matched
-     * @param remainingPath   The remaining path (which is a string) to be matched
-     * @param shouldContinue  Whether to continue to match nodes, if starting from this state
-     */
-    case class State(currentNode: CFGNode, currentFunction: BrboFunction, callStack: List[(BrboFunction, CFGNode)],
-                     matchedNodes: List[(BrboFunction, CFGNode)], remainingPath: List[String], shouldContinue: Boolean) {
-      override def toString: String = {
-        val s1 = s"Current node: `${currentNode.prettyPrintToC()}`"
-        val s2 = s"Current function: `${currentFunction.identifier}`"
-        val s3 = s"Call stack: `${callStack.map(pair => s"`${pair._2.prettyPrintToC()}` in function `${pair._1.identifier}`")}"
-        val s4 = s"Matched nodes: `${matchedNodes.map({ pair => s"`${pair._2.prettyPrintToC()}`" }).reverse}`"
-        val s5 = s"Remaining path: `$remainingPath`"
-        val s6 = s"Should continue: `$shouldContinue`"
-        List(s1, s2, s3, s4, s5, s6).mkString("\n")
-      }
-    }
+    val fakeNode = CFGNode(Left(Skip()), "???", 0)
+    val fakeFunction = BrboFunction("???", VOID, Nil, Block(List(Skip())))
 
     /**
      *
      * Traverse the CFG with breadth first search, starting from the given node, until the newly explored sequence of nodes no longer matches the path
      *
      * @param state The current state in the traversal
-     * @return The next state in the traversal
+     * @return The state where we need to stop the traversal
      */
     def bfs(state: State): State = {
-      logger.error(s"Current state: `$state`")
-      val notContinueState = State(state.currentNode, state.currentFunction, Nil, Nil, Nil, shouldContinue = false)
-      if (!state.shouldContinue) return notContinueState
+      logger.error(s"Current state:\n$state")
+      if (!state.shouldContinue) return state
 
-      // First, match against the sequence of function calls in the current node
-      val functionCalls: List[FunctionCallExpr] = state.currentNode.getFunctionCalls
-      logger.error(s"Found function calls in `${state.currentNode}`: `$functionCalls`")
-      val functions: List[(CFGNode, BrboFunction)] =
-        functionCalls.flatMap({
-          functionCall =>
-            cfg.cfgs.find({ case (function, _) => function.identifier == functionCall.identifier }) match {
-              case Some(value) => Some((value._2.root, value._1))
-              case None =>
-                logger.trace(s"Calling a function that has no CFG: `${functionCall.identifier}`")
-                None
-            }
-        })
-      val newState: State = {
-        var newState = state
-        var i = 0
-        while (i < functions.size && newState.shouldContinue) {
-          val (functionEntry, function) = functions(i)
-          logger.error(s"Match function call: `${function.identifier}`")
-          newState = bfs(State(functionEntry, function, (state.currentFunction, state.currentNode) :: state.callStack,
-            newState.matchedNodes, newState.remainingPath, newState.shouldContinue))
-          i = i + 1
-        }
-        newState
+      val currentNode = state.subState.currentNode
+      val currentFunction = state.subState.currentFunction
+
+      // Pop from the call stack
+      currentNode.value match {
+        case Left(command) =>
+          command match {
+            case FunctionExit(_) | Return(None, _) => // These commands need not to be matched, since they don't appear in UAutomizer's outputs
+              if (state.callStack.isEmpty) {
+                if (state.remainingPath.nonEmpty)
+                  throw new Exception(s"Exiting function `${currentFunction.identifier}`, but the call stack is empty and the remaining path is not empty: `${state.remainingPath}`")
+                return State(SubState(fakeNode, processFunctionCalls = true, fakeFunction), Nil, state.matchedNodes, Nil, shouldContinue = false)
+              }
+              else {
+                val top = state.callStack.head
+                logger.error(s"Return to `$top`")
+                return bfs(State(top, state.callStack.tail, state.matchedNodes, state.remainingPath, state.shouldContinue))
+              }
+            case _ =>
+          }
+        case Right(_) =>
       }
 
-      if (!newState.shouldContinue) notContinueState
-      else {
-        assert(newState.callStack == state.callStack)
-        newState.remainingPath match {
-          case Nil => newState
-          case ::(head, tail) =>
-            val matchResult = matchNode(head, state.currentNode)
-            logger.error(s"Current node `${state.currentNode}` ${if (matchResult.matched) "does" else "does not"} match path node `$head`")
-            if (!matchResult.matched) {
-              notContinueState
+      val newState: State = {
+        if (!state.subState.processFunctionCalls) {
+          logger.error(s"Not process function calls in node `$currentNode`")
+          state
+        }
+        else {
+          // First, match against the sequence of function calls in the current node
+          val functionCalls: List[FunctionCallExpr] = currentNode.getFunctionCalls
+          if (functionCalls.nonEmpty) logger.error(s"Found function calls in `$currentNode`: `$functionCalls`")
+          val functions: List[(CFGNode, BrboFunction)] =
+            functionCalls.flatMap({
+              functionCall =>
+                cfg.cfgs.find({ case (function, _) => function.identifier == functionCall.identifier }) match {
+                  case Some(value) => Some((value._2.root, value._1))
+                  case None =>
+                    logger.error(s"Calling a function that has no CFG: `${functionCall.identifier}`")
+                    None
+                }
+            })
+          var newState = state
+          var i = 0
+          while (i < functions.size && newState.shouldContinue) {
+            val (functionEntry, function) = functions(i)
+            logger.error(s"Calling function: `${function.identifier}`")
+            val (returnTarget, processFunctionCalls) = {
+              val skipCurrentNodeWhenReturn: Boolean = {
+                currentNode.value match {
+                  case Left(command) =>
+                    command match {
+                      case FunctionCall(variable, _, _) =>
+                        variable match {
+                          case Some(_) => false
+                          case None => true // Skip function calls whose return values are not assigned to any variable
+                        }
+                      case _ => false
+                    }
+                  case Right(_) => false
+                }
+              }
+              if (skipCurrentNodeWhenReturn) {
+                val successorNodes = cfg.findSuccessorNodes(currentNode)
+                assert(successorNodes.size == 1)
+                (cfg.findNextNodeNotSkipped(successorNodes.head), true) // If skipping the current node, then must process function calls for the next node
+              }
+              else (currentNode, false) // If not skipping the current node, then there is no need to process the function calls again
             }
+            logger.error(s"Set the return target: `$returnTarget` in function `${currentFunction.identifier}`. Process function calls: $processFunctionCalls.")
+            newState = bfs(
+              State(
+                SubState(functionEntry, processFunctionCalls = true, function),
+                SubState(returnTarget, processFunctionCalls, currentFunction) :: state.callStack, // Push into the call stack
+                newState.matchedNodes, newState.remainingPath, newState.shouldContinue
+              )
+            )
+            i = i + 1
+          }
+          newState
+        }
+      }
+
+      if (!newState.shouldContinue) newState
+      else {
+        assert(newState.callStack == state.callStack,
+          s"New call stack: ${newState.callStack}.\n Old call stack: ${state.callStack}.")
+        assert(currentNode == newState.subState.currentNode,
+          s"Current node: `$currentNode`. Node from new state: `${newState.subState.currentNode}`")
+        assert(currentFunction == newState.subState.currentFunction,
+          s"Current function: `${currentFunction.identifier}`. Function from new state: `${newState.subState.currentFunction.identifier}`")
+
+        newState.remainingPath match {
+          case Nil => throw new Exception(s"Match node `$currentNode` with an empty path")
+          case ::(head, tail) =>
+            val matchResult = matchNode(head, currentNode)
+            logger.error(s"Current node `$currentNode` ${if (matchResult.matched) "indeed matches" else "does not match"} path node `$head`")
+            if (!matchResult.matched) newState
             else {
-              val successorNode: Option[CFGNode] = {
-                val successorNodes: Option[CFGNode] = {
-                  val successorNodes = cfg.findSuccessorNodes(state.currentNode)
-                  assert(successorNodes.size <= 2)
+              val newCurrentNode: CFGNode = {
+                val successorNode: CFGNode = {
+                  val successorNodes = cfg.findSuccessorNodes(currentNode)
                   if (matchResult.matchedExpression) {
+                    // Matched an expression
                     assert(successorNodes.size == 2)
                     // Find the branch to proceed
                     val (trueNode: CFGNode, falseNode: CFGNode) = {
                       val n1 = successorNodes.head
                       val n2 = successorNodes.tail.head
-                      val e1 = cfg.jgraphtGraph.getEdge(state.currentNode, n1)
-                      val e2 = cfg.jgraphtGraph.getEdge(state.currentNode, n2)
+                      val e1 = cfg.jgraphtGraph.getEdge(currentNode, n1)
+                      val e2 = cfg.jgraphtGraph.getEdge(currentNode, n2)
                       (cfg.jgraphtGraph.getEdgeWeight(e1), cfg.jgraphtGraph.getEdgeWeight(e2)) match {
                         case (ControlFlowGraph.TRUE_BRANCH_WEIGHT, ControlFlowGraph.FALSE_BRANCH_WEIGHT) => (n1, n2)
                         case (ControlFlowGraph.FALSE_BRANCH_WEIGHT, ControlFlowGraph.TRUE_BRANCH_WEIGHT) => (n2, n1)
                         case _ => throw new Exception
                       }
                     }
-                    val theNodeToProcess = if (matchResult.matchedTrueBranch) trueNode else falseNode
-                    cfg.findNextNodeNotSkipped(theNodeToProcess)
+                    if (matchResult.matchedTrueBranch) trueNode else falseNode
                   }
                   else {
-                    successorNodes.size match {
-                      case 0 => None
-                      case 1 => cfg.findNextNodeNotSkipped(successorNodes.head)
-                    }
+                    // Matched a command
+                    assert(successorNodes.size == 1)
+                    successorNodes.head
                   }
                 }
-                logger.error(s"Successor node (non-CFGOnly): `$successorNodes`")
-
-                if (successorNodes.nonEmpty) successorNodes // A non-empty set of new nodes to match
-                else { // There is no successor node
-                  if (tail.isEmpty) successorNodes // There is no more path nodes to parse
-                  else {
-                    state.currentNode.value match {
-                      case Left(command) =>
-                        logger.error(s"Current node `$command` has no successor nodes")
-                        assert(command.isInstanceOf[Return], s"Command $command is not a return")
-                        assert(state.callStack.nonEmpty)
-                        logger.error(s"Let the successor node be the return target `${state.callStack.head._2}`")
-                        Some(state.callStack.head._2)
-                      case Right(_) => throw new Exception(s"Cannot find non-CFGOnly successor nodes for node `${state.currentNode}`")
-                    }
-                  }
-                }
+                logger.error(s"Successor node: `$successorNode`")
+                cfg.findNextNodeNotSkipped(successorNode)
               }
+              logger.error(s"Successor node (non-CFGOnly): `$newCurrentNode`")
 
-              successorNode match {
-                case Some(successorNode2) =>
-                  val newState2 = bfs(State(successorNode2, state.currentFunction, state.callStack,
-                    (state.currentFunction, state.currentNode) :: newState.matchedNodes, tail, shouldContinue = true))
-                  assert(newState2.callStack == state.callStack)
-                  // Only keep new states that allow continuing to match
-                  if (newState2.shouldContinue) newState2
-                  else notContinueState
-                case None => notContinueState
-              }
+              val newState2 = bfs(State(SubState(newCurrentNode, processFunctionCalls = true, currentFunction), newState.callStack,
+                (currentFunction, currentNode) :: newState.matchedNodes, tail, newState.shouldContinue))
+              assert(newState2.callStack == state.callStack, s"New call stack: `${newState2.callStack}`. Current call stack: `${state.callStack}`.")
+              newState2
             }
         }
       }
     }
 
-    // Match the head of the path against all possible next nodes
-    /*def helper(path: List[String], nodesToMatch: Set[CFGNode], lastMatchedNode: Option[CFGNode], lastMatchedNodesInCaller: List[CFGNode]): Option[CounterexamplePath] = {
-      nodesToMatch.foreach({
-        node =>
-          node.value match {
-            case Left(command) => assert(!command.isInstanceOf[CFGOnly]) // CFGOnly nodes must be properly skipped during the match
-            case Right(_) =>
-          }
-      })
-      logger.error(s"path: $path")
-      logger.error(s"nodesToMatch: $nodesToMatch")
-      logger.error(s"lastMatchedNode: $lastMatchedNode")
-      logger.error(s"lastMatchedNodesInCaller: $lastMatchedNodesInCaller")
+    val entryNode = cfg.cfgs(brboProgram.mainFunction).root
+    val state = bfs(State(SubState(entryNode, processFunctionCalls = true, brboProgram.mainFunction), Nil, Nil, path, shouldContinue = true))
+    logger.error(s"State after matching:\n$state")
+    assert(state.subState.currentNode == fakeNode)
+    assert(state.subState.currentFunction == fakeFunction)
+    assert(!state.shouldContinue)
+    CounterexamplePath(state.matchedNodes.reverse)
+  }
 
-      path match {
-        case Nil => Some(CounterexamplePath(Nil))
-        case ::(head, tail) =>
-          val matchedNodes: Set[CFGNode] = findMatchedNodes(head, nodesToMatch ++ functionEntryNodes)
-          val allCounterexamplePaths: Set[(CFGNode, CounterexamplePath)] =
-            matchedNodes.flatMap({
-              matchedNode =>
-                val startAnotherFunction: Boolean =
-                  lastMatchedNode match {
-                    case Some(lastMatchedNode2) =>
-                      // Assume any two CFGs of two functions are disconnected
-                      logger.error(s"$lastMatchedNode2, $matchedNode, ${cfg.pathExists(lastMatchedNode2, matchedNode)}")
-                      if (cfg.pathExists(lastMatchedNode2, matchedNode)) false // Continue to match in the current function
-                      else true // Match in another function
-                    case None => false // No node has been matched (because we have just started)
-                  }
+  private case class MatchResult(matched: Boolean, matchedExpression: Boolean, matchedTrueBranch: Boolean)
 
-                val newNodesToMatch: Set[CFGNode] = {
-                  val nodesToMatchInCurrentFunction: Set[CFGNode] = cfg.findSuccessorNodesNonCFGOnly(matchedNode) // Skip CFGOnly nodes
-                  if (nodesToMatchInCurrentFunction.isEmpty) { // There is no successor node
-                    if (tail.nonEmpty) {
-                      matchedNode.value match {
-                        case Left(command) =>
-                          if (command.isInstanceOf[Return]) {
-                            val lastMatchedNodeInCaller: CFGNode =
-                              if (startAnotherFunction) lastMatchedNode.get // TODO
-                              else lastMatchedNodesInCaller.head // TODO
+  // TODO: Parse pathNode into an AST for comparison, unless we can assume UAutomizer outputs commands and expressions in a same syntax as brbo2
+  private def matchNode(pathNode: String, node: CFGNode): MatchResult = {
+    val exactString =
+      if (pathNode.startsWith("[") && pathNode.endsWith("]")) pathNode.substring(1, pathNode.length - 1)
+      else pathNode
+    node.value match {
+      case Left(command) =>
+        val expected = expectedUAutomizerString(command)
+        logger.error(s"Expected UAutomizer string: `$expected` (`${command.getClass}`)")
+        MatchResult(expected == exactString, matchedExpression = false, matchedTrueBranch = false)
+      case Right(brboExpr) =>
+        val expected = brboExpr.prettyPrintToCNoOuterBrackets
+        val negated = s"!($expected)"
+        logger.error(s"Expected UAutomizer string: `$expected`. Negated: `$negated`. Exact string: `$exactString`.")
+        val matchedTrueBranch = expected == exactString
+        val matchedFalseBranch = negated == exactString
+        MatchResult(matchedTrueBranch || matchedFalseBranch, matchedExpression = true, matchedTrueBranch)
+    }
+  }
 
-                            val edges2 = cfg.jgraphtGraph.outgoingEdgesOf(lastMatchedNodeInCaller).asScala
-                            edges2.map({ edge: DefaultEdge => cfg.jgraphtGraph.getEdgeTarget(edge) }).toSet
-                          }
-                          else throw new Exception(s"CFG node `$matchedNode` is matched with `$head`, but it does not have any successor nodes`!")
-                        case Right(_) => throw new Exception(s"CFG node `$matchedNode` is matched with `$head`, but it does not have any successor nodes`!")
-                      }
-                    }
-                    else nodesToMatchInCurrentFunction // There is no more path nodes to parse
-                  }
-                  else nodesToMatchInCurrentFunction // A non-empty set of new nodes to match
-                }
-
-                val newLastMatchedNodesInCaller = {
-                  if (startAnotherFunction) matchedNode :: lastMatchedNodesInCaller // Match in another function
-                  else lastMatchedNodesInCaller // Continue to match in the current function
-                }
-
-                helper(tail, newNodesToMatch, Some(matchedNode), newLastMatchedNodesInCaller) match {
-                  case Some(counterexamplePath) => Some(matchedNode, counterexamplePath)
-                  case None => None
-                }
-            })
-          allCounterexamplePaths.size match {
-            case 0 => None
-            case 1 =>
-              val counterexamplePath = allCounterexamplePaths.head
-              Some(CounterexamplePath(counterexamplePath._1 :: counterexamplePath._2.nodes))
-            case _ =>
-              val newline = "\n"
-              throw new Exception(s"Found multiple counterexample paths:\n${allCounterexamplePaths.mkString(newline)}")
-          }
-      }
+  @tailrec
+  private def expectedUAutomizerString(command: Command): String = {
+    def getRidOfSemicolon(command2: Command): String = {
+      val s = command2.prettyPrintToC()
+      assert(s.endsWith(";"))
+      s.substring(0, s.length - 1)
     }
 
-    helper(path, Set(cfg.entryNode), None, Nil)*/
+    command match {
+      case Assignment(_, _, _) | FunctionCall(_, _, _) => getRidOfSemicolon(command)
+      case LabeledCommand(_, command2, _) => expectedUAutomizerString(command2)
+      case _ => command.prettyPrintToC()
+    }
+  }
 
-    val entryNode = cfg.cfgs(brboProgram.mainFunction).root
-    val state = bfs(State(entryNode, brboProgram.mainFunction, Nil, Nil, path, shouldContinue = true))
-    logger.error(s"State after matching: $state")
-    assert(state.shouldContinue)
-    CounterexamplePath(state.matchedNodes.reverse)
+  /**
+   * @param subState       The current substate
+   * @param callStack      The current call stack. The head is the immediate caller of the current function,
+   *                       together with the next node in this caller that needs to be matched (or, the return target)
+   * @param matchedNodes   The sequence of CFG nodes that have been matched
+   * @param remainingPath  The remaining path (which is a string) to be matched
+   * @param shouldContinue Whether to continue to match nodes, if starting from this state
+   */
+  private case class State(subState: SubState,
+                           callStack: List[SubState],
+                           matchedNodes: List[(BrboFunction, CFGNode)],
+                           remainingPath: List[String],
+                           shouldContinue: Boolean) {
+    override def toString: String = {
+      val s1 = s"Current node: `${subState.currentNode.prettyPrintToC()}`"
+      val s2 = s"Current function: `${subState.currentFunction.identifier}`"
+      val s3 = s"Process function calls: `${subState.processFunctionCalls}`"
+      val s4 = s"Call stack: `${callStack.map({ subState => subState.toString })}`"
+      val s5 = s"Matched nodes: `${matchedNodes.map({ pair => s"`${pair._2.prettyPrintToC()}`" }).reverse}`"
+      val s6 = s"Remaining path: `$remainingPath`"
+      val s7 = s"Should continue: `$shouldContinue`"
+      List(s1, s2, s3, s4, s5, s6, s7).mkString("\n")
+    }
+  }
+
+  /**
+   *
+   * @param currentNode          The node to be matched
+   * @param processFunctionCalls Whether to process the function calls in the current node
+   * @param currentFunction      The function that the current node belongs to
+   */
+  private case class SubState(currentNode: CFGNode, processFunctionCalls: Boolean, currentFunction: BrboFunction) {
+    override def toString: String = s"Node ${currentNode.prettyPrintToC()} in function `${currentFunction.identifier}` (Process function calls: $processFunctionCalls)"
   }
 
   // Copied from https://github.com/jgrapht/jgrapht/blob/6aba8e81053660997fe681c50974c07e312027d1/jgrapht-io/src/test/java/org/jgrapht/nio/graphml/GraphMLImporterTest.java

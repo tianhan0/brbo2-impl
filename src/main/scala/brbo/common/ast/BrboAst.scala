@@ -113,10 +113,10 @@ case class Assignment(variable: Identifier, expression: BrboExpr, uuid: UUID = U
   override def getFunctionCalls: List[FunctionCallExpr] = expression.getFunctionCalls
 }
 
-case class FunctionCall(identifier: Option[Identifier], functionCallExpr: FunctionCallExpr, uuid: UUID = UUID.randomUUID()) extends Command {
+case class FunctionCall(variable: Option[Identifier], functionCallExpr: FunctionCallExpr, uuid: UUID = UUID.randomUUID()) extends Command {
   override def prettyPrintToC(indent: Int): String = {
     val indentString = " " * indent
-    identifier match {
+    variable match {
       case Some(value) => s"$indentString${value.prettyPrintToC()} = ${functionCallExpr.prettyPrintToC()};"
       case None => s"$indentString${functionCallExpr.prettyPrintToC()};"
     }
