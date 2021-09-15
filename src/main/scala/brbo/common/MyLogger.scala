@@ -25,6 +25,8 @@ case class MyLogger(logger: Logger, debugMode: Boolean) {
   def info(message: String): Unit = logger.info(message)
 
   def error(message: String): Unit = logger.error(message)
+
+  def warn(message: String): Unit = logger.warn(message)
 }
 
 object MyLogger {

@@ -233,7 +233,8 @@ class ParseCounterexamplePath(debugMode: Boolean) {
 
   private case class MatchResult(matched: Boolean, matchedExpression: Boolean, matchedTrueBranch: Boolean)
 
-  // TODO: Parse pathNode into an AST for comparison, unless we can assume UAutomizer outputs commands and expressions in a same syntax as brbo2
+  // In order to get an AST node from a string, we probably do not need to parse pathNode into an AST,
+  // because the input to UAutomizer is always the result of prettyPrintToC(), which we compare against with the result of invoking prettyPrintToC() on AST nodes
   private def matchNode(pathNode: String, node: CFGNode): MatchResult = {
     val exactString =
       if (pathNode.startsWith("[") && pathNode.endsWith("]")) pathNode.substring(1, pathNode.length - 1)

@@ -35,8 +35,8 @@ case class CFGNode(value: Either[Command, BrboExpr], functionName: String, id: I
 
   override def toString: String = {
     value match {
-      case Left(command) => s"($id) ${command.prettyPrintPrintToCFG}"
-      case Right(expr) => s"($id) ${expr.prettyPrintPrintToCFG}"
+      case Left(command) => s"($id) ${command.prettyPrintToCFG}"
+      case Right(expr) => s"($id) ${expr.prettyPrintToCFG}"
     }
   }
 

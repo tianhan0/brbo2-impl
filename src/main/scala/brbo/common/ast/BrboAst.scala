@@ -1,7 +1,9 @@
 package brbo.common.ast
 
+import brbo.common.GhostVariableTyp._
+import brbo.common.GhostVariableUtils
 import brbo.common.TypeUtils.BrboType
-import brbo.common.TypeUtils.BrboType.{BOOL, BrboType, INT, VOID}
+import brbo.common.TypeUtils.BrboType._
 
 import java.util.UUID
 
@@ -25,7 +27,7 @@ abstract class BrboAst extends PrettyPrintToC {
   override def toString: String = prettyPrintToC()
 }
 
-abstract class Command extends BrboAst with PrettyPrintPrintToCFG with GetFunctionCalls
+abstract class Command extends BrboAst with PrettyPrintToCFG with GetFunctionCalls
 
 abstract class Statement extends BrboAst
 
@@ -95,7 +97,7 @@ case class VariableDeclaration(variable: Identifier, initialValue: BrboExpr, uui
     s"$indentString${BrboType.toCString(variable.typ)} ${variable.identifier} = $initialValueString;"
   }
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = initialValue.getFunctionCalls
 }
@@ -108,7 +110,7 @@ case class Assignment(variable: Identifier, expression: BrboExpr, uuid: UUID = U
     s"$indentString${variable.identifier} = ${expression.prettyPrintToCNoOuterBrackets};"
   }
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = expression.getFunctionCalls
 }
@@ -122,7 +124,7 @@ case class FunctionCall(variable: Option[Identifier], functionCallExpr: Function
     }
   }
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = functionCallExpr.getFunctionCalls
 }
@@ -133,7 +135,7 @@ case class Skip(uuid: UUID = UUID.randomUUID()) extends Command {
     s"$indentString;"
   }
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 }
@@ -149,7 +151,7 @@ case class Return(value: Option[BrboExpr], uuid: UUID = UUID.randomUUID()) exten
     s"${indentString}return$valueString;"
   }
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = {
     value match {
@@ -165,7 +167,7 @@ case class Break(uuid: UUID = UUID.randomUUID()) extends Command {
     s"${indentString}break;"
   }
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 }
@@ -176,7 +178,7 @@ case class Continue(uuid: UUID = UUID.randomUUID()) extends Command {
     s"${indentString}continue;"
   }
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 }
@@ -189,7 +191,7 @@ case class LabeledCommand(label: String, command: Command, uuid: UUID = UUID.ran
     s"$indentString$label: ${command.prettyPrintToC()}"
   }
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = command.getFunctionCalls
 }
@@ -199,7 +201,7 @@ sealed trait CFGOnly
 case class FunctionExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
   override def prettyPrintToC(indent: Int): String = "[Function Exit]"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 }
@@ -207,7 +209,7 @@ case class FunctionExit(uuid: UUID = UUID.randomUUID()) extends Command with CFG
 case class LoopExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
   override def prettyPrintToC(indent: Int): String = "[Loop Exit]"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 }
@@ -215,7 +217,43 @@ case class LoopExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly
 case class UndefinedFunction(functionName: String, uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
   override def prettyPrintToC(indent: Int): String = s"[Undefined Function: `$functionName`]"
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
+}
+
+sealed trait GhostCommand
+
+case class Use(groupID: Option[Int], update: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
+  val resourceVariable: Identifier = {
+    val suffix =
+      groupID match {
+        case Some(i) => i.toString // This command represents updating a resource variable for some amortization group
+        case None => "" // This command represents updating the original resource variable
+      }
+    Identifier(GhostVariableUtils.generateName(suffix, Resource), INT)
+  }
+
+  override def prettyPrintToCFG: String = s"use ${resourceVariable.identifier} ${update.prettyPrintToCFG}"
+
+  override def getFunctionCalls: List[FunctionCallExpr] = update.getFunctionCalls
+
+  override def prettyPrintToC(indent: Int): String = Assignment(resourceVariable, Addition(resourceVariable, update)).prettyPrintToC(indent)
+}
+
+case class Reset(groupID: Int, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
+  val sharpVariable: Identifier = Identifier(GhostVariableUtils.generateName(groupID.toString, Sharp), INT)
+  val resourceVariable: Identifier = Identifier(GhostVariableUtils.generateName(groupID.toString, Resource), INT)
+  val counterVariable: Identifier = Identifier(GhostVariableUtils.generateName(groupID.toString, Counter), INT)
+
+  override def prettyPrintToCFG: String = s"reset ${resourceVariable.identifier}"
+
+  override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def prettyPrintToC(indent: Int): String = {
+    val max = ITE(LessThan(sharpVariable, resourceVariable), Assignment(sharpVariable, resourceVariable), Skip())
+    val reset = Assignment(resourceVariable, Number(0))
+    val counter = Assignment(counterVariable, Addition(counterVariable, Number(1)))
+    s"${max.prettyPrintToC(indent)}\n${reset.prettyPrintToC(indent)}\n${counter.prettyPrintToC(indent)}"
+  }
 }

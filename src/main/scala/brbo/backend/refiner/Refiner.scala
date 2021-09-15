@@ -12,9 +12,13 @@ class Refiner(boundAssertion: BrboExpr, commandLineArguments: CommandLineArgumen
   def refine(brboProgram: BrboProgram, counterexamplePath: Option[Path]): BrboProgram = {
     counterexamplePath match {
       case Some(counterexamplePath2) =>
-        val paths = pathTransformation.pathTransformation(counterexamplePath2)
-        val newProgram = programTransformation.programTransformation(brboProgram, paths)
-        newProgram
+        // Keep finding new path transformations until we find a program transformation that can realize it
+        var newProgram: Option[BrboProgram] = None
+        while (newProgram.isEmpty) {
+          val paths = pathTransformation.pathTransformation(counterexamplePath2)
+          newProgram = programTransformation.programTransformation(brboProgram, paths)
+        }
+        newProgram.get
       case None => ??? // Simply try a completely new program?
     }
   }

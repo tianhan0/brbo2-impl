@@ -24,11 +24,14 @@ class BrboAstUnitTest extends AnyFlatSpec {
     assert(FunctionExit() != FunctionExit())
     assert(LoopExit() != LoopExit())
     assert(UndefinedFunction("f") != UndefinedFunction("f"))
+    assert(createUse != createUse)
+    assert(createUse2 != createUse2)
+    assert(createReset != createReset)
   }
 
   BrboAstUnitTest.prettyPrintToCUnitTest.foreach({
     testCase =>
-      StringCompare.compareLiteral(testCase.input.asInstanceOf[BrboAst].prettyPrintToC(2), testCase.expectedOutput, s"${testCase.name} failed!")
+      assert(StringCompare.compareLiteral(testCase.input.asInstanceOf[BrboAst].prettyPrintToC(2), testCase.expectedOutput, s"${testCase.name} failed!"))
   })
 }
 
@@ -47,7 +50,10 @@ object BrboAstUnitTest {
       TestCase("LabeledCommand", createLabeledCommand, "  label: return;"),
       TestCase("ITE", createITE, "  if (true)\n    x = 0;\n  else\n    x = 1;"),
       TestCase("Loop", createLoop, "  while (0 < x)\n  {\n    x = 0;\n    x = 1;\n  }"),
-      TestCase("Block", createBlock, "  {\n    x = 0;\n    x = 1;\n  }")
+      TestCase("Block", createBlock, "  {\n    x = 0;\n    x = 1;\n  }"),
+      TestCase("Use", createUse, "  R5 = R5 + 1;"),
+      TestCase("Use 2", createUse2, "  R = R + 2;"),
+      TestCase("Reset", createReset, "  if (S5 < R5)\n    S5 = R5;\n  else\n    ;\n  R5 = 0;\n  C5 = C5 + 1;")
     )
 
   def createContinue: Continue = Continue()
@@ -75,4 +81,10 @@ object BrboAstUnitTest {
   def createLoop: Loop = Loop(LessThan(Number(0), Identifier("x", BrboType.INT)), Block(List(Assignment(Identifier("x", INT), Number(0)), Assignment(Identifier("x", INT), Number(1)))))
 
   def createBlock: Block = Block(List(Assignment(Identifier("x", INT), Number(0)), Assignment(Identifier("x", INT), Number(1))))
+
+  def createUse: Use = Use(Some(5), Number(1))
+
+  def createUse2: Use = Use(None, Number(2))
+
+  def createReset: Reset = Reset(5)
 }
