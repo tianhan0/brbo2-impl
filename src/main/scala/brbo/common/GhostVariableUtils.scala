@@ -44,13 +44,13 @@ object GhostVariableUtils {
     cfgNode match {
       case Left(command) =>
         command match {
-          case Assignment(variable, expression, _) =>
+          case assignment@Assignment(variable, expression, _) =>
             if (variable.identifier == resourceVariablePrefix) {
               expression match {
                 case Addition(left, right, _) =>
                   left match {
                     case Identifier(identifier, _, _) =>
-                      if (identifier == variable.identifier) Some(Use(None, right))
+                      if (identifier == variable.identifier) Some(Use(None, right, assignment))
                       else None
                     case _ => None
                   }

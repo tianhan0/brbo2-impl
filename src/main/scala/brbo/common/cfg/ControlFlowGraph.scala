@@ -66,7 +66,7 @@ object ControlFlowGraph {
         case Some(function) => getCFG(function)
         case None =>
           // Create a node to represent an undefined function
-          val node = getNode(Left(UndefinedFunction(functionName)), functionName)
+          val node = getNode(Left(UndefinedFunction(functionName)), ???)
           InternalGraph(node, Set(node))
       }
     }
@@ -77,12 +77,12 @@ object ControlFlowGraph {
       functionCFG
     }
 
-    def getNode(content: Either[Command, BrboExpr], functionName: String): CFGNode = {
+    def getNode(content: Either[Command, BrboExpr], brboFunction: BrboFunction): CFGNode = {
       nodes.get(content) match {
         case Some(node) => node
         case None =>
           val id = nodes.size + 1
-          val node = CFGNode(content, functionName, id)
+          val node = CFGNode(content, brboFunction, id)
           nodes = nodes + (content -> node)
           addNode(node)
           node
@@ -90,7 +90,7 @@ object ControlFlowGraph {
     }
 
     def functionToInternalGraph(brboFunction: BrboFunction): InternalGraph = {
-      val exitNode = getNode(Left(FunctionExit()), brboFunction.identifier)
+      val exitNode = getNode(Left(FunctionExit()), brboFunction)
       val internalGraph = astToInternalGraph(brboFunction.body, JumpTarget(None, None, exitNode), brboFunction)
       internalGraph.exits.foreach(exit => if (exit != exitNode) addEdge(exit, exitNode))
       // Any function has exactly one exit node
@@ -118,7 +118,7 @@ object ControlFlowGraph {
 
       ast match {
         case command: Command =>
-          val node = getNode(Left(command), brboFunction.identifier)
+          val node = getNode(Left(command), brboFunction)
           addJumpEdges(command)
 
           @tailrec
@@ -129,10 +129,7 @@ object ControlFlowGraph {
               case Skip(_) =>
               case FunctionCall(_, _, _) =>
 
-              /**
-               * TODO: No edge is added for function calls. If we were to implement this,
-               * then we also need to add edges when function calls happen inside expressions
-               */
+              // No edge is added for function calls!
               case Return(_, _) => addEdge(node, jumpTarget.functionExit)
               case Break(_) => addEdge(node, jumpTarget.immediateLoopExit.get)
               case Continue(_) => addEdge(node, jumpTarget.immediateLoopCondition.get)
@@ -158,7 +155,7 @@ object ControlFlowGraph {
               assert(internalGraphs.nonEmpty)
               InternalGraph(internalGraphs.head.root, internalGraphs.last.exits)
             case ITE(condition, thenAst, elseAst, _) =>
-              val conditionNode = getNode(Right(condition), brboFunction.identifier)
+              val conditionNode = getNode(Right(condition), brboFunction)
               addNode(conditionNode)
 
               val thenGraph = astToInternalGraph(thenAst, jumpTarget, brboFunction)
@@ -171,8 +168,8 @@ object ControlFlowGraph {
 
               InternalGraph(conditionNode, thenGraph.exits ++ elseGraph.exits)
             case Loop(condition, body, _) =>
-              val conditionNode = getNode(Right(condition), brboFunction.identifier)
-              val loopExit = getNode(Left(LoopExit()), brboFunction.identifier)
+              val conditionNode = getNode(Right(condition), brboFunction)
+              val loopExit = getNode(Left(LoopExit()), brboFunction)
               val bodyGraph = astToInternalGraph(body, JumpTarget(Some(conditionNode), Some(loopExit), jumpTarget.functionExit), brboFunction)
 
               addEdge(conditionNode, loopExit)
@@ -228,7 +225,7 @@ case class ControlFlowGraph(entryNode: CFGNode,
     exporter.setVertexAttributeProvider({
       node: CFGNode =>
         val map = new util.HashMap[String, Attribute]()
-        map.put("label", DefaultAttribute.createAttribute(node.toString))
+        map.put("label", DefaultAttribute.createAttribute(node.prettyPrintToCFG))
         val shape: String =
           node.value match {
             case Left(command) =>

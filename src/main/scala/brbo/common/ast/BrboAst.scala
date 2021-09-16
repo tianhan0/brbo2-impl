@@ -224,12 +224,18 @@ case class UndefinedFunction(functionName: String, uuid: UUID = UUID.randomUUID(
 
 sealed trait GhostCommand
 
-case class Use(groupID: Option[Int], update: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
+case class Use(groupID: Option[Int], update: BrboExpr, assignment: Assignment, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
+  groupID match {
+    case Some(value) => assert(value >= 0) // This command represents updating a resource variable for some amortization group
+    case None => // This command represents updating the original resource variable
+  }
+
+  // TODO: Check this use command corresponds to the assignment command
   val resourceVariable: Identifier = {
     val suffix =
       groupID match {
-        case Some(i) => i.toString // This command represents updating a resource variable for some amortization group
-        case None => "" // This command represents updating the original resource variable
+        case Some(i) => i.toString
+        case None => ""
       }
     Identifier(GhostVariableUtils.generateName(suffix, Resource), INT)
   }

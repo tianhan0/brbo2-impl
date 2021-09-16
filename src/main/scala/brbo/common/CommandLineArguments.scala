@@ -43,6 +43,9 @@ class CommandLineArguments {
   @Option(name = "--generate-synthetic", required = false, usage = "Generate `n` synthetic programs")
   private var generateSynthetic: Int = 0
 
+  @Option(name = "--max-group", required = false, usage = "The max number of amortization groups")
+  private var maxGroups: Int = CommandLineArguments.DEFAULT_MAX_GROUPS
+
   @Option(name = "--model-checker-path", required = false,
     usage = "The absolute path of the directory containing all files of the model checker.")
   private var modelCheckerDirectory: String = UAutomizerVerifier.TOOL_DIRECTORY
@@ -73,6 +76,8 @@ class CommandLineArguments {
 
   def getGenerateSynthetic: Int = generateSynthetic
 
+  def getMaxGroups: Int = maxGroups
+
   def getModelCheckerDirectory: String = modelCheckerDirectory
 
   private var initialized = false
@@ -86,6 +91,7 @@ class CommandLineArguments {
                  printCFG: Boolean,
                  lessPreciseBound: Boolean,
                  generateSynthetic: Int,
+                 maxGroups: Int,
                  modelCheckerDirectory: String): Unit = {
     if (initialized) {
       logger.info(s"Already initialized")
@@ -101,6 +107,7 @@ class CommandLineArguments {
     this.printCFG = printCFG
     this.lessPreciseBound = lessPreciseBound
     this.generateSynthetic = generateSynthetic
+    this.maxGroups = maxGroups
     this.modelCheckerDirectory = modelCheckerDirectory
   }
 
@@ -115,6 +122,7 @@ class CommandLineArguments {
       s"Print CFG? `$printCFG`",
       s"Check less precise bounds? `$lessPreciseBound`",
       s"Generate `$generateSynthetic` synthetic programs",
+      s"Max number of groups: `$maxGroups`",
       s"Model check's directory is `$modelCheckerDirectory`"
     )
     strings.mkString("\n")
@@ -129,6 +137,8 @@ class CommandLineArguments {
 }
 
 object CommandLineArguments {
+  private val DEFAULT_MAX_GROUPS = 2
+
   private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)
 
   def parseArguments(args: Array[String]): CommandLineArguments = {
@@ -159,6 +169,7 @@ object CommandLineArguments {
       printCFG = false,
       lessPreciseBound = false,
       generateSynthetic = 0,
+      maxGroups = DEFAULT_MAX_GROUPS,
       modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY
     )
     arguments
@@ -176,6 +187,7 @@ object CommandLineArguments {
       printCFG = false,
       lessPreciseBound = false,
       generateSynthetic = 0,
+      maxGroups = DEFAULT_MAX_GROUPS,
       modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY
     )
     arguments

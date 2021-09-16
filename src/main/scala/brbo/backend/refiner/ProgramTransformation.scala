@@ -5,7 +5,7 @@ import brbo.common.CommandLineArguments
 import brbo.common.ast.BrboProgram
 
 class ProgramTransformation(commandLineArguments: CommandLineArguments) {
-  def programTransformation(brboProgram: BrboProgram, paths: Set[Path]): Option[BrboProgram] = {
+  def programTransformation(brboProgram: BrboProgram, paths: List[Path]): Option[BrboProgram] = {
     ???
   }
 }

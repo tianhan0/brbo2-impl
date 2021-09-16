@@ -82,9 +82,15 @@ object BrboAstUnitTest {
 
   def createBlock: Block = Block(List(Assignment(Identifier("x", INT), Number(0)), Assignment(Identifier("x", INT), Number(1))))
 
-  def createUse: Use = Use(Some(5), Number(1))
+  def createUse: Use = {
+    val v1 = Identifier("v1", INT)
+    Use(Some(5), Number(1), Assignment(v1, Addition(v1, Number(1))))
+  }
 
-  def createUse2: Use = Use(None, Number(2))
+  def createUse2: Use = {
+    val v2 = Identifier("v2", INT)
+    Use(None, Number(2), Assignment(v2, Addition(v2, Number(2))))
+  }
 
   def createReset: Reset = Reset(5)
 }

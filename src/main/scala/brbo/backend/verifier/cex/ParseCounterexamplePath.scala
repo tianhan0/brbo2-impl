@@ -1,11 +1,9 @@
 package brbo.backend.verifier.cex
 
-import brbo.backend.verifier.cex
 import brbo.common.MyLogger
 import brbo.common.TypeUtils.BrboType.VOID
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
-import org.apache.logging.log4j.LogManager
 import org.jgrapht.Graph
 import org.jgrapht.graph.DefaultEdge
 import org.jgrapht.graph.builder.GraphTypeBuilder
@@ -68,8 +66,8 @@ class ParseCounterexamplePath(debugMode: Boolean) {
   private def parsePathString(path: List[String], brboProgram: BrboProgram): Path = {
     val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
 
-    val fakeNode = CFGNode(Left(Skip()), "???", 0)
     val fakeFunction = BrboFunction("???", VOID, Nil, Block(List(Skip())))
+    val fakeNode = CFGNode(Left(Skip()), fakeFunction, 0)
 
     /**
      *
@@ -216,7 +214,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               // The new call stack might be different from the current call stack, because it might have processed function returns
               // Every call to this function is responsible for maintaining the call stack in order for a potential recursive call to itself to work properly
               matchPath(State(SubState(newCurrentNode, processFunctionCalls = true, currentFunction), newState.callStack,
-                cex.PathNode(currentNode, currentFunction) :: newState.matchedNodes, tail, newState.shouldContinue))
+                currentNode :: newState.matchedNodes, tail, newState.shouldContinue))
             }
         }
       }
@@ -279,7 +277,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
    */
   private case class State(subState: SubState,
                            callStack: List[SubState],
-                           matchedNodes: List[PathNode],
+                           matchedNodes: List[CFGNode],
                            remainingPath: List[String],
                            shouldContinue: Boolean) {
     override def toString: String = {
@@ -287,7 +285,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
       val s2 = s"Current function: `${subState.currentFunction.identifier}`"
       val s3 = s"Process function calls: `${subState.processFunctionCalls}`"
       val s4 = s"Call stack: `${callStack.map({ subState => subState.toString })}`"
-      val s5 = s"Matched nodes: `${matchedNodes.map({ pathNode => s"`${pathNode.node.prettyPrintToC()}`" }).reverse}`"
+      val s5 = s"Matched nodes: `${matchedNodes.map({ pathNode => s"`${pathNode.prettyPrintToC()}`" }).reverse}`"
       val s6 = s"Remaining path: `$remainingPath`"
       val s7 = s"Should continue: `$shouldContinue`"
       List(s1, s2, s3, s4, s5, s6, s7).mkString("\n")

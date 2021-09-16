@@ -7,12 +7,12 @@ import com.ibm.wala.util.intset.{BimodalMutableIntSet, IntSet}
 
 /**
  *
- * @param value        Every node is either a command or an expression
- * @param functionName The function that this command or expression belongs to
- * @param id           A unique ID among all commands and expressions in all functions
+ * @param value    Every node is either a command or an expression
+ * @param function The function that this command or expression belongs to
+ * @param id       A unique ID among all commands and expressions in all functions
  */
-case class CFGNode(value: Either[Command, BrboExpr], functionName: String, id: Int) extends NodeWithNumber
-  with INodeWithNumberedEdges with PrettyPrintToC with GetFunctionCalls {
+case class CFGNode(value: Either[Command, BrboExpr], function: BrboFunction, id: Int) extends NodeWithNumber
+  with INodeWithNumberedEdges with PrettyPrintToC with PrettyPrintToCFG with GetFunctionCalls {
 
   private val predNumbers = new BimodalMutableIntSet()
   private val succNumbers = new BimodalMutableIntSet()
@@ -35,8 +35,8 @@ case class CFGNode(value: Either[Command, BrboExpr], functionName: String, id: I
 
   override def toString: String = {
     value match {
-      case Left(command) => s"($id) ${command.prettyPrintToCFG}"
-      case Right(expr) => s"($id) ${expr.prettyPrintToCFG}"
+      case Left(command) => s"${command.prettyPrintToCFG} [Function `${function.identifier}`]"
+      case Right(expr) => s"${expr.prettyPrintToCFG} [Function `${function.identifier}`]"
     }
   }
 
@@ -53,4 +53,15 @@ case class CFGNode(value: Either[Command, BrboExpr], functionName: String, id: I
       case Right(expr) => expr.getFunctionCalls
     }
   }
+
+  override def prettyPrintToCFG: String = {
+    value match {
+      case Left(command) => s"($id) ${command.prettyPrintToCFG}"
+      case Right(expr) => s"($id) ${expr.prettyPrintToCFG}"
+    }
+  }
+}
+
+object CFGNode {
+  val DONT_CARE_ID: Int = -1
 }

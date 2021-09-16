@@ -6,24 +6,24 @@ import brbo.backend.verifier.{UAutomizerVerifier, VerifierResult}
 import brbo.common.CommandLineArguments
 import brbo.common.ast.{BrboExpr, BrboProgram}
 
-class Driver(commandLineArguments: CommandLineArguments) {
-  def verifyFullyAmortize(program: BrboProgram, boundAssertion: BrboExpr): VerifierResult = {
+class Driver(commandLineArguments: CommandLineArguments, brboProgram: BrboProgram) {
+  def verifyFullyAmortize(boundAssertion: BrboExpr): VerifierResult = {
     ???
   }
 
-  def verifyWorstCase(program: BrboProgram, boundAssertion: BrboExpr): VerifierResult = {
+  def verifyWorstCase(boundAssertion: BrboExpr): VerifierResult = {
     ???
   }
 
-  def insertUBCheck(brboProgram: BrboProgram, boundAssertion: BrboExpr): BrboProgram = {
+  def insertUBCheck(brboProgram2: BrboProgram, boundAssertion: BrboExpr): BrboProgram = {
     ???
   }
 
-  def verifySelectivelyAmortize(program: BrboProgram, boundAssertion: BrboExpr): VerifierResult = {
+  def verifySelectivelyAmortize(boundAssertion: BrboExpr): VerifierResult = {
     val UAutomizerVerifier = new UAutomizerVerifier(commandLineArguments)
-    val refiner = new Refiner(boundAssertion, commandLineArguments)
+    val refiner = new Refiner(boundAssertion, brboProgram, commandLineArguments)
     var shouldExit = false
-    var program2 = program
+    var program2 = brboProgram
     var result = VerifierResult(UNINITIALIZED, None)
     while (!shouldExit) {
       val ubCheckInserted = insertUBCheck(program2, boundAssertion)
