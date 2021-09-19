@@ -1,6 +1,7 @@
 package brbo.common.cfg
 
-import brbo.{StringCompare, TestCase}
+import brbo.TestCase
+import brbo.common.StringCompare
 import brbo.common.TypeUtils.BrboType.{INT, VOID}
 import brbo.common.ast._
 import org.apache.logging.log4j.{LogManager, Logger}

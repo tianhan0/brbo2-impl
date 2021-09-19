@@ -3,10 +3,12 @@ package brbo.backend.verifier
 import brbo.backend.verifier.SymbolicExecution._
 import brbo.backend.verifier.cex.Path
 import brbo.common.TypeUtils.BrboType.{BrboType, INT}
-import brbo.common.Z3Solver
+import brbo.common.{StringCompare, Z3Solver}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import com.microsoft.z3.{AST, BoolExpr}
+
+import scala.annotation.tailrec
 
 class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
   private val solver = new Z3Solver
@@ -22,12 +24,7 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
   })
 
   def createFreshVariable(typ: BrboType): AST = {
-    val r = new scala.util.Random()
-    val suffix: Long = {
-      val n = r.nextLong()
-      if (n < 0) -n else n
-    }
-    val variableName = s"v$suffix"
+    val variableName = s"v${inputs.size}"
     val z3AST = typ match {
       case brbo.common.TypeUtils.BrboType.INT => solver.mkIntVar(variableName)
       case brbo.common.TypeUtils.BrboType.BOOL => solver.mkBoolVar(variableName)
@@ -39,6 +36,7 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
 
   val result: State = path.pathNodes.foldLeft(State(List(inputs), solver.mkTrue(), Map()))({ (acc, node) => evaluate(acc, node) })
 
+  @tailrec
   private def evaluate(state: State, node: CFGNode): State = {
     val valuation: Valuation = state.valuations.head
 
@@ -87,9 +85,16 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
             }
             // Update the environment map
             State(newValuation :: state.valuations.tail, state.pathCondition, newReturnValues)
+          case FunctionExit(_) =>
+            // Pop the environment map
+            State(state.valuations.tail, state.pathCondition, state.returnValues)
+          case LabeledCommand(_, command2, _) =>
+            evaluate(state, CFGNode(Left(command2), node.function, CFGNode.DONT_CARE_ID))
+          case FunctionCall(functionCallExpr, _) =>
+            val (_, newReturnValues) = evaluateExpression(valuation, state.returnValues, functionCallExpr)
+            State(state.valuations, state.pathCondition, newReturnValues)
           case _: CFGOnly | _: GhostCommand |
-               Skip(_) | Break(_) | Continue(_) |
-               LabeledCommand(_, _, _) | FunctionCall(_, _, _) => throw new Exception
+               Skip(_) | Break(_) | Continue(_) => throw new Exception(s"Unexpected command: `$command`")
         }
       case Right(brboExpr) =>
         val (additionPathCondition, newReturnValues) = evaluateExpression(valuation, state.returnValues, brboExpr)
@@ -202,9 +207,9 @@ object SymbolicExecution {
    */
   case class State(valuations: List[Valuation], pathCondition: BoolExpr, returnValues: ReturnValues) {
     override def toString: String = {
-      val valuationsString = s"Valuations:\n  ${valuations.mkString("\n  ")}"
+      val valuationsString = s"Valuations:\n  ${valuations.map(valuation => StringCompare.toSortedString(Left(valuation), "\n  ")).mkString("\n----------\n")}"
       val pathConditionString = s"Path condition: $pathCondition"
-      val returnValuesString = s"Return values:\n  ${returnValues.mkString("\n  ")}"
+      val returnValuesString = s"Return values:\n  ${StringCompare.toSortedString(Left(returnValues), "\n  ")}"
       s"$valuationsString\n$pathConditionString\n$returnValuesString"
     }
   }

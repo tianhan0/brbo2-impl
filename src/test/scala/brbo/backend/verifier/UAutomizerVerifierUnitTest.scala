@@ -1,9 +1,9 @@
 package brbo.backend.verifier
 
-import brbo.common.CommandLineArguments
+import brbo.common.{CommandLineArguments, StringCompare}
 import brbo.common.TypeUtils.BrboType.{INT, VOID}
 import brbo.common.ast._
-import brbo.{StringCompare, TestCase}
+import brbo.TestCase
 import org.scalatest.flatspec.AnyFlatSpec
 
 class UAutomizerVerifierUnitTest extends AnyFlatSpec {
@@ -25,7 +25,7 @@ object UAutomizerVerifierUnitTest {
     val statement1 = VariableDeclaration(i, Number(0))
     val statement2 = VariableDeclaration(R, Number(0))
     val statement3 = PreDefinedBrboFunctions.createAssume(GreaterThan(n, Number(0)))
-    val statement5 = FunctionCall(None, FunctionCallExpr("ndBool", Nil, INT)) // To test parsing counterexample paths when involving function calls
+    val statement5 = FunctionCall(FunctionCallExpr("ndBool", Nil, INT)) // To test parsing counterexample paths when involving function calls
     val statement6 = {
       val e = Identifier("e", INT)
       val statement1 = VariableDeclaration(e, Number(0))
@@ -52,12 +52,14 @@ object UAutomizerVerifierUnitTest {
                            |  int R = 0; [Function `main`]
                            |  Call function `assume` with `(n > 0)` [Function `main`]
                            |  !(!(cond)) [Function `assume`]
+                           |  [Function Exit] [Function `assume`]
                            |  Call function `ndBool` no arguments [Function `main`]
                            |  Call function `ndInt` no arguments [Function `ndBool`]
                            |  return __VERIFIER_nondet_int(); [Function `ndInt`]
                            |  int x = ndInt(); [Function `ndBool`]
                            |  Call function `assume` with `((x == 0) || (x == 1))` [Function `ndBool`]
                            |  !(!(cond)) [Function `assume`]
+                           |  [Function Exit] [Function `assume`]
                            |  return x; [Function `ndBool`]
                            |  (i < n) [Function `main`]
                            |  int e = 0; [Function `main`]
@@ -74,7 +76,8 @@ object UAutomizerVerifierUnitTest {
                            |  !((i < n)) [Function `main`]
                            |  Call function `assert` with `(R <= a)` [Function `main`]
                            |  !(cond) [Function `assert`]
-                           |  ERROR: __VERIFIER_error(); [Function `assert`]))""".stripMargin
+                           |  ERROR: __VERIFIER_error(); [Function `assert`]
+                           |  return; [Function `assert`]))""".stripMargin
 
     List[TestCase](
       TestCase("Must be unknown", test01, test01Expected),

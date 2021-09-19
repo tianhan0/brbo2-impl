@@ -1,9 +1,9 @@
 package brbo.backend.refiner
 
-import brbo.{StringCompare, TestCase}
+import brbo.TestCase
 import brbo.backend.verifier.cex.Path
 import brbo.common.GhostVariableTyp.Resource
-import brbo.common.{CommandLineArguments, GhostVariableUtils}
+import brbo.common.{CommandLineArguments, GhostVariableUtils, StringCompare}
 import brbo.common.TypeUtils.BrboType.{INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode

@@ -1,4 +1,4 @@
-package brbo
+package brbo.common
 
 object StringCompare {
   private val dashes = "------------------------------------------"
@@ -29,10 +29,10 @@ object StringCompare {
     ignoreWhitespaces(toSortedString(actual), expected, message)
   }
 
-  def toSortedString(iterableOrTraversable: Either[Iterable[Any], Traversable[Any]]): String = {
+  def toSortedString(iterableOrTraversable: Either[Iterable[Any], Traversable[Any]], delimiter: String = "\n"): String = {
     iterableOrTraversable match {
-      case Left(iterable) => iterable.map(x => x.toString).toList.sortWith(_ < _).mkString("\n")
-      case Right(traversable) => traversable.map(x => x.toString).toList.sortWith(_ < _).mkString("\n")
+      case Left(iterable) => iterable.map(x => x.toString).toList.sortWith(_ < _).mkString(delimiter)
+      case Right(traversable) => traversable.map(x => x.toString).toList.sortWith(_ < _).mkString(delimiter)
     }
   }
 }

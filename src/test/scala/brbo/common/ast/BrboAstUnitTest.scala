@@ -2,7 +2,8 @@ package brbo.common.ast
 
 import brbo.common.TypeUtils.BrboType
 import brbo.common.TypeUtils.BrboType.INT
-import brbo.{StringCompare, TestCase}
+import brbo.TestCase
+import brbo.common.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BrboAstUnitTest extends AnyFlatSpec {
@@ -42,7 +43,7 @@ object BrboAstUnitTest {
       TestCase("Break", createBreak, "  break;"),
       TestCase("Skip", createSkip, "  ;"),
       TestCase("Return", createReturn, "  return x;"),
-      TestCase("FunctionCall", createFunctionCall, "  x = f(a, b);"),
+      TestCase("FunctionCall", createFunctionCall, "  f(a, b);"),
       TestCase("Assignment", createAssignment, "  x = 0;"),
       TestCase("VariableDeclaration", createVariableDeclaration, "  int x = 1;"),
       // TestCase("Assert", createAssert, "  assert(false);"),
@@ -64,7 +65,7 @@ object BrboAstUnitTest {
 
   def createReturn: Return = Return(Some(Identifier("x", INT)))
 
-  def createFunctionCall: FunctionCall = FunctionCall(Some(Identifier("x", INT)), FunctionCallExpr("f", List(Identifier("a", INT), Identifier("b", INT)), BrboType.INT))
+  def createFunctionCall: FunctionCall = FunctionCall(FunctionCallExpr("f", List(Identifier("a", INT), Identifier("b", INT)), BrboType.INT))
 
   def createAssignment: Assignment = Assignment(Identifier("x", INT), Number(0))
 

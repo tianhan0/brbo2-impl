@@ -48,7 +48,7 @@ object PreDefinedBrboFunctions {
     val body = {
       val ite = {
         val condition = Negative(cond)
-        val thenStatement = LabeledCommand("ERROR", FunctionCall(None, FunctionCallExpr("__VERIFIER_error", Nil, VOID)))
+        val thenStatement = LabeledCommand("ERROR", FunctionCall(FunctionCallExpr("__VERIFIER_error", Nil, VOID)))
         val elseStatement = Skip()
         ITE(condition, thenStatement, elseStatement)
       }
@@ -62,7 +62,7 @@ object PreDefinedBrboFunctions {
     val body = {
       val ite = {
         val condition = Negative(cond)
-        val thenStatement = FunctionCall(None, FunctionCallExpr("abort", Nil, VOID))
+        val thenStatement = FunctionCall(FunctionCallExpr("abort", Nil, VOID))
         val elseStatement = Skip()
         ITE(condition, thenStatement, elseStatement)
       }
@@ -105,7 +105,7 @@ object PreDefinedBrboFunctions {
 
   val allFunctions = List(assert, assume, ndInt, ndBool, ndInt2)
 
-  def createAssert(expression: BrboExpr): FunctionCall = FunctionCall(None, FunctionCallExpr("assert", List(expression), BOOL))
+  def createAssert(expression: BrboExpr): FunctionCall = FunctionCall(FunctionCallExpr("assert", List(expression), BOOL))
 
-  def createAssume(expression: BrboExpr): FunctionCall = FunctionCall(None, FunctionCallExpr("assume", List(expression), BOOL))
+  def createAssume(expression: BrboExpr): FunctionCall = FunctionCall(FunctionCallExpr("assume", List(expression), BOOL))
 }

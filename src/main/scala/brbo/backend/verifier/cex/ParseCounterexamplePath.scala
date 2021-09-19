@@ -87,7 +87,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
       currentNode.value match {
         case Left(command) =>
           command match {
-            case FunctionExit(_) | Return(None, _) => // These commands need not to be matched, since they don't appear in UAutomizer's outputs
+            case FunctionExit(_) | Return(None, _) => // These commands cannot be matched, since they don't appear in UAutomizer's outputs
               if (state.callStack.isEmpty) {
                 if (state.remainingPath.nonEmpty)
                   throw new Exception(s"Exiting function `${currentFunction.identifier}`, " +
@@ -97,7 +97,24 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               else {
                 val top = state.callStack.head
                 logger.traceOrError(s"Return to `$top`")
-                return matchPath(State(top, state.callStack.tail, state.matchedNodes, state.remainingPath, state.shouldContinue))
+                // Put the current node into the list of matched notes, so that function calls and returns will match
+                val appendCurrentNode: Boolean =
+                  state.matchedNodes match {
+                    case Nil => true
+                    case ::(head, _) =>
+                      head.value match {
+                        case Left(command2) =>
+                          command2 match {
+                            case Return(_, _) =>
+                              assert(command.isInstanceOf[FunctionExit])
+                              false // Avoid duplicate function returns
+                            case _ => true
+                          }
+                        case Right(_) => true
+                      }
+                  }
+                val matchedNodes = if (appendCurrentNode) currentNode :: state.matchedNodes else state.matchedNodes
+                return matchPath(State(top, state.callStack.tail, matchedNodes, state.remainingPath, state.shouldContinue))
               }
             case _ =>
           }
@@ -133,11 +150,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                 currentNode.value match {
                   case Left(command) =>
                     command match {
-                      case FunctionCall(variable, _, _) =>
-                        variable match {
-                          case Some(_) => false
-                          case None => true // Skip function calls whose return values are not assigned to any variable
-                        }
+                      case FunctionCall(_, _) => true // Skip function calls whose return values are not assigned to any variable
                       case _ => false
                     }
                   case Right(_) => false
@@ -214,13 +227,13 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               logger.traceOrError(s"Successor node (non-CFGOnly): `$newCurrentNode`")
 
               val matchedNode: CFGNode = {
-                if (!matchResult.matchedExpression) currentNode
+                if (!matchResult.matchedExpression) currentNode // Match a command
                 else {
                   currentNode.value match {
                     case Left(_) => throw new Exception
                     case Right(brboExpr) =>
-                      if (matchResult.matchedTrueBranch) currentNode
-                      else CFGNode(Right(Negative(brboExpr)), currentNode.function, currentNode.id)
+                      if (matchResult.matchedTrueBranch) currentNode // Match the true branch
+                      else CFGNode(Right(Negative(brboExpr)), currentNode.function, currentNode.id) // Match the false branch
                   }
                 }
               }
@@ -275,7 +288,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     }
 
     command match {
-      case Assignment(_, _, _) | FunctionCall(_, _, _) => getRidOfSemicolon(command)
+      case Assignment(_, _, _) | FunctionCall(_, _) => getRidOfSemicolon(command)
       case LabeledCommand(_, command2, _) => expectedUAutomizerString(command2)
       case _ => command.prettyPrintToC()
     }
