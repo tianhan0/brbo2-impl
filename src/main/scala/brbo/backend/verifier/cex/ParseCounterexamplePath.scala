@@ -52,7 +52,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     logger.intoOrError(s"Counterexample path (as a list of strings):\n${path.mkString("\n")}")
 
     val counterexamplePath = parsePathString(path, brboProgram)
-    logger.intoOrError(s"Counterexample path (as a list of CFG nodes):\n${counterexamplePath.prettyPrintToC()}")
+    logger.intoOrError(s"Counterexample path (as a list of CFG nodes):\n${counterexamplePath.toString()}")
     assert(counterexamplePath.pathNodes.nonEmpty)
     counterexamplePath
   }
@@ -113,11 +113,11 @@ class ParseCounterexamplePath(debugMode: Boolean) {
           // First, match against the sequence of function calls in the current node
           val functionCalls: List[FunctionCallExpr] = currentNode.getFunctionCalls
           if (functionCalls.nonEmpty) logger.traceOrError(s"Found function calls in `$currentNode`: `$functionCalls`")
-          val functions: List[(CFGNode, BrboFunction)] =
+          val functions: List[(CFGNode, BrboFunction, List[BrboExpr])] =
             functionCalls.flatMap({
               functionCall =>
                 cfg.cfgs.find({ case (function, _) => function.identifier == functionCall.identifier }) match {
-                  case Some(value) => Some((value._2.root, value._1))
+                  case Some(value) => Some((value._2.root, value._1, functionCall.arguments))
                   case None =>
                     logger.traceOrError(s"Calling a function that has no CFG: `${functionCall.identifier}`")
                     None
@@ -126,7 +126,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
           var newState = state
           var i = 0
           while (i < functions.size && newState.shouldContinue) {
-            val (functionEntry, function) = functions(i)
+            val (functionEntry, function, actualArguments) = functions(i)
             logger.traceOrError(s"Calling function: `${function.identifier}`")
             val (returnTarget, processFunctionCalls) = {
               val skipCurrentNodeWhenReturn: Boolean = {
@@ -155,7 +155,9 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               State(
                 SubState(functionEntry, processFunctionCalls = true, function),
                 SubState(returnTarget, processFunctionCalls, currentFunction) :: state.callStack, // Push into the call stack
-                newState.matchedNodes, newState.remainingPath, newState.shouldContinue
+                CFGNode(Left(CallFunction(function, actualArguments)), currentFunction, CFGNode.DONT_CARE_ID) :: newState.matchedNodes, // Insert a special command, signaling function calls
+                newState.remainingPath,
+                newState.shouldContinue
               )
             )
             i = i + 1
@@ -211,10 +213,22 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               }
               logger.traceOrError(s"Successor node (non-CFGOnly): `$newCurrentNode`")
 
+              val matchedNode: CFGNode = {
+                if (!matchResult.matchedExpression) currentNode
+                else {
+                  currentNode.value match {
+                    case Left(_) => throw new Exception
+                    case Right(brboExpr) =>
+                      if (matchResult.matchedTrueBranch) currentNode
+                      else CFGNode(Right(Negative(brboExpr)), currentNode.function, currentNode.id)
+                  }
+                }
+              }
+
               // The new call stack might be different from the current call stack, because it might have processed function returns
               // Every call to this function is responsible for maintaining the call stack in order for a potential recursive call to itself to work properly
               matchPath(State(SubState(newCurrentNode, processFunctionCalls = true, currentFunction), newState.callStack,
-                currentNode :: newState.matchedNodes, tail, newState.shouldContinue))
+                matchedNode :: newState.matchedNodes, tail, newState.shouldContinue))
             }
         }
       }
@@ -281,11 +295,11 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                            remainingPath: List[String],
                            shouldContinue: Boolean) {
     override def toString: String = {
-      val s1 = s"Current node: `${subState.currentNode.prettyPrintToC()}`"
+      val s1 = s"Current node: `${subState.currentNode.prettyPrintToCFG}`"
       val s2 = s"Current function: `${subState.currentFunction.identifier}`"
       val s3 = s"Process function calls: `${subState.processFunctionCalls}`"
       val s4 = s"Call stack: `${callStack.map({ subState => subState.toString })}`"
-      val s5 = s"Matched nodes: `${matchedNodes.map({ pathNode => s"`${pathNode.prettyPrintToC()}`" }).reverse}`"
+      val s5 = s"Matched nodes: `${matchedNodes.map({ pathNode => s"`${pathNode.prettyPrintToCFG}`" }).reverse}`"
       val s6 = s"Remaining path: `$remainingPath`"
       val s7 = s"Should continue: `$shouldContinue`"
       List(s1, s2, s3, s4, s5, s6, s7).mkString("\n")

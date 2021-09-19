@@ -47,7 +47,34 @@ object UAutomizerVerifierUnitTest {
       val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionFalse)))
       BrboProgram("test02", function, PreDefinedBrboFunctions.allFunctions)
     }
-    val test02Expected = """VerifierResult(FALSE_RESULT,Some(Path(List(int i = 0; [Function `main`], int R = 0; [Function `main`], !(cond) [Function `assume`], return __VERIFIER_nondet_int(); [Function `ndInt`], int x = ndInt(); [Function `ndBool`], !(cond) [Function `assume`], return x; [Function `ndBool`], (i < n) [Function `main`], int e = 0; [Function `main`], (i < 1) [Function `main`], e = a; [Function `main`], R = R + e; [Function `main`], i = i + 1; [Function `main`], (i < n) [Function `main`], int e = 0; [Function `main`], (i < 1) [Function `main`], e = b; [Function `main`], R = R + e; [Function `main`], i = i + 1; [Function `main`], (i < n) [Function `main`], !(cond) [Function `assert`], ERROR: __VERIFIER_error(); [Function `assert`]))))"""
+    val test02Expected = """VerifierResult(FALSE_RESULT,Some(Path:
+                           |  int i = 0; [Function `main`]
+                           |  int R = 0; [Function `main`]
+                           |  Call function `assume` with `(n > 0)` [Function `main`]
+                           |  !(!(cond)) [Function `assume`]
+                           |  Call function `ndBool` no arguments [Function `main`]
+                           |  Call function `ndInt` no arguments [Function `ndBool`]
+                           |  return __VERIFIER_nondet_int(); [Function `ndInt`]
+                           |  int x = ndInt(); [Function `ndBool`]
+                           |  Call function `assume` with `((x == 0) || (x == 1))` [Function `ndBool`]
+                           |  !(!(cond)) [Function `assume`]
+                           |  return x; [Function `ndBool`]
+                           |  (i < n) [Function `main`]
+                           |  int e = 0; [Function `main`]
+                           |  (i < 1) [Function `main`]
+                           |  e = a; [Function `main`]
+                           |  R = R + e; [Function `main`]
+                           |  i = i + 1; [Function `main`]
+                           |  (i < n) [Function `main`]
+                           |  int e = 0; [Function `main`]
+                           |  !((i < 1)) [Function `main`]
+                           |  e = b; [Function `main`]
+                           |  R = R + e; [Function `main`]
+                           |  i = i + 1; [Function `main`]
+                           |  !((i < n)) [Function `main`]
+                           |  Call function `assert` with `(R <= a)` [Function `main`]
+                           |  !(cond) [Function `assert`]
+                           |  ERROR: __VERIFIER_error(); [Function `assert`]))""".stripMargin
 
     List[TestCase](
       TestCase("Must be unknown", test01, test01Expected),

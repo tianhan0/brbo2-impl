@@ -38,42 +38,196 @@ object PathTransformationUnitTest {
     val test06 = Path(List(assignment2, use1, assignment2, use2, assignment2))
 
     List(
-      TestCase("Test 01", test01, """Path(List(x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`]))""".stripMargin),
-      TestCase("Test 02", test02, """Path(List(reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`]))""".stripMargin),
-      TestCase("Test 03", test03, """Path(List(reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`]))
-                                    |Path(List(reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], reset R1 [Function `Main`], use R1 (R + 0) [Function `Main`]))
-                                    |Path(List(reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`]))
-                                    |Path(List(reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], use R1 (R + 0) [Function `Main`]))
-                                    |Path(List(use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`]))
-                                    |Path(List(use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], reset R1 [Function `Main`], use R1 (R + 0) [Function `Main`]))
-                                    |Path(List(use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`]))
-                                    |Path(List(use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], use R1 (R + 0) [Function `Main`]))""".stripMargin),
-      TestCase("Test 04", test04, """Path(List(x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], reset R1 [Function `Main`], use R1 (R + 0) [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], use R0 (R + 0) [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], use R1 (R + 0) [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`], reset R1 [Function `Main`], use R1 (R + 0) [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`], use R0 (R + 0) [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`], use R1 (R + 0) [Function `Main`]))""".stripMargin),
-      TestCase("Test 05", test05, """Path(List(reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], reset R1 [Function `Main`], use R1 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], use R1 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(use R0 (R + 0) [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(use R0 (R + 0) [Function `Main`], reset R1 [Function `Main`], use R1 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(use R0 (R + 0) [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(use R0 (R + 0) [Function `Main`], use R1 (R + 0) [Function `Main`], x = 0; [Function `Main`]))""".stripMargin),
-      TestCase("Test 06", test06, """Path(List(x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], reset R1 [Function `Main`], use R1 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], use R1 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], reset R0 [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], reset R1 [Function `Main`], use R1 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`]))
-                                    |Path(List(x = 0; [Function `Main`], use R0 (R + 0) [Function `Main`], x = 0; [Function `Main`], use R1 (R + 0) [Function `Main`], x = 0; [Function `Main`]))""".stripMargin),
+      TestCase("Test 01", test01, """Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]""".stripMargin),
+      TestCase("Test 02", test02, """Path:
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]""".stripMargin),
+      TestCase("Test 03", test03, """Path:
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R1 [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R1 [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]""".stripMargin),
+      TestCase("Test 04", test04, """Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  reset R1 [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  reset R1 [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]""".stripMargin),
+      TestCase("Test 05", test05, """Path:
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  reset R1 [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  reset R1 [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]""".stripMargin),
+      TestCase("Test 06", test06, """Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R1 [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R0 [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  reset R1 [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |Path:
+                                    |  x = 0; [Function `Main`]
+                                    |  use R0 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]
+                                    |  use R1 (R + 0) [Function `Main`]
+                                    |  x = 0; [Function `Main`]""".stripMargin),
     )
   }
 }

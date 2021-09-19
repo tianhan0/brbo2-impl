@@ -214,6 +214,7 @@ case class LoopExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 }
 
+@deprecated
 case class UndefinedFunction(functionName: String, uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
   override def prettyPrintToC(indent: Int): String = s"[Undefined Function: `$functionName`]"
 
@@ -262,4 +263,19 @@ case class Reset(groupID: Int, uuid: UUID = UUID.randomUUID()) extends Command w
     val counter = Assignment(counterVariable, Addition(counterVariable, Number(1)))
     s"${max.prettyPrintToC(indent)}\n${reset.prettyPrintToC(indent)}\n${counter.prettyPrintToC(indent)}"
   }
+}
+
+sealed trait CexPathOnly
+
+case class CallFunction(callee: BrboFunction, actualArguments: List[BrboExpr]) extends Command with CexPathOnly {
+  override def prettyPrintToCFG: String = {
+    val argumentsString =
+      if (actualArguments.nonEmpty) s" with `${actualArguments.map(a => a.prettyPrintToCFG).mkString(", ")}`"
+      else " no arguments"
+    s"Call function `${callee.identifier}`$argumentsString"
+  }
+
+  override def getFunctionCalls: List[FunctionCallExpr] = ???
+
+  override def prettyPrintToC(indent: Int): String = ???
 }

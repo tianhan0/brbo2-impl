@@ -18,6 +18,7 @@ class PathTransformation(commandLineArguments: CommandLineArguments, brboProgram
   }
 
   def insertResetOnly(path: Path, index: Int, choices: List[Int]): List[Path] = {
+    // TODO: Restrict that, resets at every control location must be the same (Maybe this can be encoded in constraints???)
     val NOT_INSERT = -1
     if (index >= path.pathNodes.length) {
       // Instantiate the choices

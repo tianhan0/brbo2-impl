@@ -56,6 +56,7 @@ object MathUtils {
     var result = allPossiblePaths(pathLength, Nil)
     var actualResult = new HashSet[List[Int]]
     while (result.nonEmpty) {
+      // TODO: For a set of permutations, always select the same one to be kept
       val toKeep = result.head
       result = result.diff(generatePermutations(toKeep)) // Remove duplicates
       actualResult = actualResult + toKeep

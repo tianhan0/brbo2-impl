@@ -6,7 +6,16 @@ object PreDefinedBrboFunctions {
   val VERIFIER_ERROR: String = "__VERIFIER_error"
   val ABORT: String = "abort"
   val VERIFIER_NONDET_INT: String = "__VERIFIER_nondet_int"
-  val UNDEFINED_FUNCTIONS: List[String] = List(VERIFIER_ERROR, ABORT, VERIFIER_NONDET_INT)
+
+  val __VERIFIER_error: BrboFunction = BrboFunction(VERIFIER_ERROR, VOID, Nil, Block(Nil))
+  val abort: BrboFunction = BrboFunction(ABORT, VOID, Nil, Block(Nil))
+  val __VERIFIER_nondet_int: BrboFunction = BrboFunction(VERIFIER_NONDET_INT, INT, Nil, Block(Nil))
+
+  val UNDEFINED_FUNCTIONS: Map[String, BrboFunction] = Map(
+    VERIFIER_ERROR -> __VERIFIER_error,
+    ABORT -> abort,
+    VERIFIER_NONDET_INT -> __VERIFIER_nondet_int
+  )
 
   val UNDEFINED_FUNCTIONS_MACRO: String =
     s"""extern void $VERIFIER_ERROR() __attribute__((noreturn));
