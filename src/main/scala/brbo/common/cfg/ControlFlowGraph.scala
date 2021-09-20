@@ -46,11 +46,6 @@ object ControlFlowGraph {
     val walaGraph = new DelegatingNumberedGraph[CFGNode]()
     val jgraphtGraph = new SimpleDirectedWeightedGraph[CFGNode, DefaultEdge](classOf[DefaultEdge])
 
-    def addNode(node: CFGNode): Unit = {
-      walaGraph.addNode(node)
-      jgraphtGraph.addVertex(node)
-    }
-
     def addEdge(src: CFGNode, dst: CFGNode): Unit = {
       walaGraph.addEdge(src, dst)
       jgraphtGraph.addEdge(src, dst)
@@ -78,6 +73,11 @@ object ControlFlowGraph {
     }
 
     def getNode(content: Either[Command, BrboExpr], brboFunction: BrboFunction): CFGNode = {
+      def addNode(node: CFGNode): Unit = {
+        walaGraph.addNode(node)
+        jgraphtGraph.addVertex(node)
+      }
+
       nodes.get(content) match {
         case Some(node) => node
         case None =>
@@ -152,11 +152,13 @@ object ControlFlowGraph {
                 }
                 i = i + 1
               }
-              assert(internalGraphs.nonEmpty)
-              InternalGraph(internalGraphs.head.root, internalGraphs.last.exits)
+              if (internalGraphs.isEmpty) {
+                val emptyNode = getNode(Left(Empty()), brboFunction)
+                InternalGraph(emptyNode, Set(emptyNode))
+              }
+              else InternalGraph(internalGraphs.head.root, internalGraphs.last.exits)
             case ITE(condition, thenAst, elseAst, _) =>
               val conditionNode = getNode(Right(condition), brboFunction)
-              addNode(conditionNode)
 
               val thenGraph = astToInternalGraph(thenAst, jumpTarget, brboFunction)
               val elseGraph = astToInternalGraph(elseAst, jumpTarget, brboFunction)
@@ -273,27 +275,6 @@ case class ControlFlowGraph(entryNode: CFGNode,
   def findSuccessorNodes(node: CFGNode): Set[CFGNode] = {
     val edges: mutable.Iterable[DefaultEdge] = jgraphtGraph.outgoingEdgesOf(node).asScala
     edges.map({ edge: DefaultEdge => jgraphtGraph.getEdgeTarget(edge) }).toSet
-  }
-
-  def findNextNodeNotSkipped(node: CFGNode): CFGNode = {
-    def helper(node2: CFGNode): CFGNode = {
-      val successorNodes = findSuccessorNodes(node2)
-      successorNodes.size match {
-        case 1 => findNextNodeNotSkipped(successorNodes.head)
-        case _ => throw new Exception(s"Node `${node2.prettyPrintToC()}` must have 1 successor node!")
-      }
-    }
-
-    node.value match {
-      case Left(command) =>
-        command match {
-          case FunctionExit(_) => node // Not skip function exit
-          case _: CFGOnly => helper(node) // Skip CFGOnly nodes, except for FunctionExit
-          case Skip(_) => helper(node) // Skip the empty command
-          case _ => node
-        }
-      case Right(_) => node
-    }
   }
 
   def pathExists(src: CFGNode, dst: CFGNode): Boolean = connectivityInspector.pathExists(src, dst)

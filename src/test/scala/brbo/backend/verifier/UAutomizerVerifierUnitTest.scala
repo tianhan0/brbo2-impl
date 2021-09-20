@@ -39,13 +39,13 @@ object UAutomizerVerifierUnitTest {
 
     val test01 = {
       val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionTrue)))
-      BrboProgram("test01", function, PreDefinedBrboFunctions.allFunctions)
+      BrboProgram("test01", function, None, None, PreDefinedBrboFunctions.allFunctionsList)
     }
     val test01Expected = """VerifierResult(UNKNOWN_RESULT,None)"""
 
     val test02 = {
       val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionFalse)))
-      BrboProgram("test02", function, PreDefinedBrboFunctions.allFunctions)
+      BrboProgram("test02", function, None, None, PreDefinedBrboFunctions.allFunctionsList)
     }
     val test02Expected = """VerifierResult(FALSE_RESULT,Some(Path:
                            |  int i = 0; [Function `main`]

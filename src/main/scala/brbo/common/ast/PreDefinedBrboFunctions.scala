@@ -7,7 +7,7 @@ object PreDefinedBrboFunctions {
   val ABORT: String = "abort"
   val VERIFIER_NONDET_INT: String = "__VERIFIER_nondet_int"
 
-  val __VERIFIER_error: BrboFunction = BrboFunction(VERIFIER_ERROR, VOID, Nil, Block(Nil))
+  /*val __VERIFIER_error: BrboFunction = BrboFunction(VERIFIER_ERROR, VOID, Nil, Block(Nil))
   val abort: BrboFunction = BrboFunction(ABORT, VOID, Nil, Block(Nil))
   val __VERIFIER_nondet_int: BrboFunction = BrboFunction(VERIFIER_NONDET_INT, INT, Nil, Block(Nil))
 
@@ -15,7 +15,7 @@ object PreDefinedBrboFunctions {
     VERIFIER_ERROR -> __VERIFIER_error,
     ABORT -> abort,
     VERIFIER_NONDET_INT -> __VERIFIER_nondet_int
-  )
+  )*/
 
   val UNDEFINED_FUNCTIONS_MACRO: String =
     s"""extern void $VERIFIER_ERROR() __attribute__((noreturn));
@@ -43,6 +43,14 @@ object PreDefinedBrboFunctions {
     BrboFunction("__VERIFIER_assert", VOID, List(cond), body)
   }*/
 
+  val ASSERT: String = "assert"
+  val ASSUME: String = "assume"
+  val NDINT: String = "ndInt"
+  val NDBOOL: String = "ndBool"
+  val NDINT2: String = "ndInt2"
+  val MOST_PRECISE_BOUND: String = "mostPreciseBound"
+  val LESS_PRECISE_BOUND: String = "lessPreciseBound"
+
   val assert: BrboFunction = {
     val cond = Identifier("cond", BOOL)
     val body = {
@@ -54,7 +62,7 @@ object PreDefinedBrboFunctions {
       }
       Block(List(ite, Return(None)))
     }
-    BrboFunction("assert", VOID, List(cond), body)
+    BrboFunction(ASSERT, VOID, List(cond), body)
   }
 
   val assume: BrboFunction = {
@@ -68,7 +76,7 @@ object PreDefinedBrboFunctions {
       }
       Block(List(ite))
     }
-    BrboFunction("assume", VOID, List(cond), body)
+    BrboFunction(ASSUME, VOID, List(cond), body)
   }
 
   val ndInt: BrboFunction = {
@@ -76,7 +84,7 @@ object PreDefinedBrboFunctions {
       val returnCommand = Return(Some(FunctionCallExpr("__VERIFIER_nondet_int", Nil, INT)))
       Block(List(returnCommand))
     }
-    BrboFunction("ndInt", INT, Nil, body)
+    BrboFunction(NDINT, INT, Nil, body)
   }
 
   val ndBool: BrboFunction = {
@@ -87,7 +95,7 @@ object PreDefinedBrboFunctions {
       val returnCommand = Return(Some(x))
       Block(List(variableDeclaration, assume, returnCommand))
     }
-    BrboFunction("ndBool", INT, Nil, body)
+    BrboFunction(NDBOOL, INT, Nil, body)
   }
 
   val ndInt2: BrboFunction = {
@@ -100,12 +108,22 @@ object PreDefinedBrboFunctions {
       val returnCommand = Return(Some(x))
       Block(List(variableDeclaration, assume, returnCommand))
     }
-    BrboFunction("ndInt2", INT, List(lower, upper), body)
+    BrboFunction(NDINT2, INT, List(lower, upper), body)
   }
 
-  val allFunctions = List(assert, assume, ndInt, ndBool, ndInt2)
+  val mostPreciseBound: BrboFunction = {
+    BrboFunction(MOST_PRECISE_BOUND, VOID, List(Identifier("assertion", BOOL)), Block(Nil))
+  }
 
-  def createAssert(expression: BrboExpr): FunctionCall = FunctionCall(FunctionCallExpr("assert", List(expression), BOOL))
+  val lessPreciseBound: BrboFunction = {
+    BrboFunction(LESS_PRECISE_BOUND, VOID, List(Identifier("assertion", BOOL)), Block(Nil))
+  }
 
-  def createAssume(expression: BrboExpr): FunctionCall = FunctionCall(FunctionCallExpr("assume", List(expression), BOOL))
+  val allFunctions = Map(ASSERT -> assert, ASSUME -> assume, NDINT -> ndInt, NDBOOL -> ndBool, NDINT2 -> ndInt2,
+    MOST_PRECISE_BOUND -> mostPreciseBound, LESS_PRECISE_BOUND -> lessPreciseBound)
+  val allFunctionsList = List(assert, assume, ndInt, ndBool, ndInt2, mostPreciseBound, lessPreciseBound)
+
+  def createAssert(expression: BrboExpr): FunctionCall = FunctionCall(FunctionCallExpr(ASSERT, List(expression), BOOL))
+
+  def createAssume(expression: BrboExpr): FunctionCall = FunctionCall(FunctionCallExpr(ASSUME, List(expression), BOOL))
 }

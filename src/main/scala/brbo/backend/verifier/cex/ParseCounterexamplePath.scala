@@ -83,11 +83,12 @@ class ParseCounterexamplePath(debugMode: Boolean) {
       val currentNode = state.subState.currentNode
       val currentFunction = state.subState.currentFunction
 
-      // Pop from the call stack
+      // Early return for commands that cannot be matched (since they don't appear in UAutomizer's outputs)
       currentNode.value match {
         case Left(command) =>
           command match {
-            case FunctionExit(_) | Return(None, _) => // These commands cannot be matched, since they don't appear in UAutomizer's outputs
+            case FunctionExit(_) | Return(None, _) =>
+              // Pop from the call stack
               if (state.callStack.isEmpty) {
                 if (state.remainingPath.nonEmpty)
                   throw new Exception(s"Exiting function `${currentFunction.identifier}`, " +
@@ -97,7 +98,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               else {
                 val top = state.callStack.head
                 logger.traceOrError(s"Return to `$top`")
-                // Put the current node into the list of matched notes, so that function calls and returns will match
+                // Put the current node into the list of matched notes, so that function calls and returns will match in the path
                 val appendCurrentNode: Boolean =
                   state.matchedNodes match {
                     case Nil => true
@@ -115,6 +116,15 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                   }
                 val matchedNodes = if (appendCurrentNode) currentNode :: state.matchedNodes else state.matchedNodes
                 return matchPath(State(top, state.callStack.tail, matchedNodes, state.remainingPath, state.shouldContinue))
+              }
+            case _: CFGOnly | Skip(_) =>
+              // Skip the empty command and CFGOnly nodes ( )except for FunctionExit)
+              val successorNodes = cfg.findSuccessorNodes(currentNode)
+              successorNodes.size match {
+                case 1 =>
+                  val newSubState = SubState(successorNodes.head, state.subState.processFunctionCalls, state.subState.currentFunction)
+                  return matchPath(State(newSubState, state.callStack, state.matchedNodes, state.remainingPath, state.shouldContinue))
+                case _ => throw new Exception(s"Node `${currentNode.prettyPrintToC()}` must have 1 successor node!")
               }
             case _ =>
           }
@@ -159,7 +169,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               if (skipCurrentNodeWhenReturn) {
                 val successorNodes = cfg.findSuccessorNodes(currentNode)
                 assert(successorNodes.size == 1)
-                (cfg.findNextNodeNotSkipped(successorNodes.head), true) // If skipping the current node, then must process function calls for the next node
+                (successorNodes.head, true) // If skipping the current node, then must process function calls for the next node
               }
               else (currentNode, false) // If not skipping the current node, then there is no need to process the function calls again
             }
@@ -196,35 +206,31 @@ class ParseCounterexamplePath(debugMode: Boolean) {
             if (!matchResult.matched) newState
             else {
               val newCurrentNode: CFGNode = {
-                val successorNode: CFGNode = {
-                  val successorNodes = cfg.findSuccessorNodes(currentNode)
-                  if (matchResult.matchedExpression) {
-                    // Matched an expression
-                    assert(successorNodes.size == 2)
-                    // Find the branch to proceed
-                    val (trueNode: CFGNode, falseNode: CFGNode) = {
-                      val n1 = successorNodes.head
-                      val n2 = successorNodes.tail.head
-                      val e1 = cfg.jgraphtGraph.getEdge(currentNode, n1)
-                      val e2 = cfg.jgraphtGraph.getEdge(currentNode, n2)
-                      (cfg.jgraphtGraph.getEdgeWeight(e1), cfg.jgraphtGraph.getEdgeWeight(e2)) match {
-                        case (ControlFlowGraph.TRUE_BRANCH_WEIGHT, ControlFlowGraph.FALSE_BRANCH_WEIGHT) => (n1, n2)
-                        case (ControlFlowGraph.FALSE_BRANCH_WEIGHT, ControlFlowGraph.TRUE_BRANCH_WEIGHT) => (n2, n1)
-                        case _ => throw new Exception
-                      }
+                val successorNodes = cfg.findSuccessorNodes(currentNode)
+                if (matchResult.matchedExpression) {
+                  // Matched an expression
+                  assert(successorNodes.size == 2)
+                  // Find the branch to proceed
+                  val (trueNode: CFGNode, falseNode: CFGNode) = {
+                    val n1 = successorNodes.head
+                    val n2 = successorNodes.tail.head
+                    val e1 = cfg.jgraphtGraph.getEdge(currentNode, n1)
+                    val e2 = cfg.jgraphtGraph.getEdge(currentNode, n2)
+                    (cfg.jgraphtGraph.getEdgeWeight(e1), cfg.jgraphtGraph.getEdgeWeight(e2)) match {
+                      case (ControlFlowGraph.TRUE_BRANCH_WEIGHT, ControlFlowGraph.FALSE_BRANCH_WEIGHT) => (n1, n2)
+                      case (ControlFlowGraph.FALSE_BRANCH_WEIGHT, ControlFlowGraph.TRUE_BRANCH_WEIGHT) => (n2, n1)
+                      case _ => throw new Exception
                     }
-                    if (matchResult.matchedTrueBranch) trueNode else falseNode
                   }
-                  else {
-                    // Matched a command
-                    assert(successorNodes.size == 1)
-                    successorNodes.head
-                  }
+                  if (matchResult.matchedTrueBranch) trueNode else falseNode
                 }
-                logger.traceOrError(s"Successor node: `$successorNode`")
-                cfg.findNextNodeNotSkipped(successorNode)
+                else {
+                  // Matched a command
+                  assert(successorNodes.size == 1)
+                  successorNodes.head
+                }
               }
-              logger.traceOrError(s"Successor node (non-CFGOnly): `$newCurrentNode`")
+              logger.traceOrError(s"Successor node: `$newCurrentNode`")
 
               val matchedNode: CFGNode = {
                 if (!matchResult.matchedExpression) currentNode // Match a command

@@ -7,10 +7,19 @@ import brbo.common.TypeUtils.BrboType._
 
 import java.util.UUID
 
-case class BrboProgram(name: String, mainFunction: BrboFunction, functions: List[BrboFunction] = Nil, uuid: UUID = UUID.randomUUID()) extends PrettyPrintToC {
+case class BrboProgram(name: String, mainFunction: BrboFunction,
+                       mostPreciseAssertion: Option[BrboExpr] = None, lessPreciseAssertion: Option[BrboExpr] = None,
+                       functions: List[BrboFunction] = Nil, uuid: UUID = UUID.randomUUID()) extends PrettyPrintToC {
   override def prettyPrintToC(indent: Int): String = {
     val functionsString = (functions :+ mainFunction).map(function => function.prettyPrintToC(indent)).mkString("\n")
     s"${PreDefinedBrboFunctions.UNDEFINED_FUNCTIONS_MACRO}\n${PreDefinedBrboFunctions.SYMBOLS_MACRO}\n$functionsString"
+  }
+
+  override def toString: String = {
+    s"Program name: `$name`\n" +
+      s"Most precise bound: `$mostPreciseAssertion`\n" +
+      s"Less precise bound: `$lessPreciseAssertion`\n" +
+      s"${(functions :+ mainFunction).map(function => function.prettyPrintToC(DEFAULT_INDENT)).mkString("\n")}"
   }
 }
 
@@ -205,6 +214,14 @@ case class FunctionExit(uuid: UUID = UUID.randomUUID()) extends Command with CFG
 
 case class LoopExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
   override def prettyPrintToC(indent: Int): String = "[Loop Exit]"
+
+  override def prettyPrintToCFG: String = prettyPrintToC()
+
+  override def getFunctionCalls: List[FunctionCallExpr] = Nil
+}
+
+case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
+  override def prettyPrintToC(indent: Int): String = "[Empty node]"
 
   override def prettyPrintToCFG: String = prettyPrintToC()
 
