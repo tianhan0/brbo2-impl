@@ -27,7 +27,7 @@ object TreeUtils {
       case ifTree: IfTree =>
         acceptableTree(ifTree.getThenStatement)
         acceptableTree(ifTree.getElseStatement)
-      case labeledStatementTree: LabeledStatementTree => acceptableTree(labeledStatementTree.getStatement)
+      // case labeledStatementTree: LabeledStatementTree => acceptableTree(labeledStatementTree.getStatement)
       case whileLoopTree: WhileLoopTree =>
         acceptableTree(whileLoopTree.getStatement)
       case _ => throw new Exception(s"Unsupported tree: `$tree`")

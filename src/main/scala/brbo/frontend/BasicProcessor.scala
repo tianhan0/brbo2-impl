@@ -1,22 +1,19 @@
 package brbo.frontend
 
+import brbo.common.MyLogger
 import com.sun.source.tree.{ClassTree, CompilationUnitTree, MethodTree, Tree}
 import com.sun.source.util.{SourcePositions, TreePath, TreePathScanner, Trees}
 import org.apache.commons.io.FilenameUtils
 import org.apache.logging.log4j.LogManager
-import org.checkerframework.dataflow.cfg.ControlFlowGraph
-import org.checkerframework.dataflow.cfg.UnderlyingAST.CFGMethod
-import org.checkerframework.dataflow.cfg.builder.CFGBuilder
 import org.checkerframework.javacutil.BasicTypeProcessor
 
 import javax.annotation.processing.SupportedAnnotationTypes
 import javax.lang.model.SourceVersion
 import scala.collection.JavaConverters._
-import scala.collection.immutable.HashMap
 
 @SupportedAnnotationTypes(Array("*"))
 class BasicProcessor extends BasicTypeProcessor {
-  private val logger = LogManager.getLogger(classOf[BasicProcessor])
+  private val logger = MyLogger.createLogger(classOf[BasicProcessor], debugMode = false)
 
   private var sourceCode: Option[String] = None
   private var compilationUnitName: Option[String] = None
@@ -25,8 +22,8 @@ class BasicProcessor extends BasicTypeProcessor {
   private var trees: Option[Trees] = None
   private var positions: Option[SourcePositions] = None
 
-  private var classes = new HashMap[ClassTree, Set[MethodTree]]
-  private var methods = new HashMap[MethodTree, ControlFlowGraph]
+  private var classes = Map[ClassTree, Set[TargetMethod]]()
+  private var mainMethod: Option[TargetMethod] = None
 
   override protected def createTreePathScanner(root: CompilationUnitTree): TreePathScanner[_, _] = {
     rootTree = Some(root)
@@ -36,26 +33,23 @@ class BasicProcessor extends BasicTypeProcessor {
     new TreePathScanner[Void, Void]() {
       override def visitClass(node: ClassTree, p: Void): Void = {
         val members = node.getMembers.asScala.toSet
-        val methods: Set[MethodTree] =
+        val methods: Set[TargetMethod] =
           members.filter({
             case _: MethodTree => true
             case _ => false
-          }).map(t => t.asInstanceOf[MethodTree])
+          }).map({
+            t =>
+              val methodTree = t.asInstanceOf[MethodTree]
+              val result = TargetMethod(methodTree)
+              if (result.methodName == TargetProgram.MAIN_FUNCTION) {
+                assert(mainMethod.isEmpty)
+                mainMethod = Some(result)
+              }
+              result
+          })
+        assert(!classes.contains(node))
         classes = classes + (node -> methods)
-        super.visitClass(node, p)
-      }
-
-      override def visitMethod(node: MethodTree, p: Void): Void = {
-        if (node.getBody == null || node.getName.toString == "<init>")
-          return null
-        logger.trace(s"Visit method `${node.getName}` in file `$getFileName`")
-
-        val underlyingAST = new CFGMethod(node, getEnclosingClass(node).get)
-        val cfg: ControlFlowGraph = CFGBuilder.build(root, underlyingAST, false, true, processingEnv)
-
-        // CFGUtils.printPDF(cfg)
-
-        methods = methods + (node -> cfg)
+        // super.visitClass(node, p)
         null
       }
     }
@@ -84,7 +78,7 @@ class BasicProcessor extends BasicTypeProcessor {
 
   def getEnclosingClass(node: MethodTree): Option[ClassTree] = {
     classes.find({
-      case (_, methods) => methods.contains(node)
+      case (_, methods) => methods.exists(targetMethod => targetMethod.methodTree == node)
     }) match {
       case Some(candidate) => Some(candidate._1)
       case None => None
@@ -101,24 +95,22 @@ class BasicProcessor extends BasicTypeProcessor {
 
   private def getFileName: String = rootTree.get.getSourceFile.getName
 
-  def getClasses: HashMap[ClassTree, Set[MethodTree]] = classes
-
-  def getMethods: HashMap[MethodTree, ControlFlowGraph] = methods
+  def getClasses: Map[ClassTree, Set[TargetMethod]] = classes
 
   def getCompilationUnitName: String = compilationUnitName.get
 
   def getSourceCode: String = sourceCode.get
 
-  def assumeOneClassOneMethod(): Unit = {
+  def assumeOneClass(): Unit = {
     assert(getClasses.size == 1, s"We should analyze exactly one class. Instead, we have `$getClasses`")
-    assert(getMethods.size == 1, s"We should analyze exactly one method. Instead, we have `$getMethods`")
+    // assert(getMethods.size == 1, s"We should analyze exactly one method. Instead, we have `$getMethods`")
   }
 
   def getPath(tree: Tree): TreePath = trees.get.getPath(rootTree.get, tree)
 }
 
 object BasicProcessor {
-  private val logger = LogManager.getLogger("brbo.verification.BasicProcessor")
+  private val logger = MyLogger.createLogger(BasicProcessor.getClass, debugMode = false)
 
   private def run(className: String, sourceFileContents: String): BasicProcessor = {
     val basicProcessor = new BasicProcessor
@@ -139,9 +131,14 @@ object BasicProcessor {
    * @param sourceFileContents Java source code that contains a class, which defines exactly 1 method
    * @return The method in the Java source code
    */
-  def getTargetMethod(className: String, sourceFileContents: String): TargetMethod = {
+  def getTargetProgram(className: String, sourceFileContents: String): TargetProgram = {
     val processor = run(className, sourceFileContents)
-    processor.assumeOneClassOneMethod()
-    TargetMethod(className, processor.getMethods.head._1, processor.getMethods.head._2, processor.getLineNumber, processor.getPath, processor.getSourceCode)
+    processor.assumeOneClass()
+    processor.mainMethod match {
+      case Some(mainMethod) =>
+        TargetProgram(className, processor.classes.head._2, mainMethod, processor.getLineNumber, processor.getPath, processor.getSourceCode)
+      case None =>
+        throw new Exception(s"We need a main method in class `$className`, whose name must be `${TargetProgram.MAIN_FUNCTION}`!")
+    }
   }
 }

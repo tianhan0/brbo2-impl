@@ -50,7 +50,11 @@ case class Block(statements: List[BrboAst], uuid: UUID = UUID.randomUUID()) exte
 case class Loop(condition: BrboExpr, body: BrboAst, uuid: UUID = UUID.randomUUID()) extends Statement {
   override def prettyPrintToC(indent: Int): String = {
     val conditionString = condition.prettyPrintToCNoOuterBrackets
-    val bodyString = s"${body.prettyPrintToC(indent)}"
+    val bodyString = body match {
+      case _: Command => s"${body.prettyPrintToC(indent + DEFAULT_INDENT)}"
+      case _: Statement => s"${body.prettyPrintToC(indent)}"
+      case _ => throw new Exception
+    }
     val indentString = " " * indent
     s"${indentString}while ($conditionString)\n$bodyString"
   }
@@ -59,8 +63,16 @@ case class Loop(condition: BrboExpr, body: BrboAst, uuid: UUID = UUID.randomUUID
 case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, uuid: UUID = UUID.randomUUID()) extends Statement {
   override def prettyPrintToC(indent: Int): String = {
     val conditionString = condition.prettyPrintToCNoOuterBrackets
-    val thenString = thenAst.prettyPrintToC(indent + DEFAULT_INDENT)
-    val elseString = elseAst.prettyPrintToC(indent + DEFAULT_INDENT)
+    val thenString = thenAst match {
+      case _: Command => thenAst.prettyPrintToC(indent + DEFAULT_INDENT)
+      case _: Statement => thenAst.prettyPrintToC(indent)
+      case _ => throw new Exception
+    }
+    val elseString = elseAst match {
+      case _: Command => elseAst.prettyPrintToC(indent + DEFAULT_INDENT)
+      case _: Statement => elseAst.prettyPrintToC(indent)
+      case _ => throw new Exception
+    }
     val indentString = " " * indent
     s"${indentString}if ($conditionString)\n$thenString\n${indentString}else\n$elseString"
   }
