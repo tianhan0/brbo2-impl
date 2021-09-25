@@ -21,7 +21,7 @@ class Driver(commandLineArguments: CommandLineArguments, brboProgram: BrboProgra
 
   def verifySelectivelyAmortize(boundAssertion: BrboExpr): VerifierResult = {
     val UAutomizerVerifier = new UAutomizerVerifier(commandLineArguments)
-    val refiner = new Refiner(boundAssertion, brboProgram, commandLineArguments)
+    val refiner = new Refiner(brboProgram, commandLineArguments)
     var shouldExit = false
     var program2 = brboProgram
     var result = VerifierResult(UNINITIALIZED, None)

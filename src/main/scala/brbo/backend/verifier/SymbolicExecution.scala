@@ -2,10 +2,10 @@ package brbo.backend.verifier
 
 import brbo.backend.verifier.SymbolicExecution._
 import brbo.backend.verifier.cex.Path
-import brbo.common.TypeUtils.BrboType.{BrboType, INT}
-import brbo.common.{StringCompare, Z3Solver}
+import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
+import brbo.common.{StringCompare, Z3Solver}
 import com.microsoft.z3.{AST, BoolExpr}
 
 import scala.annotation.tailrec
@@ -16,9 +16,9 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
   private var inputs: Valuation = brboProgram.mainFunction.parameters.foldLeft(Map[Identifier, Value]())({
     (acc, parameter) =>
       val z3AST = parameter.typ match {
-        case brbo.common.TypeUtils.BrboType.INT => solver.mkIntVar(parameter.identifier)
-        case brbo.common.TypeUtils.BrboType.BOOL => solver.mkBoolVar(parameter.identifier)
-        case brbo.common.TypeUtils.BrboType.VOID => throw new Exception
+        case INT => solver.mkIntVar(parameter.identifier)
+        case BOOL => solver.mkBoolVar(parameter.identifier)
+        case VOID => throw new Exception
       }
       acc + (parameter -> Value(z3AST))
   })
@@ -26,9 +26,9 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
   def createFreshVariable(typ: BrboType): AST = {
     val variableName = s"v${inputs.size}"
     val z3AST = typ match {
-      case brbo.common.TypeUtils.BrboType.INT => solver.mkIntVar(variableName)
-      case brbo.common.TypeUtils.BrboType.BOOL => solver.mkBoolVar(variableName)
-      case brbo.common.TypeUtils.BrboType.VOID => throw new Exception
+      case INT => solver.mkIntVar(variableName)
+      case BOOL => solver.mkBoolVar(variableName)
+      case VOID => throw new Exception
     }
     inputs = inputs + (Identifier(variableName, typ) -> Value(z3AST))
     z3AST
@@ -213,4 +213,5 @@ object SymbolicExecution {
       s"$valuationsString\n$pathConditionString\n$returnValuesString"
     }
   }
+
 }

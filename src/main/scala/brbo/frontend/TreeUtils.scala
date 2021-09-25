@@ -1,7 +1,6 @@
 package brbo.frontend
 
-import brbo.common.TypeUtils
-import brbo.common.TypeUtils.BrboType.BrboType
+import brbo.common.BrboType.BrboType
 import com.sun.source.tree._
 import com.sun.source.util.TreePath
 

@@ -1,6 +1,6 @@
 package brbo.backend.verifier.cex
 
-import brbo.common.TypeUtils.BrboType.BOOL
+import brbo.common.BrboType.BOOL
 import brbo.common.cfg.CFGNode
 
 case class Path(pathNodes: List[CFGNode]) {

@@ -5,12 +5,12 @@ import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.{CommandLineArguments, MathUtils, MyLogger}
 
-class PathTransformation(commandLineArguments: CommandLineArguments, brboProgram: BrboProgram) {
+class PathRefinement(commandLineArguments: CommandLineArguments, brboProgram: BrboProgram) {
   private val maxGroups = commandLineArguments.getMaxGroups
-  private val logger = MyLogger.createLogger(classOf[PathTransformation], commandLineArguments.getDebugMode)
+  private val logger = MyLogger.createLogger(classOf[PathRefinement], commandLineArguments.getDebugMode)
 
   // Perform command transformations to commands in the given path
-  def pathTransformation(path: Path): List[Path] = {
+  def refine(path: Path): List[Path] = {
     val useInsertedPaths: List[Path] = insertUseOnly(path)
     useInsertedPaths.flatMap({
       useInsertedPath: Path => insertResetOnly(useInsertedPath, 0, Nil)

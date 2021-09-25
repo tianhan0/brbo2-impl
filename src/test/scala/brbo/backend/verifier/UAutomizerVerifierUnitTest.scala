@@ -1,7 +1,7 @@
 package brbo.backend.verifier
 
 import brbo.common.{CommandLineArguments, StringCompare}
-import brbo.common.TypeUtils.BrboType.{INT, VOID}
+import brbo.common.BrboType.{INT, VOID}
 import brbo.common.ast._
 import brbo.TestCase
 import org.scalatest.flatspec.AnyFlatSpec

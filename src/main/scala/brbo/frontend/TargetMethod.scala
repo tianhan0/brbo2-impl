@@ -1,8 +1,8 @@
 package brbo.frontend
 
-import brbo.common.TypeUtils.BrboType.{BOOL, BrboType, INT, VOID}
+import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
 import brbo.common.ast.Identifier
-import brbo.common.{MyLogger, TypeUtils}
+import brbo.common.MyLogger
 import com.sun.source.tree.{MethodTree, StatementTree, VariableTree}
 
 import scala.collection.immutable.HashMap

@@ -4,21 +4,21 @@ import brbo.TestCase
 import brbo.backend.verifier.cex.Path
 import brbo.common.GhostVariableTyp.Resource
 import brbo.common.{CommandLineArguments, GhostVariableUtils, StringCompare}
-import brbo.common.TypeUtils.BrboType.{INT, VOID}
+import brbo.common.BrboType.{INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import org.scalatest.flatspec.AnyFlatSpec
 
-class PathTransformationUnitTest extends AnyFlatSpec {
-  PathTransformationUnitTest.testCases.foreach({
+class PathRefinementUnitTest extends AnyFlatSpec {
+  PathRefinementUnitTest.testCases.foreach({
     testCase =>
-      val pathTransformation = new PathTransformation(CommandLineArguments.DEFAULT_ARGUMENTS, PathTransformationUnitTest.brboProgram)
-      val paths = pathTransformation.pathTransformation(testCase.input.asInstanceOf[Path])
+      val pathTransformation = new PathRefinement(CommandLineArguments.DEFAULT_ARGUMENTS, PathRefinementUnitTest.brboProgram)
+      val paths = pathTransformation.refine(testCase.input.asInstanceOf[Path])
       assert(StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
   })
 }
 
-object PathTransformationUnitTest {
+object PathRefinementUnitTest {
   val brboProgram: BrboProgram = BrboProgram("Test program", BrboFunction("Main", VOID, Nil, Block(List(Skip()))))
 
   val testCases: List[TestCase] = {

@@ -1,6 +1,6 @@
 package brbo.common.ast
 
-import brbo.common.TypeUtils.BrboType.BrboType
+import brbo.common.BrboType.BrboType
 
 /*abstract class BrboAnf extends PrettyPrintPrintToCFG
 

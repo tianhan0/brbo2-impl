@@ -1,7 +1,7 @@
 package brbo.backend.verifier.cex
 
 import brbo.common.MyLogger
-import brbo.common.TypeUtils.BrboType.VOID
+import brbo.common.BrboType.VOID
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 import org.jgrapht.Graph

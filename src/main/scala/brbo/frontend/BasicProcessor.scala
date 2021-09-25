@@ -4,7 +4,6 @@ import brbo.common.MyLogger
 import com.sun.source.tree.{ClassTree, CompilationUnitTree, MethodTree, Tree}
 import com.sun.source.util.{SourcePositions, TreePath, TreePathScanner, Trees}
 import org.apache.commons.io.FilenameUtils
-import org.apache.logging.log4j.LogManager
 import org.checkerframework.javacutil.BasicTypeProcessor
 
 import javax.annotation.processing.SupportedAnnotationTypes
@@ -39,6 +38,7 @@ class BasicProcessor extends BasicTypeProcessor {
             case _ => false
           }).map({
             t =>
+              // If this step throws exception, then we won't get detailed error information because of the stupid CheckerFramework implementation of `typeProcess`
               val methodTree = t.asInstanceOf[MethodTree]
               val result = TargetMethod(methodTree)
               if (result.methodName == TargetProgram.MAIN_FUNCTION) {

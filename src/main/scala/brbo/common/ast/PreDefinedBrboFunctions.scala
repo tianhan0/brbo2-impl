@@ -1,6 +1,6 @@
 package brbo.common.ast
 
-import brbo.common.TypeUtils.BrboType.{BOOL, INT, VOID}
+import brbo.common.BrboType.{BOOL, INT, VOID}
 
 object PreDefinedBrboFunctions {
   val VERIFIER_ERROR: String = "__VERIFIER_error"

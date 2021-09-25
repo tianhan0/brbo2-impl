@@ -1,7 +1,7 @@
 package brbo.common.ast
 
-import brbo.common.TypeUtils.BrboType
-import brbo.common.TypeUtils.BrboType.{BOOL, BrboType, INT}
+import brbo.common.BrboType
+import brbo.common.BrboType.{BOOL, BrboType, INT}
 
 import java.util.UUID
 

@@ -3,7 +3,7 @@ package brbo.backend.verifier
 import brbo.TestCase
 import brbo.backend.verifier.cex.Path
 import brbo.common.StringCompare
-import brbo.common.TypeUtils.BrboType._
+import brbo.common.BrboType._
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import org.scalatest.flatspec.AnyFlatSpec

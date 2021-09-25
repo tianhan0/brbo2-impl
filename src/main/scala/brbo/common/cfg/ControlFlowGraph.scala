@@ -2,7 +2,7 @@ package brbo.common.cfg
 
 import brbo.BrboMain
 import brbo.common.MathUtils
-import brbo.common.TypeUtils.BrboType.BOOL
+import brbo.common.BrboType.BOOL
 import brbo.common.ast._
 import com.ibm.wala.util.graph.NumberedGraph
 import com.ibm.wala.util.graph.impl.DelegatingNumberedGraph
