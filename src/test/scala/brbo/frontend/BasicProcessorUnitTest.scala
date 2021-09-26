@@ -5,12 +5,14 @@ import brbo.common.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BasicProcessorUnitTest extends AnyFlatSpec {
-  BasicProcessorUnitTest.tests.foreach({
-    testCase =>
-      val (className, code) = testCase.input.asInstanceOf[(String, String)]
-      val result = BasicProcessor.getTargetProgram(className, code)
-      assert(StringCompare.ignoreWhitespaces(result.program.mainFunction.toString, testCase.expectedOutput, s"`${testCase.name}` failed!"))
-  })
+  "Parsing Java source code" should "be correct" in {
+    BasicProcessorUnitTest.tests.foreach({
+      testCase =>
+        val (className, code) = testCase.input.asInstanceOf[(String, String)]
+        val result = BasicProcessor.getTargetProgram(className, code)
+        assert(StringCompare.ignoreWhitespaces(result.program.mainFunction.toString, testCase.expectedOutput, s"`${testCase.name}` failed!"))
+    })
+  }
 }
 
 object BasicProcessorUnitTest {

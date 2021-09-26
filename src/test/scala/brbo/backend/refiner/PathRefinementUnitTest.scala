@@ -26,19 +26,23 @@ class PathRefinementUnitTest extends AnyFlatSpec {
     arguments
   }
 
-  PathRefinementUnitTest.testUses.foreach({
-    testCase =>
-      val pathRefinement = new PathRefinement(arguments, PathRefinementTestCases.brboProgram)
-      val paths = pathRefinement.insertUseOnly(testCase.input.asInstanceOf[Path])
-      assert(StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
-  })
+  "Inserting uses" should "be correct" in {
+    PathRefinementUnitTest.testUses.foreach({
+      testCase =>
+        val pathRefinement = new PathRefinement(arguments, PathRefinementTestCases.brboProgram)
+        val paths = pathRefinement.insertUseOnly(testCase.input.asInstanceOf[Path])
+        assert(StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
+    })
+  }
 
-  PathRefinementUnitTest.testResets.foreach({
-    testCase =>
-      val pathRefinement = new PathRefinement(arguments, PathRefinementTestCases.brboProgram)
-      val paths = pathRefinement.removeResetOnly(testCase.input.asInstanceOf[Path])
-      assert(StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
-  })
+  "Inserting resets" should "be correct" in {
+    PathRefinementUnitTest.testResets.foreach({
+      testCase =>
+        val pathRefinement = new PathRefinement(arguments, PathRefinementTestCases.brboProgram)
+        val paths = pathRefinement.removeResetOnly(testCase.input.asInstanceOf[Path])
+        assert(StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
+    })
+  }
 }
 
 object PathRefinementUnitTest {

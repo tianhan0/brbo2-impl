@@ -9,11 +9,13 @@ import brbo.common.cfg.CFGNode
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SymbolicExecutionUnitTest extends AnyFlatSpec {
-  SymbolicExecutionUnitTest.tests.foreach({
-    testCase =>
-      val symbolicExecution = new SymbolicExecution(testCase.input.asInstanceOf[Path], SymbolicExecutionUnitTest.program)
-      assert(StringCompare.ignoreWhitespaces(symbolicExecution.result.toString, testCase.expectedOutput, s"${testCase.name} failed!"))
-  })
+  "Symbolic execution a path" should "be correct" in {
+    SymbolicExecutionUnitTest.tests.foreach({
+      testCase =>
+        val symbolicExecution = new SymbolicExecution(testCase.input.asInstanceOf[Path], SymbolicExecutionUnitTest.program)
+        assert(StringCompare.ignoreWhitespaces(symbolicExecution.result.toString, testCase.expectedOutput, s"${testCase.name} failed!"))
+    })
+  }
 }
 
 object SymbolicExecutionUnitTest {

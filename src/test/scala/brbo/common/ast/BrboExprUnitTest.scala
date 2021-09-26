@@ -7,10 +7,12 @@ import brbo.common.BrboType.INT
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BrboExprUnitTest extends AnyFlatSpec {
-  BrboExprUnitTest.prettyPrintToCUnitTest.foreach({
-    testCase =>
-      StringCompare.compareLiteral(testCase.input.asInstanceOf[BrboExpr].prettyPrintToC(), testCase.expectedOutput, s"${testCase.name} failed!")
-  })
+  "Pretty printing BrboExpr to C expression" should "be correct" in {
+    BrboExprUnitTest.prettyPrintToCUnitTest.foreach({
+      testCase =>
+        StringCompare.compareLiteral(testCase.input.asInstanceOf[BrboExpr].prettyPrintToC(), testCase.expectedOutput, s"${testCase.name} failed!")
+    })
+  }
 }
 
 object BrboExprUnitTest {

@@ -1,9 +1,8 @@
 package brbo.common.ast
 
-import brbo.common.BrboType
-import brbo.common.BrboType.INT
 import brbo.TestCase
-import brbo.common.StringCompare
+import brbo.common.BrboType.INT
+import brbo.common.{BrboType, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BrboAstUnitTest extends AnyFlatSpec {
@@ -30,10 +29,12 @@ class BrboAstUnitTest extends AnyFlatSpec {
     assert(createReset != createReset)
   }
 
-  BrboAstUnitTest.prettyPrintToCUnitTest.foreach({
-    testCase =>
-      assert(StringCompare.compareLiteral(testCase.input.asInstanceOf[BrboAst].prettyPrintToC(2), testCase.expectedOutput, s"${testCase.name} failed!"))
-  })
+  "Prettyp-printing BrboAst to C statements" should "be correct" in {
+    BrboAstUnitTest.prettyPrintToCUnitTest.foreach({
+      testCase =>
+        assert(StringCompare.compareLiteral(testCase.input.asInstanceOf[BrboAst].prettyPrintToC(2), testCase.expectedOutput, s"${testCase.name} failed!"))
+    })
+  }
 }
 
 object BrboAstUnitTest {

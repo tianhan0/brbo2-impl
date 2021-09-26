@@ -10,13 +10,15 @@ import org.scalatest.flatspec.AnyFlatSpec
 class ControlFlowGraphUnitTest extends AnyFlatSpec {
   val logger: Logger = LogManager.getLogger(classOf[ControlFlowGraphUnitTest])
 
-  ControlFlowGraphUnitTest.testCases.foreach({
-    testCase =>
-      val controlFlowGraph = ControlFlowGraph.toControlFlowGraph(testCase.input.asInstanceOf[BrboProgram])
-      controlFlowGraph.printPDF()
-      val dotRepresentation = controlFlowGraph.exportToDOT
-      assert(StringCompare.ignoreWhitespaces(dotRepresentation, testCase.expectedOutput, s"${testCase.name} failed!"))
-  })
+  "Generating control flow graphs" should "be correct" in {
+    ControlFlowGraphUnitTest.testCases.foreach({
+      testCase =>
+        val controlFlowGraph = ControlFlowGraph.toControlFlowGraph(testCase.input.asInstanceOf[BrboProgram])
+        controlFlowGraph.printPDF()
+        val dotRepresentation = controlFlowGraph.exportToDOT
+        assert(StringCompare.ignoreWhitespaces(dotRepresentation, testCase.expectedOutput, s"${testCase.name} failed!"))
+    })
+  }
 }
 
 object ControlFlowGraphUnitTest {
