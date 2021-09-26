@@ -34,7 +34,7 @@ class PathRefinementOld(commandLineArguments: CommandLineArguments, brboProgram:
     path.pathNodes(index).value match {
       case Left(command) =>
         command match {
-          case Use(groupID, _, _, _) =>
+          case Use(groupID, _, _) =>
             val notInsertResetBeforeThisUse = insertResetOnly(path, index + 1, choices :+ NOT_INSERT)
             val insertResetBeforeThisUse = insertResetOnly(path, index + 1, choices :+ groupID.get)
             notInsertResetBeforeThisUse ::: insertResetBeforeThisUse
@@ -64,12 +64,12 @@ class PathRefinementOld(commandLineArguments: CommandLineArguments, brboProgram:
             nodes(i).value match {
               case Left(command) =>
                 command match {
-                  case Use(_, update, assignment, _) =>
+                  case Use(_, update, _) =>
                     // Do not transform commands in functions other than the main function
                     val newNode: CFGNode =
                       if (nodes(i).function.identifier == brboProgram.mainFunction.identifier) {
                         // Transform according to the renaming scheme
-                        CFGNode(Left(Use(Some(transformation(j)), update, assignment)), brboProgram.mainFunction, CFGNode.DONT_CARE_ID)
+                        CFGNode(Left(Use(Some(transformation(j)), update)), brboProgram.mainFunction, CFGNode.DONT_CARE_ID)
                       }
                       else unchanged
                     j = j + 1

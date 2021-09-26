@@ -32,6 +32,7 @@ object BrboExprUnitTest {
       TestCase("NotEqual", NotEqual(Number(2), Number(3)), "(2 != 3)"),
       TestCase("And", And(Bool(true), Bool(false)), "(true && false)"),
       TestCase("Or", Or(Bool(true), Bool(false)), "(true || false)"),
-      TestCase("FunctionCallExpr", FunctionCallExpr("f", List(Identifier("a", INT), Identifier("b", INT), Identifier("c", INT)), BrboType.INT), "f(a, b, c)")
+      TestCase("FunctionCallExpr", FunctionCallExpr("f", List(Identifier("a", INT), Identifier("b", INT), Identifier("c", INT)), BrboType.INT), "f(a, b, c)"),
+      TestCase("ITEExpr", ITEExpr(Bool(true), Number(0), Number(1)), "true ? 0 : 1")
     )
 }

@@ -2,8 +2,8 @@ package brbo.backend.verifier
 
 import brbo.TestCase
 import brbo.backend.verifier.cex.Path
-import brbo.common.StringCompare
 import brbo.common.BrboType._
+import brbo.common.StringCompare
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import org.scalatest.flatspec.AnyFlatSpec
@@ -65,15 +65,29 @@ object SymbolicExecutionUnitTest {
         CFGNode(Left(Return(None)), assertFunction, CFGNode.DONT_CARE_ID)
       ))
     }
+
+    val test02 = {
+      val use = Use(Some(2), Number(1))
+      val reset = Reset(2)
+      Path(List(
+        CFGNode(Left(VariableDeclaration(use.resourceVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID),
+        CFGNode(Left(VariableDeclaration(reset.sharpVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID),
+        CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID),
+        CFGNode(Left(use), mainFunction, CFGNode.DONT_CARE_ID),
+        CFGNode(Left(reset), mainFunction, CFGNode.DONT_CARE_ID),
+        CFGNode(Left(use), mainFunction, CFGNode.DONT_CARE_ID),
+      ))
+    }
+
     List(
-      TestCase("Test 01", test01,
+      TestCase("Test Counterexample Path", test01,
         """Valuations:
-          |  (R,Value((+ 0 a)))
-          |  (a,Value(a))
-          |  (b,Value(b))
-          |  (e,Value(a))
-          |  (i,Value((+ 0 1)))
-          |  (n,Value(n))
+          |  (R,(INT,Value((+ 0 a))))
+          |  (a,(INT,Value(a)))
+          |  (b,(INT,Value(b)))
+          |  (e,(INT,Value(a)))
+          |  (i,(INT,Value((+ 0 1))))
+          |  (n,(INT,Value(n)))
           |Path condition: (let ((a!1 (not (not (or (= v3 0) (= v3 1))))))
           |  (and true
           |       (not (not (> n 0)))
@@ -84,7 +98,18 @@ object SymbolicExecutionUnitTest {
           |       (not (<= (+ 0 a) a))))
           |Return values:
           |  (ndBool,List(Value(v3)))
-          |  (ndInt,List())""".stripMargin)
+          |  (ndInt,List())""".stripMargin),
+      TestCase("Test Uses and Resets", test02,
+        """Valuations:
+          |  (C2,(INT,Value((+ 0 1))))
+          |  (R2,(INT,Value((+ 0 1))))
+          |  (S2,(INT,Value((ite (< 0 (+ 0 1)) (+ 0 1) 0))))
+          |  (a,(INT,Value(a)))
+          |  (b,(INT,Value(b)))
+          |  (n,(INT,Value(n)))
+          |Path condition: true
+          |Return values:
+          |""".stripMargin)
     )
   }
 }

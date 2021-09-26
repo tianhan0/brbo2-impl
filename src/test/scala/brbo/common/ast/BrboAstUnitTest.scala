@@ -24,7 +24,7 @@ class BrboAstUnitTest extends AnyFlatSpec {
     assert(createBlock != createBlock)
     assert(FunctionExit() != FunctionExit())
     assert(LoopExit() != LoopExit())
-    assert(UndefinedFunction("f") != UndefinedFunction("f"))
+    // assert(UndefinedFunction("f") != UndefinedFunction("f"))
     assert(createUse != createUse)
     assert(createUse2 != createUse2)
     assert(createReset != createReset)
@@ -85,12 +85,12 @@ object BrboAstUnitTest {
 
   def createUse: Use = {
     val v1 = Identifier("v1", INT)
-    Use(Some(5), Number(1), Assignment(v1, Addition(v1, Number(1))))
+    Use(Some(5), Number(1))
   }
 
   def createUse2: Use = {
     val v2 = Identifier("v2", INT)
-    Use(None, Number(2), Assignment(v2, Addition(v2, Number(2))))
+    Use(None, Number(2))
   }
 
   def createReset: Reset = Reset(5)

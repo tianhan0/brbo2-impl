@@ -195,3 +195,14 @@ case class FunctionCallExpr(identifier: String, arguments: List[BrboExpr], retur
     arguments.flatMap(argument => argument.getFunctionCalls) :+ this
   }
 }
+
+case class ITEExpr(condition: BrboExpr, thenExpr: BrboExpr, elseExpr: BrboExpr) extends BrboExpr(thenExpr.typ) {
+  assert(condition.typ == BOOL)
+  assert(thenExpr.typ == elseExpr.typ)
+
+  override def prettyPrintToC(indent: Int): String = s"${condition.prettyPrintToC()} ? ${thenExpr.prettyPrintToC()} : ${elseExpr.prettyPrintToC()}"
+
+  override def prettyPrintToCFG: String = prettyPrintToC()
+
+  override def getFunctionCalls: List[FunctionCallExpr] = condition.getFunctionCalls ::: thenExpr.getFunctionCalls ::: elseExpr.getFunctionCalls
+}

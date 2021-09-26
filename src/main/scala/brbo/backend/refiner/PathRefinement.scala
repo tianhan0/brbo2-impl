@@ -70,7 +70,7 @@ class PathRefinement(commandLineArguments: CommandLineArguments, brboProgram: Br
           head.value match {
             case Left(command) =>
               command match {
-                case Use(_, update, assignment, _) =>
+                case Use(_, update, _) =>
                   var splits: List[(Int, List[CFGNode])] = Nil
                   var numberOfNewGroups = 1
                   while (numberOfGroups + numberOfNewGroups <= maxGroups) {
@@ -79,7 +79,7 @@ class PathRefinement(commandLineArguments: CommandLineArguments, brboProgram: Br
                       val newSplit = newGroupIds.flatMap({
                         i =>
                           // Rely on `head.id` to know which CFG edge the new nodes correspond to
-                          val newUse = CFGNode(Left(Use(Some(i), update, assignment)), brboProgram.mainFunction, head.id)
+                          val newUse = CFGNode(Left(Use(Some(i), update)), brboProgram.mainFunction, head.id)
                           val newReset = CFGNode(Left(Reset(i)), brboProgram.mainFunction, head.id)
                           List(newUse, newReset)
                       })
@@ -104,7 +104,7 @@ class PathRefinement(commandLineArguments: CommandLineArguments, brboProgram: Br
           node.value match {
             case Left(command) =>
               command match {
-                case Use(groupID, _, _, _) => groupIDs = groupIDs + groupID.get
+                case Use(groupID, _, _) => groupIDs = groupIDs + groupID.get
                 case Reset(groupID, _) => groupIDs = groupIDs + groupID
                 case _ =>
               }

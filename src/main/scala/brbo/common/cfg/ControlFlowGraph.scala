@@ -56,7 +56,7 @@ object ControlFlowGraph {
       jgraphtGraph.setEdgeWeight(src, dst, if (trueBranch) TRUE_BRANCH_WEIGHT else FALSE_BRANCH_WEIGHT)
     }
 
-    def getCFGFromName(functionName: String): InternalGraph = {
+    /*def getCFGFromName(functionName: String): InternalGraph = {
       (brboProgram.mainFunction :: brboProgram.functions).find(function => function.identifier == functionName) match {
         case Some(function) => getCFG(function)
         case None =>
@@ -64,7 +64,7 @@ object ControlFlowGraph {
           val node = getNode(Left(UndefinedFunction(functionName)), ???)
           InternalGraph(node, Set(node))
       }
-    }
+    }*/
 
     def getCFG(brboFunction: BrboFunction): InternalGraph = {
       val functionCFG = functionToInternalGraph(brboFunction)

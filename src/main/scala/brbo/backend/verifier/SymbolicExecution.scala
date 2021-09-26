@@ -5,7 +5,7 @@ import brbo.backend.verifier.cex.Path
 import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{StringCompare, Z3Solver}
+import brbo.common.{BrboType, StringCompare, Z3Solver}
 import com.microsoft.z3.{AST, BoolExpr}
 
 import scala.annotation.tailrec
@@ -13,14 +13,14 @@ import scala.annotation.tailrec
 class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
   private val solver = new Z3Solver
 
-  private var inputs: Valuation = brboProgram.mainFunction.parameters.foldLeft(Map[Identifier, Value]())({
+  private var inputs: Valuation = brboProgram.mainFunction.parameters.foldLeft(Map[String, (BrboType, Value)]())({
     (acc, parameter) =>
       val z3AST = parameter.typ match {
         case INT => solver.mkIntVar(parameter.identifier)
         case BOOL => solver.mkBoolVar(parameter.identifier)
         case VOID => throw new Exception
       }
-      acc + (parameter -> Value(z3AST))
+      acc + (parameter.identifier -> (parameter.typ, Value(z3AST)))
   })
 
   def createFreshVariable(typ: BrboType): AST = {
@@ -30,7 +30,7 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
       case BOOL => solver.mkBoolVar(variableName)
       case VOID => throw new Exception
     }
-    inputs = inputs + (Identifier(variableName, typ) -> Value(z3AST))
+    inputs = inputs + (variableName -> (typ, Value(z3AST)))
     z3AST
   }
 
@@ -53,9 +53,9 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
                   (value.get :: values, newReturnValue)
               })
             val map =
-              callee.parameters.zip(reversedValues.reverse).foldLeft(Map[Identifier, Value]())({
+              callee.parameters.zip(reversedValues.reverse).foldLeft(Map[String, (BrboType, Value)]())({
                 case (acc, (formalArgument, value)) =>
-                  acc + (formalArgument -> Value(value))
+                  acc + (formalArgument.identifier -> (formalArgument.typ, Value(value)))
               })
             State(map :: state.valuations, state.pathCondition, newReturnValues)
           case Return(value, _) =>
@@ -93,8 +93,20 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
           case FunctionCall(functionCallExpr, _) =>
             val (_, newReturnValues) = evaluateExpression(valuation, state.returnValues, functionCallExpr)
             State(state.valuations, state.pathCondition, newReturnValues)
-          case _: CFGOnly | _: GhostCommand |
-               Skip(_) | Break(_) | Continue(_) => throw new Exception(s"Unexpected command: `$command`")
+          case use@Use(_, _, _) =>
+            val (newValuation, newReturnValues) = evaluateAssignment(valuation, state.returnValues, Left(use.assignmentCommand))
+            State(newValuation :: state.valuations.tail, state.pathCondition, newReturnValues)
+          case reset@Reset(_, _) =>
+            var newValuation: Valuation = valuation
+            var newReturnValues: ReturnValues = state.returnValues
+            List(reset.maxCommand, reset.resetCommand, reset.counterCommand).foreach({
+              assignment =>
+                val r = evaluateAssignment(newValuation, newReturnValues, Left(assignment))
+                newValuation = r._1
+                newReturnValues = r._2
+            })
+            State(newValuation :: state.valuations.tail, state.pathCondition, newReturnValues)
+          case _: CFGOnly | Skip(_) | Break(_) | Continue(_) => throw new Exception(s"Unexpected command: `$command`")
         }
       case Right(brboExpr) =>
         val (additionPathCondition, newReturnValues) = evaluateExpression(valuation, state.returnValues, brboExpr)
@@ -107,12 +119,12 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
     command match {
       case Left(Assignment(variable, expression, _)) =>
         val (value, newReturnValues) = evaluateExpression(valuation, returnValues, expression)
-        (valuation.updated(variable, Value(value.get)), newReturnValues)
+        (valuation.updated(variable.identifier, (variable.typ, Value(value.get))), newReturnValues)
       case Right(VariableDeclaration(variable, initialValue, _)) =>
         val (value, newReturnValues) = evaluateExpression(valuation, returnValues, initialValue)
         // Check variable name shadowing
-        assert(!valuation.contains(variable), s"Variable `${variable.identifier}` is defined again by `$command`")
-        (valuation.updated(variable, Value(value.get)), newReturnValues)
+        assert(!valuation.contains(variable.identifier), s"Variable `${variable.identifier}` is defined again by `$command`")
+        (valuation.updated(variable.identifier, (variable.typ, Value(value.get))), newReturnValues)
     }
   }
 
@@ -183,11 +195,17 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
               case _ => throw new Exception
             }
         }
-      case e@Identifier(_, _, _) =>
-        valuation.get(e) match {
-          case Some(value) => (Some(value.value), returnValues)
+      case e@Identifier(identifier, _, _) =>
+        valuation.get(identifier) match {
+          case Some(value) => (Some(value._2.value), returnValues)
           case None => throw new Exception(s"Find the value of `$e` from `$valuation`")
         }
+      case ITEExpr(condition, thenExpr, elseExpr) =>
+        val (conditionValue, returnValues1) = evaluateExpression(valuation, returnValues, condition)
+        val (thenValue, returnValues2) = evaluateExpression(valuation, returnValues1, thenExpr)
+        val (elseValue, returnValues3) = evaluateExpression(valuation, returnValues1, elseExpr)
+        assert(returnValues2 == returnValues3)
+        (Some(solver.mkITE(conditionValue.get, thenValue.get, elseValue.get)), returnValues2)
     }
   }
 }
@@ -195,7 +213,7 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
 object SymbolicExecution {
   type ReturnValues = Map[String, List[Value]]
 
-  type Valuation = Map[Identifier, Value]
+  type Valuation = Map[String, (BrboType, Value)]
 
   case class Value(value: AST)
 

@@ -187,10 +187,10 @@ class Z3Solver {
     mkBoolVal(false)
   }
 
-  def mkITE(condition: AST, trueCase: AST, falseExpr: AST): Expr = this.synchronized {
+  def mkITE(condition: AST, trueExpr: AST, falseExpr: AST): Expr = this.synchronized {
     context.mkITE(
       condition.asInstanceOf[BoolExpr],
-      trueCase.asInstanceOf[Expr],
+      trueExpr.asInstanceOf[Expr],
       falseExpr.asInstanceOf[Expr]
     )
   }

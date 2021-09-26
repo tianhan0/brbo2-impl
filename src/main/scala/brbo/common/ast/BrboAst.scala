@@ -1,9 +1,8 @@
 package brbo.common.ast
 
-import brbo.common.GhostVariableTyp._
-import brbo.common.GhostVariableUtils
-import brbo.common.BrboType
 import brbo.common.BrboType._
+import brbo.common.GhostVariableTyp._
+import brbo.common.{BrboType, GhostVariableUtils}
 
 import java.util.UUID
 
@@ -240,18 +239,17 @@ case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 }
 
-@deprecated
-case class UndefinedFunction(functionName: String, uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
+/*case class UndefinedFunction(functionName: String, uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
   override def prettyPrintToC(indent: Int): String = s"[Undefined Function: `$functionName`]"
 
   override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
-}
+}*/
 
 sealed trait GhostCommand
 
-case class Use(groupID: Option[Int], update: BrboExpr, assignment: Assignment, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
+case class Use(groupID: Option[Int], update: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
   groupID match {
     case Some(value) => assert(value >= 0) // This command represents updating a resource variable for some amortization group
     case None => // This command represents updating the original resource variable
@@ -267,11 +265,13 @@ case class Use(groupID: Option[Int], update: BrboExpr, assignment: Assignment, u
     Identifier(GhostVariableUtils.generateName(suffix, Resource), INT)
   }
 
+  val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
+
   override def prettyPrintToCFG: String = s"use ${resourceVariable.identifier} ${update.prettyPrintToCFG}"
 
   override def getFunctionCalls: List[FunctionCallExpr] = update.getFunctionCalls
 
-  override def prettyPrintToC(indent: Int): String = Assignment(resourceVariable, Addition(resourceVariable, update)).prettyPrintToC(indent)
+  override def prettyPrintToC(indent: Int): String = assignmentCommand.prettyPrintToC(indent)
 }
 
 case class Reset(groupID: Int, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
@@ -279,15 +279,20 @@ case class Reset(groupID: Int, uuid: UUID = UUID.randomUUID()) extends Command w
   val resourceVariable: Identifier = Identifier(GhostVariableUtils.generateName(groupID.toString, Resource), INT)
   val counterVariable: Identifier = Identifier(GhostVariableUtils.generateName(groupID.toString, Counter), INT)
 
+  val maxCommand: Assignment = {
+    val iteExpr = ITEExpr(LessThan(sharpVariable, resourceVariable), resourceVariable, sharpVariable)
+    Assignment(sharpVariable, iteExpr)
+  }
+  val maxStatement: ITE = ITE(LessThan(sharpVariable, resourceVariable), Assignment(sharpVariable, resourceVariable), Skip())
+  val resetCommand: Assignment = Assignment(resourceVariable, Number(0))
+  val counterCommand: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
+
   override def prettyPrintToCFG: String = s"reset ${resourceVariable.identifier}"
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
   override def prettyPrintToC(indent: Int): String = {
-    val max = ITE(LessThan(sharpVariable, resourceVariable), Assignment(sharpVariable, resourceVariable), Skip())
-    val reset = Assignment(resourceVariable, Number(0))
-    val counter = Assignment(counterVariable, Addition(counterVariable, Number(1)))
-    s"${max.prettyPrintToC(indent)}\n${reset.prettyPrintToC(indent)}\n${counter.prettyPrintToC(indent)}"
+    s"${maxStatement.prettyPrintToC(indent)}\n${resetCommand.prettyPrintToC(indent)}\n${counterCommand.prettyPrintToC(indent)}"
   }
 }
 
