@@ -1,119 +1,134 @@
 package brbo.backend.refiner
 
-import brbo.backend.verifier.cex.Path
+import brbo.backend.verifier.cex.{Path, Segment}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{CommandLineArguments, MyLogger}
+import brbo.common.{CommandLineArguments, MathUtils, MyLogger}
 
 class PathRefinement(commandLineArguments: CommandLineArguments, brboProgram: BrboProgram) {
   private val maxGroups = commandLineArguments.getMaxGroups
   private val logger = MyLogger.createLogger(classOf[PathRefinement], commandLineArguments.getDebugMode)
 
   // Perform command transformations to commands in the given path
-  def refine(path: Path): Set[Path] = {
-    val useInsertedPaths: Set[Path] = insertUseOnly(path).toSet
+  def refine(path: Path): Set[Refinement] = {
+    val useInsertedPaths: Set[Refinement] = insertUseOnly(path)
     useInsertedPaths.flatMap({
-      useInsertedPath: Path => removeResetOnly(useInsertedPath)
+      useInsertedPath: Refinement => removeResetOnly(useInsertedPath)
     })
   }
 
-  def removeResetOnly(path: Path): Set[Path] = {
-    def helper(numberToKeep: Int, currentPath: List[CFGNode], remaining: List[CFGNode]): Set[List[CFGNode]] = {
+  def removeResetOnly(refineUseOnly: Refinement): Set[Refinement] = {
+    def helper(numberToKeep: Int, currentRefine: Refinement, currentIndex: Int, remaining: List[CFGNode]): Set[Refinement] = {
       assert(numberToKeep >= 0)
       remaining match {
-        case Nil => Set(currentPath.reverse)
+        case Nil => Set(currentRefine)
         case ::(head, tail) =>
           // Do not transform commands in functions other than the main function
           if (head.function.identifier != brboProgram.mainFunction.identifier)
-            return helper(numberToKeep, head :: currentPath, tail)
+            return helper(numberToKeep, currentRefine, currentIndex + 1, tail)
           head.value match {
             case Left(command) =>
               command match {
                 case Reset(_, _) =>
-                  if (numberToKeep == 0) helper(numberToKeep, currentPath, tail)
+                  val newRefine = currentRefine.removeReset(currentIndex)
+                  if (numberToKeep == 0) helper(numberToKeep, newRefine, currentIndex + 1, tail)
                   else {
-                    helper(numberToKeep - 1, head :: currentPath, tail) ++ helper(numberToKeep, currentPath, tail)
+                    helper(numberToKeep - 1, currentRefine, currentIndex + 1, tail) ++
+                      helper(numberToKeep, newRefine, currentIndex + 1, tail)
                   }
-                case _ => helper(numberToKeep, head :: currentPath, tail)
+                case _ => helper(numberToKeep, currentRefine, currentIndex + 1, tail)
               }
-            case Right(_) => helper(numberToKeep, head :: currentPath, tail)
+            case Right(_) => helper(numberToKeep, currentRefine, currentIndex + 1, tail)
           }
       }
     }
 
-    val numberOfResets =
-      path.pathNodes.count({
-        node =>
-          node.value match {
-            case Left(command) =>
-              command match {
-                case Reset(_, _) => true
-                case _ => false
-              }
-            case Right(_) => false
-          }
-      })
+    val numberOfResets = refineUseOnly.path.count({ node => node.isReset(None, Some(brboProgram.mainFunction)) })
 
     Range.inclusive(0, numberOfResets).toSet.flatMap({
-      numberToKeep => helper(numberToKeep, Nil, path.pathNodes)
-    }).map(newPath => Path(newPath))
+      numberToKeep => helper(numberToKeep, Refinement(Nil, refineUseOnly.splitUses, Set(), refineUseOnly.groupIDs), currentIndex = 0, refineUseOnly.path)
+    })
   }
 
-  def insertUseOnly(path: Path): List[Path] = {
-    def helper(numberOfGroups: Int, currentPath: List[CFGNode], remaining: List[CFGNode]): List[List[CFGNode]] = {
-      remaining match {
-        case Nil => List(currentPath.reverse)
-        case ::(head, tail) =>
-          // Do not transform commands in functions other than the main function
-          if (head.function.identifier != brboProgram.mainFunction.identifier)
-            return helper(numberOfGroups, head :: currentPath, tail)
-          head.value match {
-            case Left(command) =>
-              command match {
-                case Use(_, update, _) =>
-                  var splits: List[(Int, List[CFGNode])] = Nil
-                  var numberOfNewGroups = 1
-                  while (numberOfGroups + numberOfNewGroups <= maxGroups) {
-                    splits = {
-                      val newGroupIds = Range.inclusive(numberOfGroups + 1, numberOfGroups + numberOfNewGroups).toList.reverse
-                      val newSplit = newGroupIds.flatMap({
-                        i =>
-                          // Rely on `head.id` to know which CFG edge the new nodes correspond to
-                          val newUse = CFGNode(Left(Use(Some(i), update)), brboProgram.mainFunction, head.id)
-                          val newReset = CFGNode(Left(Reset(i)), brboProgram.mainFunction, head.id)
-                          List(newUse, newReset)
-                      })
-                      (numberOfNewGroups, newSplit) :: splits
-                    }
-                    numberOfNewGroups = numberOfNewGroups + 1
-                  }
-                  splits.flatMap({
-                    case (numberOfNewGroups, newPrefix) => helper(numberOfNewGroups + numberOfGroups, newPrefix ::: currentPath, tail)
-                  })
-                case _ => helper(numberOfGroups, head :: currentPath, tail)
-              }
-            case Right(_) => helper(numberOfGroups, head :: currentPath, tail)
-          }
-      }
-    }
+  def insertUseOnly(path: Path): Set[Refinement] = {
+    val pathWithIndex = path.pathNodes.zipWithIndex
 
-    val numberOfGroups = {
-      var groupIDs = Set[Int]()
+    val groupIds: List[Int] = {
+      var groupIds = Set[Int]()
       path.pathNodes.foreach({
         node =>
           node.value match {
             case Left(command) =>
               command match {
-                case Use(groupID, _, _) => groupIDs = groupIDs + groupID.get
-                case Reset(groupID, _) => groupIDs = groupIDs + groupID
+                case Use(groupID, _, _) => groupIds = groupIds + groupID.get
+                case Reset(groupID, _) => groupIds = groupIds + groupID
                 case _ =>
               }
             case Right(_) =>
           }
       })
-      groupIDs.size
+      groupIds.toList.sorted
     }
 
-    helper(numberOfGroups, Nil, path.pathNodes).map(newPath => Path(newPath))
+    val allSegments: Map[Int, List[Segment]] = {
+      groupIds.foldLeft(Map[Int, List[Segment]]())({
+        (acc, groupId) => acc + (groupId -> path.getSegments(groupId, brboProgram.mainFunction))
+      })
+    }
+
+    def helper(exitingGroups: Set[Int], currentRefine: Refinement, toSplitGroupIds: List[Int]): Set[Refinement] = {
+      logger.traceOrError(s"exitingGroups: `$exitingGroups`, toSplitGroupIds: `$toSplitGroupIds`, currentRefine: `${currentRefine.toStringNoPath}`")
+      if (toSplitGroupIds.isEmpty) return Set(currentRefine)
+      val toSplitGroupId = toSplitGroupIds.head
+      val segments = allSegments.getOrElse(toSplitGroupId, throw new Exception)
+      var result: Set[Refinement] = helper(exitingGroups, currentRefine, toSplitGroupIds.tail) // Not split the group
+      val minGroupId = exitingGroups.max + 1
+      val maxGroupId = {
+        val a = exitingGroups.max + segments.size
+        val b = maxGroups - exitingGroups.size + exitingGroups.max
+        if (a <= b) a else b
+      }
+      logger.traceOrError(s"Number of segments: `${segments.size}`, minGroupId: `$minGroupId`, maxGroupId: `$maxGroupId`")
+      Range.inclusive(minGroupId, maxGroupId).foreach({
+        currentMaxGroupId =>
+          logger.traceOrError(s"minGroupId: `$minGroupId`, currentMaxGroupId: `$currentMaxGroupId`")
+          val possibilities: Set[List[Int]] = MathUtils.generateUniqueSequences(segments.size, minGroupId, currentMaxGroupId)
+          result = result ++ possibilities.flatMap({
+            possibility =>
+              val oneNewGroup = possibility.min == possibility.max
+              // If the number of new groups is 1, then we are actually not splitting!
+              if (oneNewGroup) {
+                Set[Refinement]()
+              }
+              else {
+                logger.traceOrError(s"Possibility: `$possibility`")
+                assert(possibility.size == segments.size)
+                val splitUses = segments.zip(possibility).foldLeft(currentRefine.splitUses)({
+                  case (acc, (segment, newGroupId)) =>
+                    pathWithIndex.slice(segment.begin, segment.end + 1).foldLeft(acc)({
+                      case (acc2, (node, index)) =>
+                        assert(!acc2.contains(index))
+                        // Do not transform commands in functions other than the main function
+                        if (node.isReset(Some(toSplitGroupId), Some(brboProgram.mainFunction))) {
+                          val newReset = CFGNode(Left(Reset(newGroupId)), brboProgram.mainFunction, CFGNode.DONT_CARE_ID)
+                          acc2 + (index -> ResetNode(newReset, newGroupId))
+                        }
+                        else if (node.isUse(Some(toSplitGroupId), Some(brboProgram.mainFunction))) {
+                          val update = node.value.left.get.asInstanceOf[Use].update
+                          val newUse = CFGNode(Left(Use(Some(newGroupId), update)), brboProgram.mainFunction, CFGNode.DONT_CARE_ID)
+                          acc2 + (index -> UseNode(newUse, newGroupId))
+                        }
+                        else acc2
+                    })
+                })
+                val newRefine = Refinement(currentRefine.path, splitUses, currentRefine.removeResets, currentRefine.groupIDs + (toSplitGroupId -> possibility.toSet))
+                helper(exitingGroups - toSplitGroupId ++ possibility.toSet, newRefine, toSplitGroupIds.tail)
+              }
+          })
+      })
+      result
+    }
+
+    helper(groupIds.toSet, Refinement(path.pathNodes, Map(), Set(), Map()), groupIds)
   }
 }

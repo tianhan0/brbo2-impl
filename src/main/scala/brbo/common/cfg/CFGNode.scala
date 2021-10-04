@@ -60,6 +60,50 @@ case class CFGNode(value: Either[Command, BrboExpr], function: BrboFunction, id:
       case Right(expr) => s"($id) ${expr.prettyPrintToCFG}"
     }
   }
+
+  // Whether this node is a use command, or a use command for the given group in the given function
+  def isUse(groupId: Option[Int], inFunction: Option[BrboFunction]): Boolean = {
+    inFunction match {
+      case Some(function2) => if (function2.identifier != function.identifier) return false
+      case None =>
+    }
+
+    value match {
+      case Left(command) =>
+        command match {
+          case Use(groupId2, _, _) =>
+            (groupId2, groupId) match {
+              case (Some(value2), Some(value)) => value2 == value
+              case (Some(_), None) => true
+              case (None, Some(_)) => false
+              case (None, None) => true
+            }
+          case _ => false
+        }
+      case Right(_) => false
+    }
+  }
+
+  // Whether this node is a reset command, or a reset command for the given group in the given function
+  def isReset(groupId: Option[Int], inFunction: Option[BrboFunction]): Boolean = {
+    inFunction match {
+      case Some(function2) => if (function2.identifier != function.identifier) return false
+      case None =>
+    }
+
+    value match {
+      case Left(command) =>
+        command match {
+          case Reset(groupID2, _) =>
+            groupId match {
+              case Some(value) => groupID2 == value
+              case None => true
+            }
+          case _ => false
+        }
+      case Right(_) => false
+    }
+  }
 }
 
 object CFGNode {

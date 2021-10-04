@@ -5,9 +5,9 @@ import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.{CommandLineArguments, MathUtils, MyLogger}
 
-class PathRefinementOld(commandLineArguments: CommandLineArguments, brboProgram: BrboProgram) {
+class PathRefinementUnrestricted(commandLineArguments: CommandLineArguments, brboProgram: BrboProgram) {
   private val maxGroups = commandLineArguments.getMaxGroups
-  private val logger = MyLogger.createLogger(classOf[PathRefinementOld], commandLineArguments.getDebugMode)
+  private val logger = MyLogger.createLogger(classOf[PathRefinementUnrestricted], commandLineArguments.getDebugMode)
 
   // Perform command transformations to commands in the given path
   def refine(path: Path): List[Path] = {
@@ -53,7 +53,7 @@ class PathRefinementOld(commandLineArguments: CommandLineArguments, brboProgram:
           case Right(_) => false
         }
     })
-    val results: Set[List[CFGNode]] = MathUtils.generateUniqueSequences(numberOfUses, maxGroups).map({
+    val results: Set[List[CFGNode]] = MathUtils.generateUniqueSequences(numberOfUses, 0, maxGroups - 1).map({
       transformation =>
         var i = 0
         var j = 0 // Index of use

@@ -45,7 +45,8 @@ class UAutomizerVerifier(override val commandLineArguments: CommandLineArguments
 
         val counterexamplePath: String = FileUtils.readFromFile(VIOLATION_WITNESS_FILE)
         val parseCounterexamplePath = new ParseCounterexamplePath(commandLineArguments.getDebugMode)
-        VerifierResult(result, Some(parseCounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, program)))
+        val rawPath = parseCounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, program)
+        VerifierResult(result, Some(parseCounterexamplePath.parseUseReset(rawPath)))
       case VerifierRawResult.TRUE_RESULT | VerifierRawResult.UNKNOWN_RESULT => VerifierResult(result, None)
       case VerifierRawResult.UNINITIALIZED => throw new Exception
     }

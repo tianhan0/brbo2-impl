@@ -5,16 +5,16 @@ import brbo.backend.verifier.cex.Path
 import brbo.common.{CommandLineArguments, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
 
-class PathRefinementOldUnitTest extends AnyFlatSpec {
-  PathRefinementOldUnitTest.testCases.foreach({
+class PathRefinementUnrestrictedUnitTest extends AnyFlatSpec {
+  /*PathRefinementOldUnitTest.testCases.foreach({
     testCase =>
       val pathRefinementOld = new PathRefinementOld(CommandLineArguments.DEFAULT_ARGUMENTS, PathRefinementTestCases.brboProgram)
       val paths = pathRefinementOld.refine(testCase.input.asInstanceOf[Path])
       assert(StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
-  })
+  })*/
 }
 
-object PathRefinementOldUnitTest {
+object PathRefinementUnrestrictedUnitTest {
   val testCases: List[TestCase] = {
     List(
       TestCase("Test 01", PathRefinementTestCases.test01,

@@ -26,21 +26,21 @@ class PathRefinementUnitTest extends AnyFlatSpec {
     arguments
   }
 
-  "Inserting uses" should "be correct" in {
+  "Path refinements by inserting uses" should "be correct" in {
     PathRefinementUnitTest.testUses.foreach({
       testCase =>
         val pathRefinement = new PathRefinement(arguments, PathRefinementTestCases.brboProgram)
         val paths = pathRefinement.insertUseOnly(testCase.input.asInstanceOf[Path])
-        assert(StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
+        (StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
     })
   }
 
-  "Inserting resets" should "be correct" in {
+  "Path refinements by inserting resets" should "be correct" in {
     PathRefinementUnitTest.testResets.foreach({
       testCase =>
         val pathRefinement = new PathRefinement(arguments, PathRefinementTestCases.brboProgram)
-        val paths = pathRefinement.removeResetOnly(testCase.input.asInstanceOf[Path])
-        assert(StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
+        val paths = pathRefinement.removeResetOnly(testCase.input.asInstanceOf[Refinement])
+        (StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
     })
   }
 }
@@ -50,85 +50,121 @@ object PathRefinementUnitTest {
     List(
       TestCase("Test 01", PathRefinementTestCases.test01,
         """Path:
-          |  x = 0; [Function `Main`]
-          |  reset R2 [Function `Main`]
-          |  use R2 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |Splits:
+          |
+          |Removed resets:
+          |
           |Path:
-          |  x = 0; [Function `Main`]
-          |  reset R2 [Function `Main`]
-          |  use R2 (R + 0) [Function `Main`]
-          |  reset R3 [Function `Main`]
-          |  use R3 (R + 0) [Function `Main`]
-          |Path:
-          |  x = 0; [Function `Main`]
-          |  reset R2 [Function `Main`]
-          |  use R2 (R + 0) [Function `Main`]
-          |  reset R3 [Function `Main`]
-          |  use R3 (R + 0) [Function `Main`]
-          |  reset R4 [Function `Main`]
-          |  use R4 (R + 0) [Function `Main`]
-          |Path:
-          |  x = 0; [Function `Main`]
-          |  reset R2 [Function `Main`]
-          |  use R2 (R + 0) [Function `Main`]
-          |  reset R3 [Function `Main`]
-          |  use R3 (R + 0) [Function `Main`]
-          |  reset R4 [Function `Main`]
-          |  use R4 (R + 0) [Function `Main`]
-          |  reset R5 [Function `Main`]
-          |  use R5 (R + 0) [Function `Main`]""".stripMargin),
+          |  reset R1 [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |Splits:
+          |  0: reset R2
+          |  1: reset R3
+          |  2: use R3 (R + 0)
+          |Removed resets:
+          |""".stripMargin),
       TestCase("Test 02", PathRefinementTestCases.test02,
         """Path:
-          |  reset R2 [Function `Main`]
-          |  use R2 (R + 0) [Function `Main`]
-          |  reset R3 [Function `Main`]
-          |  use R3 (R + 0) [Function `Main`]
-          |  reset R4 [Function `Main`]
-          |  use R4 (R + 0) [Function `Main`]
-          |  reset R5 [Function `Main`]
-          |  use R5 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |Splits:
+          |
+          |Removed resets:
+          |
           |Path:
-          |  reset R2 [Function `Main`]
-          |  use R2 (R + 0) [Function `Main`]
-          |  reset R3 [Function `Main`]
-          |  use R3 (R + 0) [Function `Main`]
-          |  reset R4 [Function `Main`]
-          |  use R4 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]
-          |Path:
-          |  reset R2 [Function `Main`]
-          |  use R2 (R + 0) [Function `Main`]
-          |  reset R3 [Function `Main`]
-          |  use R3 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]
-          |Path:
-          |  reset R2 [Function `Main`]
-          |  use R2 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]""".stripMargin),
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |Splits:
+          |  0: reset R2
+          |  1: use R2 (R + 0)
+          |  2: reset R3
+          |  3: use R3 (R + 0)
+          |Removed resets:
+          |""".stripMargin),
       TestCase("Test 03", PathRefinementTestCases.test03,
         """Path:
-          |  reset R3 [Function `Main`]
-          |  use R3 (R + 0) [Function `Main`]
-          |  reset R4 [Function `Main`]
-          |  use R4 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]
-          |  reset R5 [Function `Main`]
-          |  use R5 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |Splits:
+          |
+          |Removed resets:
+          |
           |Path:
-          |  reset R3 [Function `Main`]
-          |  use R3 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]
-          |  reset R4 [Function `Main`]
-          |  use R4 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |Splits:
+          |  0: reset R2
+          |  1: use R2 (R + 0)
+          |  2: reset R2
+          |  3: use R2 (R + 0)
+          |  4: reset R3
+          |  5: use R3 (R + 0)
+          |Removed resets:
+          |
           |Path:
-          |  reset R3 [Function `Main`]
-          |  use R3 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]
-          |  reset R4 [Function `Main`]
-          |  use R4 (R + 0) [Function `Main`]
-          |  reset R5 [Function `Main`]
-          |  use R5 (R + 0) [Function `Main`]""".stripMargin),
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |Splits:
+          |  0: reset R2
+          |  1: use R2 (R + 0)
+          |  2: reset R3
+          |  3: use R3 (R + 0)
+          |  4: reset R2
+          |  5: use R2 (R + 0)
+          |Removed resets:
+          |
+          |Path:
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |Splits:
+          |  0: reset R2
+          |  1: use R2 (R + 0)
+          |  2: reset R3
+          |  3: use R3 (R + 0)
+          |  4: reset R3
+          |  5: use R3 (R + 0)
+          |Removed resets:
+          |
+          |Path:
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |  reset R1 [Function `Main`]
+          |  use R1 (R + 0) [Function `Main`]
+          |Splits:
+          |  0: reset R2
+          |  1: use R2 (R + 0)
+          |  2: reset R3
+          |  3: use R3 (R + 0)
+          |  4: reset R4
+          |  5: use R4 (R + 0)
+          |Removed resets:
+          |""".stripMargin),
     )
   }
 
@@ -136,66 +172,97 @@ object PathRefinementUnitTest {
     List(
       TestCase("Test 07", PathRefinementTestCases.test07,
         """Path:
-          |  reset R1 [Function `Main`]
-          |  use R1 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |
           |Path:
-          |  use R1 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]""".stripMargin),
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |  0""".stripMargin),
       TestCase("Test 08", PathRefinementTestCases.test08,
         """Path:
-          |  reset R1 [Function `Main`]
-          |  use R1 (R + 0) [Function `Main`]
-          |  reset R1 [Function `Main`]
-          |  x = 0; [Function `Main`]
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |
           |Path:
-          |  reset R1 [Function `Main`]
-          |  use R1 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |  0
           |Path:
-          |  use R1 (R + 0) [Function `Main`]
-          |  reset R1 [Function `Main`]
-          |  x = 0; [Function `Main`]
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |  0
+          |  2
           |Path:
-          |  use R1 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]""".stripMargin),
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |  2""".stripMargin),
       TestCase("Test 09", PathRefinementTestCases.test09,
         """Path:
-          |  reset R1 [Function `Main`]
-          |  use R1 (R + 0) [Function `Main`]
-          |  reset R1 [Function `Main`]
-          |  x = 0; [Function `Main`]
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |
           |Path:
-          |  reset R1 [Function `Main`]
-          |  use R1 (R + 0) [Function `Main`]
-          |  reset R1 [Function `Main`]
-          |  x = 0; [Function `Main`]
-          |  reset R1 [Function `Main`]
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |  0
           |Path:
-          |  reset R1 [Function `Main`]
-          |  use R1 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |  0
+          |  2
           |Path:
-          |  reset R1 [Function `Main`]
-          |  use R1 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]
-          |  reset R1 [Function `Main`]
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |  0
+          |  2
+          |  4
           |Path:
-          |  use R1 (R + 0) [Function `Main`]
-          |  reset R1 [Function `Main`]
-          |  x = 0; [Function `Main`]
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |  0
+          |  4
           |Path:
-          |  use R1 (R + 0) [Function `Main`]
-          |  reset R1 [Function `Main`]
-          |  x = 0; [Function `Main`]
-          |  reset R1 [Function `Main`]
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |  2
           |Path:
-          |  use R1 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |  2
+          |  4
           |Path:
-          |  use R1 (R + 0) [Function `Main`]
-          |  x = 0; [Function `Main`]
-          |  reset R1 [Function `Main`]""".stripMargin),
+          |
+          |Splits:
+          |
+          |Removed resets:
+          |  4""".stripMargin),
     )
   }
 }

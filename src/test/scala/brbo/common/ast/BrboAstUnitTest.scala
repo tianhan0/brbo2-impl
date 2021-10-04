@@ -29,7 +29,7 @@ class BrboAstUnitTest extends AnyFlatSpec {
     assert(createReset != createReset)
   }
 
-  "Prettyp-printing BrboAst to C statements" should "be correct" in {
+  "Pretty-printing BrboAst to C statements" should "be correct" in {
     BrboAstUnitTest.prettyPrintToCUnitTest.foreach({
       testCase =>
         assert(StringCompare.compareLiteral(testCase.input.asInstanceOf[BrboAst].prettyPrintToC(2), testCase.expectedOutput, s"${testCase.name} failed!"))

@@ -6,7 +6,7 @@ import brbo.common.ast.{BrboExpr, BrboProgram}
 
 class Refiner(brboProgram: BrboProgram, commandLineArguments: CommandLineArguments) {
   private val logger = MyLogger.createLogger(classOf[Refiner], commandLineArguments.getDebugMode)
-  private val pathTransformation = new PathRefinementOld(commandLineArguments, brboProgram)
+  private val pathTransformation = new PathRefinementUnrestricted(commandLineArguments, brboProgram)
   private val programTransformation = new ProgramSynthesis(commandLineArguments)
 
   def refine(brboProgram2: BrboProgram, counterexamplePath: Option[Path]): BrboProgram = {

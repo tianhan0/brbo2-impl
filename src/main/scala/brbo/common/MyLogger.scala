@@ -1,6 +1,5 @@
 package brbo.common
 
-import brbo.backend.verifier.cex.ParseCounterexamplePath
 import org.apache.logging.log4j.{LogManager, Logger}
 
 case class MyLogger(logger: Logger, debugMode: Boolean) {

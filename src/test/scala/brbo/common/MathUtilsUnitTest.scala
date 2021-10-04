@@ -7,14 +7,14 @@ class MathUtilsUnitTest extends AnyFlatSpec {
   MathUtilsUnitTest.kGroupsFromNUnitTest.foreach({
     testCase =>
       val input = testCase.input.asInstanceOf[(Int, Int)]
-      val result = MathUtils.kGroupsFromN(input._1, input._2)
+      val result = MathUtils.kGroupsFromN(input._1, 0, input._2 - 1)
       assert(StringCompare.ignoreWhitespaces(result, testCase.expectedOutput, s"`${testCase.name}` failed!"))
   })
 
   MathUtilsUnitTest.generateUniqueSequencesUnitTest.foreach({
     testCase =>
       val input = testCase.input.asInstanceOf[(Int, Int)]
-      val result = MathUtils.generateUniqueSequences(input._1, input._2)
+      val result = MathUtils.generateUniqueSequences(input._1, 0, input._2 - 1)
       assert(StringCompare.ignoreWhitespaces(result, testCase.expectedOutput, s"`${testCase.name}` failed!"))
   })
 }
@@ -72,23 +72,23 @@ object MathUtilsUnitTest {
                                     |List(0, 1)""".stripMargin),
       TestCase("Test 02", test02, """List(0, 0, 0)
                                     |List(0, 0, 1)
-                                    |List(0, 1, 1)
-                                    |List(1, 0, 1)""".stripMargin),
+                                    |List(0, 1, 0)
+                                    |List(0, 1, 1)""".stripMargin),
       TestCase("Test 03", test03, """List(0, 0, 0, 0)
+                                    |List(0, 0, 0, 1)
                                     |List(0, 0, 1, 0)
                                     |List(0, 0, 1, 1)
+                                    |List(0, 1, 0, 0)
+                                    |List(0, 1, 0, 1)
                                     |List(0, 1, 1, 0)
-                                    |List(0, 1, 1, 1)
-                                    |List(1, 0, 1, 0)
-                                    |List(1, 0, 1, 1)
-                                    |List(1, 1, 1, 0)""".stripMargin),
-      TestCase("Test 04", test04, """List(1, 1)
-                                    |List(1, 2)""".stripMargin),
-      TestCase("Test 05", test05, """List(0, 0, 2)
+                                    |List(0, 1, 1, 1)""".stripMargin),
+      TestCase("Test 04", test04, """List(0, 0)
+                                    |List(0, 1)""".stripMargin),
+      TestCase("Test 05", test05, """List(0, 0, 0)
+                                    |List(0, 0, 1)
+                                    |List(0, 1, 0)
                                     |List(0, 1, 1)
-                                    |List(2, 0, 1)
-                                    |List(2, 1, 2)
-                                    |List(2, 2, 2)""".stripMargin),
+                                    |List(0, 1, 2)""".stripMargin),
     )
   }
 }

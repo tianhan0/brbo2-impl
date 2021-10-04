@@ -57,6 +57,12 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     counterexamplePath
   }
 
+  // Parse updates to ghost variables into use or reset commands.
+  // TODO: Assume the input program contains no use or reset commands.
+  def parseUseReset(path: Path): Path = {
+    path
+  }
+
   /**
    *
    * @param path        A counterexample path, which is a list of strings
