@@ -57,10 +57,30 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     counterexamplePath
   }
 
-  // Parse updates to ghost variables into use or reset commands.
-  // TODO: Assume the input program contains no use or reset commands.
-  def parseUseReset(path: Path): Path = {
-    path
+  // Map updates to ghost variables into use or reset commands.
+  // Assume the input program contains no use or reset commands.
+  def parseUseReset(path: Path, programInC: BrboProgramInC): Path = {
+    val newNodes: List[CFGNode] = path.pathNodes.map({
+      node =>
+        programInC.map.get(node.value) match {
+          case Some(value) => CFGNode(Left(value.asInstanceOf[Command]), node.function, CFGNode.DONT_CARE_ID)
+          case None => node
+        }
+    })
+    var result: List[CFGNode] = Nil
+    var lastNode: Option[CFGNode] = None
+    newNodes.indices.foreach({
+      i =>
+        // Get rid of repetitive nodes
+        lastNode match {
+          case Some(value) =>
+            if (value != newNodes(i))
+              result = newNodes(i) :: result
+          case None => result = newNodes(i) :: result
+        }
+        lastNode = Some(newNodes(i))
+    })
+    Path(result.reverse)
   }
 
   /**

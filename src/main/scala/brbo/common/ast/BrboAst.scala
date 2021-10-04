@@ -11,7 +11,7 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
                        functions: List[BrboFunction] = Nil, uuid: UUID = UUID.randomUUID()) extends PrettyPrintToC {
   override def prettyPrintToC(indent: Int): String = {
     val functionsString = (functions :+ mainFunction).map(function => function.prettyPrintToC(indent)).mkString("\n")
-    s"${PreDefinedBrboFunctions.UNDEFINED_FUNCTIONS_MACRO}\n${PreDefinedBrboFunctions.SYMBOLS_MACRO}\n$functionsString"
+    s"${PreDefinedFunctions.UNDEFINED_FUNCTIONS_MACRO}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
   }
 
   override def toString: String = {
@@ -39,10 +39,10 @@ abstract class Command extends BrboAst with PrettyPrintToCFG with GetFunctionCal
 
 abstract class Statement extends BrboAst
 
-case class Block(statements: List[BrboAst], uuid: UUID = UUID.randomUUID()) extends Statement {
+case class Block(asts: List[BrboAst], uuid: UUID = UUID.randomUUID()) extends Statement {
   override def prettyPrintToC(indent: Int): String = {
     val indentString = " " * indent
-    s"$indentString{\n${statements.map(t => t.prettyPrintToC(indent + DEFAULT_INDENT)).mkString("\n")}\n$indentString}"
+    s"$indentString{\n${asts.map(t => t.prettyPrintToC(indent + DEFAULT_INDENT)).mkString("\n")}\n$indentString}"
   }
 }
 
@@ -202,6 +202,7 @@ case class Continue(uuid: UUID = UUID.randomUUID()) extends Command {
 
 case class LabeledCommand(label: String, command: Command, uuid: UUID = UUID.randomUUID()) extends Command {
   assert(!command.isInstanceOf[LabeledCommand])
+  assert(!command.isInstanceOf[GhostCommand], s"Not allow ghost commands to be labeled, due to the translation in BrboAstInC")
 
   override def prettyPrintToC(indent: Int): String = {
     val indentString = " " * indent
@@ -283,7 +284,9 @@ case class Reset(groupID: Int, uuid: UUID = UUID.randomUUID()) extends Command w
     val iteExpr = ITEExpr(LessThan(sharpVariable, resourceVariable), resourceVariable, sharpVariable)
     Assignment(sharpVariable, iteExpr)
   }
-  val maxStatement: ITE = ITE(LessThan(sharpVariable, resourceVariable), Assignment(sharpVariable, resourceVariable), Skip())
+  val maxComparison: LessThan = LessThan(sharpVariable, resourceVariable)
+  val maxAssignment: Assignment = Assignment(sharpVariable, resourceVariable)
+  val maxStatement: ITE = ITE(maxComparison, maxAssignment, Skip())
   val resetCommand: Assignment = Assignment(resourceVariable, Number(0))
   val counterCommand: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
 

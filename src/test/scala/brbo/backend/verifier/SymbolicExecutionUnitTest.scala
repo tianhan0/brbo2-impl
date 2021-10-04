@@ -28,10 +28,10 @@ object SymbolicExecutionUnitTest {
   val e: Identifier = Identifier("e", INT)
 
   val mainFunction: BrboFunction = BrboFunction("main", VOID, List(n, a, b), Block(Nil))
-  val assumeFunction: BrboFunction = PreDefinedBrboFunctions.assume
-  val ndBoolFunction: BrboFunction = PreDefinedBrboFunctions.ndBool
-  val ndIntFunction: BrboFunction = PreDefinedBrboFunctions.ndInt
-  val assertFunction: BrboFunction = PreDefinedBrboFunctions.assert
+  val assumeFunction: BrboFunction = PreDefinedFunctions.assume
+  val ndBoolFunction: BrboFunction = PreDefinedFunctions.ndBool
+  val ndIntFunction: BrboFunction = PreDefinedFunctions.ndInt
+  val assertFunction: BrboFunction = PreDefinedFunctions.assert
   val program: BrboProgram = BrboProgram("Test program", mainFunction, None, None, List(assumeFunction, ndBoolFunction, ndIntFunction))
 
   val assumeCond: BrboExpr = assumeFunction.parameters.head
@@ -48,7 +48,7 @@ object SymbolicExecutionUnitTest {
         CFGNode(Left(FunctionExit()), assumeFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Left(CallFunction(ndBoolFunction, Nil)), mainFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Left(CallFunction(ndIntFunction, Nil)), ndBoolFunction, CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Return(Some(FunctionCallExpr(PreDefinedBrboFunctions.VERIFIER_NONDET_INT, Nil, INT)))), ndIntFunction, CFGNode.DONT_CARE_ID),
+        CFGNode(Left(Return(Some(FunctionCallExpr(PreDefinedFunctions.VERIFIER_NONDET_INT, Nil, INT)))), ndIntFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Left(VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))), ndBoolFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Left(CallFunction(assumeFunction, List(Or(Equal(x, Number(0)), Equal(x, Number(1)))))), ndBoolFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Right(Negative(Negative(assumeCond))), assumeFunction, CFGNode.DONT_CARE_ID),

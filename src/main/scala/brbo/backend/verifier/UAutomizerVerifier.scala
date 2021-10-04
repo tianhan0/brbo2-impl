@@ -2,7 +2,7 @@ package brbo.backend.verifier
 
 import brbo.backend.verifier.VerifierRawResult.VerifierRawResult
 import brbo.backend.verifier.cex.ParseCounterexamplePath
-import brbo.common.ast.BrboProgram
+import brbo.common.ast.{BrboProgram, BrboProgramInC}
 import brbo.common.{CommandLineArguments, FileUtils}
 
 import java.io.{File, PrintWriter}
@@ -22,9 +22,11 @@ class UAutomizerVerifier(override val commandLineArguments: CommandLineArguments
   private val EXECUTABLE_FILE = s"$toolDirectory/Ultimate.py"
 
   override def verify(program: BrboProgram): VerifierResult = {
+    val programInC = BrboProgramInC(program)
+
     val result: VerifierRawResult = {
-      val cSourceCode = program.prettyPrintToC()
-      logger.debug(s"Input to UAutomizer:\n$cSourceCode")
+      val cSourceCode = programInC.program.prettyPrintToC()
+      logger.traceOrError(s"Input to UAutomizer:\n$cSourceCode")
       runAndGetStdOutput(cSourceCode) match {
         case Some(output) =>
           if (output.endsWith("Result:FALSE")) VerifierRawResult.FALSE_RESULT
@@ -45,8 +47,8 @@ class UAutomizerVerifier(override val commandLineArguments: CommandLineArguments
 
         val counterexamplePath: String = FileUtils.readFromFile(VIOLATION_WITNESS_FILE)
         val parseCounterexamplePath = new ParseCounterexamplePath(commandLineArguments.getDebugMode)
-        val rawPath = parseCounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, program)
-        VerifierResult(result, Some(parseCounterexamplePath.parseUseReset(rawPath)))
+        val rawPath = parseCounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, programInC.program)
+        VerifierResult(result, Some(parseCounterexamplePath.parseUseReset(rawPath, programInC)))
       case VerifierRawResult.TRUE_RESULT | VerifierRawResult.UNKNOWN_RESULT => VerifierResult(result, None)
       case VerifierRawResult.UNINITIALIZED => throw new Exception
     }

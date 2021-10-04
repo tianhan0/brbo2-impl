@@ -2,7 +2,7 @@ package brbo.common.ast
 
 import brbo.common.BrboType.{BOOL, INT, VOID}
 
-object PreDefinedBrboFunctions {
+object PreDefinedFunctions {
   val VERIFIER_ERROR: String = "__VERIFIER_error"
   val ABORT: String = "abort"
   val VERIFIER_NONDET_INT: String = "__VERIFIER_nondet_int"

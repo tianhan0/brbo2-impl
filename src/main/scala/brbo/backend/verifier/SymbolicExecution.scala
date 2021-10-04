@@ -189,9 +189,9 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
           case Some(list) => (Some(list.head.value), returnValues.updated(identifier, list.tail))
           case None =>
             identifier match {
-              case PreDefinedBrboFunctions.VERIFIER_NONDET_INT => (Some(createFreshVariable(INT)), returnValues)
-              case PreDefinedBrboFunctions.ABORT => throw new Exception
-              case PreDefinedBrboFunctions.VERIFIER_ERROR => (None, returnValues)
+              case PreDefinedFunctions.VERIFIER_NONDET_INT => (Some(createFreshVariable(INT)), returnValues)
+              case PreDefinedFunctions.ABORT => throw new Exception
+              case PreDefinedFunctions.VERIFIER_ERROR => (None, returnValues)
               case _ => throw new Exception
             }
         }

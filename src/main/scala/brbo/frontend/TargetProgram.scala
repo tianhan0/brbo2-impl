@@ -46,7 +46,7 @@ case class TargetProgram(fullQualifiedClassName: String,
       case Right(statement) => statement
     }
     val mainFunction = BrboFunction(mainMethod.methodName, mainMethod.returnType, mainMethod.inputVariables.values.toList, body)
-    BrboProgram(s"$fullQualifiedClassName${mainMethod.methodName}", mainFunction, mostPreciseAssertion, lessPreciseAssertion, PreDefinedBrboFunctions.allFunctionsList)
+    BrboProgram(s"$fullQualifiedClassName${mainMethod.methodName}", mainFunction, mostPreciseAssertion, lessPreciseAssertion, PreDefinedFunctions.allFunctionsList)
   }
 
   class ConvertToAST(allVariables: Map[String, Identifier], allMethods: Set[TargetMethod]) {
@@ -209,7 +209,7 @@ case class TargetProgram(fullQualifiedClassName: String,
             val select = tree.getMethodSelect
             assert(select.isInstanceOf[IdentifierTree])
             val functionName = select.toString
-            PreDefinedBrboFunctions.allFunctions.get(functionName) match {
+            PreDefinedFunctions.allFunctions.get(functionName) match {
               case Some(function) => (functionName, function.returnType)
               case None =>
                 allMethods.find(targetMethod => targetMethod.methodName == functionName) match {
@@ -226,12 +226,12 @@ case class TargetProgram(fullQualifiedClassName: String,
               }
           }).toList
           functionName match {
-            case PreDefinedBrboFunctions.MOST_PRECISE_BOUND =>
-              assert(mostPreciseAssertion.isEmpty, s"We allow at most 1 call to function `${PreDefinedBrboFunctions.MOST_PRECISE_BOUND}`")
+            case PreDefinedFunctions.MOST_PRECISE_BOUND =>
+              assert(mostPreciseAssertion.isEmpty, s"We allow at most 1 call to function `${PreDefinedFunctions.MOST_PRECISE_BOUND}`")
               mostPreciseAssertion = Some(arguments.head)
               Right(Skip())
-            case PreDefinedBrboFunctions.LESS_PRECISE_BOUND =>
-              assert(lessPreciseAssertion.isEmpty, s"We allow at most 1 call to function `${PreDefinedBrboFunctions.LESS_PRECISE_BOUND}`")
+            case PreDefinedFunctions.LESS_PRECISE_BOUND =>
+              assert(lessPreciseAssertion.isEmpty, s"We allow at most 1 call to function `${PreDefinedFunctions.LESS_PRECISE_BOUND}`")
               lessPreciseAssertion = Some(arguments.head)
               Right(Skip())
             case _ => Left(FunctionCallExpr(functionName, arguments, returnType))
