@@ -200,8 +200,8 @@ class Z3Solver {
     solver.getAssertions.foreach(expression => println(expression))
   }
 
-  def printModel(): Unit = this.synchronized {
-    logger.error(s"Model is:\n${solver.getModel.toString}")
+  def getModel: Model = this.synchronized {
+    solver.getModel
   }
 }
 

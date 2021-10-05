@@ -1,19 +1,18 @@
 package brbo.backend.verifier
 
 import brbo.backend.verifier.SymbolicExecution._
-import brbo.backend.verifier.cex.Path
 import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{BrboType, StringCompare, Z3Solver}
+import brbo.common.{StringCompare, Z3Solver}
 import com.microsoft.z3.{AST, BoolExpr}
 
 import scala.annotation.tailrec
 
-class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
-  private val solver = new Z3Solver
+class SymbolicExecution(parametersOfMainFunction: List[Identifier]) {
+  val solver: Z3Solver = new Z3Solver
 
-  private var inputs: Valuation = brboProgram.mainFunction.parameters.foldLeft(Map[String, (BrboType, Value)]())({
+  val inputs: Valuation = parametersOfMainFunction.foldLeft(Map[String, (BrboType, Value)]())({
     (acc, parameter) =>
       val z3AST = parameter.typ match {
         case INT => solver.mkIntVar(parameter.identifier)
@@ -23,18 +22,22 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
       acc + (parameter.identifier -> (parameter.typ, Value(z3AST)))
   })
 
-  def createFreshVariable(typ: BrboType): AST = {
-    val variableName = s"v${inputs.size}"
+  private var freshVariables: Valuation = Map()
+
+  def createFreshVariable(typ: BrboType): (String, AST) = {
+    val variableName = s"v${inputs.size + freshVariables.size}"
     val z3AST = typ match {
       case INT => solver.mkIntVar(variableName)
       case BOOL => solver.mkBoolVar(variableName)
       case VOID => throw new Exception
     }
-    inputs = inputs + (variableName -> (typ, Value(z3AST)))
-    z3AST
+    freshVariables = freshVariables + (variableName -> (typ, Value(z3AST)))
+    (variableName, z3AST)
   }
 
-  val result: State = path.pathNodes.foldLeft(State(List(inputs), solver.mkTrue(), Map()))({ (acc, node) => evaluate(acc, node) })
+  def execute(nodes: List[CFGNode]): State = {
+    nodes.foldLeft(State(List(inputs), solver.mkTrue(), Map()))({ (acc, node) => evaluate(acc, node) })
+  }
 
   @tailrec
   private def evaluate(state: State, node: CFGNode): State = {
@@ -189,7 +192,7 @@ class SymbolicExecution(path: Path, brboProgram: BrboProgram) {
           case Some(list) => (Some(list.head.value), returnValues.updated(identifier, list.tail))
           case None =>
             identifier match {
-              case PreDefinedFunctions.VERIFIER_NONDET_INT => (Some(createFreshVariable(INT)), returnValues)
+              case PreDefinedFunctions.VERIFIER_NONDET_INT => (Some(createFreshVariable(INT)._2), returnValues)
               case PreDefinedFunctions.ABORT => throw new Exception
               case PreDefinedFunctions.VERIFIER_ERROR => (None, returnValues)
               case _ => throw new Exception

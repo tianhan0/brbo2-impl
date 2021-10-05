@@ -22,6 +22,17 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
 
   def removeReset(index: Int): Refinement = Refinement(path, splitUses, removeResets + index, groupIDs)
 
+  def getRefinedPath: List[CFGNode] = {
+    val afterSplit: List[CFGNode] = splitUses.foldLeft(path)({
+      case (acc, (i, replacement)) => acc.updated(i, replacement.node)
+    })
+    var result: List[CFGNode] = Nil
+    afterSplit.indices.foreach({
+      i => if (!removeResets.contains(i)) result = afterSplit(i) :: result
+    })
+    result.reverse
+  }
+
   private val separator = "\n  "
   private val removedString = {
     val s = removeResets.toList.sorted.mkString(separator)
@@ -46,15 +57,15 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
   def toStringNoPath: String = s"$splitsString\n$removedString"
 }
 
-sealed trait Replace
+abstract class Replace(val node: CFGNode, val groupID: Int)
 
-case class UseNode(node: CFGNode, groupID: Int) extends Replace {
+case class UseNode(override val node: CFGNode, override val groupID: Int) extends Replace(node, groupID) {
   val use: Use = node.value.left.get.asInstanceOf[Use]
 
   override def toString: String = use.prettyPrintToCFG
 }
 
-case class ResetNode(node: CFGNode, groupID: Int) extends Replace {
+case class ResetNode(override val node: CFGNode, override val groupID: Int) extends Replace(node, groupID) {
   val reset: Reset = node.value.left.get.asInstanceOf[Reset]
 
   override def toString: String = reset.prettyPrintToCFG

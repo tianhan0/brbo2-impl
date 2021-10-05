@@ -50,7 +50,6 @@ class UAutomizerVerifier(override val commandLineArguments: CommandLineArguments
         val rawPath = parseCounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, programInC.program)
         VerifierResult(result, Some(parseCounterexamplePath.parseUseReset(rawPath, programInC)))
       case VerifierRawResult.TRUE_RESULT | VerifierRawResult.UNKNOWN_RESULT => VerifierResult(result, None)
-      case VerifierRawResult.UNINITIALIZED => throw new Exception
     }
   }
 

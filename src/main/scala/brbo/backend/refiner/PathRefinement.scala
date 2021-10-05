@@ -5,7 +5,7 @@ import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.{CommandLineArguments, MathUtils, MyLogger}
 
-class PathRefinement(commandLineArguments: CommandLineArguments, brboProgram: BrboProgram) {
+class PathRefinement(commandLineArguments: CommandLineArguments, targetFunction: BrboFunction) {
   private val maxGroups = commandLineArguments.getMaxGroups
   private val logger = MyLogger.createLogger(classOf[PathRefinement], commandLineArguments.getDebugMode)
 
@@ -23,8 +23,8 @@ class PathRefinement(commandLineArguments: CommandLineArguments, brboProgram: Br
       remaining match {
         case Nil => Set(currentRefine)
         case ::(head, tail) =>
-          // Do not transform commands in functions other than the main function
-          if (head.function.identifier != brboProgram.mainFunction.identifier)
+          // Do not transform commands in functions other than the given function
+          if (head.function.identifier != targetFunction.identifier)
             return helper(numberToKeep, currentRefine, currentIndex + 1, tail)
           head.value match {
             case Left(command) =>
@@ -43,7 +43,7 @@ class PathRefinement(commandLineArguments: CommandLineArguments, brboProgram: Br
       }
     }
 
-    val numberOfResets = refineUseOnly.path.count({ node => node.isReset(None, Some(brboProgram.mainFunction)) })
+    val numberOfResets = refineUseOnly.path.count({ node => node.isReset(None, Some(targetFunction)) })
 
     Range.inclusive(0, numberOfResets).toSet.flatMap({
       numberToKeep => helper(numberToKeep, Refinement(Nil, refineUseOnly.splitUses, Set(), refineUseOnly.groupIDs), currentIndex = 0, refineUseOnly.path)
@@ -72,7 +72,7 @@ class PathRefinement(commandLineArguments: CommandLineArguments, brboProgram: Br
 
     val allSegments: Map[Int, List[Segment]] = {
       groupIds.foldLeft(Map[Int, List[Segment]]())({
-        (acc, groupId) => acc + (groupId -> path.getSegments(groupId, brboProgram.mainFunction))
+        (acc, groupId) => acc + (groupId -> path.getSegments(groupId, targetFunction))
       })
     }
 
@@ -109,13 +109,13 @@ class PathRefinement(commandLineArguments: CommandLineArguments, brboProgram: Br
                       case (acc2, (node, index)) =>
                         assert(!acc2.contains(index))
                         // Do not transform commands in functions other than the main function
-                        if (node.isReset(Some(toSplitGroupId), Some(brboProgram.mainFunction))) {
-                          val newReset = CFGNode(Left(Reset(newGroupId)), brboProgram.mainFunction, CFGNode.DONT_CARE_ID)
+                        if (node.isReset(Some(toSplitGroupId), Some(targetFunction))) {
+                          val newReset = CFGNode(Left(Reset(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
                           acc2 + (index -> ResetNode(newReset, newGroupId))
                         }
-                        else if (node.isUse(Some(toSplitGroupId), Some(brboProgram.mainFunction))) {
+                        else if (node.isUse(Some(toSplitGroupId), Some(targetFunction))) {
                           val update = node.value.left.get.asInstanceOf[Use].update
-                          val newUse = CFGNode(Left(Use(Some(newGroupId), update)), brboProgram.mainFunction, CFGNode.DONT_CARE_ID)
+                          val newUse = CFGNode(Left(Use(Some(newGroupId), update)), targetFunction, CFGNode.DONT_CARE_ID)
                           acc2 + (index -> UseNode(newUse, newGroupId))
                         }
                         else acc2
