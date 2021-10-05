@@ -1,6 +1,6 @@
-package brbo.backend
+package brbo.backend.driver
 
-import brbo.backend.NodeStatus._
+import brbo.backend.driver.NodeStatus._
 import brbo.backend.refiner.{Refinement, Refiner}
 import brbo.backend.verifier.VerifierRawResult._
 import brbo.backend.verifier.cex.Path
@@ -39,7 +39,17 @@ class Driver(commandLineArguments: CommandLineArguments, originalProgram: BrboPr
         logger.info(s"Verifier returns `$UNKNOWN_RESULT` for the initial abstraction.")
         None
     }
-    val root = TreeNode(initialAbstraction, counterexamplePath, None, None, mutable.Map[TreeNode, NodeStatus]())
+
+    var nodes: Set[TreeNode] = Set()
+
+    def createNode(program: BrboProgram, counterexample: Option[Path], refinement: Option[Refinement],
+                   parent: Option[TreeNode], knownChildren: mutable.Map[TreeNode, NodeStatus]): TreeNode = {
+      val node = TreeNode(program, counterexample, refinement, parent, knownChildren, nodes.size)
+      nodes = nodes + node
+      node
+    }
+
+    val root = createNode(initialAbstraction, counterexamplePath, None, None, mutable.Map[TreeNode, NodeStatus]())
 
     @tailrec
     def helper(node: TreeNode, refineWhenUnknown: Boolean): VerifierRawResult = {
@@ -54,28 +64,34 @@ class Driver(commandLineArguments: CommandLineArguments, originalProgram: BrboPr
       refiner.refine(node.program, node.counterexample, boundAssertion, avoidRefinements) match {
         case (Some(refinedProgram), Some(refinement)) =>
           val result = verify(refinedProgram, boundAssertion)
-          val counterexamplePath: Option[Path] = result.rawResult match {
+          val (counterexamplePath: Option[Path], exploreRefinedProgram: NodeStatus) = result.rawResult match {
             case TRUE_RESULT => return TRUE_RESULT
-            case FALSE_RESULT | UNKNOWN_RESULT => result.counterexamplePath
+            case FALSE_RESULT => (result.counterexamplePath, EXPLORING)
+            case UNKNOWN_RESULT => (result.counterexamplePath, if (refineWhenUnknown) EXPLORING else SHOULD_NOT_EXPLORE)
           }
-          val newChildNode = TreeNode(refinedProgram, counterexamplePath, Some(refinement), Some(node), mutable.Map[TreeNode, NodeStatus]())
-          root.knownChildren.+=(newChildNode -> (if (refineWhenUnknown) EXPLORING else SHOULD_NOT_EXPLORE))
+          val newChildNode = createNode(refinedProgram, counterexamplePath, Some(refinement), Some(node), mutable.Map[TreeNode, NodeStatus]())
+          root.knownChildren.+=(newChildNode -> exploreRefinedProgram)
           assert(root.knownChildren.contains(newChildNode)) // TODO: Remove this!
 
-          if (!refineWhenUnknown)
+          if (!refineWhenUnknown) {
+            logger.info(s"Re-refine the current node, since refineWhenUnknown is `$refineWhenUnknown`.")
             helper(node, refineWhenUnknown) // Re-refine the current node
-          else
+          }
+          else {
+            logger.info(s"Explore the child node.")
             helper(newChildNode, refineWhenUnknown) // Explore the child node
+          }
         case (None, None) =>
           logger.info(s"Stop refining. Backtracking now.")
           node.parent match {
             case Some(parent) =>
               parent.knownChildren.+=(node -> SHOULD_NOT_EXPLORE)
-              helper(parent, refineWhenUnknown)
+              helper(parent, refineWhenUnknown) // Backtrack
             case None =>
               logger.info(s"There is no more parent node to backtrack to. Verification has failed!")
               FALSE_RESULT
           }
+        case _ => throw new Exception
       }
     }
 
@@ -90,17 +106,4 @@ class Driver(commandLineArguments: CommandLineArguments, originalProgram: BrboPr
   private def insertUBCheck(program: BrboProgram, boundAssertion: BrboExpr): BrboProgram = {
     ???
   }
-}
-
-/**
- *
- * @param program        A (refined) program
- * @param counterexample The counterexample path generated from this program, if exists
- * @param refinement     The refinement that leads to this program (when synthesized with its parent program)
- * @param parent         The parent node
- * @param knownChildren  The children nodes that we already know
- */
-case class TreeNode(program: BrboProgram, counterexample: Option[Path], refinement: Option[Refinement],
-                    parent: Option[TreeNode], knownChildren: mutable.Map[TreeNode, NodeStatus]) {
-  assert(refinement.isEmpty == parent.isEmpty)
 }

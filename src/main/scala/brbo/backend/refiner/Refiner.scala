@@ -2,45 +2,82 @@ package brbo.backend.refiner
 
 import brbo.backend.verifier.SymbolicExecution
 import brbo.backend.verifier.cex.Path
-import brbo.common.BrboType.INT
+import brbo.common.BrboType.BOOL
+import brbo.common.GhostVariableTyp._
 import brbo.common.ast.{BrboExpr, BrboProgram}
-import brbo.common.{CommandLineArguments, MyLogger}
-import com.microsoft.z3.AST
+import brbo.common.{CommandLineArguments, GhostVariableUtils, MyLogger}
+import com.microsoft.z3.{AST, Expr}
 
 class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArguments) {
   private val logger = MyLogger.createLogger(classOf[Refiner], commandLineArguments.getDebugMode)
   private val pathRefinement = new PathRefinement(commandLineArguments, originalProgram.mainFunction)
   private val programSynthesis = new ProgramSynthesis(commandLineArguments)
 
-  def refine(refinedProgram: BrboProgram, counterexamplePath: Option[Path], boundAssertion: BrboExpr, avoidRefinements: Set[Refinement]): (Option[BrboProgram], Option[Refinement]) = {
+  def refine(refinedProgram: BrboProgram, counterexamplePath: Option[Path],
+             boundAssertion: BrboExpr, avoidRefinements: Set[Refinement]): (Option[BrboProgram], Option[Refinement]) = {
     counterexamplePath match {
       case Some(counterexamplePath2) =>
         val symbolicExecution = new SymbolicExecution(refinedProgram.mainFunction.parameters)
         val solver = symbolicExecution.solver
-        val refinements = (pathRefinement.refine(counterexamplePath2) -- avoidRefinements).foldLeft(Map[Refinement, (String, AST)]())({
-          (acc, refinement) => acc + (refinement -> symbolicExecution.createFreshVariable(INT))
-        })
-        var disjunction = solver.mkTrue()
-        refinements.map({
-          case (refinement: Refinement, (variableName: String, z3AST: AST)) =>
-            val finalState = symbolicExecution.execute(refinement.getRefinedPath)
-            // Get all group IDs and then all ghost variables
-            finalState.valuations.head.get(???)
-            // Add a new disjunct
-            ???
+        val boundAssertionAST = boundAssertion.toZ3AST(solver)
+        val refinementsMap = pathRefinement.refine(counterexamplePath2).foldLeft(Map[Expr, (Refinement, Expr)]())({
+          (acc, refinement) =>
+            if (avoidRefinements.contains(refinement)) acc
+            else {
+              val finalState = symbolicExecution.execute(refinement.getRefinedPath)
+              // Get all group IDs and then all ghost variables
+              val allGroupIds: Set[Int] = refinedProgram.groupIds -- refinement.groupIDs.keys ++ refinement.groupIDs.values.flatten
+              var sum: AST = solver.mkIntVal(0)
+              allGroupIds.foreach({
+                groupId =>
+                  val counter: AST = {
+                    val v = GhostVariableUtils.generateVariable(Some(groupId), Counter)
+                    finalState.valuations.head.getOrElse(v.identifier, throw new Exception)._2.value
+                  }
+                  val sharp: AST = {
+                    val v = GhostVariableUtils.generateVariable(Some(groupId), Sharp)
+                    finalState.valuations.head.getOrElse(v.identifier, throw new Exception)._2.value
+                  }
+                  val resource: AST = {
+                    val v = GhostVariableUtils.generateVariable(Some(groupId), Resource)
+                    finalState.valuations.head.getOrElse(v.identifier, throw new Exception)._2.value
+                  }
+                  sum = solver.mkAdd(sum, resource, solver.mkMul(counter, sharp))
+              })
+              val assertion = solver.mkLe(sum, boundAssertionAST)
+              acc + (symbolicExecution.createFreshVariable(BOOL)._2 -> (refinement, assertion))
+            }
         })
 
-        val z3Result = solver.checkAssertionPushPop(disjunction, printUnsatCore = false)
-        if (z3Result) {
-          val model = solver.getModel
-          model.eval(???, false)
-          // Keep finding new path transformations until we find a program transformation that can realize it
-          var newProgram: Option[BrboProgram] = programSynthesis.synthesize(refinedProgram, ???)
-          newProgram
-        } else {
-          logger.fatal(s"There exist no more path refinement!")
-          None
+        // Keep finding new path transformations until either finding a program transformation that can realize it,
+        // or there exists no program transformation that can realize any path transformation
+        var avoidRefinement2: Set[Refinement] = Set()
+        while (avoidRefinement2.size < refinementsMap.size) {
+          var nameDisjunctions = solver.mkTrue()
+          var disjunction = solver.mkTrue()
+          refinementsMap.foreach({
+            case (variableAST: AST, (refinement: Refinement, assertion: Expr)) =>
+              // Add a new disjunct
+              if (!avoidRefinement2.contains(refinement)) {
+                disjunction = solver.mkOr(disjunction, assertion)
+                nameDisjunctions = solver.mkAnd(nameDisjunctions, solver.mkIff(variableAST, assertion))
+              }
+          })
+          val z3Result = solver.checkAssertionPushPop(solver.mkAnd(disjunction, nameDisjunctions), printUnsatCore = false)
+          if (z3Result) {
+            val model = solver.getModel
+            val goodRefinements = refinementsMap.filter({ case (variableAST: AST, _) => model.eval(variableAST, false).toString == "true" })
+            val refinement = goodRefinements.head._2._1
+            programSynthesis.synthesize(refinedProgram, refinement) match {
+              case Some(newProgram) => return (Some(newProgram), Some(refinement))
+              case None => avoidRefinement2 = avoidRefinement2 + refinement
+            }
+          } else {
+            logger.fatal(s"There exist no more path refinement!")
+            return (None, None)
+          }
         }
+        (None, None)
       case None => ??? // Simply try a completely new program?
     }
   }

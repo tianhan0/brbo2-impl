@@ -5,7 +5,7 @@ import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.{StringCompare, Z3Solver}
-import com.microsoft.z3.{AST, BoolExpr}
+import com.microsoft.z3.{AST, BoolExpr, Expr}
 
 import scala.annotation.tailrec
 
@@ -24,7 +24,7 @@ class SymbolicExecution(parametersOfMainFunction: List[Identifier]) {
 
   private var freshVariables: Valuation = Map()
 
-  def createFreshVariable(typ: BrboType): (String, AST) = {
+  def createFreshVariable(typ: BrboType): (String, Expr) = {
     val variableName = s"v${inputs.size + freshVariables.size}"
     val z3AST = typ match {
       case INT => solver.mkIntVar(variableName)

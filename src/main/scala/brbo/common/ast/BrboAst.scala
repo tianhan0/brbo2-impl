@@ -6,16 +6,18 @@ import brbo.common.{BrboType, GhostVariableUtils}
 
 import java.util.UUID
 
-case class BrboProgram(name: String, mainFunction: BrboFunction,
+case class BrboProgram(name: String, mainFunction: BrboFunction, groupIds: Set[Int],
                        mostPreciseAssertion: Option[BrboExpr] = None, lessPreciseAssertion: Option[BrboExpr] = None,
                        functions: List[BrboFunction] = Nil, uuid: UUID = UUID.randomUUID()) extends PrettyPrintToC {
   override def prettyPrintToC(indent: Int): String = {
+    // TODO: Declare and initialize ghost variables in the main function
     val functionsString = (functions :+ mainFunction).map(function => function.prettyPrintToC(indent)).mkString("\n")
     s"${PreDefinedFunctions.UNDEFINED_FUNCTIONS_MACRO}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
   }
 
   override def toString: String = {
     s"Program name: `$name`\n" +
+      s"Group IDs: `$groupIds`\n" +
       s"Most precise bound: `$mostPreciseAssertion`\n" +
       s"Less precise bound: `$lessPreciseAssertion`\n" +
       s"${(functions :+ mainFunction).map(function => function.prettyPrintToC(DEFAULT_INDENT)).mkString("\n")}"
@@ -250,21 +252,14 @@ case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
 
 sealed trait GhostCommand
 
-case class Use(groupID: Option[Int], update: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
-  groupID match {
+case class Use(groupId: Option[Int], update: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
+  groupId match {
     case Some(value) => assert(value >= 0) // This command represents updating a resource variable for some amortization group
     case None => // This command represents updating the original resource variable
   }
 
   // TODO: Check this use command corresponds to the assignment command
-  val resourceVariable: Identifier = {
-    val suffix =
-      groupID match {
-        case Some(i) => i.toString
-        case None => ""
-      }
-    Identifier(GhostVariableUtils.generateName(suffix, Resource), INT)
-  }
+  val resourceVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Resource)
 
   val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
 
@@ -275,10 +270,10 @@ case class Use(groupID: Option[Int], update: BrboExpr, uuid: UUID = UUID.randomU
   override def prettyPrintToC(indent: Int): String = assignmentCommand.prettyPrintToC(indent)
 }
 
-case class Reset(groupID: Int, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
-  val sharpVariable: Identifier = Identifier(GhostVariableUtils.generateName(groupID.toString, Sharp), INT)
-  val resourceVariable: Identifier = Identifier(GhostVariableUtils.generateName(groupID.toString, Resource), INT)
-  val counterVariable: Identifier = Identifier(GhostVariableUtils.generateName(groupID.toString, Counter), INT)
+case class Reset(groupId: Int, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
+  val sharpVariable: Identifier = GhostVariableUtils.generateVariable(Some(groupId), Sharp)
+  val resourceVariable: Identifier = GhostVariableUtils.generateVariable(Some(groupId), Resource)
+  val counterVariable: Identifier = GhostVariableUtils.generateVariable(Some(groupId), Counter)
 
   val maxCommand: Assignment = {
     val iteExpr = ITEExpr(LessThan(sharpVariable, resourceVariable), resourceVariable, sharpVariable)

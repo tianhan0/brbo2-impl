@@ -1,4 +1,4 @@
-package brbo.backend
+package brbo.backend.driver
 
 object NodeStatus extends Enumeration {
   type NodeStatus = Value

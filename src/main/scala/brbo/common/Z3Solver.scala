@@ -128,6 +128,10 @@ class Z3Solver {
     else context.mkOr(astSequence.map(ast => ast.asInstanceOf[BoolExpr]): _*)
   }
 
+  def mkIff(left: AST, right: AST): BoolExpr = this.synchronized {
+    context.mkIff(left.asInstanceOf[BoolExpr], right.asInstanceOf[BoolExpr])
+  }
+
   def mkXor(left: AST, right: AST): BoolExpr = this.synchronized {
     context.mkXor(left.asInstanceOf[BoolExpr], right.asInstanceOf[BoolExpr])
   }

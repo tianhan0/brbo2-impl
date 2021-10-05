@@ -10,11 +10,11 @@ class PathRefinement(commandLineArguments: CommandLineArguments, targetFunction:
   private val logger = MyLogger.createLogger(classOf[PathRefinement], commandLineArguments.getDebugMode)
 
   // Perform command transformations to commands in the given path
-  def refine(path: Path): Set[Refinement] = {
+  def refine(path: Path): List[Refinement] = {
     val useInsertedPaths: Set[Refinement] = insertUseOnly(path)
     useInsertedPaths.flatMap({
       useInsertedPath: Refinement => removeResetOnly(useInsertedPath)
-    })
+    }).toList.sortWith({ case (r1, r2) => r1.toString <= r2.toString })
   }
 
   def removeResetOnly(refineUseOnly: Refinement): Set[Refinement] = {

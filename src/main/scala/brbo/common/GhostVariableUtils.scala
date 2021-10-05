@@ -1,5 +1,6 @@
 package brbo.common
 
+import brbo.common.BrboType.INT
 import brbo.common.GhostVariableTyp._
 import brbo.common.ast._
 
@@ -13,7 +14,14 @@ object GhostVariableUtils {
   private val resourceVariablePattern = (resourceVariablePrefix + """\d*""").r
   private val counterVariablePattern = (counterVariablePrefix + """\d*""").r
 
-  def generateName(suffix: String, typ: GhostVariable): String = {
+  def generateVariable(groupId: Option[Int], typ: GhostVariable): Identifier = {
+    groupId match {
+      case Some(i) => Identifier(GhostVariableUtils.generateName(i.toString, typ), INT)
+      case None => Identifier(GhostVariableUtils.generateName("", typ), INT)
+    }
+  }
+
+  private def generateName(suffix: String, typ: GhostVariable): String = {
     val result = typ match {
       case Resource => s"$resourceVariablePrefix$suffix"
       case Sharp => s"$sharpVariablePrefix$suffix"

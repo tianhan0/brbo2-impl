@@ -5,7 +5,7 @@ import brbo.common.CommandLineArguments
 import brbo.common.ast.BrboProgram
 
 class ProgramSynthesis(commandLineArguments: CommandLineArguments) {
-  def synthesize(brboProgram: BrboProgram, paths: List[Path]): Option[BrboProgram] = {
+  def synthesize(brboProgram: BrboProgram, refinement: Refinement): Option[BrboProgram] = {
     ???
   }
 }
