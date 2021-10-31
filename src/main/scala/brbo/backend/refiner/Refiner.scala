@@ -15,6 +15,7 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
 
   def refine(refinedProgram: BrboProgram, counterexamplePath: Option[Path],
              boundAssertion: BrboExpr, avoidRefinements: Set[Refinement]): (Option[BrboProgram], Option[Refinement]) = {
+    logger.info(s"Refine ${if (counterexamplePath.isEmpty) "without" else "with"} a counterexample path")
     counterexamplePath match {
       case Some(counterexamplePath2) =>
         val symbolicExecution = new SymbolicExecution(refinedProgram.mainFunction.parameters)
@@ -49,6 +50,7 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
             }
         })
 
+        logger.info(s"Search for a path refinement.")
         // Keep finding new path transformations until either finding a program transformation that can realize it,
         // or there exists no program transformation that can realize any path transformation
         var avoidRefinement2: Set[Refinement] = Set()
@@ -70,13 +72,16 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
             val refinement = goodRefinements.head._2._1
             programSynthesis.synthesize(refinedProgram, refinement) match {
               case Some(newProgram) => return (Some(newProgram), Some(refinement))
-              case None => avoidRefinement2 = avoidRefinement2 + refinement
+              case None =>
+                avoidRefinement2 = avoidRefinement2 + refinement
+                logger.info(s"Cannot synthesize a program from the current path refinement. Will try a new path refinement.")
             }
           } else {
-            logger.fatal(s"There exist no more path refinement!")
+            logger.info(s"Cannot find a path refinement, if avoiding the ones cannot be synthesized into programs.")
             return (None, None)
           }
         }
+        logger.info(s"Tried all path refinements, but none of them can be synthesized into a program.")
         (None, None)
       case None => ??? // Simply try a completely new program?
     }

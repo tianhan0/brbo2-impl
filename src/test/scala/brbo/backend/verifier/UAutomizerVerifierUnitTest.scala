@@ -115,7 +115,7 @@ object UAutomizerVerifierUnitTest {
     List[TestCase](
       TestCase("Must be unknown", test01, test01Expected),
       TestCase("Must fail", test02, test02Expected),
-      TestCase("Must fail", test03, test03Expected),
+      TestCase("Identify uses and resets", test03, test03Expected),
     )
   }
 }
