@@ -110,7 +110,7 @@ object SymbolicExecutionUnitTest {
           |  (a,(INT,Value(a)))
           |  (b,(INT,Value(b)))
           |  (n,(INT,Value(n)))
-          |Path condition: true
+          |Path condition: (and true true true true)
           |Return values:
           |""".stripMargin)
     )

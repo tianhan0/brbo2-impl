@@ -1,7 +1,7 @@
 package brbo.backend.verifier.cex
 
-import brbo.common.MyLogger
 import brbo.common.BrboType.VOID
+import brbo.common.MyLogger
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 import org.jgrapht.Graph
@@ -59,19 +59,34 @@ class ParseCounterexamplePath(debugMode: Boolean) {
 
   // Map updates to ghost variables into use or reset commands.
   // Assume the input program contains no use or reset commands.
-  def parseUseReset(path: Path, programInC: BrboProgramInC): Path = {
+  def extractUseResetFromCRepresentation(path: Path, programInC: BrboProgramInC): Path = {
+    def extractUseReset(key: Either[Command, BrboExpr], node: CFGNode): CFGNode = {
+      programInC.map.get(key) match {
+        case Some(value) =>
+          logger.traceOrError(s"Translate `$key` (in C representation) to `${value.asInstanceOf[Command].prettyPrintToCFG}`")
+          CFGNode(Left(value.asInstanceOf[Command]), node.function, CFGNode.DONT_CARE_ID)
+        case None => node
+      }
+    }
+
     val newNodes: List[CFGNode] = path.pathNodes.map({
       node =>
-        programInC.map.get(node.value) match {
-          case Some(value) => CFGNode(Left(value.asInstanceOf[Command]), node.function, CFGNode.DONT_CARE_ID)
-          case None => node
+        node.value match {
+          case Left(_) => extractUseReset(node.value, node)
+          case Right(brboExpr) =>
+            brboExpr match {
+              case Negative(notNegated, _) =>
+                // Properly extract a use / reset when its conditionals are negated
+                extractUseReset(Right(notNegated), node)
+              case _ => extractUseReset(node.value, node)
+            }
         }
     })
     var result: List[CFGNode] = Nil
     var lastNode: Option[CFGNode] = None
     newNodes.indices.foreach({
       i =>
-        // Get rid of repetitive nodes
+        // Get rid of repetitive use / reset commands, because a use / reset is translated to multiple commands or expressions in a C program
         lastNode match {
           case Some(value) =>
             if (value != newNodes(i))
@@ -92,8 +107,8 @@ class ParseCounterexamplePath(debugMode: Boolean) {
   private def parsePathString(path: List[String], brboProgram: BrboProgram): Path = {
     val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
 
-    val fakeFunction = BrboFunction("???", VOID, Nil, Block(List(Skip())))
-    val fakeNode = CFGNode(Left(Skip()), fakeFunction, 0)
+    val functionWhenMatchSucceed = BrboFunction("???", VOID, Nil, Block(List(Skip())))
+    val nodeWhenMatchSucceed = CFGNode(Left(Skip()), functionWhenMatchSucceed, 0)
 
     /**
      *
@@ -119,7 +134,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                 if (state.remainingPath.nonEmpty)
                   throw new Exception(s"Exiting function `${currentFunction.identifier}`, " +
                     s"but the call stack is empty and the remaining path is not empty: `${state.remainingPath}`")
-                return State(SubState(fakeNode, processFunctionCalls = true, fakeFunction), Nil, state.matchedNodes, Nil, shouldContinue = false)
+                return State(SubState(nodeWhenMatchSucceed, processFunctionCalls = true, functionWhenMatchSucceed), Nil, state.matchedNodes, Nil, shouldContinue = false)
               }
               else {
                 val top = state.callStack.head
@@ -227,54 +242,68 @@ class ParseCounterexamplePath(debugMode: Boolean) {
         newState.remainingPath match {
           case Nil => throw new Exception(s"Match node `$currentNode` with an empty path")
           case ::(head, tail) =>
-            val matchResult = matchNode(head, currentNode)
-            logger.traceOrError(s"Current node `$currentNode` ${if (matchResult.matched) "indeed matches" else "does not match"} path node `$head`")
-            if (!matchResult.matched) newState
-            else {
-              val newCurrentNode: CFGNode = {
-                val successorNodes = cfg.findSuccessorNodes(currentNode)
-                if (matchResult.matchedExpression) {
-                  // Matched an expression
-                  assert(successorNodes.size == 2)
-                  // Find the branch to proceed
-                  val (trueNode: CFGNode, falseNode: CFGNode) = {
-                    val n1 = successorNodes.head
-                    val n2 = successorNodes.tail.head
-                    val e1 = cfg.jgraphtGraph.getEdge(currentNode, n1)
-                    val e2 = cfg.jgraphtGraph.getEdge(currentNode, n2)
-                    (cfg.jgraphtGraph.getEdgeWeight(e1), cfg.jgraphtGraph.getEdgeWeight(e2)) match {
-                      case (ControlFlowGraph.TRUE_BRANCH_WEIGHT, ControlFlowGraph.FALSE_BRANCH_WEIGHT) => (n1, n2)
-                      case (ControlFlowGraph.FALSE_BRANCH_WEIGHT, ControlFlowGraph.TRUE_BRANCH_WEIGHT) => (n2, n1)
+            val (matchResult, rematchCurrentPathNode) = {
+              val result: MatchResult = matchNode(head, currentNode)
+              logger.traceOrError(s"Current AST node `$currentNode` ${if (result.matched) "indeed matches" else "does not match"} current path node `$head`")
+              if (!result.matched) {
+                currentNode.value match {
+                  case Left(_) => throw new Exception
+                  case Right(brboExpr) =>
+                    brboExpr match {
+                      case Bool(true, _) =>
+                        logger.traceOrError(s"Decide to match AST node `$currentNode` with an empty path node.") // because constant bool expressions never show up in a path!
+                        logger.traceOrError(s"Will re-match current path node `$head`.")
+                        (MatchResult(matched = true, matchedExpression = true, matchedTrueBranch = true), true)
                       case _ => throw new Exception
                     }
-                  }
-                  if (matchResult.matchedTrueBranch) trueNode else falseNode
-                }
-                else {
-                  // Matched a command
-                  assert(successorNodes.size == 1)
-                  successorNodes.head
                 }
               }
-              logger.traceOrError(s"Successor node: `$newCurrentNode`")
-
-              val matchedNode: CFGNode = {
-                if (!matchResult.matchedExpression) currentNode // Match a command
-                else {
-                  currentNode.value match {
-                    case Left(_) => throw new Exception
-                    case Right(brboExpr) =>
-                      if (matchResult.matchedTrueBranch) currentNode // Match the true branch
-                      else CFGNode(Right(Negative(brboExpr)), currentNode.function, currentNode.id) // Match the false branch
-                  }
-                }
-              }
-
-              // The new call stack might be different from the current call stack, because it might have processed function returns
-              // Every call to this function is responsible for maintaining the call stack in order for a potential recursive call to itself to work properly
-              matchPath(State(SubState(newCurrentNode, processFunctionCalls = true, currentFunction), newState.callStack,
-                matchedNode :: newState.matchedNodes, tail, newState.shouldContinue))
+              else (result, false)
             }
+            val newCurrentNode: CFGNode = {
+              val successorNodes = cfg.findSuccessorNodes(currentNode)
+              if (matchResult.matchedExpression) {
+                // Matched an expression
+                assert(successorNodes.size == 2)
+                // Find the branch to proceed
+                val (trueNode: CFGNode, falseNode: CFGNode) = {
+                  val n1 = successorNodes.head
+                  val n2 = successorNodes.tail.head
+                  val e1 = cfg.jgraphtGraph.getEdge(currentNode, n1)
+                  val e2 = cfg.jgraphtGraph.getEdge(currentNode, n2)
+                  (cfg.jgraphtGraph.getEdgeWeight(e1), cfg.jgraphtGraph.getEdgeWeight(e2)) match {
+                    case (ControlFlowGraph.TRUE_BRANCH_WEIGHT, ControlFlowGraph.FALSE_BRANCH_WEIGHT) => (n1, n2)
+                    case (ControlFlowGraph.FALSE_BRANCH_WEIGHT, ControlFlowGraph.TRUE_BRANCH_WEIGHT) => (n2, n1)
+                    case _ => throw new Exception
+                  }
+                }
+                if (matchResult.matchedTrueBranch) trueNode else falseNode
+              }
+              else {
+                // Matched a command
+                assert(successorNodes.size == 1)
+                successorNodes.head
+              }
+            }
+            logger.traceOrError(s"Successor node: `$newCurrentNode`")
+
+            val matchedNode: CFGNode = {
+              if (!matchResult.matchedExpression) currentNode // Match a command
+              else {
+                currentNode.value match {
+                  case Left(_) => throw new Exception
+                  case Right(brboExpr) =>
+                    if (matchResult.matchedTrueBranch) currentNode // Match the true branch
+                    else CFGNode(Right(Negative(brboExpr)), currentNode.function, currentNode.id) // Match the false branch
+                }
+              }
+            }
+
+            val newRemainingPath = if (rematchCurrentPathNode) newState.remainingPath else tail
+            // The new call stack might be different from the current call stack, because it might have processed function returns
+            // Every call to this function is responsible for maintaining the call stack in order for a potential recursive call to itself to work properly
+            matchPath(State(SubState(newCurrentNode, processFunctionCalls = true, currentFunction), newState.callStack,
+              matchedNode :: newState.matchedNodes, newRemainingPath, newState.shouldContinue))
         }
       }
     }
@@ -282,8 +311,8 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     val entryNode = cfg.cfgs(brboProgram.mainFunction).root
     val state = matchPath(State(SubState(entryNode, processFunctionCalls = true, brboProgram.mainFunction), Nil, Nil, path, shouldContinue = true))
     logger.traceOrError(s"State after matching:\n$state")
-    assert(state.subState.currentNode == fakeNode)
-    assert(state.subState.currentFunction == fakeFunction)
+    assert(state.subState.currentNode == nodeWhenMatchSucceed)
+    assert(state.subState.currentFunction == functionWhenMatchSucceed)
     assert(!state.shouldContinue)
     Path(state.matchedNodes.reverse)
   }

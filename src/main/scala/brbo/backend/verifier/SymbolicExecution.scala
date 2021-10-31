@@ -96,24 +96,27 @@ class SymbolicExecution(parametersOfMainFunction: List[Identifier]) {
           case FunctionCall(functionCallExpr, _) =>
             val (_, newReturnValues) = evaluateExpression(valuation, state.returnValues, functionCallExpr)
             State(state.valuations, state.pathCondition, newReturnValues)
-          case use@Use(_, _, _) =>
-            val (newValuation, newReturnValues) = evaluateAssignment(valuation, state.returnValues, Left(use.assignmentCommand))
-            State(newValuation :: state.valuations.tail, state.pathCondition, newReturnValues)
-          case reset@Reset(_, _) =>
+          case use@Use(_, _, condition, _) =>
+            val (extraPathCondition: Option[AST], newReturnValues) = evaluateExpression(valuation, state.returnValues, condition)
+            val (newValuation, newReturnValues2) = evaluateAssignment(valuation, newReturnValues, Left(use.assignmentCommand))
+            State(newValuation :: state.valuations.tail, solver.mkAnd(state.pathCondition, extraPathCondition.get), newReturnValues2)
+          case reset@Reset(_, condition, _) =>
+            val (extraPathCondition: Option[AST], newReturnValues) = evaluateExpression(valuation, state.returnValues, condition)
+
             var newValuation: Valuation = valuation
-            var newReturnValues: ReturnValues = state.returnValues
+            var newReturnValues2: ReturnValues = newReturnValues
             List(reset.maxCommand, reset.resetCommand, reset.counterCommand).foreach({
               assignment =>
-                val r = evaluateAssignment(newValuation, newReturnValues, Left(assignment))
+                val r = evaluateAssignment(newValuation, newReturnValues2, Left(assignment))
                 newValuation = r._1
-                newReturnValues = r._2
+                newReturnValues2 = r._2
             })
-            State(newValuation :: state.valuations.tail, state.pathCondition, newReturnValues)
+            State(newValuation :: state.valuations.tail, solver.mkAnd(state.pathCondition, extraPathCondition.get), newReturnValues2)
           case _: CFGOnly | Skip(_) | Break(_) | Continue(_) => throw new Exception(s"Unexpected command: `$command`")
         }
       case Right(brboExpr) =>
-        val (additionPathCondition, newReturnValues) = evaluateExpression(valuation, state.returnValues, brboExpr)
-        State(state.valuations, solver.mkAnd(state.pathCondition, additionPathCondition.get), newReturnValues)
+        val (extraPathCondition, newReturnValues) = evaluateExpression(valuation, state.returnValues, brboExpr)
+        State(state.valuations, solver.mkAnd(state.pathCondition, extraPathCondition.get), newReturnValues)
     }
   }
 

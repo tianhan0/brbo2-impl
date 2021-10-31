@@ -71,7 +71,7 @@ case class CFGNode(value: Either[Command, BrboExpr], function: BrboFunction, id:
     value match {
       case Left(command) =>
         command match {
-          case Use(groupId2, _, _) =>
+          case Use(groupId2, _, _, _) =>
             (groupId2, groupId) match {
               case (Some(value2), Some(value)) => value2 == value
               case (Some(_), None) => true
@@ -94,7 +94,7 @@ case class CFGNode(value: Either[Command, BrboExpr], function: BrboFunction, id:
     value match {
       case Left(command) =>
         command match {
-          case Reset(groupID2, _) =>
+          case Reset(groupID2, _, _) =>
             groupId match {
               case Some(value) => groupID2 == value
               case None => true

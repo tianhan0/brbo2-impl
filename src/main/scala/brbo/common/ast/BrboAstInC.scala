@@ -19,7 +19,7 @@ case class BrboProgramInC(originalProgram: BrboProgram) {
 }
 
 case class BrboFunctionInC(originalFunction: BrboFunction) {
-  // Map commands or expressions in the C version that are translated from uses or resets in the original program to these uses or resets
+  // Map commands or expressions in the C version that are translated from uses or resets in the original program
   val (function: BrboFunction, map: Map[Either[Command, BrboExpr], GhostCommand]) = functionToC
 
   private def functionToC: (BrboFunction, Map[Either[Command, BrboExpr], GhostCommand]) = {
@@ -54,15 +54,18 @@ case class BrboFunctionInC(originalFunction: BrboFunction) {
         case Continue(_) => Continue()
         case _: CFGOnly => throw new Exception
         case Return(value, _) => Return(value)
-        case reset@Reset(_, _) =>
+        case reset@Reset(_, condition, _) =>
           map = map + (Right(reset.maxComparison) -> reset)
           map = map + (Left(reset.maxAssignment) -> reset)
           map = map + (Left(reset.resetCommand) -> reset)
           map = map + (Left(reset.counterCommand) -> reset)
-          Block(List(reset.maxStatement, reset.resetCommand, reset.counterCommand))
-        case use@Use(_, _, _) =>
+          map = map + (Right(condition) -> reset)
+          val block = Block(List(reset.maxStatement, reset.resetCommand, reset.counterCommand))
+          ITE(condition, block, Skip())
+        case use@Use(_, _, condition, _) =>
           map = map + (Left(use.assignmentCommand) -> use)
-          use.assignmentCommand
+          map = map + (Right(condition) -> use)
+          ITE(condition, use.assignmentCommand, Skip())
         case FunctionCall(functionCallExpr, _) => FunctionCall(functionCallExpr)
         case LabeledCommand(label, command, _) => LabeledCommand(label, commandToC(command).asInstanceOf[Command])
         case CallFunction(_, _) => throw new Exception

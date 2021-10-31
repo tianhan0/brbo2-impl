@@ -252,7 +252,7 @@ case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
 
 sealed trait GhostCommand
 
-case class Use(groupId: Option[Int], update: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
+case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Bool(b = true), uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
   groupId match {
     case Some(value) => assert(value >= 0) // This command represents updating a resource variable for some amortization group
     case None => // This command represents updating the original resource variable
@@ -263,14 +263,19 @@ case class Use(groupId: Option[Int], update: BrboExpr, uuid: UUID = UUID.randomU
 
   val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
 
-  override def prettyPrintToCFG: String = s"use ${resourceVariable.identifier} ${update.prettyPrintToCFG}"
+  override def prettyPrintToCFG: String = {
+    s"if (${condition.prettyPrintToCNoOuterBrackets}) use ${resourceVariable.identifier} ${update.prettyPrintToCFG}"
+  }
 
   override def getFunctionCalls: List[FunctionCallExpr] = update.getFunctionCalls
 
-  override def prettyPrintToC(indent: Int): String = assignmentCommand.prettyPrintToC(indent)
+  override def prettyPrintToC(indent: Int): String = {
+    val indentString = " " * indent
+    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) ${assignmentCommand.prettyPrintToC()}"
+  }
 }
 
-case class Reset(groupId: Int, uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
+case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
   val sharpVariable: Identifier = GhostVariableUtils.generateVariable(Some(groupId), Sharp)
   val resourceVariable: Identifier = GhostVariableUtils.generateVariable(Some(groupId), Resource)
   val counterVariable: Identifier = GhostVariableUtils.generateVariable(Some(groupId), Counter)
@@ -285,12 +290,13 @@ case class Reset(groupId: Int, uuid: UUID = UUID.randomUUID()) extends Command w
   val resetCommand: Assignment = Assignment(resourceVariable, Number(0))
   val counterCommand: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
 
-  override def prettyPrintToCFG: String = s"reset ${resourceVariable.identifier}"
+  override def prettyPrintToCFG: String = s"if (${condition.prettyPrintToCNoOuterBrackets}) reset ${resourceVariable.identifier}"
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
   override def prettyPrintToC(indent: Int): String = {
-    s"${maxStatement.prettyPrintToC(indent)}\n${resetCommand.prettyPrintToC(indent)}\n${counterCommand.prettyPrintToC(indent)}"
+    val indentString = " " * indent
+    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) {\n${maxStatement.prettyPrintToC(indent + DEFAULT_INDENT)}\n${resetCommand.prettyPrintToC(indent + DEFAULT_INDENT)}\n${counterCommand.prettyPrintToC(indent + DEFAULT_INDENT)}\n$indentString}"
   }
 }
 

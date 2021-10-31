@@ -1,4 +1,4 @@
-package brbo.backend.refiner
+/*package brbo.backend.refiner
 
 import brbo.backend.verifier.cex.Path
 import brbo.common.ast._
@@ -34,7 +34,7 @@ class PathRefinementUnrestricted(commandLineArguments: CommandLineArguments, brb
     path.pathNodes(index).value match {
       case Left(command) =>
         command match {
-          case Use(groupID, _, _) =>
+          case Use(groupID, _, _, _) =>
             val notInsertResetBeforeThisUse = insertResetOnly(path, index + 1, choices :+ NOT_INSERT)
             val insertResetBeforeThisUse = insertResetOnly(path, index + 1, choices :+ groupID.get)
             notInsertResetBeforeThisUse ::: insertResetBeforeThisUse
@@ -64,7 +64,7 @@ class PathRefinementUnrestricted(commandLineArguments: CommandLineArguments, brb
             nodes(i).value match {
               case Left(command) =>
                 command match {
-                  case Use(_, update, _) =>
+                  case Use(_, update, _, _) =>
                     // Do not transform commands in functions other than the main function
                     val newNode: CFGNode =
                       if (nodes(i).function.identifier == brboProgram.mainFunction.identifier) {
@@ -87,3 +87,4 @@ class PathRefinementUnrestricted(commandLineArguments: CommandLineArguments, brb
     results.map(list => Path(list)).toList
   }
 }
+*/

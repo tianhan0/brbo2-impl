@@ -53,9 +53,9 @@ object BrboAstUnitTest {
       TestCase("ITE", createITE, "  if (true)\n    x = 0;\n  else\n    x = 1;"),
       TestCase("Loop", createLoop, "  while (0 < x)\n  {\n    x = 0;\n    x = 1;\n  }"),
       TestCase("Block", createBlock, "  {\n    x = 0;\n    x = 1;\n  }"),
-      TestCase("Use", createUse, "  R5 = R5 + 1;"),
-      TestCase("Use 2", createUse2, "  R = R + 2;"),
-      TestCase("Reset", createReset, "  if (S5 < R5)\n    S5 = R5;\n  else\n    ;\n  R5 = 0;\n  C5 = C5 + 1;")
+      TestCase("Use", createUse, "  if (true) R5 = R5 + 1;"),
+      TestCase("Use 2", createUse2, "  if (true) R = R + 2;"),
+      TestCase("Reset", createReset, "  if (true) {\n    if (S5 < R5)\n      S5 = R5;\n    else\n      ;\n    R5 = 0;\n    C5 = C5 + 1;\n  }")
     )
 
   def createContinue: Continue = Continue()

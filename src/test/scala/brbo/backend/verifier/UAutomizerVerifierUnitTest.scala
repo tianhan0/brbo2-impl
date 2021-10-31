@@ -10,7 +10,7 @@ class UAutomizerVerifierUnitTest extends AnyFlatSpec {
   "Parsing counterexample paths" should "be correct" in {
     UAutomizerVerifierUnitTest.testCases.foreach({
       testCase =>
-        val verifier = new UAutomizerVerifier(CommandLineArguments.DEFAULT_ARGUMENTS)
+        val verifier = new UAutomizerVerifier(CommandLineArguments.DEBUG_MODE_ARGUMENTS)
         val result = verifier.verify(testCase.input.asInstanceOf[BrboProgram])
         assert(StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"Test `${testCase.name}` failed"))
     })
@@ -83,7 +83,8 @@ object UAutomizerVerifierUnitTest {
         |  return; [Function `assert`]))""".stripMargin
 
     val test03 = {
-      val reset1 = Reset(2)
+      val n = Identifier("n", INT)
+      val reset1 = Reset(2, GreaterThan(n, Number(0)))
       val R2 = reset1.resourceVariable
       val R2Sharp = reset1.sharpVariable
       val R2Counter = reset1.counterVariable
@@ -91,10 +92,10 @@ object UAutomizerVerifierUnitTest {
       val declaration2 = VariableDeclaration(R2Sharp, Number(0))
       val declaration3 = VariableDeclaration(R2Counter, Number(0))
       val reset2 = Reset(2)
-      val use1 = Use(Some(2), Number(1))
+      val use1 = Use(Some(2), Number(1), GreaterThan(n, Number(1)))
       val use2 = Use(Some(2), Number(2))
       val assertion = PreDefinedFunctions.createAssert(LessThanOrEqualTo(R2, Number(1)))
-      val function = BrboFunction("main", VOID, List(), Block(List(declaration1, declaration2, declaration3, reset1, use1, reset2, use2, assertion)))
+      val function = BrboFunction("main", VOID, List(n), Block(List(declaration1, declaration2, declaration3, reset1, use1, reset2, use2, assertion)))
       BrboProgram("test03", function, Set[Int](), None, None, PreDefinedFunctions.allFunctionsList)
     }
     val test03Expected =
@@ -102,11 +103,10 @@ object UAutomizerVerifierUnitTest {
         |  int R2 = 0; [Function `main`]
         |  int S2 = 0; [Function `main`]
         |  int C2 = 0; [Function `main`]
-        |  !((S2 < R2)) [Function `main`]
-        |  reset R2 [Function `main`]
-        |  use R2 1 [Function `main`]
-        |  reset R2 [Function `main`]
-        |  use R2 2 [Function `main`]
+        |  if (n > 0) reset R2 [Function `main`]
+        |  if (n > 1) use R2 1 [Function `main`]
+        |  if (true) reset R2 [Function `main`]
+        |  if (true) use R2 2 [Function `main`]
         |  Call function `assert` with `(R2 <= 1)` [Function `main`]
         |  !(cond) [Function `assert`]
         |  ERROR: __VERIFIER_error(); [Function `assert`]

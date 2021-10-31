@@ -29,7 +29,7 @@ class PathRefinement(commandLineArguments: CommandLineArguments, targetFunction:
           head.value match {
             case Left(command) =>
               command match {
-                case Reset(_, _) =>
+                case Reset(_, _, _) =>
                   val newRefine = currentRefine.removeReset(currentIndex)
                   if (numberToKeep == 0) helper(numberToKeep, newRefine, currentIndex + 1, tail)
                   else {
@@ -60,8 +60,8 @@ class PathRefinement(commandLineArguments: CommandLineArguments, targetFunction:
           node.value match {
             case Left(command) =>
               command match {
-                case Use(groupID, _, _) => groupIds = groupIds + groupID.get
-                case Reset(groupID, _) => groupIds = groupIds + groupID
+                case Use(groupID, _, _, _) => groupIds = groupIds + groupID.get
+                case Reset(groupID, _, _) => groupIds = groupIds + groupID
                 case _ =>
               }
             case Right(_) =>
