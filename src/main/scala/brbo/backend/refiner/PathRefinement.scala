@@ -110,12 +110,11 @@ class PathRefinement(commandLineArguments: CommandLineArguments, targetFunction:
                         assert(!acc2.contains(index))
                         // Do not transform commands in functions other than the main function
                         if (node.isReset(Some(toSplitGroupId), Some(targetFunction))) {
-                          val newReset = CFGNode(Left(node.value.left.asInstanceOf[Reset].replace(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
+                          val newReset = CFGNode(Left(node.value.left.get.asInstanceOf[Reset].replace(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
                           acc2 + (index -> ResetNode(newReset, newGroupId))
                         }
                         else if (node.isUse(Some(toSplitGroupId), Some(targetFunction))) {
-                          val update = node.value.left.get.asInstanceOf[Use].update
-                          val newUse = CFGNode(Left(node.value.left.asInstanceOf[Use].replace(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
+                          val newUse = CFGNode(Left(node.value.left.get.asInstanceOf[Use].replace(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
                           acc2 + (index -> UseNode(newUse, newGroupId))
                         }
                         else acc2

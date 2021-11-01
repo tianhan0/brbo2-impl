@@ -1,4 +1,4 @@
-package brbo.backend.verifier
+  package brbo.backend.verifier
 
 import brbo.backend.verifier.SymbolicExecution._
 import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
@@ -14,7 +14,7 @@ class SymbolicExecution(parametersOfMainFunction: List[Identifier]) {
 
   val inputs: Valuation = parametersOfMainFunction.foldLeft(Map[String, (BrboType, Value)]())({
     (acc, parameter) =>
-      val z3AST = SymbolicExecution.variableToZ3(parameter.identifier, parameter.typ, solver)
+      val z3AST = Z3Solver.variableToZ3(parameter.identifier, parameter.typ, solver)
       acc + (parameter.identifier -> (parameter.typ, Value(z3AST)))
   })
 
@@ -234,18 +234,10 @@ object SymbolicExecution {
     }
   }
 
-  private def variableToZ3(identifier: String, typ: BrboType, solver: Z3Solver): AST = {
-    typ match {
-      case INT => solver.mkIntVar(identifier)
-      case BOOL => solver.mkBoolVar(identifier)
-      case VOID => throw new Exception
-    }
-  }
-
   def valuationToAST(valuation: Valuation, solver: Z3Solver): AST = {
     val equalities: Seq[AST] = valuation.map({
       case (identifier, (typ, value)) =>
-        solver.mkEq(variableToZ3(identifier, typ, solver), value.v).asInstanceOf[AST]
+        solver.mkEq(Z3Solver.variableToZ3(identifier, typ, solver), value.v).asInstanceOf[AST]
     }).toSeq
     solver.mkAnd(equalities: _*)
   }

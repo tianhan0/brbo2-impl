@@ -6,7 +6,7 @@ import com.microsoft.z3.AST
 
 import java.util.UUID
 
-abstract class BrboExpr(val typ: BrboType) extends PrettyPrintToC with PrettyPrintToCFG with GetFunctionCalls with ToZ3AST {
+abstract class BrboExpr(val typ: BrboType) extends PrettyPrintToC with PrettyPrintToCFG with GetFunctionCalls with ToZ3AST with UseDefVariables {
   override def prettyPrintToC(indent: Int): String
 
   override def toString: String = prettyPrintToC()
@@ -34,6 +34,10 @@ case class Identifier(identifier: String, override val typ: BrboType, uuid: UUID
       case brbo.common.BrboType.VOID => throw new Exception
     }
   }
+
+  override def getUses: Set[Identifier] = Set(this)
+
+  override def getDefs: Set[Identifier] = Set()
 }
 
 case class Bool(b: Boolean, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -44,6 +48,10 @@ case class Bool(b: Boolean, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOO
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkBoolVal(b)
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
 }
 
 case class Number(n: Int, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -54,6 +62,10 @@ case class Number(n: Int, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkIntVal(n)
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
 }
 
 case class Addition(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -67,6 +79,10 @@ case class Addition(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkAdd(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 }
 
 case class Subtraction(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -80,6 +96,10 @@ case class Subtraction(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.random
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkSub(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 }
 
 case class Multiplication(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -93,6 +113,10 @@ case class Multiplication(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.ran
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkMul(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 }
 
 case class Division(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -106,6 +130,10 @@ case class Division(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkDiv(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 }
 
 case class Negative(expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -118,6 +146,10 @@ case class Negative(expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extend
   override def getFunctionCalls: List[FunctionCallExpr] = expression.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkNot(expression.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = expression.getUses
+
+  override def getDefs: Set[Identifier] = expression.getDefs
 }
 
 case class LessThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -131,6 +163,10 @@ case class LessThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkLt(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 }
 
 case class LessThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -144,6 +180,10 @@ case class LessThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkLe(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 }
 
 case class GreaterThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -157,6 +197,10 @@ case class GreaterThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.random
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkGt(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 }
 
 case class GreaterThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -170,6 +214,10 @@ case class GreaterThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UU
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkGe(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 }
 
 case class Equal(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -182,6 +230,10 @@ case class Equal(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkEq(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 }
 
 case class NotEqual(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -194,6 +246,10 @@ case class NotEqual(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkNe(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 }
 
 case class And(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -207,6 +263,10 @@ case class And(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) 
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkAnd(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 }
 
 case class Or(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -220,6 +280,10 @@ case class Or(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) e
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkOr(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 }
 
 case class FunctionCallExpr(identifier: String, arguments: List[BrboExpr], returnType: BrboType, uuid: UUID = UUID.randomUUID()) extends BrboExpr(returnType) {
@@ -235,6 +299,10 @@ case class FunctionCallExpr(identifier: String, arguments: List[BrboExpr], retur
   }
 
   override def toZ3AST(solver: Z3Solver): AST = ???
+
+  override def getUses: Set[Identifier] = arguments.flatMap(argument => argument.getUses).toSet
+
+  override def getDefs: Set[Identifier] = arguments.flatMap(argument => argument.getDefs).toSet
 }
 
 case class ITEExpr(condition: BrboExpr, thenExpr: BrboExpr, elseExpr: BrboExpr) extends BrboExpr(thenExpr.typ) {
@@ -248,4 +316,8 @@ case class ITEExpr(condition: BrboExpr, thenExpr: BrboExpr, elseExpr: BrboExpr) 
   override def getFunctionCalls: List[FunctionCallExpr] = condition.getFunctionCalls ::: thenExpr.getFunctionCalls ::: elseExpr.getFunctionCalls
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkITE(condition.toZ3AST(solver), thenExpr.toZ3AST(solver), elseExpr.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = condition.getUses ++ thenExpr.getUses ++ elseExpr.getUses
+
+  override def getDefs: Set[Identifier] = condition.getDefs ++ thenExpr.getDefs ++ elseExpr.getDefs
 }

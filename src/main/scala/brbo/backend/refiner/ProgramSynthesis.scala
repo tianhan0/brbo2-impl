@@ -15,18 +15,11 @@ class ProgramSynthesis(commandLineArguments: CommandLineArguments) {
     val resetCommands = allCommands.filter(command => command.isInstanceOf[Reset])
 
     val solver = symbolicExecution.solver
-    val predicates: Set[Predicate] = Predicate.generatePredicates(???, solver)
-
-    def computeNewReset(groupId: Int, indexMap: (Set[Int], Set[Int]), guardOfReset: BrboExpr): Reset = {
-      val postConditionKeep = computePostCondition(indexMap._1)
-      val impliedPredicatesKeep = computeImpliedPredicates(predicates, postConditionKeep, guardOfReset, solver)
-      val postConditionRemove = computePostCondition(indexMap._2)
-      val impliedPredicatesRemove = computeImpliedPredicates(predicates, postConditionRemove, guardOfReset, solver)
-      logger.traceOrError(s"These predicates may distinguish keeping or removing reset instances in group `$groupId`: `$impliedPredicatesRemove`")
-      logger.traceOrError(s"Compute candidate predicates for partitioning resets from old group `$groupId")
-      val candidatePredicates = computeCandidatePredicates(List(impliedPredicatesKeep, impliedPredicatesRemove), solver)
-      Reset(groupId, And(guardOfReset, candidatePredicates.head.head.expr)) // Only keep the reset under the computed predicate
+    val predicates: List[Predicate] = {
+      val allVariables = brboProgram.mainFunction.parameters.toSet ++ BrboAstUtils.collectUseDefVariables(brboProgram.mainFunction.body)
+      Predicate.generatePredicates(allVariables, solver)
     }
+    logger.traceOrError(s"Candidate predicates: `$predicates`")
 
     def computePostCondition(indices: Set[Int]): AST = {
       val postConditions = indices.map({
@@ -37,30 +30,25 @@ class ProgramSynthesis(commandLineArguments: CommandLineArguments) {
       solver.mkOr(postConditions: _*)
     }
 
-    val resetReplacements: Map[Reset, Reset] = refinement.path.zipWithIndex.foldLeft(Map[Reset, Reset]())({
-      case (acc, (pathNode, index: Int)) =>
-        refinement.splitUses.get(index) match {
-          case Some(replace: Replace) =>
-            replace match {
-              case ResetNode(newReset, _) =>
-                val oldResetCommand = pathNode.value.left.asInstanceOf[Reset]
-                val newResetCommand = newReset.value.left.asInstanceOf[Reset]
-                assert(oldResetCommand.condition == newResetCommand.condition)
-                acc + (oldResetCommand -> newResetCommand)
-              case UseNode(_, _) => acc
-              case _ => throw new Exception
-            }
-          case None => acc
-        }
-    })
+    def computeNewReset(groupIdForNewReset: Int, keepSet: Set[Int], removeSet: Set[Int], guardOfReset: BrboExpr): Reset = {
+      if (removeSet.isEmpty)
+        return Reset(groupIdForNewReset, guardOfReset) // Short circuit
+      val postConditionKeep = computePostCondition(keepSet)
+      val impliedPredicatesKeep = computeImpliedPredicates(predicates, postConditionKeep, guardOfReset, solver)
+      val postConditionRemove = computePostCondition(removeSet)
+      val impliedPredicatesRemove = computeImpliedPredicates(predicates, postConditionRemove, guardOfReset, solver)
+      logger.traceOrError(s"These predicates may distinguish keeping or removing reset instances in group `$groupIdForNewReset`: `$impliedPredicatesRemove`")
+      logger.traceOrError(s"Compute candidate predicates for partitioning resets from group `$groupIdForNewReset")
+      val candidatePredicates = computeCandidatePredicates(List(impliedPredicatesKeep, impliedPredicatesRemove), solver)
+      Reset(groupIdForNewReset, And(guardOfReset, candidatePredicates.head.head.expr)) // Only keep the reset under the computed predicate
+    }
 
-    val useReplacements: Map[Use, Set[Use]] =
-      useCommands.foldLeft(Map[Use, Set[Use]]())({
+    val useReplacements: Map[Command, Set[Command]] =
+      useCommands.foldLeft(Map[Command, Set[Command]]())({
         (useMap, useCommand) =>
           val use = useCommand.asInstanceOf[Use]
-          // A map from new group IDs to indices of uses in the path that belong to the new group
           val indexMap = refinement.getSplitUseInstances(use)
-          val candidateGuardMap = indexMap.foldLeft(Map[Int, Set[Predicate]]())({
+          val candidateGuardMap = indexMap.foldLeft(Map[Int, List[Predicate]]())({
             case (acc, (groupId, indices)) =>
               val postCondition = computePostCondition(indices)
               val impliedPredicates = computeImpliedPredicates(predicates, postCondition, use.condition, solver)
@@ -70,43 +58,55 @@ class ProgramSynthesis(commandLineArguments: CommandLineArguments) {
 
           val sortedIds = candidateGuardMap.keys.toList.sorted
           logger.traceOrError(s"Compute candidate predicates for partitioning old group `${use.groupId.get}")
-          val candidatePredicates = computeCandidatePredicates(sortedIds.map(id => candidateGuardMap.getOrElse(id, throw new Exception)), solver)
+          val candidatePredicates = computeCandidatePredicates(
+            sortedIds.map(id => candidateGuardMap.getOrElse(id, throw new Exception)), solver)
 
           val newUses = sortedIds.zip(candidatePredicates.head).map({
             case (groupId, predicate) =>
               val finalPredicate = And(predicate.expr, use.condition)
               logger.traceOrError(s"Split Use: Choose predicate `$finalPredicate` for new group `$groupId` (partitioned from old group `${use.groupId.get})`")
-              Use(Some(groupId), use.update, finalPredicate)
+              Use(Some(groupId), use.update, finalPredicate).asInstanceOf[Command]
           }).toSet
 
           useMap + (use -> newUses)
       })
 
-    val newResetReplacements = resetCommands.foldLeft(Map[Reset, Reset]())({
+    val resetReplacements = resetCommands.foldLeft(Map[Command, Set[Command]]())({
       (acc, resetCommand) =>
-        val oldReset = resetCommand.asInstanceOf[Reset]
-        val newReset: Reset = resetReplacements.get(oldReset) match {
-          case Some(replace: Reset) =>
-            refinement.groupIDs(oldReset.groupId).foreach({
-              newGroupId =>
-                val indexMap = refinement.getResetInstances(oldReset, Some(newGroupId))
-                logger.traceOrError(s"Compute resets for new group `$newGroupId` (from old group: `${oldReset.groupId})")
-                computeNewReset(newGroupId, indexMap, replace.condition)
+        val reset = resetCommand.asInstanceOf[Reset]
+        val indexMap = refinement.getResetInstances2(reset)
+        val newResets: Set[Command] = indexMap.size match {
+          case 0 => Set()
+          case 1 =>
+            logger.traceOrError(s"Remove resets for old group `${reset.groupId}")
+            val newReset = computeNewReset(reset.groupId, indexMap.head._2._1, indexMap.head._2._2, reset.condition)
+            Set(newReset)
+          case _ =>
+            indexMap.foldLeft(Set[Command]())({
+              case (acc, (newGroupId, (keepSet, removeSet))) =>
+                logger.traceOrError(s"Remove resets for new group `$newGroupId` (which replaces old group: `${reset.groupId})")
+                val newReset = computeNewReset(newGroupId, keepSet, removeSet, reset.condition)
+                acc + newReset
             })
-          case None =>
-            val indexMap = refinement.getResetInstances(oldReset, None)
-            logger.traceOrError(s"Compute resets for old group `${oldReset.groupId}")
-            computeNewReset(oldReset.groupId, indexMap, oldReset.condition)
         }
-
-        acc + (oldReset -> newReset)
+        acc + (reset -> newResets)
     })
 
-    ???
+    val newMainBody = (useReplacements ++ resetReplacements).foldLeft(brboProgram.mainFunction.body: BrboAst)({
+      case (acc, (command, newCommands)) =>
+        val commandsInList = newCommands.toList.sortWith({ case (c1, c2) => c1.prettyPrintToC() < c2.prettyPrintToC() })
+        BrboAstUtils.replace(acc, command, Block(commandsInList))
+    })
+    logger.infoOrError(s"[Synthesis successful] New main function body:\n`$newMainBody`")
+
+    val newGroupIds: Set[Int] = brboProgram.groupIds -- refinement.groupIDs.keySet ++ refinement.groupIDs.values.flatten
+    logger.infoOrError(s"[Synthesis successful] New groups: `$newGroupIds`")
+    val newMainFunction = brboProgram.mainFunction.replaceBody(newMainBody.asInstanceOf[Statement])
+    brboProgram.replaceMainFunction(newMainFunction, newGroupIds)
   }
 
-  private def computeImpliedPredicates(predicates: Set[Predicate], whatToImplyFrom: AST,
-                                       excludeFromResult: BrboExpr, solver: Z3Solver): Set[Predicate] = {
+  private def computeImpliedPredicates(predicates: List[Predicate], whatToImplyFrom: AST,
+                                       excludeFromResult: BrboExpr, solver: Z3Solver): List[Predicate] = {
     predicates.filter({
       predicate =>
         val query = solver.mkImplies(whatToImplyFrom, solver.mkAnd(predicate.ast, excludeFromResult.toZ3AST(solver)))

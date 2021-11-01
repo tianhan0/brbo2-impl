@@ -1,15 +1,16 @@
 package brbo.common
 
+import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
+import brbo.common.ast.Identifier
 import com.microsoft.z3._
 import org.apache.logging.log4j.LogManager
 
 import java.io.PrintWriter
 import java.nio.file.Files
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, Future, TimeoutException, blocking}
-import scala.sys.process.ProcessLogger
-import scala.sys.process._
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.sys.process.{ProcessLogger, _}
 
 class Z3Solver {
   // Copied from hopper: https://github.com/cuplv/hopper
@@ -334,6 +335,16 @@ object Z3Solver {
     if (array.length == 1) array.head
     else if (array.isEmpty) context.mkTrue()
     else context.mkAnd(parseSMTLIB2StringToArray(string, context): _*)
+  }
+
+  def variableToZ3(identifier: Identifier, solver: Z3Solver): AST = variableToZ3(identifier.identifier, identifier.typ, solver)
+
+  def variableToZ3(identifier: String, typ: BrboType, solver: Z3Solver): AST = {
+    typ match {
+      case INT => solver.mkIntVar(identifier)
+      case BOOL => solver.mkBoolVar(identifier)
+      case VOID => throw new Exception
+    }
   }
 
 }

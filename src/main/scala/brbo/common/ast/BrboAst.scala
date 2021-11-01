@@ -22,6 +22,9 @@ case class BrboProgram(name: String, mainFunction: BrboFunction, groupIds: Set[I
       s"Less precise bound: `$lessPreciseAssertion`\n" +
       s"${(functions :+ mainFunction).map(function => function.prettyPrintToC(DEFAULT_INDENT)).mkString("\n")}"
   }
+
+  def replaceMainFunction(newMainFunction: BrboFunction, newGroupIds: Set[Int]): BrboProgram =
+    BrboProgram(name, newMainFunction, newGroupIds, mostPreciseAssertion, lessPreciseAssertion, functions)
 }
 
 case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier], body: Statement, uuid: UUID = UUID.randomUUID()) extends PrettyPrintToC {
@@ -31,13 +34,15 @@ case class BrboFunction(identifier: String, returnType: BrboType, parameters: Li
   }
 
   override def toString: String = prettyPrintToC()
+
+  def replaceBody(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody)
 }
 
 abstract class BrboAst extends PrettyPrintToC {
   override def toString: String = prettyPrintToC()
 }
 
-abstract class Command extends BrboAst with PrettyPrintToCFG with GetFunctionCalls
+abstract class Command extends BrboAst with PrettyPrintToCFG with GetFunctionCalls with UseDefVariables
 
 abstract class Statement extends BrboAst
 
@@ -48,12 +53,12 @@ case class Block(asts: List[BrboAst], uuid: UUID = UUID.randomUUID()) extends St
   }
 }
 
-case class Loop(condition: BrboExpr, body: BrboAst, uuid: UUID = UUID.randomUUID()) extends Statement {
+case class Loop(condition: BrboExpr, loopBody: BrboAst, uuid: UUID = UUID.randomUUID()) extends Statement {
   override def prettyPrintToC(indent: Int): String = {
     val conditionString = condition.prettyPrintToCNoOuterBrackets
-    val bodyString = body match {
-      case _: Command => s"${body.prettyPrintToC(indent + DEFAULT_INDENT)}"
-      case _: Statement => s"${body.prettyPrintToC(indent)}"
+    val bodyString = loopBody match {
+      case _: Command => s"${loopBody.prettyPrintToC(indent + DEFAULT_INDENT)}"
+      case _: Statement => s"${loopBody.prettyPrintToC(indent)}"
       case _ => throw new Exception
     }
     val indentString = " " * indent
@@ -122,6 +127,10 @@ case class VariableDeclaration(variable: Identifier, initialValue: BrboExpr, uui
   override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = initialValue.getFunctionCalls
+
+  override def getUses: Set[Identifier] = initialValue.getUses
+
+  override def getDefs: Set[Identifier] = Set(variable)
 }
 
 case class Assignment(variable: Identifier, expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
@@ -135,6 +144,10 @@ case class Assignment(variable: Identifier, expression: BrboExpr, uuid: UUID = U
   override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = expression.getFunctionCalls
+
+  override def getUses: Set[Identifier] = ???
+
+  override def getDefs: Set[Identifier] = ???
 }
 
 case class FunctionCall(functionCallExpr: FunctionCallExpr, uuid: UUID = UUID.randomUUID()) extends Command {
@@ -146,6 +159,10 @@ case class FunctionCall(functionCallExpr: FunctionCallExpr, uuid: UUID = UUID.ra
   override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = functionCallExpr.getFunctionCalls
+
+  override def getUses: Set[Identifier] = ???
+
+  override def getDefs: Set[Identifier] = ???
 }
 
 case class Skip(uuid: UUID = UUID.randomUUID()) extends Command {
@@ -157,6 +174,10 @@ case class Skip(uuid: UUID = UUID.randomUUID()) extends Command {
   override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
 }
 
 case class Return(value: Option[BrboExpr], uuid: UUID = UUID.randomUUID()) extends Command {
@@ -178,6 +199,15 @@ case class Return(value: Option[BrboExpr], uuid: UUID = UUID.randomUUID()) exten
       case None => Nil
     }
   }
+
+  override def getUses: Set[Identifier] = {
+    value match {
+      case Some(v) => v.getUses
+      case None => Set()
+    }
+  }
+
+  override def getDefs: Set[Identifier] = Set()
 }
 
 case class Break(uuid: UUID = UUID.randomUUID()) extends Command {
@@ -189,6 +219,10 @@ case class Break(uuid: UUID = UUID.randomUUID()) extends Command {
   override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
 }
 
 case class Continue(uuid: UUID = UUID.randomUUID()) extends Command {
@@ -200,6 +234,10 @@ case class Continue(uuid: UUID = UUID.randomUUID()) extends Command {
   override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
 }
 
 case class LabeledCommand(label: String, command: Command, uuid: UUID = UUID.randomUUID()) extends Command {
@@ -214,6 +252,10 @@ case class LabeledCommand(label: String, command: Command, uuid: UUID = UUID.ran
   override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = command.getFunctionCalls
+
+  override def getUses: Set[Identifier] = command.getUses
+
+  override def getDefs: Set[Identifier] = command.getDefs
 }
 
 sealed trait CFGOnly
@@ -224,6 +266,10 @@ case class FunctionExit(uuid: UUID = UUID.randomUUID()) extends Command with CFG
   override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
 }
 
 case class LoopExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
@@ -232,6 +278,10 @@ case class LoopExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly
   override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
 }
 
 case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
@@ -240,6 +290,10 @@ case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
   override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
 }
 
 /*case class UndefinedFunction(functionName: String, uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
@@ -276,6 +330,10 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
   }
 
   override def replace(newGroupId: Int): Use = Use(Some(newGroupId), update, condition)
+
+  override def getUses: Set[Identifier] = update.getUses ++ condition.getUses
+
+  override def getDefs: Set[Identifier] = Set()
 }
 
 case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
@@ -303,6 +361,10 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID 
   }
 
   def replace(newGroupId: Int): Reset = Reset(newGroupId, condition)
+
+  override def getUses: Set[Identifier] = condition.getUses
+
+  override def getDefs: Set[Identifier] = Set()
 }
 
 sealed trait CexPathOnly
@@ -318,4 +380,8 @@ case class CallFunction(callee: BrboFunction, actualArguments: List[BrboExpr]) e
   override def getFunctionCalls: List[FunctionCallExpr] = ???
 
   override def prettyPrintToC(indent: Int): String = ???
+
+  override def getUses: Set[Identifier] = ???
+
+  override def getDefs: Set[Identifier] = ???
 }
