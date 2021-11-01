@@ -9,13 +9,24 @@ import brbo.common.cfg.CFGNode
  * @param splitUses    A map from indices of the path to the replacements for the nodes at the indices.
  *                     The replacement is either a use command or a reset command for a new group.
  * @param removeResets Remove the resets at these indices from the path after splitting uses.
- * @param groupIDs     A map from old group IDs to new group IDs in the refined path.
+ * @param groupIds     A map from old group IDs to new group IDs in the refined path.
  */
-case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeResets: Set[Int], groupIDs: Map[Int, Set[Int]]) {
+case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeResets: Set[Int], groupIds: Map[Int, Set[Int]]) {
+  val refinedPath: List[CFGNode] = {
+    val afterSplit: List[CFGNode] = splitUses.foldLeft(path)({
+      case (acc, (i, replacement)) => acc.updated(i, replacement.newNode)
+    })
+    var result: List[CFGNode] = Nil
+    afterSplit.indices.foreach({
+      i => if (!removeResets.contains(i)) result = afterSplit(i) :: result
+    })
+    result.reverse
+  }
+
   // A map from new group IDs to indices of use instances (of the given use command) in the path that
   // belong to the new group
   def getSplitUseInstances(useInOriginalPath: Use): Map[Int, Set[Int]] = {
-    groupIDs.get(useInOriginalPath.groupId.get) match {
+    groupIds.get(useInOriginalPath.groupId.get) match {
       case Some(newGroupIds) => // This use splits
         var map: Map[Int, Set[Int]] = Map()
         path.indices.foreach({
@@ -33,7 +44,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
                     case _ =>
                   }
                 } // Otherwise, this is a use instance that belongs to the same group but does not correspond to the given use command
-              case Right(_) => throw new Exception("We should never split a conditional")
+              case Right(_) =>
             }
         })
         assert(map.keySet == newGroupIds)
@@ -44,7 +55,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
 
   // A map from group IDs to indices of reset instances (of the given reset command) in the path that
   // belong to the group and are kept and removed
-  def getResetInstances2(resetInOriginalPath: Reset): Map[Int, (Set[Int], Set[Int])] = {
+  def getResetInstances(resetInOriginalPath: Reset): Map[Int, (Set[Int], Set[Int])] = {
     val thisGroupId = resetInOriginalPath.groupId
     val result = path.indices.foldLeft(Map[Int, (Set[Int], Set[Int])]())({
       (acc, i) =>
@@ -72,62 +83,12 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
     result.size match {
       case 0 =>
       case 1 => assert(result.head._1 == thisGroupId) // The given reset command is not split
-      case _ => result.keys.toSet.subsetOf(groupIDs(thisGroupId)) // The given reset command is split
+      case _ => result.keys.toSet.subsetOf(groupIds(thisGroupId)) // The given reset command is split
     }
     result
   }
 
-  def getResetInstances(resetInOriginalPath: Reset, newGroupId: Option[Int]): (Set[Int], Set[Int]) = {
-    var keepSet: Set[Int] = Set()
-    var removeSet: Set[Int] = Set()
-    newGroupId match {
-      case Some(newGroupId2) => // Look for reset instances for new groups
-        assert(groupIDs.getOrElse(resetInOriginalPath.groupId, throw new Exception).contains(newGroupId2))
-        path.indices.foreach({
-          i =>
-            path(i).value match {
-              case Left(command) =>
-                if (command == resetInOriginalPath) {
-                  splitUses(i) match {
-                    case ResetNode(_, groupId) =>
-                      if (newGroupId2 == groupId) {
-                        if (removeResets.contains(i)) removeSet = removeSet + i
-                        else keepSet = keepSet + i
-                      }
-                    case _ =>
-                  }
-                }
-              case Right(_) =>
-            }
-        })
-      case None => // Look for reset instances for original groups
-        path.indices.foreach({
-          i =>
-            path(i).value match {
-              case Left(command) =>
-                if (command == resetInOriginalPath) {
-                  if (removeResets.contains(i)) removeSet = removeSet + i
-                  else keepSet = keepSet + i
-                }
-              case Right(_) =>
-            }
-        })
-    }
-    (keepSet, removeSet)
-  }
-
-  def removeReset(index: Int): Refinement = Refinement(path, splitUses, removeResets + index, groupIDs)
-
-  def getRefinedPath: List[CFGNode] = {
-    val afterSplit: List[CFGNode] = splitUses.foldLeft(path)({
-      case (acc, (i, replacement)) => acc.updated(i, replacement.newNode)
-    })
-    var result: List[CFGNode] = Nil
-    afterSplit.indices.foreach({
-      i => if (!removeResets.contains(i)) result = afterSplit(i) :: result
-    })
-    result.reverse
-  }
+  def removeReset(index: Int): Refinement = Refinement(path, splitUses, removeResets + index, groupIds)
 
   private val separator = "\n  "
   private val removedString = {

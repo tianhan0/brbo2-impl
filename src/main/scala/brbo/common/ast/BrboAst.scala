@@ -6,36 +6,69 @@ import brbo.common.{BrboType, GhostVariableUtils}
 
 import java.util.UUID
 
-case class BrboProgram(name: String, mainFunction: BrboFunction, groupIds: Set[Int],
+case class BrboProgram(name: String, mainFunction: BrboFunction,
                        mostPreciseAssertion: Option[BrboExpr] = None, lessPreciseAssertion: Option[BrboExpr] = None,
                        functions: List[BrboFunction] = Nil, uuid: UUID = UUID.randomUUID()) extends PrettyPrintToC {
   override def prettyPrintToC(indent: Int): String = {
-    // TODO: Declare and initialize ghost variables in the main function
     val functionsString = (functions :+ mainFunction).map(function => function.prettyPrintToC(indent)).mkString("\n")
     s"${PreDefinedFunctions.UNDEFINED_FUNCTIONS_MACRO}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
   }
 
   override def toString: String = {
     s"Program name: `$name`\n" +
-      s"Group IDs: `$groupIds`\n" +
       s"Most precise bound: `$mostPreciseAssertion`\n" +
       s"Less precise bound: `$lessPreciseAssertion`\n" +
       s"${(functions :+ mainFunction).map(function => function.prettyPrintToC(DEFAULT_INDENT)).mkString("\n")}"
   }
 
-  def replaceMainFunction(newMainFunction: BrboFunction, newGroupIds: Set[Int]): BrboProgram =
-    BrboProgram(name, newMainFunction, newGroupIds, mostPreciseAssertion, lessPreciseAssertion, functions)
+  def replaceMainFunction(newMainFunction: BrboFunction): BrboProgram =
+    BrboProgram(name, newMainFunction, mostPreciseAssertion, lessPreciseAssertion, functions)
 }
 
-case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier], body: Statement, uuid: UUID = UUID.randomUUID()) extends PrettyPrintToC {
+/**
+ *
+ * @param identifier                Function name
+ * @param returnType                Return type
+ * @param parameters                Function parameters
+ * @param bodyWithoutInitialization Function body without initializing ghost variables
+ * @param groupIds                  IDs of amortizations groups that *may* be used in this function,
+ *                                  so that their ghost variables will be initialized.
+ *                                  This set is empty iff. no amortization (i.e., selectively, worst-case, or fully-amortized reasoning)
+ *                                  has been applied to the function.
+ * @param uuid                      Unique ID
+ */
+case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier], bodyWithoutInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID()) extends PrettyPrintToC {
+  // Declare and initialize ghost variables in the function
+  val actualBody: Statement = {
+    val ghostVariableInitializations: List[Command] = groupIds.toList.sorted.flatMap({
+      groupId =>
+        val R = GhostVariableUtils.generateVariable(Some(groupId), Resource)
+        val RSharp = GhostVariableUtils.generateVariable(Some(groupId), Sharp)
+        val RCounter = GhostVariableUtils.generateVariable(Some(groupId), Counter)
+        val declaration1 = VariableDeclaration(R, Number(0))
+        val declaration2 = VariableDeclaration(RSharp, Number(0))
+        val declaration3 = VariableDeclaration(RCounter, Number(0))
+        List(declaration1, declaration2, declaration3)
+    })
+    bodyWithoutInitialization match {
+      case Block(asts, _) => Block(ghostVariableInitializations ::: asts)
+      case ITE(_, _, _, _) | Loop(_, _, _) => Block(ghostVariableInitializations :+ bodyWithoutInitialization)
+      case _ => throw new Exception
+    }
+  }
+
   override def prettyPrintToC(indent: Int): String = {
     val parametersString = parameters.map(pair => s"${pair.typeNamePairInC()}").mkString(", ")
-    s"${BrboType.toCString(returnType)} $identifier($parametersString) \n${body.prettyPrintToC(0)}"
+    s"${BrboType.toCString(returnType)} $identifier($parametersString) \n${actualBody.prettyPrintToC(0)}"
   }
 
   override def toString: String = prettyPrintToC()
 
-  def replaceBody(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody)
+  val isAmortized: Boolean = groupIds.isEmpty
+
+  def replaceBodyWithoutInitialization(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody, groupIds)
+
+  def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, bodyWithoutInitialization, newGroupIds)
 }
 
 abstract class BrboAst extends PrettyPrintToC {
@@ -145,9 +178,9 @@ case class Assignment(variable: Identifier, expression: BrboExpr, uuid: UUID = U
 
   override def getFunctionCalls: List[FunctionCallExpr] = expression.getFunctionCalls
 
-  override def getUses: Set[Identifier] = ???
+  override def getUses: Set[Identifier] = expression.getUses + variable
 
-  override def getDefs: Set[Identifier] = ???
+  override def getDefs: Set[Identifier] = expression.getDefs
 }
 
 case class FunctionCall(functionCallExpr: FunctionCallExpr, uuid: UUID = UUID.randomUUID()) extends Command {
@@ -160,9 +193,9 @@ case class FunctionCall(functionCallExpr: FunctionCallExpr, uuid: UUID = UUID.ra
 
   override def getFunctionCalls: List[FunctionCallExpr] = functionCallExpr.getFunctionCalls
 
-  override def getUses: Set[Identifier] = ???
+  override def getUses: Set[Identifier] = functionCallExpr.getUses
 
-  override def getDefs: Set[Identifier] = ???
+  override def getDefs: Set[Identifier] = functionCallExpr.getDefs
 }
 
 case class Skip(uuid: UUID = UUID.randomUUID()) extends Command {

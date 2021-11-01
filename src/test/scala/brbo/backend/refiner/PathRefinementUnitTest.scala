@@ -52,7 +52,7 @@ object PathRefinementUnitTest {
         """Path:
           |  if (true) reset R1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |Splits:
           |
           |Removed resets:
@@ -60,109 +60,109 @@ object PathRefinementUnitTest {
           |Path:
           |  if (true) reset R1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |Splits:
           |  0: if (true) reset R2
           |  1: if (true) reset R3
-          |  2: if (true) use R3 (R + 0)
+          |  2: if (true) use R3 1
           |Removed resets:
           |""".stripMargin),
       TestCase("Test 02", PathRefinementTestCases.test02,
         """Path:
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |Splits:
           |
           |Removed resets:
           |
           |Path:
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |Splits:
           |  0: if (true) reset R2
-          |  1: if (true) use R2 (R + 0)
+          |  1: if (true) use R2 1
           |  2: if (true) reset R3
-          |  3: if (true) use R3 (R + 0)
+          |  3: if (true) use R3 1
           |Removed resets:
           |""".stripMargin),
       TestCase("Test 03", PathRefinementTestCases.test03,
         """Path:
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |Splits:
           |
           |Removed resets:
           |
           |Path:
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |Splits:
           |  0: if (true) reset R2
-          |  1: if (true) use R2 (R + 0)
+          |  1: if (true) use R2 1
           |  2: if (true) reset R2
-          |  3: if (true) use R2 (R + 0)
+          |  3: if (true) use R2 1
           |  4: if (true) reset R3
-          |  5: if (true) use R3 (R + 0)
+          |  5: if (true) use R3 1
           |Removed resets:
           |
           |Path:
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |Splits:
           |  0: if (true) reset R2
-          |  1: if (true) use R2 (R + 0)
+          |  1: if (true) use R2 1
           |  2: if (true) reset R3
-          |  3: if (true) use R3 (R + 0)
+          |  3: if (true) use R3 1
           |  4: if (true) reset R2
-          |  5: if (true) use R2 (R + 0)
+          |  5: if (true) use R2 1
           |Removed resets:
           |
           |Path:
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |Splits:
           |  0: if (true) reset R2
-          |  1: if (true) use R2 (R + 0)
+          |  1: if (true) use R2 1
           |  2: if (true) reset R3
-          |  3: if (true) use R3 (R + 0)
+          |  3: if (true) use R3 1
           |  4: if (true) reset R3
-          |  5: if (true) use R3 (R + 0)
+          |  5: if (true) use R3 1
           |Removed resets:
           |
           |Path:
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
-          |  if (true) use R1 (R + 0) [Function `Main`]
+          |  if (true) use R1 1 [Function `Main`]
           |Splits:
           |  0: if (true) reset R2
-          |  1: if (true) use R2 (R + 0)
+          |  1: if (true) use R2 1
           |  2: if (true) reset R3
-          |  3: if (true) use R3 (R + 0)
+          |  3: if (true) use R3 1
           |  4: if (true) reset R4
-          |  5: if (true) use R4 (R + 0)
+          |  5: if (true) use R4 1
           |Removed resets:
           |""".stripMargin),
     )

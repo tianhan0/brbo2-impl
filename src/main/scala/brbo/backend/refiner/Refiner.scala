@@ -11,7 +11,6 @@ import com.microsoft.z3.{AST, Expr}
 class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArguments) {
   private val logger = MyLogger.createLogger(classOf[Refiner], commandLineArguments.getDebugMode)
   private val pathRefinement = new PathRefinement(commandLineArguments, originalProgram.mainFunction)
-  private val programSynthesis = new ProgramSynthesis(commandLineArguments)
 
   def refine(refinedProgram: BrboProgram, counterexamplePath: Option[Path],
              boundAssertion: BrboExpr, avoidRefinements: Set[Refinement]): (Option[BrboProgram], Option[Refinement]) = {
@@ -25,9 +24,9 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
           (acc, refinement) =>
             if (avoidRefinements.contains(refinement)) acc
             else {
-              val finalState = symbolicExecution.execute(refinement.getRefinedPath)
+              val finalState = symbolicExecution.execute(refinement.refinedPath)
               // Get all group IDs and then all ghost variables
-              val allGroupIds: Set[Int] = refinedProgram.groupIds -- refinement.groupIDs.keys ++ refinement.groupIDs.values.flatten
+              val allGroupIds: Set[Int] = refinedProgram.mainFunction.groupIds -- refinement.groupIds.keys ++ refinement.groupIds.values.flatten
               var sum: AST = solver.mkIntVal(0)
               allGroupIds.foreach({
                 groupId =>
@@ -51,6 +50,7 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
         })
 
         logger.info(s"Search for a path refinement for path `$counterexamplePath2`.")
+        val programSynthesis = new ProgramSynthesis(refinedProgram, commandLineArguments)
         // Keep finding new path transformations until either finding a program transformation that can realize it,
         // or there exists no program transformation that can realize any path transformation
         var avoidRefinement2: Set[Refinement] = Set()
@@ -71,7 +71,7 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
             val goodRefinements = refinementsMap.filter({ case (variableAST: AST, _) => model.eval(variableAST, false).toString == "true" })
             val refinement = goodRefinements.head._2._1
             try {
-              val newProgram = programSynthesis.synthesize(refinedProgram, refinement, symbolicExecution)
+              val newProgram = programSynthesis.synthesize(refinement)
               return (Some(newProgram), Some(refinement))
             }
             catch {

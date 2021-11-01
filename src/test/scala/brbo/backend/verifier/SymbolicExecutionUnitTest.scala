@@ -28,12 +28,12 @@ object SymbolicExecutionUnitTest {
   val b: Identifier = Identifier("b", INT)
   val e: Identifier = Identifier("e", INT)
 
-  val mainFunction: BrboFunction = BrboFunction("main", VOID, List(n, a, b), Block(Nil))
+  val mainFunction: BrboFunction = BrboFunction("main", VOID, List(n, a, b), Block(Nil), Set(2))
   val assumeFunction: BrboFunction = PreDefinedFunctions.assume
   val ndBoolFunction: BrboFunction = PreDefinedFunctions.ndBool
   val ndIntFunction: BrboFunction = PreDefinedFunctions.ndInt
   val assertFunction: BrboFunction = PreDefinedFunctions.assert
-  val program: BrboProgram = BrboProgram("Test program", mainFunction, Set[Int](), None, None, List(assumeFunction, ndBoolFunction, ndIntFunction))
+  val program: BrboProgram = BrboProgram("Test program", mainFunction, None, None, List(assumeFunction, ndBoolFunction, ndIntFunction))
 
   val assumeCond: BrboExpr = assumeFunction.parameters.head
   val assertCond: BrboExpr = assertFunction.parameters.head

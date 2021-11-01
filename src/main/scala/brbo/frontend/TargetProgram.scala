@@ -45,8 +45,8 @@ case class TargetProgram(fullQualifiedClassName: String,
       case Left(command) => Block(List(command))
       case Right(statement) => statement
     }
-    val mainFunction = BrboFunction(mainMethod.methodName, mainMethod.returnType, mainMethod.inputVariables.values.toList, body)
-    BrboProgram(s"$fullQualifiedClassName${mainMethod.methodName}", mainFunction, Set(), mostPreciseAssertion, lessPreciseAssertion, PreDefinedFunctions.allFunctionsList)
+    val mainFunction = BrboFunction(mainMethod.methodName, mainMethod.returnType, mainMethod.inputVariables.values.toList, body, Set())
+    BrboProgram(s"$fullQualifiedClassName${mainMethod.methodName}", mainFunction, mostPreciseAssertion, lessPreciseAssertion, PreDefinedFunctions.allFunctionsList)
   }
 
   class ConvertToAST(allVariables: Map[String, Identifier], allMethods: Set[TargetMethod]) {

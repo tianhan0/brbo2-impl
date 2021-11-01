@@ -46,7 +46,7 @@ class PathRefinement(commandLineArguments: CommandLineArguments, targetFunction:
     val numberOfResets = refineUseOnly.path.count({ node => node.isReset(None, Some(targetFunction)) })
 
     Range.inclusive(0, numberOfResets).toSet.flatMap({
-      numberToKeep => helper(numberToKeep, Refinement(Nil, refineUseOnly.splitUses, Set(), refineUseOnly.groupIDs), currentIndex = 0, refineUseOnly.path)
+      numberToKeep => helper(numberToKeep, Refinement(Nil, refineUseOnly.splitUses, Set(), refineUseOnly.groupIds), currentIndex = 0, refineUseOnly.path)
     })
   }
 
@@ -120,7 +120,7 @@ class PathRefinement(commandLineArguments: CommandLineArguments, targetFunction:
                         else acc2
                     })
                 })
-                val newRefine = Refinement(currentRefine.path, splitUses, currentRefine.removeResets, currentRefine.groupIDs + (toSplitGroupId -> possibility.toSet))
+                val newRefine = Refinement(currentRefine.path, splitUses, currentRefine.removeResets, currentRefine.groupIds + (toSplitGroupId -> possibility.toSet))
                 helper(exitingGroups - toSplitGroupId ++ possibility.toSet, newRefine, toSplitGroupIds.tail)
               }
           })

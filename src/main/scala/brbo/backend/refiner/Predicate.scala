@@ -38,11 +38,12 @@ object Predicate {
             )
         })
     })
-    val result = intervalPredicates ++ octagonPredicates
+    val result = intervalPredicates // ++ octagonPredicates
+    val conjunct2 = MathUtils.choose2(result).map({ case (p1, p2) => Predicate(And(p1.expr, p2.expr), solver.mkAnd(p1.ast, p2.ast)) })
     val TRUE = {
       val t = Bool(b = true)
       Predicate(t, t.toZ3AST(solver))
     }
-    TRUE :: result.toList.sortWith({ case (p1, p2) => p1.toString < p2.toString })
+    TRUE :: (result ++ conjunct2).toList.sortWith({ case (p1, p2) => p1.toString < p2.toString })
   }
 }

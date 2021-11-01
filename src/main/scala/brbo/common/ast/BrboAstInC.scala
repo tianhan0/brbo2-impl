@@ -13,7 +13,8 @@ case class BrboProgramInC(originalProgram: BrboProgram) {
         val c = BrboFunctionInC(function)
         (c.function :: acc._1, acc._2 ++ c.map)
     })
-    val newProgram = BrboProgram(originalProgram.name, newMainFunction, originalProgram.groupIds, originalProgram.mostPreciseAssertion, originalProgram.lessPreciseAssertion, functions.reverse)
+    val newProgram = BrboProgram(originalProgram.name, newMainFunction,
+      originalProgram.mostPreciseAssertion, originalProgram.lessPreciseAssertion, functions.reverse)
     (newProgram, map)
   }
 }
@@ -74,7 +75,8 @@ case class BrboFunctionInC(originalFunction: BrboFunction) {
       }
     }
 
-    val newFunction = BrboFunction(originalFunction.identifier, originalFunction.returnType, originalFunction.parameters, astToC(originalFunction.body).asInstanceOf[Statement])
+    val newFunction = BrboFunction(originalFunction.identifier, originalFunction.returnType, originalFunction.parameters,
+      astToC(originalFunction.bodyWithoutInitialization).asInstanceOf[Statement], originalFunction.groupIds)
     (newFunction, map)
   }
 }

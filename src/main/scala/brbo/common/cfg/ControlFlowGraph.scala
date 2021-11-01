@@ -91,7 +91,7 @@ object ControlFlowGraph {
 
     def functionToInternalGraph(brboFunction: BrboFunction): InternalGraph = {
       val exitNode = getNode(Left(FunctionExit()), brboFunction)
-      val internalGraph = astToInternalGraph(brboFunction.body, JumpTarget(None, None, exitNode), brboFunction)
+      val internalGraph = astToInternalGraph(brboFunction.actualBody, JumpTarget(None, None, exitNode), brboFunction)
       internalGraph.exits.foreach(exit => if (exit != exitNode) addEdge(exit, exitNode))
       // Any function has exactly one exit node
       InternalGraph(internalGraph.root, Set(exitNode))
