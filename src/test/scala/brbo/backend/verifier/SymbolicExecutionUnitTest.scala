@@ -70,8 +70,8 @@ object SymbolicExecutionUnitTest {
     }
 
     val test02 = {
-      val use = Use(Some(2), Number(1))
-      val reset = Reset(2)
+      val use = Use(Some(2), Number(1), GreaterThan(n, a))
+      val reset = Reset(2, GreaterThan(n, b))
       Path(List(
         CFGNode(Left(VariableDeclaration(use.resourceVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Left(VariableDeclaration(reset.sharpVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID),
@@ -110,7 +110,7 @@ object SymbolicExecutionUnitTest {
           |  (a,(INT,Value(a)))
           |  (b,(INT,Value(b)))
           |  (n,(INT,Value(n)))
-          |Path condition: (and true true true true)
+          |Path condition: (and true (> n a) (> n b) (> n a))
           |Return values:
           |""".stripMargin)
     )

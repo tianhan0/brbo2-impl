@@ -8,7 +8,7 @@ case class MyLogger(logger: Logger, debugMode: Boolean) {
     else logger.trace(message)
   }
 
-  def intoOrError(message: String): Unit = {
+  def infoOrError(message: String): Unit = {
     if (debugMode) logger.error(message)
     else logger.info(message)
   }

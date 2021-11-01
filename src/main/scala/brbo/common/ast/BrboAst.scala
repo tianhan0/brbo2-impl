@@ -250,7 +250,9 @@ case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 }*/
 
-sealed trait GhostCommand
+sealed trait GhostCommand {
+  def replace(newGroupId: Int): GhostCommand
+}
 
 case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Bool(b = true), uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
   groupId match {
@@ -258,7 +260,6 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
     case None => // This command represents updating the original resource variable
   }
 
-  // TODO: Check this use command corresponds to the assignment command
   val resourceVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Resource)
 
   val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
@@ -273,6 +274,8 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
     val indentString = " " * indent
     s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) ${assignmentCommand.prettyPrintToC()}"
   }
+
+  override def replace(newGroupId: Int): Use = Use(Some(newGroupId), update, condition)
 }
 
 case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
@@ -298,6 +301,8 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID 
     val indentString = " " * indent
     s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) {\n${maxStatement.prettyPrintToC(indent + DEFAULT_INDENT)}\n${resetCommand.prettyPrintToC(indent + DEFAULT_INDENT)}\n${counterCommand.prettyPrintToC(indent + DEFAULT_INDENT)}\n$indentString}"
   }
+
+  def replace(newGroupId: Int): Reset = Reset(newGroupId, condition)
 }
 
 sealed trait CexPathOnly

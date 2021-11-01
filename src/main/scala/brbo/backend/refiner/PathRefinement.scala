@@ -11,7 +11,7 @@ class PathRefinement(commandLineArguments: CommandLineArguments, targetFunction:
 
   // Perform command transformations to commands in the given path
   def refine(path: Path): List[Refinement] = {
-    val useInsertedPaths: Set[Refinement] = insertUseOnly(path)
+    val useInsertedPaths: Set[Refinement] = replaceUseOnly(path)
     useInsertedPaths.flatMap({
       useInsertedPath: Refinement => removeResetOnly(useInsertedPath)
     }).toList.sortWith({ case (r1, r2) => r1.toString <= r2.toString })
@@ -50,7 +50,7 @@ class PathRefinement(commandLineArguments: CommandLineArguments, targetFunction:
     })
   }
 
-  def insertUseOnly(path: Path): Set[Refinement] = {
+  def replaceUseOnly(path: Path): Set[Refinement] = {
     val pathWithIndex = path.pathNodes.zipWithIndex
 
     val groupIds: List[Int] = {
@@ -110,12 +110,12 @@ class PathRefinement(commandLineArguments: CommandLineArguments, targetFunction:
                         assert(!acc2.contains(index))
                         // Do not transform commands in functions other than the main function
                         if (node.isReset(Some(toSplitGroupId), Some(targetFunction))) {
-                          val newReset = CFGNode(Left(Reset(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
+                          val newReset = CFGNode(Left(node.value.left.asInstanceOf[Reset].replace(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
                           acc2 + (index -> ResetNode(newReset, newGroupId))
                         }
                         else if (node.isUse(Some(toSplitGroupId), Some(targetFunction))) {
                           val update = node.value.left.get.asInstanceOf[Use].update
-                          val newUse = CFGNode(Left(Use(Some(newGroupId), update)), targetFunction, CFGNode.DONT_CARE_ID)
+                          val newUse = CFGNode(Left(node.value.left.asInstanceOf[Use].replace(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
                           acc2 + (index -> UseNode(newUse, newGroupId))
                         }
                         else acc2

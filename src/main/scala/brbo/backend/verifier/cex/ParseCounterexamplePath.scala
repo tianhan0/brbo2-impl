@@ -49,10 +49,10 @@ class ParseCounterexamplePath(debugMode: Boolean) {
       lastVertex = Some(current)
     }
     path = path.reverse
-    logger.intoOrError(s"Counterexample path (as a list of strings):\n${path.mkString("\n")}")
+    logger.infoOrError(s"Counterexample path (as a list of strings):\n${path.mkString("\n")}")
 
     val counterexamplePath = parsePathString(path, brboProgram)
-    logger.intoOrError(s"Counterexample path (as a list of CFG nodes):\n${counterexamplePath.toString()}")
+    logger.infoOrError(s"Counterexample path (as a list of CFG nodes):\n${counterexamplePath.toString()}")
     assert(counterexamplePath.pathNodes.nonEmpty)
     counterexamplePath
   }

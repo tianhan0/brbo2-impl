@@ -14,11 +14,7 @@ class SymbolicExecution(parametersOfMainFunction: List[Identifier]) {
 
   val inputs: Valuation = parametersOfMainFunction.foldLeft(Map[String, (BrboType, Value)]())({
     (acc, parameter) =>
-      val z3AST = parameter.typ match {
-        case INT => solver.mkIntVar(parameter.identifier)
-        case BOOL => solver.mkBoolVar(parameter.identifier)
-        case VOID => throw new Exception
-      }
+      val z3AST = SymbolicExecution.variableToZ3(parameter.identifier, parameter.typ, solver)
       acc + (parameter.identifier -> (parameter.typ, Value(z3AST)))
   })
 
@@ -192,7 +188,7 @@ class SymbolicExecution(parametersOfMainFunction: List[Identifier]) {
       case FunctionCallExpr(identifier, _, _, _) =>
         // Assume the return value of this function call is already in the current state
         returnValues.get(identifier) match {
-          case Some(list) => (Some(list.head.value), returnValues.updated(identifier, list.tail))
+          case Some(list) => (Some(list.head.v), returnValues.updated(identifier, list.tail))
           case None =>
             identifier match {
               case PreDefinedFunctions.VERIFIER_NONDET_INT => (Some(createFreshVariable(INT)._2), returnValues)
@@ -203,7 +199,7 @@ class SymbolicExecution(parametersOfMainFunction: List[Identifier]) {
         }
       case e@Identifier(identifier, _, _) =>
         valuation.get(identifier) match {
-          case Some(value) => (Some(value._2.value), returnValues)
+          case Some(value) => (Some(value._2.v), returnValues)
           case None => throw new Exception(s"Find the value of `$e` from `$valuation`")
         }
       case ITEExpr(condition, thenExpr, elseExpr) =>
@@ -221,7 +217,7 @@ object SymbolicExecution {
 
   type Valuation = Map[String, (BrboType, Value)]
 
-  case class Value(value: AST)
+  case class Value(v: AST)
 
   /**
    *
@@ -236,6 +232,22 @@ object SymbolicExecution {
       val returnValuesString = s"Return values:\n  ${StringCompare.toSortedString(Left(returnValues), "\n  ")}"
       s"$valuationsString\n$pathConditionString\n$returnValuesString"
     }
+  }
+
+  private def variableToZ3(identifier: String, typ: BrboType, solver: Z3Solver): AST = {
+    typ match {
+      case INT => solver.mkIntVar(identifier)
+      case BOOL => solver.mkBoolVar(identifier)
+      case VOID => throw new Exception
+    }
+  }
+
+  def valuationToAST(valuation: Valuation, solver: Z3Solver): AST = {
+    val equalities: Seq[AST] = valuation.map({
+      case (identifier, (typ, value)) =>
+        solver.mkEq(variableToZ3(identifier, typ, solver), value.v).asInstanceOf[AST]
+    }).toSeq
+    solver.mkAnd(equalities: _*)
   }
 
 }

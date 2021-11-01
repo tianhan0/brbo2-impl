@@ -1,6 +1,6 @@
 package brbo.backend.refiner
 
-import brbo.common.ast.{BrboExpr, Reset, Use}
+import brbo.common.ast.{Reset, Use}
 import brbo.common.cfg.CFGNode
 
 /**
@@ -12,7 +12,7 @@ import brbo.common.cfg.CFGNode
  * @param groupIDs     A map from old group IDs to new group IDs in the refined path.
  */
 case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeResets: Set[Int], groupIDs: Map[Int, Set[Int]]) {
-  def getSplitUseInstances(use: Use, condition: BrboExpr): Map[Int, Set[Int]] = {
+  def getSplitUseInstances(use: Use): Map[Int, Set[Int]] = {
     groupIDs.get(use.groupId.get) match {
       case Some(newGroupIds) => // This use splits
         var map: Map[Int, Set[Int]] = Map()
@@ -40,7 +40,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
     }
   }
 
-  def getResetInstances(reset: Reset, newGroupId: Option[Int], condition: BrboExpr): (Set[Int], Set[Int]) = {
+  def getResetInstances(reset: Reset, newGroupId: Option[Int]): (Set[Int], Set[Int]) = {
     var keepSet: Set[Int] = Set()
     var removeSet: Set[Int] = Set()
     newGroupId match {
@@ -54,7 +54,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
                   splitUses(i) match {
                     case ResetNode(_, groupId) =>
                       if (newGroupId2 == groupId) {
-                        if (removeSet.contains(i)) removeSet = removeSet + i
+                        if (removeResets.contains(i)) removeSet = removeSet + i
                         else keepSet = keepSet + i
                       }
                     case _ =>
@@ -83,7 +83,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
 
   def getRefinedPath: List[CFGNode] = {
     val afterSplit: List[CFGNode] = splitUses.foldLeft(path)({
-      case (acc, (i, replacement)) => acc.updated(i, replacement.node)
+      case (acc, (i, replacement)) => acc.updated(i, replacement.newNode)
     })
     var result: List[CFGNode] = Nil
     afterSplit.indices.foreach({
@@ -116,16 +116,16 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
   def toStringNoPath: String = s"$splitsString\n$removedString"
 }
 
-abstract class Replace(val node: CFGNode, val groupId: Int)
+abstract class Replace(val newNode: CFGNode, val newGroupId: Int)
 
-case class UseNode(override val node: CFGNode, override val groupId: Int) extends Replace(node, groupId) {
-  val use: Use = node.value.left.get.asInstanceOf[Use]
+case class UseNode(newUse: CFGNode, override val newGroupId: Int) extends Replace(newUse, newGroupId) {
+  val use: Use = newUse.value.left.get.asInstanceOf[Use]
 
   override def toString: String = use.prettyPrintToCFG
 }
 
-case class ResetNode(override val node: CFGNode, override val groupId: Int) extends Replace(node, groupId) {
-  val reset: Reset = node.value.left.get.asInstanceOf[Reset]
+case class ResetNode(newReset: CFGNode, override val newGroupId: Int) extends Replace(newReset, newGroupId) {
+  val reset: Reset = newReset.value.left.get.asInstanceOf[Reset]
 
   override def toString: String = reset.prettyPrintToCFG
 }

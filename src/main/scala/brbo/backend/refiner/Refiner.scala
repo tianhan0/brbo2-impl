@@ -33,15 +33,15 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
                 groupId =>
                   val counter: AST = {
                     val v = GhostVariableUtils.generateVariable(Some(groupId), Counter)
-                    finalState.valuations.head.getOrElse(v.identifier, throw new Exception)._2.value
+                    finalState.valuations.head.getOrElse(v.identifier, throw new Exception)._2.v
                   }
                   val sharp: AST = {
                     val v = GhostVariableUtils.generateVariable(Some(groupId), Sharp)
-                    finalState.valuations.head.getOrElse(v.identifier, throw new Exception)._2.value
+                    finalState.valuations.head.getOrElse(v.identifier, throw new Exception)._2.v
                   }
                   val resource: AST = {
                     val v = GhostVariableUtils.generateVariable(Some(groupId), Resource)
-                    finalState.valuations.head.getOrElse(v.identifier, throw new Exception)._2.value
+                    finalState.valuations.head.getOrElse(v.identifier, throw new Exception)._2.v
                   }
                   sum = solver.mkAdd(sum, resource, solver.mkMul(counter, sharp))
               })
@@ -50,7 +50,7 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
             }
         })
 
-        logger.info(s"Search for a path refinement.")
+        logger.info(s"Search for a path refinement for path `$counterexamplePath2`.")
         // Keep finding new path transformations until either finding a program transformation that can realize it,
         // or there exists no program transformation that can realize any path transformation
         var avoidRefinement2: Set[Refinement] = Set()
@@ -70,11 +70,14 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
             val model = solver.getModel
             val goodRefinements = refinementsMap.filter({ case (variableAST: AST, _) => model.eval(variableAST, false).toString == "true" })
             val refinement = goodRefinements.head._2._1
-            programSynthesis.synthesize(refinedProgram, refinement) match {
-              case Some(newProgram) => return (Some(newProgram), Some(refinement))
-              case None =>
-                avoidRefinement2 = avoidRefinement2 + refinement
+            try {
+              val newProgram = programSynthesis.synthesize(refinedProgram, refinement, symbolicExecution)
+              return (Some(newProgram), Some(refinement))
+            }
+            catch {
+              case _: SynthesisFailException =>
                 logger.info(s"Cannot synthesize a program from the current path refinement. Will try a new path refinement.")
+                avoidRefinement2 = avoidRefinement2 + refinement
             }
           } else {
             logger.info(s"Cannot find a path refinement, if avoiding the ones cannot be synthesized into programs.")

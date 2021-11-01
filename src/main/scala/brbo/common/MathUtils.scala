@@ -25,6 +25,14 @@ object MathUtils {
     crossJoin(List(list1, list2)).map(list => (list.head, list.tail.head))
   }
 
+  def choose2[T](list: Traversable[T]): List[(T, T)] = {
+    list.toList match {
+      case Nil => Nil
+      case ::(head, tail) =>
+        tail.map(e => (head, e)) ::: choose2(tail)
+    }
+  }
+
   // Given group IDs (from `lowerGroupId` to `upperGroupId`) and length k, generate all unique sequences of length k (i.e., modulo renamings)
   def generateUniqueSequences(pathLength: Int, lowerGroupId: Int, upperGroupId: Int): Set[List[Int]] = {
     def allPossiblePaths(remainingLength: Int, accumulated: List[Int]): Set[List[Int]] = {

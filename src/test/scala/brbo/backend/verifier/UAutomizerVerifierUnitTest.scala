@@ -10,7 +10,8 @@ class UAutomizerVerifierUnitTest extends AnyFlatSpec {
   "Parsing counterexample paths" should "be correct" in {
     UAutomizerVerifierUnitTest.testCases.foreach({
       testCase =>
-        val verifier = new UAutomizerVerifier(CommandLineArguments.DEBUG_MODE_ARGUMENTS)
+        // val verifier = new UAutomizerVerifier(CommandLineArguments.DEBUG_MODE_ARGUMENTS)
+        val verifier = new UAutomizerVerifier(CommandLineArguments.DEFAULT_ARGUMENTS)
         val result = verifier.verify(testCase.input.asInstanceOf[BrboProgram])
         assert(StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"Test `${testCase.name}` failed"))
     })

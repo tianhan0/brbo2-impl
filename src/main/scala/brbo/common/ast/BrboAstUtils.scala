@@ -14,12 +14,4 @@ object BrboAstUtils {
       case _ => throw new Exception
     }
   }
-
-  def collectGhostCommands(brboAst: BrboAst, lastConditional: Option[BrboExpr]): Map[GhostCommand, Option[BrboExpr]] = {
-    brboAst match {
-      case command: Command => ???
-      case statement: Statement => ???
-      case _ => throw new Exception
-    }
-  }
 }

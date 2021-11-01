@@ -30,7 +30,7 @@ class PathRefinementUnitTest extends AnyFlatSpec {
     PathRefinementUnitTest.testUses.foreach({
       testCase =>
         val pathRefinement = new PathRefinement(arguments, PathRefinementTestCases.brboProgram.mainFunction)
-        val paths = pathRefinement.insertUseOnly(testCase.input.asInstanceOf[Path])
+        val paths = pathRefinement.replaceUseOnly(testCase.input.asInstanceOf[Path])
         (StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
     })
   }
