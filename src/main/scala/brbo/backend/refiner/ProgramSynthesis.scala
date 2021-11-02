@@ -18,9 +18,16 @@ class ProgramSynthesis(brboProgram: BrboProgram, commandLineArguments: CommandLi
       val allVariables = brboProgram.mainFunction.parameters.toSet ++ BrboAstUtils.collectUseDefVariables(brboProgram.mainFunction.bodyWithoutInitialization)
       allVariables.filter(v => !GhostVariableUtils.isGhostVariable(v.identifier))
     }
-    val result = Predicate.generatePredicates(allNonGhostVariables, relational = false)
-    logger.traceOrError(s"Candidate predicates (`${result.size}`): `$result`")
-    result
+    val allPredicates = Predicate.generatePredicates(allNonGhostVariables, relational = false)
+    val filterFalsePredicates = allPredicates.filter({
+      p =>
+        val solver = symbolicExecution.solver
+        val isFalse = solver.checkForallAssertionHoldPushPop(solver.mkIff(p.toAst(solver), solver.mkFalse()))
+        if (isFalse) logger.traceOrError(s"Predicate `${p.expr.prettyPrintToCFG}` is false!")
+        !isFalse
+    })
+    logger.traceOrError(s"Candidate predicates (`${filterFalsePredicates.size}`): `$filterFalsePredicates`")
+    filterFalsePredicates
   }
 
   def synthesize(refinement: Refinement): BrboProgram = {
@@ -89,14 +96,14 @@ class ProgramSynthesis(brboProgram: BrboProgram, commandLineArguments: CommandLi
       case (acc, (groupId, indices)) =>
         val postCondition = computePostCondition(path, indices)
         logger.traceOrError(s"Split-Use: Compute predicates implied from post conditions right before use instances in new group `$groupId`")
-        val impliedPredicates = computeImpliedPredicates(postCondition, oldUse.condition)
+        val impliedPredicates = computeImpliedPredicates(postCondition)
         acc + (groupId -> impliedPredicates)
     })
 
     val sortedIds = candidateGuardMap.keys.toList.sorted
     logger.traceOrError(s"Split-Use: Compute candidate predicates for partitioning old group `${oldUse.groupId.get}`")
     val candidatePredicates = computeCandidatePredicates(
-      sortedIds.map(id => candidateGuardMap.getOrElse(id, throw new Exception)))
+      sortedIds.map(id => candidateGuardMap.getOrElse(id, throw new Exception)), oldUse.condition)
 
     sortedIds.zip(candidatePredicates.head).map({
       case (groupId, predicate) =>
@@ -107,23 +114,27 @@ class ProgramSynthesis(brboProgram: BrboProgram, commandLineArguments: CommandLi
   }
 
   def computeNewReset(path: List[CFGNode], groupIdForNewReset: Int, keepSet: Set[Int], removeSet: Set[Int], guardOfReset: BrboExpr): Reset = {
+    // Necessary short circuit. Otherwise we will compute post-conditions for an empty trace, whose semantics is unclear.
     if (removeSet.isEmpty)
-      return Reset(groupIdForNewReset, guardOfReset) // Short circuit
+      return Reset(groupIdForNewReset, guardOfReset)
+    if (keepSet.isEmpty)
+      return Reset(groupIdForNewReset, Bool(b = false))
     val postConditionKeep = computePostCondition(path, keepSet)
     logger.traceOrError(s"Synthesize-Reset: Compute predicates implied from post conditions right before keeping resets in group `$groupIdForNewReset`")
-    val impliedPredicatesKeep = computeImpliedPredicates(postConditionKeep, guardOfReset)
+    val impliedPredicatesKeep = computeImpliedPredicates(postConditionKeep)
 
     val postConditionRemove = computePostCondition(path, removeSet)
     logger.traceOrError(s"Synthesize-Reset: Compute predicates implied from post conditions right before removing resets in group `$groupIdForNewReset`")
-    val impliedPredicatesRemove = computeImpliedPredicates(postConditionRemove, guardOfReset)
+    val impliedPredicatesRemove = computeImpliedPredicates(postConditionRemove)
 
-    logger.traceOrError(s"Synthesize-Reset: Compute candidate predicates for partitioning resets from group `$groupIdForNewReset")
-    val candidatePredicates = computeCandidatePredicates(List(impliedPredicatesKeep, impliedPredicatesRemove))
+    logger.traceOrError(s"Synthesize-Reset: Compute candidate predicates for partitioning resets from group `$groupIdForNewReset`")
+    val candidatePredicates = computeCandidatePredicates(List(impliedPredicatesKeep, impliedPredicatesRemove), guardOfReset)
     val (predicateKeep, _) = (candidatePredicates.head.head, candidatePredicates.head.last)
     Reset(groupIdForNewReset, And(guardOfReset, predicateKeep.expr)) // Only keep the reset under the computed predicate
   }
 
   def computePostCondition(path: List[CFGNode], indices: Set[Int]): AST = {
+    assert(indices.nonEmpty)
     val postConditions = indices.map({
       index =>
         val state = symbolicExecution.execute(path.slice(0, index))
@@ -132,29 +143,35 @@ class ProgramSynthesis(brboProgram: BrboProgram, commandLineArguments: CommandLi
         val pathConditionAst = state.pathCondition
         symbolicExecution.solver.mkAnd(valuationAst, pathConditionAst)
     }).toSeq
-    if (indices.isEmpty) symbolicExecution.solver.mkTrue()
-    else symbolicExecution.solver.mkOr(postConditions: _*)
+    symbolicExecution.solver.mkOr(postConditions: _*)
   }
 
-  def computeImpliedPredicates(whatToImplyFrom: AST, excludeFromResult: BrboExpr): List[Predicate] = {
+  def computeImpliedPredicates(whatToImplyFrom: AST): List[Predicate] = {
     val solver = symbolicExecution.solver
+    val isFalse = {
+      val query = solver.mkIff(whatToImplyFrom, solver.mkFalse())
+      solver.checkForallAssertionHoldPushPop(query)
+    }
+    assert(!isFalse)
+    // Return false (instead of all predicates) when whatToImplyFrom is false
+    // if (isFalse) return List(Predicate(Bool(b = false)))
     val result = predicates.filter({
       predicate =>
         val imply = solver.mkImplies(whatToImplyFrom, predicate.toAst(solver))
-        val disjoint = solver.mkIff(solver.mkAnd(predicate.toAst(solver), excludeFromResult.toZ3AST(solver)), solver.mkFalse())
-        solver.checkForallAssertionHoldPushPop(solver.mkAnd(imply, solver.mkTrue()))
+        solver.checkForallAssertionHoldPushPop(imply)
     })
-    logger.traceOrError(s"These predicates are implied, excluding `${excludeFromResult.prettyPrintToCFG}` (`${result.size}`):\n`$result`")
+    logger.traceOrError(s"`${result.size}` predicates are implied:\n`$result`")
     result
   }
 
-  def computeCandidatePredicates(predicates: Iterable[Iterable[Predicate]]): List[List[Predicate]] = {
+  def computeCandidatePredicates(predicates: Iterable[Iterable[Predicate]], notConflictWith: BrboExpr): List[List[Predicate]] = {
     val candidatePredicates = MathUtils.crossJoin(predicates).filter({
       predicates =>
-        val isPartitionResult = ProgramSynthesis.isDisjointAndNotFalse(predicates, symbolicExecution.solver)
+        val isPartitionResult = ProgramSynthesis.isDisjoint(predicates, symbolicExecution.solver)
         val isCoverResult = ProgramSynthesis.isCover(predicates, symbolicExecution.solver)
+        val notConflictWithResult = ProgramSynthesis.notConflictWith(predicates, notConflictWith, symbolicExecution.solver)
         // logger.traceOrError(s"Predicates `$predicates` ${if (isPartitionResult) "are" else "are not"} a partition, and ${if (isCoverResult) "are" else "are not"} a cover.")
-        isPartitionResult && isCoverResult
+        isPartitionResult && isCoverResult && notConflictWithResult
     })
     if (candidatePredicates.isEmpty) {
       logger.traceOrError(s"No predicate can distinguish the partitioned instances")
@@ -168,28 +185,25 @@ class ProgramSynthesis(brboProgram: BrboProgram, commandLineArguments: CommandLi
 object ProgramSynthesis {
   private val logger = MyLogger.createLogger(ProgramSynthesis.getClass, debugMode = false)
 
-  // Any two predicate should be disjoint with each other, and none of them can be false
-  def isDisjointAndNotFalse(predicates: Iterable[Predicate], solver: Z3Solver): Boolean = {
-    val existFalsePredicate = predicates.find(p => solver.checkForallAssertionHoldPushPop(solver.mkIff(p.toAst(solver), solver.mkFalse()))) match {
-      case Some(falsePredicate) =>
-        logger.traceOrError(s"Predicate `${falsePredicate.expr.prettyPrintToCFG}` is false!")
-        true
-      case None => false
-    }
-
-    val mutuallyDisjoint = MathUtils.choose2(predicates).forall({
+  // Any two predicate should be disjoint with each other
+  def isDisjoint(predicates: Iterable[Predicate], solver: Z3Solver): Boolean = {
+    MathUtils.choose2(predicates).forall({
       case (p1, p2) =>
         val disjoint = solver.checkForallAssertionHoldPushPop(solver.mkIff(solver.mkAnd(p1.toAst(solver), p2.toAst(solver)), solver.mkFalse()))
         logger.traceOrError(s"Decide the disjointness between `${p1.expr.prettyPrintToCFG}` and `${p2.expr.prettyPrintToCFG}`: `$disjoint`")
         disjoint
     })
-
-    !existFalsePredicate && mutuallyDisjoint
   }
 
   // predicates are created with solver
   def isCover(predicates: Iterable[Predicate], solver: Z3Solver): Boolean = {
     solver.checkForallAssertionHoldPushPop(
       solver.mkIff(solver.mkOr(predicates.toSeq.map(p => p.toAst(solver)): _*), solver.mkTrue()))
+  }
+
+  def notConflictWith(predicates: Iterable[Predicate], target: BrboExpr, solver: Z3Solver): Boolean = {
+    predicates.forall({
+      p => solver.checkAssertionPushPop(solver.mkAnd(p.toAst(solver), target.toZ3AST(solver)))
+    })
   }
 }

@@ -1,7 +1,7 @@
 package brbo.backend.refiner
 
 import brbo.TestCase
-import brbo.backend.refiner.ProgramSynthesisUnitTest.{coverTests, partitionTests, synthesizeTests}
+import brbo.backend.refiner.ProgramSynthesisUnitTest.{coverTests, disjointTests, synthesizeTests}
 import brbo.common.BrboType.{INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
@@ -10,19 +10,19 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class ProgramSynthesisUnitTest extends AnyFlatSpec {
   "Synthesizing programs" should "succeed" in {
+    val programSynthesis = new ProgramSynthesis(ProgramSynthesisUnitTest.program, CommandLineArguments.DEBUG_MODE_ARGUMENTS)
     synthesizeTests.foreach({
       testCase =>
-        val programSynthesis = new ProgramSynthesis(ProgramSynthesisUnitTest.program, CommandLineArguments.DEBUG_MODE_ARGUMENTS)
         programSynthesis.synthesize(testCase.input.asInstanceOf[Refinement]).mainFunction
     })
   }
 
   "Deciding disjointness" should "be correct" in {
-    partitionTests.foreach({
+    disjointTests.foreach({
       testCase =>
         val predicates = testCase.input.asInstanceOf[Iterable[Predicate]]
         val solver = new Z3Solver
-        StringCompare.ignoreWhitespaces(ProgramSynthesis.isDisjointAndNotFalse(predicates, solver).toString, testCase.expectedOutput, s"Test case `${testCase.name}` failed!")
+        StringCompare.ignoreWhitespaces(ProgramSynthesis.isDisjoint(predicates, solver).toString, testCase.expectedOutput, s"Test case `${testCase.name}` failed!")
     })
   }
 
@@ -52,15 +52,17 @@ object ProgramSynthesisUnitTest {
 
   val synthesizeTests: List[TestCase] = {
     val path = List(
-      CFGNode(Left(VariableDeclaration(reset.resourceVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID),
-      CFGNode(Left(VariableDeclaration(reset.sharpVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID),
-      CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID),
-      CFGNode(Left(declaration), mainFunction, CFGNode.DONT_CARE_ID),
-      CFGNode(Right(condition), mainFunction, CFGNode.DONT_CARE_ID),
-      CFGNode(Left(reset), mainFunction, CFGNode.DONT_CARE_ID),
-      CFGNode(Left(use), mainFunction, CFGNode.DONT_CARE_ID),
-      CFGNode(Left(reset), mainFunction, CFGNode.DONT_CARE_ID),
-      CFGNode(Left(use), mainFunction, CFGNode.DONT_CARE_ID),
+      CFGNode(Left(VariableDeclaration(reset.resourceVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID), // 0
+      CFGNode(Left(VariableDeclaration(reset.sharpVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID), // 1
+      CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID), // 2
+      CFGNode(Left(declaration), mainFunction, CFGNode.DONT_CARE_ID), // 3
+      CFGNode(Right(condition), mainFunction, CFGNode.DONT_CARE_ID), // 4
+      CFGNode(Left(reset), mainFunction, CFGNode.DONT_CARE_ID), // 5
+      CFGNode(Left(use), mainFunction, CFGNode.DONT_CARE_ID), // 6
+      CFGNode(Left(increment), mainFunction, CFGNode.DONT_CARE_ID), // 7
+      CFGNode(Right(condition), mainFunction, CFGNode.DONT_CARE_ID), // 8
+      CFGNode(Left(reset), mainFunction, CFGNode.DONT_CARE_ID), // 9
+      CFGNode(Left(use), mainFunction, CFGNode.DONT_CARE_ID), // 10
     )
 
     val splitUsesTest01 = {
@@ -68,7 +70,7 @@ object ProgramSynthesisUnitTest {
       val use2 = CFGNode(Left(Use(Some(2), use.update, use.condition)), mainFunction, CFGNode.DONT_CARE_ID)
       val reset3 = CFGNode(Left(Reset(3)), mainFunction, CFGNode.DONT_CARE_ID)
       val use3 = CFGNode(Left(Use(Some(3), use.update, use.condition)), mainFunction, CFGNode.DONT_CARE_ID)
-      Map(5 -> ResetNode(reset2, 2), 6 -> UseNode(use2, 2), 7 -> ResetNode(reset3, 3), 8 -> UseNode(use3, 3))
+      Map(5 -> ResetNode(reset2, 2), 6 -> UseNode(use2, 2), 9 -> ResetNode(reset3, 3), 10 -> UseNode(use3, 3))
     }
     val groupIdsTest01 = Map(1 -> Set(2, 3))
 
@@ -79,7 +81,7 @@ object ProgramSynthesisUnitTest {
     )
   }
 
-  val partitionTests: List[TestCase] = {
+  val disjointTests: List[TestCase] = {
     val i = Identifier("i", BrboType.INT)
     val n = Identifier("n", BrboType.INT)
     val zero = Number(0)
@@ -89,10 +91,10 @@ object ProgramSynthesisUnitTest {
     val list3 = List(Predicate(GreaterThanOrEqualTo(i, zero)), Predicate(And(GreaterThan(n, zero), GreaterThan(zero, i))))
     val list4 = List(Predicate(And(GreaterThanOrEqualTo(n, zero), GreaterThan(zero, n))), Predicate(Bool(b = true)))
     List(
-      TestCase("Partition Test 01", list1, """true"""),
-      TestCase("Partition Test 02", list2, """true"""),
-      TestCase("Partition Test 03", list3, """true"""),
-      TestCase("Partition Test 04", list4, """false"""),
+      TestCase("Disjoint Test 01", list1, """true"""),
+      TestCase("Disjoint Test 02", list2, """true"""),
+      TestCase("Disjoint Test 03", list3, """true"""),
+      TestCase("Disjoint Test 04", list4, """true"""),
     )
   }
 
