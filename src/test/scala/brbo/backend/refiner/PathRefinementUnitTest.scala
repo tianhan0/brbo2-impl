@@ -51,6 +51,9 @@ object PathRefinementUnitTest {
     List(
       TestCase("Test 01", PathRefinementTestCases.test01,
         """Path:
+          |  int R1 = 0; [Function `Main`]
+          |  int S1 = 0; [Function `Main`]
+          |  int C1 = 0; [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
@@ -59,17 +62,23 @@ object PathRefinementUnitTest {
           |Removed resets:
           |
           |Path:
+          |  int R1 = 0; [Function `Main`]
+          |  int S1 = 0; [Function `Main`]
+          |  int C1 = 0; [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |Splits:
-          |  0: if (true) reset R2
-          |  1: if (true) reset R3
-          |  2: if (true) use R3 1
+          |  3: if (true) reset R2
+          |  4: if (true) reset R3
+          |  5: if (true) use R3 1
           |Removed resets:
           |""".stripMargin),
       TestCase("Test 02", PathRefinementTestCases.test02,
         """Path:
+          |  int R1 = 0; [Function `Main`]
+          |  int S1 = 0; [Function `Main`]
+          |  int C1 = 0; [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
@@ -79,19 +88,25 @@ object PathRefinementUnitTest {
           |Removed resets:
           |
           |Path:
+          |  int R1 = 0; [Function `Main`]
+          |  int S1 = 0; [Function `Main`]
+          |  int C1 = 0; [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |Splits:
-          |  0: if (true) reset R2
-          |  1: if (true) use R2 1
-          |  2: if (true) reset R3
-          |  3: if (true) use R3 1
+          |  3: if (true) reset R2
+          |  4: if (true) use R2 1
+          |  5: if (true) reset R3
+          |  6: if (true) use R3 1
           |Removed resets:
           |""".stripMargin),
       TestCase("Test 03", PathRefinementTestCases.test03,
         """Path:
+          |  int R1 = 0; [Function `Main`]
+          |  int S1 = 0; [Function `Main`]
+          |  int C1 = 0; [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
@@ -103,6 +118,9 @@ object PathRefinementUnitTest {
           |Removed resets:
           |
           |Path:
+          |  int R1 = 0; [Function `Main`]
+          |  int S1 = 0; [Function `Main`]
+          |  int C1 = 0; [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
@@ -110,15 +128,18 @@ object PathRefinementUnitTest {
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |Splits:
-          |  0: if (true) reset R2
-          |  1: if (true) use R2 1
-          |  2: if (true) reset R2
-          |  3: if (true) use R2 1
-          |  4: if (true) reset R3
-          |  5: if (true) use R3 1
+          |  3: if (true) reset R2
+          |  4: if (true) use R2 1
+          |  5: if (true) reset R2
+          |  6: if (true) use R2 1
+          |  7: if (true) reset R3
+          |  8: if (true) use R3 1
           |Removed resets:
           |
           |Path:
+          |  int R1 = 0; [Function `Main`]
+          |  int S1 = 0; [Function `Main`]
+          |  int C1 = 0; [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
@@ -126,15 +147,18 @@ object PathRefinementUnitTest {
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |Splits:
-          |  0: if (true) reset R2
-          |  1: if (true) use R2 1
-          |  2: if (true) reset R3
-          |  3: if (true) use R3 1
-          |  4: if (true) reset R2
-          |  5: if (true) use R2 1
+          |  3: if (true) reset R2
+          |  4: if (true) use R2 1
+          |  5: if (true) reset R3
+          |  6: if (true) use R3 1
+          |  7: if (true) reset R2
+          |  8: if (true) use R2 1
           |Removed resets:
           |
           |Path:
+          |  int R1 = 0; [Function `Main`]
+          |  int S1 = 0; [Function `Main`]
+          |  int C1 = 0; [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
@@ -142,15 +166,18 @@ object PathRefinementUnitTest {
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |Splits:
-          |  0: if (true) reset R2
-          |  1: if (true) use R2 1
-          |  2: if (true) reset R3
-          |  3: if (true) use R3 1
-          |  4: if (true) reset R3
-          |  5: if (true) use R3 1
+          |  3: if (true) reset R2
+          |  4: if (true) use R2 1
+          |  5: if (true) reset R3
+          |  6: if (true) use R3 1
+          |  7: if (true) reset R3
+          |  8: if (true) use R3 1
           |Removed resets:
           |
           |Path:
+          |  int R1 = 0; [Function `Main`]
+          |  int S1 = 0; [Function `Main`]
+          |  int C1 = 0; [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |  if (true) reset R1 [Function `Main`]
@@ -158,12 +185,12 @@ object PathRefinementUnitTest {
           |  if (true) reset R1 [Function `Main`]
           |  if (true) use R1 1 [Function `Main`]
           |Splits:
-          |  0: if (true) reset R2
-          |  1: if (true) use R2 1
-          |  2: if (true) reset R3
-          |  3: if (true) use R3 1
-          |  4: if (true) reset R4
-          |  5: if (true) use R4 1
+          |  3: if (true) reset R2
+          |  4: if (true) use R2 1
+          |  5: if (true) reset R3
+          |  6: if (true) use R3 1
+          |  7: if (true) reset R4
+          |  8: if (true) use R4 1
           |Removed resets:
           |""".stripMargin),
     )

@@ -80,12 +80,12 @@ object ProgramSynthesisUnitTest {
       TestCase("Split Uses", Refinement(path, splitUsesTest01, Set(), groupIdsTest01),
         """void main(int n)
           |{
-          |  int R2 = 0;
-          |  int S2 = 0;
           |  int C2 = 0;
-          |  int R3 = 0;
-          |  int S3 = 0;
           |  int C3 = 0;
+          |  int R2 = 0;
+          |  int R3 = 0;
+          |  int S2 = 0;
+          |  int S3 = 0;
           |  int i = 0;
           |  while (i < n)
           |  {
@@ -103,9 +103,9 @@ object ProgramSynthesisUnitTest {
       TestCase("Remove Resets", Refinement(path, Map(), Set(5), Map()),
         """void main(int n)
           |{
+          |  int C1 = 0;
           |  int R1 = 0;
           |  int S1 = 0;
-          |  int C1 = 0;
           |  int i = 0;
           |  while (i < n)
           |  {
@@ -121,12 +121,12 @@ object ProgramSynthesisUnitTest {
       TestCase("Split Uses and Remove Resets", Refinement(path, splitUsesTest01, Set(5), groupIdsTest01),
         """void main(int n)
           |{
-          |  int R2 = 0;
-          |  int S2 = 0;
           |  int C2 = 0;
-          |  int R3 = 0;
-          |  int S3 = 0;
           |  int C3 = 0;
+          |  int R2 = 0;
+          |  int R3 = 0;
+          |  int S2 = 0;
+          |  int S3 = 0;
           |  int i = 0;
           |  while (i < n)
           |  {
@@ -140,7 +140,6 @@ object ProgramSynthesisUnitTest {
           |    }
           |    i = i + 1;
           |  }
-
           |}""".stripMargin),
     )
   }
@@ -154,11 +153,13 @@ object ProgramSynthesisUnitTest {
     val list2 = List(Predicate(GreaterThanOrEqualTo(zero, i)), Predicate(GreaterThan(i, zero)))
     val list3 = List(Predicate(GreaterThanOrEqualTo(i, zero)), Predicate(And(GreaterThan(n, zero), GreaterThan(zero, i))))
     val list4 = List(Predicate(And(GreaterThanOrEqualTo(n, zero), GreaterThan(zero, n))), Predicate(Bool(b = true)))
+    val list5 = List(Predicate(GreaterThanOrEqualTo(zero, i)), Predicate(GreaterThanOrEqualTo(i, zero)))
     List(
       TestCase("Disjoint Test 01", list1, """true"""),
       TestCase("Disjoint Test 02", list2, """true"""),
       TestCase("Disjoint Test 03", list3, """true"""),
       TestCase("Disjoint Test 04", list4, """true"""),
+      TestCase("Disjoint Test 05", list5, """false"""),
     )
   }
 

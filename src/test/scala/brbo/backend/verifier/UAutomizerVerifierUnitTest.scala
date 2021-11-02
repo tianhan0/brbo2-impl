@@ -96,9 +96,9 @@ object UAutomizerVerifierUnitTest {
     }
     val test03Expected =
       """VerifierResult(FALSE_RESULT,Some(Path:
+        |  int C2 = 0; [Function `main`]
         |  int R2 = 0; [Function `main`]
         |  int S2 = 0; [Function `main`]
-        |  int C2 = 0; [Function `main`]
         |  if (n > 0) reset R2 [Function `main`]
         |  if (n > 1) use R2 1 [Function `main`]
         |  if (true) reset R2 [Function `main`]

@@ -1,5 +1,6 @@
 package brbo.common.cfg
 
+import brbo.common.GhostVariableUtils
 import brbo.common.ast._
 import com.ibm.wala.util.graph.INodeWithNumberedEdges
 import com.ibm.wala.util.graph.impl.NodeWithNumber
@@ -11,8 +12,9 @@ import com.ibm.wala.util.intset.{BimodalMutableIntSet, IntSet}
  * @param function The function that this command or expression belongs to
  * @param id       A unique ID among all commands and expressions in all functions
  */
-case class CFGNode(value: Either[Command, BrboExpr], function: BrboFunction, id: Int) extends NodeWithNumber
-  with INodeWithNumberedEdges with PrettyPrintToC with PrettyPrintToCFG with GetFunctionCalls {
+case class CFGNode(value: Either[Command, BrboExpr], function: BrboFunction, id: Int)
+  extends NodeWithNumber with INodeWithNumberedEdges
+    with PrettyPrintToC with PrettyPrintToCFG with GetFunctionCalls {
 
   private val predNumbers = new BimodalMutableIntSet()
   private val succNumbers = new BimodalMutableIntSet()

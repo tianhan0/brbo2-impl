@@ -38,6 +38,8 @@ case class Identifier(identifier: String, override val typ: BrboType, uuid: UUID
   override def getUses: Set[Identifier] = Set(this)
 
   override def getDefs: Set[Identifier] = Set()
+
+  def sameAs(other: Identifier):  Boolean = identifier == other.identifier && typ == other.typ
 }
 
 case class Bool(b: Boolean, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {

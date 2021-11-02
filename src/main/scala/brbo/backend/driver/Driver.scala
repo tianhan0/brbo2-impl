@@ -15,6 +15,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
   private val logger = MyLogger.createLogger(classOf[Driver], arguments.getDebugMode)
   private val uAutomizerVerifier = new UAutomizerVerifier(arguments)
   private val initialAbstraction: BrboProgram = {
+    // TODO: Extract uses from assignments
     ???
   }
 

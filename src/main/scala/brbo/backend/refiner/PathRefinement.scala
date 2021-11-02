@@ -51,7 +51,7 @@ class PathRefinement(arguments: CommandLineArguments, targetFunction: BrboFuncti
   }
 
   def replaceUseOnly(path: Path): Set[Refinement] = {
-    val pathWithIndex = path.pathNodes.zipWithIndex
+    val pathIndices = path.pathNodes.indices
 
     val groupIds: List[Int] = {
       var groupIds = Set[Int]()
@@ -76,54 +76,57 @@ class PathRefinement(arguments: CommandLineArguments, targetFunction: BrboFuncti
       })
     }
 
-    def helper(exitingGroups: Set[Int], currentRefine: Refinement, toSplitGroupIds: List[Int]): Set[Refinement] = {
-      logger.traceOrError(s"exitingGroups: `$exitingGroups`, toSplitGroupIds: `$toSplitGroupIds`, currentRefine: `${currentRefine.toStringNoPath}`")
+    def helper(existingGroups: Set[Int], currentRefine: Refinement, toSplitGroupIds: List[Int]): Set[Refinement] = {
+      logger.traceOrError(s"existingGroups: `$existingGroups`, toSplitGroupIds: `$toSplitGroupIds`, currentRefine: `${currentRefine.toStringNoPath}`")
       if (toSplitGroupIds.isEmpty) return Set(currentRefine)
       val toSplitGroupId = toSplitGroupIds.head
       val segments = allSegments.getOrElse(toSplitGroupId, throw new Exception)
-      var result: Set[Refinement] = helper(exitingGroups, currentRefine, toSplitGroupIds.tail) // Not split the group
-      val minGroupId = exitingGroups.max + 1
+      // Not consider the first segment, because BrboFunction and Path both guarantees that, the accumulation in the first segment
+      // of any group is 0, because any concrete path begins with initializatin ghost variables
+      // Hence, it does not really matter we "assign" the first segment to which new group
+      val segmentCount = segments.size - 1
+      var result: Set[Refinement] = helper(existingGroups, currentRefine, toSplitGroupIds.tail) // Not split the group
+      val minGroupId = existingGroups.max + 1
       val maxGroupId = {
-        val a = exitingGroups.max + segments.size
-        val b = maxGroups - exitingGroups.size + exitingGroups.max
+        val a = existingGroups.max + segmentCount
+        val b = maxGroups - existingGroups.size + existingGroups.max
         if (a <= b) a else b
       }
-      logger.traceOrError(s"Number of segments: `${segments.size}`, minGroupId: `$minGroupId`, maxGroupId: `$maxGroupId`")
-      Range.inclusive(minGroupId, maxGroupId).foreach({
-        currentMaxGroupId =>
-          logger.traceOrError(s"minGroupId: `$minGroupId`, currentMaxGroupId: `$currentMaxGroupId`")
-          val possibilities: Set[List[Int]] = MathUtils.generateUniqueSequences(segments.size, minGroupId, currentMaxGroupId)
-          result = result ++ possibilities.flatMap({
-            possibility =>
-              val oneNewGroup = possibility.min == possibility.max
-              // If the number of new groups is 1, then we are actually not splitting!
-              if (oneNewGroup) {
-                Set[Refinement]()
-              }
-              else {
-                logger.traceOrError(s"Possibility: `$possibility`")
-                assert(possibility.size == segments.size)
-                val splitUses = segments.zip(possibility).foldLeft(currentRefine.splitUses)({
-                  case (acc, (segment, newGroupId)) =>
-                    pathWithIndex.slice(segment.begin, segment.end + 1).foldLeft(acc)({
-                      case (acc2, (node, index)) =>
-                        assert(!acc2.contains(index))
-                        // Do not transform commands in functions other than the main function
-                        if (node.isReset(Some(toSplitGroupId), Some(targetFunction))) {
-                          val newReset = CFGNode(Left(node.value.left.get.asInstanceOf[Reset].replace(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
-                          acc2 + (index -> ResetNode(newReset, newGroupId))
-                        }
-                        else if (node.isUse(Some(toSplitGroupId), Some(targetFunction))) {
-                          val newUse = CFGNode(Left(node.value.left.get.asInstanceOf[Use].replace(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
-                          acc2 + (index -> UseNode(newUse, newGroupId))
-                        }
-                        else acc2
-                    })
+      logger.traceOrError(s"Number of segments minus 1: `$segmentCount`, minGroupId: `$minGroupId`, maxGroupId: `$maxGroupId` (maxGroups: `$maxGroups`)")
+      val possibilities: Set[List[Int]] = MathUtils.generateUniqueSequences(segmentCount, minGroupId, maxGroupId)
+      result = result ++ possibilities.flatMap({
+        possibility =>
+          val oneNewGroup = possibility.min == possibility.max
+          if (oneNewGroup) {
+            // If the number of new groups is 1, then we are actually not splitting!
+            logger.traceOrError(s"Possibility: `$possibility` (Skipped)")
+            Set[Refinement]()
+          }
+          else {
+            logger.traceOrError(s"Possibility: `$possibility`")
+            assert(possibility.size == segmentCount)
+            val splitUses = segments.tail.zip(possibility).foldLeft(currentRefine.splitUses)({
+              case (acc, (segment, newGroupId)) =>
+                pathIndices.slice(segment.begin, segment.end + 1).foldLeft(acc)({
+                  case (acc2, index) =>
+                    // Every node in the segment now "belongs to" the new group
+                    val node = path.pathNodes(index)
+                    assert(!acc2.contains(index))
+                    // Do not transform commands in functions other than the main function
+                    if (node.isReset(Some(toSplitGroupId), Some(targetFunction))) {
+                      val newReset = CFGNode(Left(node.value.left.get.asInstanceOf[Reset].replace(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
+                      acc2 + (index -> ResetNode(newReset, newGroupId))
+                    }
+                    else if (node.isUse(Some(toSplitGroupId), Some(targetFunction))) {
+                      val newUse = CFGNode(Left(node.value.left.get.asInstanceOf[Use].replace(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
+                      acc2 + (index -> UseNode(newUse, newGroupId))
+                    }
+                    else acc2
                 })
-                val newRefine = Refinement(currentRefine.path, splitUses, currentRefine.removeResets, currentRefine.groupIds + (toSplitGroupId -> possibility.toSet))
-                helper(exitingGroups - toSplitGroupId ++ possibility.toSet, newRefine, toSplitGroupIds.tail)
-              }
-          })
+            })
+            val newRefine = Refinement(currentRefine.path, splitUses, currentRefine.removeResets, currentRefine.groupIds + (toSplitGroupId -> possibility.toSet))
+            helper(existingGroups - toSplitGroupId ++ possibility.toSet, newRefine, toSplitGroupIds.tail)
+          }
       })
       result
     }

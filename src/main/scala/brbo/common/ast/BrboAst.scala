@@ -41,16 +41,9 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
 case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier],
                         bodyWithoutInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
   extends PrettyPrintToC with ToInternalRepresentationOverrideToString {
-  val ghostVariableInitializations: List[Command] = groupIds.toList.sorted.flatMap({
-    groupId =>
-      val R = GhostVariableUtils.generateVariable(Some(groupId), Resource)
-      val RSharp = GhostVariableUtils.generateVariable(Some(groupId), Sharp)
-      val RCounter = GhostVariableUtils.generateVariable(Some(groupId), Counter)
-      val declaration1 = VariableDeclaration(R, Number(0))
-      val declaration2 = VariableDeclaration(RSharp, Number(0))
-      val declaration3 = VariableDeclaration(RCounter, Number(0))
-      List(declaration1, declaration2, declaration3)
-  })
+  val ghostVariableInitializations: List[Command] = groupIds.flatMap({
+    groupId => GhostVariableUtils.declareVariables(groupId)
+  }).toList.sortWith({ case (c1, c2) => c1.toIR() < c2.toIR() })
 
   // Declare and initialize ghost variables in the function
   val actualBody: Statement = bodyWithoutInitialization match {
@@ -412,9 +405,8 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
 }
 
 case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
-  val sharpVariable: Identifier = GhostVariableUtils.generateVariable(Some(groupId), Sharp)
-  val resourceVariable: Identifier = GhostVariableUtils.generateVariable(Some(groupId), Resource)
-  val counterVariable: Identifier = GhostVariableUtils.generateVariable(Some(groupId), Counter)
+  val (resourceVariable: Identifier, sharpVariable: Identifier, counterVariable: Identifier) =
+    GhostVariableUtils.generateVariables(Some(groupId))
 
   val maxCommand: Assignment = {
     val iteExpr = ITEExpr(LessThan(sharpVariable, resourceVariable), resourceVariable, sharpVariable)
