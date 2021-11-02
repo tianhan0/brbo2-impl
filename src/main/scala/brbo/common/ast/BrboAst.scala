@@ -8,17 +8,18 @@ import java.util.UUID
 
 case class BrboProgram(name: String, mainFunction: BrboFunction,
                        mostPreciseAssertion: Option[BrboExpr] = None, lessPreciseAssertion: Option[BrboExpr] = None,
-                       functions: List[BrboFunction] = Nil, uuid: UUID = UUID.randomUUID()) extends PrettyPrintToC {
+                       functions: List[BrboFunction] = Nil, uuid: UUID = UUID.randomUUID())
+  extends PrettyPrintToC with ToInternalRepresentationOverrideToString {
   override def prettyPrintToC(indent: Int): String = {
     val functionsString = (functions :+ mainFunction).map(function => function.prettyPrintToC(indent)).mkString("\n")
     s"${PreDefinedFunctions.UNDEFINED_FUNCTIONS_MACRO}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
   }
 
-  override def toString: String = {
+  override def toIR(indent: Int = 0): String = {
     s"Program name: `$name`\n" +
       s"Most precise bound: `$mostPreciseAssertion`\n" +
       s"Less precise bound: `$lessPreciseAssertion`\n" +
-      s"${(functions :+ mainFunction).map(function => function.prettyPrintToC(DEFAULT_INDENT)).mkString("\n")}"
+      s"${(functions :+ mainFunction).map(function => function.toIR(DEFAULT_INDENT_IR)).mkString("\n")}"
   }
 
   def replaceMainFunction(newMainFunction: BrboFunction): BrboProgram =
@@ -37,7 +38,9 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
  *                                  has been applied to the function.
  * @param uuid                      Unique ID
  */
-case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier], bodyWithoutInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID()) extends PrettyPrintToC {
+case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier],
+                        bodyWithoutInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
+  extends PrettyPrintToC with ToInternalRepresentationOverrideToString {
   // Declare and initialize ghost variables in the function
   val actualBody: Statement = {
     val ghostVariableInitializations: List[Command] = groupIds.toList.sorted.flatMap({
@@ -62,7 +65,10 @@ case class BrboFunction(identifier: String, returnType: BrboType, parameters: Li
     s"${BrboType.toCString(returnType)} $identifier($parametersString) \n${actualBody.prettyPrintToC(0)}"
   }
 
-  override def toString: String = prettyPrintToC()
+  def toIR(indent: Int = 0): String = {
+    val parametersString = parameters.map(pair => s"${pair.typeNamePairInC()}").mkString(", ")
+    s"${BrboType.toCString(returnType)} $identifier($parametersString) \n${actualBody.toIR(indent)}"
+  }
 
   val isAmortized: Boolean = groupIds.isEmpty
 
@@ -71,11 +77,11 @@ case class BrboFunction(identifier: String, returnType: BrboType, parameters: Li
   def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, bodyWithoutInitialization, newGroupIds)
 }
 
-abstract class BrboAst extends PrettyPrintToC {
-  override def toString: String = prettyPrintToC()
-}
+abstract class BrboAst extends PrettyPrintToC with ToInternalRepresentationOverrideToString
 
-abstract class Command extends BrboAst with PrettyPrintToCFG with GetFunctionCalls with UseDefVariables
+abstract class Command extends BrboAst with PrettyPrintToCFG with GetFunctionCalls with UseDefVariables {
+  override def toIR(indent: Int): String = prettyPrintToC(indent)
+}
 
 abstract class Statement extends BrboAst
 
@@ -83,6 +89,11 @@ case class Block(asts: List[BrboAst], uuid: UUID = UUID.randomUUID()) extends St
   override def prettyPrintToC(indent: Int): String = {
     val indentString = " " * indent
     s"$indentString{\n${asts.map(t => t.prettyPrintToC(indent + DEFAULT_INDENT)).mkString("\n")}\n$indentString}"
+  }
+
+  override def toIR(indent: Int): String = {
+    val indentString = " " * indent
+    s"$indentString{\n${asts.map(t => t.toIR(indent + DEFAULT_INDENT_IR)).mkString("\n")}\n$indentString}"
   }
 }
 
@@ -92,6 +103,17 @@ case class Loop(condition: BrboExpr, loopBody: BrboAst, uuid: UUID = UUID.random
     val bodyString = loopBody match {
       case _: Command => s"${loopBody.prettyPrintToC(indent + DEFAULT_INDENT)}"
       case _: Statement => s"${loopBody.prettyPrintToC(indent)}"
+      case _ => throw new Exception
+    }
+    val indentString = " " * indent
+    s"${indentString}while ($conditionString)\n$bodyString"
+  }
+
+  override def toIR(indent: Int): String = {
+    val conditionString = condition.prettyPrintToCNoOuterBrackets
+    val bodyString = loopBody match {
+      case _: Command => s"${loopBody.toIR(indent + DEFAULT_INDENT_IR)}"
+      case _: Statement => s"${loopBody.toIR(indent)}"
       case _ => throw new Exception
     }
     val indentString = " " * indent
@@ -110,6 +132,22 @@ case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, uuid: UU
     val elseString = elseAst match {
       case _: Command => elseAst.prettyPrintToC(indent + DEFAULT_INDENT)
       case _: Statement => elseAst.prettyPrintToC(indent)
+      case _ => throw new Exception
+    }
+    val indentString = " " * indent
+    s"${indentString}if ($conditionString)\n$thenString\n${indentString}else\n$elseString"
+  }
+
+  override def toIR(indent: Int): String = {
+    val conditionString = condition.prettyPrintToCNoOuterBrackets
+    val thenString = thenAst match {
+      case _: Command => thenAst.toIR(indent + DEFAULT_INDENT_IR)
+      case _: Statement => thenAst.toIR(indent)
+      case _ => throw new Exception
+    }
+    val elseString = elseAst match {
+      case _: Command => elseAst.toIR(indent + DEFAULT_INDENT_IR)
+      case _: Statement => elseAst.toIR(indent)
       case _ => throw new Exception
     }
     val indentString = " " * indent
@@ -362,6 +400,11 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
     s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) ${assignmentCommand.prettyPrintToC()}"
   }
 
+  override def toIR(indent: Int): String = {
+    val indentString = " " * indent
+    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) use ${resourceVariable.identifier} ${update.prettyPrintToCNoOuterBrackets}"
+  }
+
   override def replace(newGroupId: Int): Use = Use(Some(newGroupId), update, condition)
 
   override def getUses: Set[Identifier] = update.getUses ++ condition.getUses
@@ -391,6 +434,11 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID 
   override def prettyPrintToC(indent: Int): String = {
     val indentString = " " * indent
     s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) {\n${maxStatement.prettyPrintToC(indent + DEFAULT_INDENT)}\n${resetCommand.prettyPrintToC(indent + DEFAULT_INDENT)}\n${counterCommand.prettyPrintToC(indent + DEFAULT_INDENT)}\n$indentString}"
+  }
+
+  override def toIR(indent: Int): String = {
+    val indentString = " " * indent
+    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) reset ${resourceVariable.identifier}"
   }
 
   def replace(newGroupId: Int): Reset = Reset(newGroupId, condition)

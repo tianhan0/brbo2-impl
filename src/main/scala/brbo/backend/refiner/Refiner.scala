@@ -50,7 +50,7 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
         })
 
         logger.info(s"Search for a path refinement for path `$counterexamplePath2`.")
-        val programSynthesis = new ProgramSynthesis(refinedProgram, commandLineArguments)
+        val programSynthesis = new ProgramSynthesis(refinedProgram, relationalPredicates = false, commandLineArguments)
         // Keep finding new path transformations until either finding a program transformation that can realize it,
         // or there exists no program transformation that can realize any path transformation
         var avoidRefinement2: Set[Refinement] = Set()

@@ -11,9 +11,9 @@ case class Predicate(expr: BrboExpr) {
 }
 
 object Predicate {
-  private val CONSTANTS = Set(Number(0)) //, Number(1))
+  private val CONSTANTS = Set(Number(0), Number(1))
 
-  def generatePredicates(variables: Set[Identifier], relational: Boolean): List[Predicate] = {
+  def generatePredicates(variables: Set[Identifier], relationalPredicates: Boolean): List[Predicate] = {
     val intervalPredicates: Set[Predicate] = variables.flatMap({
       v =>
         val expressions = Set(v, Subtraction(Number(0), v))
@@ -38,12 +38,12 @@ object Predicate {
         })
     })
     val result = {
-      if (relational) intervalPredicates ++ octagonPredicates
+      if (relationalPredicates) intervalPredicates ++ octagonPredicates
       else intervalPredicates
     }
-    val conjunct2 = MathUtils.choose2(result).map({ case (p1, p2) => Predicate(And(p1.expr, p2.expr)) })
+    // val conjunct2 = sortPredicates(MathUtils.choose2(result).map({ case (p1, p2) => Predicate(And(p1.expr, p2.expr)) }))
     val TRUE = Predicate(Bool(b = true))
-    TRUE :: sortPredicates(conjunct2) ::: sortPredicates(result)
+    TRUE :: sortPredicates(result)
   }
 
   private def sortPredicates(iterable: Iterable[Predicate]): List[Predicate] = iterable.toList.sortWith({ case (p1, p2) => p1.toString < p2.toString })

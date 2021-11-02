@@ -10,10 +10,12 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class ProgramSynthesisUnitTest extends AnyFlatSpec {
   "Synthesizing programs" should "succeed" in {
-    val programSynthesis = new ProgramSynthesis(ProgramSynthesisUnitTest.program, CommandLineArguments.DEBUG_MODE_ARGUMENTS)
+    // val programSynthesis = new ProgramSynthesis(ProgramSynthesisUnitTest.program, CommandLineArguments.DEBUG_MODE_ARGUMENTS)
+    val programSynthesis = new ProgramSynthesis(ProgramSynthesisUnitTest.program, relationalPredicates = false, CommandLineArguments.DEFAULT_ARGUMENTS)
     synthesizeTests.foreach({
       testCase =>
-        programSynthesis.synthesize(testCase.input.asInstanceOf[Refinement]).mainFunction
+        val newFunction = programSynthesis.synthesize(testCase.input.asInstanceOf[Refinement]).mainFunction
+        assert(StringCompare.ignoreWhitespaces(newFunction.toIR(), testCase.expectedOutput, s"Test case `${testCase.name}` failed!"))
     })
   }
 
@@ -22,7 +24,7 @@ class ProgramSynthesisUnitTest extends AnyFlatSpec {
       testCase =>
         val predicates = testCase.input.asInstanceOf[Iterable[Predicate]]
         val solver = new Z3Solver
-        StringCompare.ignoreWhitespaces(ProgramSynthesis.isDisjoint(predicates, solver).toString, testCase.expectedOutput, s"Test case `${testCase.name}` failed!")
+        assert(StringCompare.ignoreWhitespaces(ProgramSynthesis.isDisjoint(predicates, solver).toString, testCase.expectedOutput, s"Test case `${testCase.name}` failed!"))
     })
   }
 
@@ -31,7 +33,7 @@ class ProgramSynthesisUnitTest extends AnyFlatSpec {
       testCase =>
         val predicates = testCase.input.asInstanceOf[Iterable[Predicate]]
         val solver = new Z3Solver
-        ProgramSynthesis.isCover(predicates, solver)
+        assert(StringCompare.ignoreWhitespaces(ProgramSynthesis.isCover(predicates, solver).toString, testCase.expectedOutput, s"Test case `${testCase.name}` failed!"))
     })
   }
 }
@@ -75,9 +77,71 @@ object ProgramSynthesisUnitTest {
     val groupIdsTest01 = Map(1 -> Set(2, 3))
 
     List(
-      TestCase("Split Uses", Refinement(path, splitUsesTest01, Set(), groupIdsTest01), """"""),
-      TestCase("Remove Resets", Refinement(path, Map(), Set(5), Map()), """"""),
-      TestCase("Split Uses and Remove Resets", Refinement(path, splitUsesTest01, Set(5), groupIdsTest01), """"""),
+      TestCase("Split Uses", Refinement(path, splitUsesTest01, Set(), groupIdsTest01),
+        """void main(int n)
+          |{
+          |  int R2 = 0;
+          |  int S2 = 0;
+          |  int C2 = 0;
+          |  int R3 = 0;
+          |  int S3 = 0;
+          |  int C3 = 0;
+          |  int i = 0;
+          |  while (i < n)
+          |  {
+          |    {
+          |      if (true) reset R2
+          |      if (true) reset R3
+          |    }
+          |    {
+          |      if (((0 - i) >= 0) && (n >= 0)) use R2 1
+          |      if ((i > 0) && (n >= 0)) use R3 1
+          |    }
+          |    i = i + 1;
+          |  }
+          |}""".stripMargin),
+      TestCase("Remove Resets", Refinement(path, Map(), Set(5), Map()),
+        """void main(int n)
+          |{
+          |  int R1 = 0;
+          |  int S1 = 0;
+          |  int C1 = 0;
+          |  int i = 0;
+          |  while (i < n)
+          |  {
+          |    {
+          |      if (true && (i > 0)) reset R1
+          |    }
+          |    {
+          |      if (n >= 0) use R1 1
+          |    }
+          |    i = i + 1;
+          |  }
+          |}""".stripMargin),
+      TestCase("Split Uses and Remove Resets", Refinement(path, splitUsesTest01, Set(5), groupIdsTest01),
+        """void main(int n)
+          |{
+          |  int R2 = 0;
+          |  int S2 = 0;
+          |  int C2 = 0;
+          |  int R3 = 0;
+          |  int S3 = 0;
+          |  int C3 = 0;
+          |  int i = 0;
+          |  while (i < n)
+          |  {
+          |    {
+          |      if (false) reset R2
+          |      if (true) reset R3
+          |    }
+          |    {
+          |      if (((0 - i) >= 0) && (n >= 0)) use R2 1
+          |      if ((i > 0) && (n >= 0)) use R3 1
+          |    }
+          |    i = i + 1;
+          |  }
+
+          |}""".stripMargin),
     )
   }
 
