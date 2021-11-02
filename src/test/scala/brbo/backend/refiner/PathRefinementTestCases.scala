@@ -2,8 +2,6 @@ package brbo.backend.refiner
 
 import brbo.backend.verifier.cex.Path
 import brbo.common.BrboType.{INT, VOID}
-import brbo.common.GhostVariableTyp.Resource
-import brbo.common.GhostVariableUtils
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 

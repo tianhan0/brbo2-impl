@@ -5,9 +5,9 @@ import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.{CommandLineArguments, MathUtils, MyLogger}
 
-class PathRefinement(commandLineArguments: CommandLineArguments, targetFunction: BrboFunction) {
-  private val maxGroups = commandLineArguments.getMaxGroups
-  private val logger = MyLogger.createLogger(classOf[PathRefinement], commandLineArguments.getDebugMode)
+class PathRefinement(arguments: CommandLineArguments, targetFunction: BrboFunction) {
+  private val maxGroups = arguments.getMaxGroups
+  private val logger = MyLogger.createLogger(classOf[PathRefinement], arguments.getDebugMode)
 
   // Perform command transformations to commands in the given path
   def refine(path: Path): List[Refinement] = {

@@ -61,7 +61,7 @@ object ControlFlowGraph {
         case Some(function) => getCFG(function)
         case None =>
           // Create a node to represent an undefined function
-          val node = getNode(Left(UndefinedFunction(functionName)), ???)
+          val node = getNode(Left(UndefinedFunction(functionName)), throw new Exception)
           InternalGraph(node, Set(node))
       }
     }*/

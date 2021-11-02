@@ -298,7 +298,7 @@ case class FunctionCallExpr(identifier: String, arguments: List[BrboExpr], retur
     arguments.flatMap(argument => argument.getFunctionCalls) :+ this
   }
 
-  override def toZ3AST(solver: Z3Solver): AST = ???
+  override def toZ3AST(solver: Z3Solver): AST = throw new Exception
 
   override def getUses: Set[Identifier] = arguments.flatMap(argument => argument.getUses).toSet
 

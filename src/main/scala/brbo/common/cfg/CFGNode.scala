@@ -27,11 +27,11 @@ case class CFGNode(value: Either[Command, BrboExpr], function: BrboFunction, id:
 
   override def getSuccNumbers: IntSet = succNumbers
 
-  override def removeIncomingEdges(): Unit = ???
+  override def removeIncomingEdges(): Unit = throw new Exception
 
-  override def removeOutgoingEdges(): Unit = ???
+  override def removeOutgoingEdges(): Unit = throw new Exception
 
-  override def removeAllIncidentEdges(): Unit = ???
+  override def removeAllIncidentEdges(): Unit = throw new Exception
 
   override def toString: String = {
     value match {

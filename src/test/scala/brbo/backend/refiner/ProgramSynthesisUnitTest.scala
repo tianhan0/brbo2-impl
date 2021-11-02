@@ -49,8 +49,8 @@ object ProgramSynthesisUnitTest {
   private val condition = LessThan(i, n)
   private val loop = Loop(condition, Block(List(reset, use, increment)))
 
-  val mainFunction: BrboFunction = BrboFunction("main", VOID, List(n), Block(List(declaration, loop)), Set(1))
-  val program: BrboProgram = BrboProgram("Test program", mainFunction)
+  private val mainFunction: BrboFunction = BrboFunction("main", VOID, List(n), Block(List(declaration, loop)), Set(1))
+  private val program: BrboProgram = BrboProgram("Test program", mainFunction)
 
   val synthesizeTests: List[TestCase] = {
     val path = List(

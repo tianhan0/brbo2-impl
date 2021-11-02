@@ -107,7 +107,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
   private def parsePathString(path: List[String], brboProgram: BrboProgram): Path = {
     val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
 
-    val functionWhenMatchSucceed = BrboFunction("???", VOID, Nil, Block(List(Skip())), Set())
+    val functionWhenMatchSucceed = BrboFunction("!!!", VOID, Nil, Block(List(Skip())), Set())
     val nodeWhenMatchSucceed = CFGNode(Left(Skip()), functionWhenMatchSucceed, 0)
 
     /**

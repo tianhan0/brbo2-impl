@@ -41,23 +41,22 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
 case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier],
                         bodyWithoutInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
   extends PrettyPrintToC with ToInternalRepresentationOverrideToString {
+  val ghostVariableInitializations: List[Command] = groupIds.toList.sorted.flatMap({
+    groupId =>
+      val R = GhostVariableUtils.generateVariable(Some(groupId), Resource)
+      val RSharp = GhostVariableUtils.generateVariable(Some(groupId), Sharp)
+      val RCounter = GhostVariableUtils.generateVariable(Some(groupId), Counter)
+      val declaration1 = VariableDeclaration(R, Number(0))
+      val declaration2 = VariableDeclaration(RSharp, Number(0))
+      val declaration3 = VariableDeclaration(RCounter, Number(0))
+      List(declaration1, declaration2, declaration3)
+  })
+
   // Declare and initialize ghost variables in the function
-  val actualBody: Statement = {
-    val ghostVariableInitializations: List[Command] = groupIds.toList.sorted.flatMap({
-      groupId =>
-        val R = GhostVariableUtils.generateVariable(Some(groupId), Resource)
-        val RSharp = GhostVariableUtils.generateVariable(Some(groupId), Sharp)
-        val RCounter = GhostVariableUtils.generateVariable(Some(groupId), Counter)
-        val declaration1 = VariableDeclaration(R, Number(0))
-        val declaration2 = VariableDeclaration(RSharp, Number(0))
-        val declaration3 = VariableDeclaration(RCounter, Number(0))
-        List(declaration1, declaration2, declaration3)
-    })
-    bodyWithoutInitialization match {
-      case Block(asts, _) => Block(ghostVariableInitializations ::: asts)
-      case ITE(_, _, _, _) | Loop(_, _, _) => Block(ghostVariableInitializations :+ bodyWithoutInitialization)
-      case _ => throw new Exception
-    }
+  val actualBody: Statement = bodyWithoutInitialization match {
+    case Block(asts, _) => Block(ghostVariableInitializations ::: asts)
+    case ITE(_, _, _, _) | Loop(_, _, _) => Block(ghostVariableInitializations :+ bodyWithoutInitialization)
+    case _ => throw new Exception
   }
 
   override def prettyPrintToC(indent: Int): String = {
@@ -458,11 +457,11 @@ case class CallFunction(callee: BrboFunction, actualArguments: List[BrboExpr]) e
     s"Call function `${callee.identifier}`$argumentsString"
   }
 
-  override def getFunctionCalls: List[FunctionCallExpr] = ???
+  override def getFunctionCalls: List[FunctionCallExpr] = throw new Exception
 
-  override def prettyPrintToC(indent: Int): String = ???
+  override def prettyPrintToC(indent: Int): String = throw new Exception
 
-  override def getUses: Set[Identifier] = ???
+  override def getUses: Set[Identifier] = throw new Exception
 
-  override def getDefs: Set[Identifier] = ???
+  override def getDefs: Set[Identifier] = throw new Exception
 }

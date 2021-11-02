@@ -11,9 +11,12 @@ import brbo.common.{CommandLineArguments, MyLogger}
 import scala.annotation.tailrec
 import scala.collection.mutable
 
-class Driver(commandLineArguments: CommandLineArguments, originalProgram: BrboProgram) {
-  private val logger = MyLogger.createLogger(classOf[Driver], commandLineArguments.getDebugMode)
-  private val uAutomizerVerifier = new UAutomizerVerifier(commandLineArguments)
+class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
+  private val logger = MyLogger.createLogger(classOf[Driver], arguments.getDebugMode)
+  private val uAutomizerVerifier = new UAutomizerVerifier(arguments)
+  private val initialAbstraction: BrboProgram = {
+    ???
+  }
 
   def verifyFullyAmortize(boundAssertion: BrboExpr): VerifierResult = {
     ???
@@ -23,10 +26,8 @@ class Driver(commandLineArguments: CommandLineArguments, originalProgram: BrboPr
     ???
   }
 
-  def verifySelectivelyAmortize(boundAssertion: BrboExpr): VerifierRawResult = {
-    val refiner = new Refiner(originalProgram, commandLineArguments)
-
-    val initialAbstraction: BrboProgram = ???
+  def verifySelectivelyAmortize(boundAssertion: BrboExpr, reRefineWhenVerifierTimeout: Boolean = false): VerifierRawResult = {
+    val refiner = new Refiner(originalProgram, arguments)
     val result = verify(initialAbstraction, boundAssertion)
     val counterexamplePath: Option[Path] = result.rawResult match {
       case TRUE_RESULT =>
@@ -52,7 +53,7 @@ class Driver(commandLineArguments: CommandLineArguments, originalProgram: BrboPr
     val root = createNode(initialAbstraction, counterexamplePath, None, None, mutable.Map[TreeNode, NodeStatus]())
 
     @tailrec
-    def helper(node: TreeNode, refineWhenUnknown: Boolean): VerifierRawResult = {
+    def helper(node: TreeNode): VerifierRawResult = {
       val avoidRefinements: Set[Refinement] = node.knownChildren.foldLeft(Set[Refinement]())({
         (acc, child) =>
           child._2 match {
@@ -60,42 +61,52 @@ class Driver(commandLineArguments: CommandLineArguments, originalProgram: BrboPr
             case SHOULD_NOT_EXPLORE => acc + child._1.refinement.get
           }
       })
-      // Refine the current node (possibly once again)
+      // Refine the current node, possibly once again, based on the same counterexample
+      // When a node is visited for a second (or more) time, then it must be caused by backtracking, which
+      // implies that any of its (grand) child node has failed to verify
       refiner.refine(node.program, node.counterexample, boundAssertion, avoidRefinements) match {
         case (Some(refinedProgram), Some(refinement)) =>
           val result = verify(refinedProgram, boundAssertion)
-          val (counterexamplePath: Option[Path], exploreRefinedProgram: NodeStatus) = result.rawResult match {
-            case TRUE_RESULT => return TRUE_RESULT
-            case FALSE_RESULT => (result.counterexamplePath, EXPLORING)
-            case UNKNOWN_RESULT => (result.counterexamplePath, if (refineWhenUnknown) EXPLORING else SHOULD_NOT_EXPLORE)
+          val exploreRefinedProgram: NodeStatus = result.rawResult match {
+            case TRUE_RESULT | FALSE_RESULT => EXPLORING
+            case UNKNOWN_RESULT => if (reRefineWhenVerifierTimeout) EXPLORING else SHOULD_NOT_EXPLORE
           }
-          val newChildNode = createNode(refinedProgram, counterexamplePath, Some(refinement), Some(node), mutable.Map[TreeNode, NodeStatus]())
-          root.knownChildren.+=(newChildNode -> exploreRefinedProgram)
-          assert(root.knownChildren.contains(newChildNode)) // TODO: Remove this!
-
-          if (!refineWhenUnknown) {
-            logger.info(s"Re-refine the current node, since refineWhenUnknown is `$refineWhenUnknown`.")
-            helper(node, refineWhenUnknown) // Re-refine the current node
+          val newSiblingNode = createNode(refinedProgram, result.counterexamplePath,
+            Some(refinement), node.parent, mutable.Map[TreeNode, NodeStatus]())
+          node.parent match {
+            case Some(parent) =>
+              parent.knownChildren.+=(newSiblingNode -> exploreRefinedProgram)
+              assert(parent.knownChildren.contains(newSiblingNode)) // TODO: Remove this!
+            case None => // The current node is the root (which contains the initial abstraction)
           }
-          else {
-            logger.info(s"Explore the child node.")
-            helper(newChildNode, refineWhenUnknown) // Explore the child node
+          if (result.rawResult == TRUE_RESULT) {
+            logger.info(s"Successfully verified the sibling of the current node!")
+            TRUE_RESULT
+          } else {
+            if (reRefineWhenVerifierTimeout) {
+              logger.info(s"Re-refine the current node, because we decide to re-refine when the verifier times out.")
+              helper(node) // Re-refine the current node
+            }
+            else {
+              logger.info(s"Explore the sibling node.")
+              helper(newSiblingNode) // Explore the sibling node
+            }
           }
         case (None, None) =>
-          logger.info(s"Stop refining. Backtracking now.")
+          logger.info(s"Stop refining (because no refinement can be found). Backtracking now.")
           node.parent match {
             case Some(parent) =>
               parent.knownChildren.+=(node -> SHOULD_NOT_EXPLORE)
-              helper(parent, refineWhenUnknown) // Backtrack
+              helper(parent) // Backtrack
             case None =>
-              logger.info(s"There is no more parent node to backtrack to. Verification has failed!")
+              logger.info(s"There is no parent node to backtrack to. Verification has failed!")
               FALSE_RESULT
           }
         case _ => throw new Exception
       }
     }
 
-    helper(root, refineWhenUnknown = true)
+    helper(root)
   }
 
   private def verify(program: BrboProgram, boundAssertion: BrboExpr): VerifierResult = {

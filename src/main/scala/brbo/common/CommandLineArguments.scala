@@ -50,6 +50,9 @@ class CommandLineArguments {
     usage = "The absolute path of the directory containing all files of the model checker.")
   private var modelCheckerDirectory: String = UAutomizerVerifier.TOOL_DIRECTORY
 
+  @Option(name = "--relational-predicates", required = false, usage = "Search relational (i.e., Octagon) predicates when synthesizing new predicates.")
+  private var relationalPredicates: Boolean = false
+
   def getAmortizationMode: AmortizationMode = {
     amortizationMode.toLowerCase() match {
       case "no" => NO_AMORTIZE
@@ -80,6 +83,8 @@ class CommandLineArguments {
 
   def getModelCheckerDirectory: String = modelCheckerDirectory
 
+  def getRelationalPredicates: Boolean = relationalPredicates
+
   private var initialized = false
 
   def initialize(amortizationMode: AmortizationMode,
@@ -92,7 +97,8 @@ class CommandLineArguments {
                  lessPreciseBound: Boolean,
                  generateSynthetic: Int,
                  maxGroups: Int,
-                 modelCheckerDirectory: String): Unit = {
+                 modelCheckerDirectory: String,
+                 relationalPredicates: Boolean): Unit = {
     if (initialized) {
       logger.info(s"Already initialized")
       return
@@ -109,6 +115,7 @@ class CommandLineArguments {
     this.generateSynthetic = generateSynthetic
     this.maxGroups = maxGroups
     this.modelCheckerDirectory = modelCheckerDirectory
+    this.relationalPredicates = relationalPredicates
   }
 
   override def toString: String = {
@@ -123,7 +130,8 @@ class CommandLineArguments {
       s"Check less precise bounds? `$lessPreciseBound`",
       s"Generate `$generateSynthetic` synthetic programs",
       s"Max number of groups: `$maxGroups`",
-      s"Model check's directory is `$modelCheckerDirectory`"
+      s"Model check's directory is `$modelCheckerDirectory`",
+      s"Search relational predicates? `$relationalPredicates`",
     )
     strings.mkString("\n")
   }
@@ -170,7 +178,8 @@ object CommandLineArguments {
       lessPreciseBound = false,
       generateSynthetic = 0,
       maxGroups = DEFAULT_MAX_GROUPS,
-      modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY
+      modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
+      relationalPredicates = false,
     )
     arguments
   }
@@ -188,7 +197,8 @@ object CommandLineArguments {
       lessPreciseBound = false,
       generateSynthetic = 0,
       maxGroups = DEFAULT_MAX_GROUPS,
-      modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY
+      modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
+      relationalPredicates = false,
     )
     arguments
   }

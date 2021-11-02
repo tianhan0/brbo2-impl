@@ -22,7 +22,7 @@ class ProgramSynthesis(brboProgram: BrboProgram, relationalPredicates: Boolean, 
     val filterFalsePredicates = allPredicates.filter({
       p =>
         val solver = symbolicExecution.solver
-        val isFalse = solver.checkForallAssertionHoldPushPop(solver.mkIff(p.toAst(solver), solver.mkFalse()))
+        val isFalse = solver.checkAssertionForallPushPop(solver.mkIff(p.toAst(solver), solver.mkFalse()))
         if (isFalse) logger.traceOrError(s"Predicate `${p.expr.prettyPrintToCFG}` is false!")
         !isFalse
     })
@@ -150,7 +150,7 @@ class ProgramSynthesis(brboProgram: BrboProgram, relationalPredicates: Boolean, 
     val solver = symbolicExecution.solver
     val isFalse = {
       val query = solver.mkIff(whatToImplyFrom, solver.mkFalse())
-      solver.checkForallAssertionHoldPushPop(query)
+      solver.checkAssertionForallPushPop(query)
     }
     assert(!isFalse)
     // Return false (instead of all predicates) when whatToImplyFrom is false
@@ -158,7 +158,7 @@ class ProgramSynthesis(brboProgram: BrboProgram, relationalPredicates: Boolean, 
     val result = predicates.filter({
       predicate =>
         val imply = solver.mkImplies(whatToImplyFrom, predicate.toAst(solver))
-        solver.checkForallAssertionHoldPushPop(imply)
+        solver.checkAssertionForallPushPop(imply)
     })
     logger.traceOrError(s"`${result.size}` predicates are implied:\n`$result`")
     result
@@ -189,7 +189,7 @@ object ProgramSynthesis {
   def isDisjoint(predicates: Iterable[Predicate], solver: Z3Solver): Boolean = {
     MathUtils.choose2(predicates).forall({
       case (p1, p2) =>
-        val disjoint = solver.checkForallAssertionHoldPushPop(solver.mkIff(solver.mkAnd(p1.toAst(solver), p2.toAst(solver)), solver.mkFalse()))
+        val disjoint = solver.checkAssertionForallPushPop(solver.mkIff(solver.mkAnd(p1.toAst(solver), p2.toAst(solver)), solver.mkFalse()))
         logger.traceOrError(s"Decide the disjointness between `${p1.expr.prettyPrintToCFG}` and `${p2.expr.prettyPrintToCFG}`: `$disjoint`")
         disjoint
     })
@@ -197,7 +197,7 @@ object ProgramSynthesis {
 
   // predicates are created with solver
   def isCover(predicates: Iterable[Predicate], solver: Z3Solver): Boolean = {
-    solver.checkForallAssertionHoldPushPop(
+    solver.checkAssertionForallPushPop(
       solver.mkIff(solver.mkOr(predicates.toSeq.map(p => p.toAst(solver)): _*), solver.mkTrue()))
   }
 

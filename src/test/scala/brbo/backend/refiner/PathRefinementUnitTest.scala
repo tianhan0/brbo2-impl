@@ -21,7 +21,8 @@ class PathRefinementUnitTest extends AnyFlatSpec {
       lessPreciseBound = false,
       generateSynthetic = 0,
       maxGroups = 5,
-      modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY
+      modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
+      relationalPredicates = false,
     )
     arguments
   }

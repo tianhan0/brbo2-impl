@@ -9,10 +9,10 @@ import com.microsoft.z3.{AST, BoolExpr, Expr}
 
 import scala.annotation.tailrec
 
-class SymbolicExecution(parametersOfMainFunction: List[Identifier]) {
+class SymbolicExecution(inputVariables: List[Identifier]) {
   val solver: Z3Solver = new Z3Solver
 
-  val inputs: Valuation = parametersOfMainFunction.foldLeft(Map[String, (BrboType, Value)]())({
+  val inputs: Valuation = inputVariables.foldLeft(Map[String, (BrboType, Value)]())({
     (acc, parameter) =>
       val z3AST = Z3Solver.variableToZ3(parameter.identifier, parameter.typ, solver)
       acc + (parameter.identifier -> (parameter.typ, Value(z3AST)))

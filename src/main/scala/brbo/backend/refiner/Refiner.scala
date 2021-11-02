@@ -8,12 +8,12 @@ import brbo.common.ast.{BrboExpr, BrboProgram}
 import brbo.common.{CommandLineArguments, GhostVariableUtils, MyLogger}
 import com.microsoft.z3.{AST, Expr}
 
-class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArguments) {
-  private val logger = MyLogger.createLogger(classOf[Refiner], commandLineArguments.getDebugMode)
-  private val pathRefinement = new PathRefinement(commandLineArguments, originalProgram.mainFunction)
+class Refiner(originalProgram: BrboProgram, arguments: CommandLineArguments) {
+  private val logger = MyLogger.createLogger(classOf[Refiner], arguments.getDebugMode)
+  private val pathRefinement = new PathRefinement(arguments, originalProgram.mainFunction)
 
   def refine(refinedProgram: BrboProgram, counterexamplePath: Option[Path],
-             boundAssertion: BrboExpr, avoidRefinements: Set[Refinement]): (Option[BrboProgram], Option[Refinement]) = {
+             boundAssertion: BrboExpr, avoidRefinementsInCegar: Set[Refinement]): (Option[BrboProgram], Option[Refinement]) = {
     logger.info(s"Refine ${if (counterexamplePath.isEmpty) "without" else "with"} a counterexample path")
     counterexamplePath match {
       case Some(counterexamplePath2) =>
@@ -22,7 +22,7 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
         val boundAssertionAST = boundAssertion.toZ3AST(solver)
         val refinementsMap = pathRefinement.refine(counterexamplePath2).foldLeft(Map[Expr, (Refinement, Expr)]())({
           (acc, refinement) =>
-            if (avoidRefinements.contains(refinement)) acc
+            if (avoidRefinementsInCegar.contains(refinement)) acc
             else {
               val finalState = symbolicExecution.execute(refinement.refinedPath)
               // Get all group IDs and then all ghost variables
@@ -50,22 +50,22 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
         })
 
         logger.info(s"Search for a path refinement for path `$counterexamplePath2`.")
-        val programSynthesis = new ProgramSynthesis(refinedProgram, relationalPredicates = false, commandLineArguments)
+        val programSynthesis = new ProgramSynthesis(refinedProgram, arguments.getRelationalPredicates, arguments)
         // Keep finding new path transformations until either finding a program transformation that can realize it,
         // or there exists no program transformation that can realize any path transformation
-        var avoidRefinement2: Set[Refinement] = Set()
-        while (avoidRefinement2.size < refinementsMap.size) {
-          var nameDisjunctions = solver.mkTrue()
+        var avoidRefinementInSynthesis: Set[Refinement] = Set()
+        while (avoidRefinementInSynthesis.size < refinementsMap.size) {
+          var iffConjunction = solver.mkTrue()
           var disjunction = solver.mkTrue()
           refinementsMap.foreach({
             case (variableAST: AST, (refinement: Refinement, assertion: Expr)) =>
               // Add a new disjunct
-              if (!avoidRefinement2.contains(refinement)) {
+              if (!avoidRefinementInSynthesis.contains(refinement)) {
                 disjunction = solver.mkOr(disjunction, assertion)
-                nameDisjunctions = solver.mkAnd(nameDisjunctions, solver.mkIff(variableAST, assertion))
+                iffConjunction = solver.mkAnd(iffConjunction, solver.mkIff(variableAST, assertion))
               }
           })
-          val z3Result = solver.checkAssertionPushPop(solver.mkAnd(disjunction, nameDisjunctions))
+          val z3Result = solver.checkAssertionForallPushPop(solver.mkAnd(disjunction, iffConjunction))
           if (z3Result) {
             val model = solver.getModel
             val goodRefinements = refinementsMap.filter({ case (variableAST: AST, _) => model.eval(variableAST, false).toString == "true" })
@@ -77,7 +77,7 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
             catch {
               case _: SynthesisFailException =>
                 logger.info(s"Cannot synthesize a program from the current path refinement. Will try a new path refinement.")
-                avoidRefinement2 = avoidRefinement2 + refinement
+                avoidRefinementInSynthesis = avoidRefinementInSynthesis + refinement
             }
           } else {
             logger.info(s"Cannot find a path refinement, if avoiding the ones cannot be synthesized into programs.")
@@ -86,7 +86,9 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
         }
         logger.info(s"Tried all path refinements, but none of them can be synthesized into a program.")
         (None, None)
-      case None => ??? // Simply try a completely new program?
+      case None =>
+        // Or randomly try a completely new program?
+        throw new Exception("Don't know how to refine if there is no counterexample!")
     }
   }
 }

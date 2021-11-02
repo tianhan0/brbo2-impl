@@ -35,7 +35,7 @@ class Z3Solver {
     result
   }
 
-  def checkForallAssertionHoldPushPop(ast: AST, printUnsatCore: Boolean = false): Boolean = this.synchronized {
+  def checkAssertionForallPushPop(ast: AST, printUnsatCore: Boolean = false): Boolean = this.synchronized {
     push()
     mkAssert(mkNot(ast))
     val result = checkSAT(printUnsatCore)
