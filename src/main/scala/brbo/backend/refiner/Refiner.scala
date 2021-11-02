@@ -65,7 +65,7 @@ class Refiner(originalProgram: BrboProgram, commandLineArguments: CommandLineArg
                 nameDisjunctions = solver.mkAnd(nameDisjunctions, solver.mkIff(variableAST, assertion))
               }
           })
-          val z3Result = solver.checkAssertionPushPop(solver.mkAnd(disjunction, nameDisjunctions), printUnsatCore = false)
+          val z3Result = solver.checkAssertionPushPop(solver.mkAnd(disjunction, nameDisjunctions))
           if (z3Result) {
             val model = solver.getModel
             val goodRefinements = refinementsMap.filter({ case (variableAST: AST, _) => model.eval(variableAST, false).toString == "true" })

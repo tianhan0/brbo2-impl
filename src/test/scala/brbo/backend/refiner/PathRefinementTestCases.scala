@@ -10,7 +10,6 @@ import brbo.common.cfg.CFGNode
 object PathRefinementTestCases {
   val brboProgram: BrboProgram = BrboProgram("Test program", BrboFunction("Main", VOID, Nil, Block(List(Skip())), Set(0, 1, 2)))
 
-  private val R = GhostVariableUtils.generateVariable(None, Resource)
   private val update = Number(1)
   private val assignmentNode = CFGNode(Left(Assignment(Identifier("x", INT), Number(0))), brboProgram.mainFunction, CFGNode.DONT_CARE_ID)
   private val use1 = CFGNode(Left(Use(Some(1), update)), brboProgram.mainFunction, CFGNode.DONT_CARE_ID)

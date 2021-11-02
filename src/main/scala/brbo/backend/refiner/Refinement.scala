@@ -34,20 +34,24 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
             path(i).value match {
               case Left(command) =>
                 if (command == useInOriginalPath) {
-                  splitUses(i) match {
-                    case UseNode(_, groupId) =>
-                      assert(newGroupIds.contains(groupId))
-                      map.get(groupId) match {
-                        case Some(set) => map = map + (groupId -> (set + i))
-                        case None => map = map + (groupId -> Set(i))
+                  splitUses.get(i) match {
+                    case Some(replace: Replace) =>
+                      replace match {
+                        case UseNode(_, groupId) =>
+                          assert(newGroupIds.contains(groupId))
+                          map.get(groupId) match {
+                            case Some(set) => map = map + (groupId -> (set + i))
+                            case None => map = map + (groupId -> Set(i))
+                          }
+                        case _ =>
                       }
-                    case _ =>
+                    case None =>
                   }
                 } // Otherwise, this is a use instance that belongs to the same group but does not correspond to the given use command
               case Right(_) =>
             }
         })
-        assert(map.keySet == newGroupIds)
+        assert(map.keySet == newGroupIds, s"keySet: `${map.keySet}`. newGroupIds: `$newGroupIds`")
         map
       case None => Map[Int, Set[Int]]() // This use does not split
     }
@@ -62,9 +66,13 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
         path(i).value match {
           case Left(command) =>
             if (command == resetInOriginalPath) {
-              val newGroupId = splitUses(i) match {
-                case ResetNode(_, newGroupId) => newGroupId // Replaced
-                case _ => thisGroupId // Not replaced
+              val newGroupId: Int = splitUses.get(i) match {
+                case Some(replace: Replace) =>
+                  replace match {
+                    case ResetNode(_, newGroupId) => newGroupId // Replaced
+                    case _ => thisGroupId // Not replaced
+                  }
+                case None => thisGroupId // Not replaced
               }
               val (keepSet: Set[Int], removeSet: Set[Int]) = acc.get(thisGroupId) match {
                 case Some((keepSet, removeSet)) => (keepSet, removeSet)
