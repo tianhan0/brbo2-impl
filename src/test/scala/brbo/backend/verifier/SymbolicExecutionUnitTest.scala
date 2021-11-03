@@ -75,7 +75,7 @@ object SymbolicExecutionUnitTest {
       Path(List(
         CFGNode(Left(VariableDeclaration(use.resourceVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Left(VariableDeclaration(reset.sharpVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID),
-        CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID),
+        CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(-1))), mainFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Left(use), mainFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Left(reset), mainFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Left(use), mainFunction, CFGNode.DONT_CARE_ID),
@@ -104,7 +104,7 @@ object SymbolicExecutionUnitTest {
           |  (ndInt,List())""".stripMargin),
       TestCase("Test Uses and Resets", test02,
         """Valuations:
-          |  (C2,(INT,Value((+ 0 1))))
+          |  (C2,(INT,Value((+ (- 1) 1))))
           |  (R2,(INT,Value((+ 0 1))))
           |  (S2,(INT,Value((ite (< 0 (+ 0 1)) (+ 0 1) 0))))
           |  (a,(INT,Value(a)))

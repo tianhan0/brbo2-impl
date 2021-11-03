@@ -31,7 +31,7 @@ class ProgramSynthesis(brboProgram: BrboProgram, relationalPredicates: Boolean, 
   }
 
   def synthesize(refinement: Refinement): BrboProgram = {
-    logger.info(s"Synthesize a new main function from a refinement: `${refinement.toStringNoPath}`.")
+    logger.infoOrError(s"Synthesize a new main function from a refinement: `${refinement.toStringNoPath}`.")
     val useReplacements: Map[Command, Set[Command]] = useCommands.foldLeft(Map[Command, Set[Command]]())({
       (useMap, useCommand) =>
         val use = useCommand.asInstanceOf[Use]

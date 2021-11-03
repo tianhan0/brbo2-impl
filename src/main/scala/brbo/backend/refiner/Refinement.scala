@@ -1,7 +1,10 @@
 package brbo.backend.refiner
 
-import brbo.common.ast.{Reset, Use}
+import brbo.backend.refiner.Refinement.logger
+import brbo.common.{GhostVariableUtils, MyLogger}
+import brbo.common.ast.{BrboFunction, Reset, Use}
 import brbo.common.cfg.CFGNode
+import brbo.frontend.JavacUtils
 
 /**
  *
@@ -12,7 +15,13 @@ import brbo.common.cfg.CFGNode
  * @param groupIds     A map from old group IDs to new group IDs in the refined path.
  */
 case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeResets: Set[Int], groupIds: Map[Int, Set[Int]]) {
-  val refinedPath: List[CFGNode] = {
+  def noRefinement: Boolean = splitUses.isEmpty && groupIds.isEmpty
+
+  def refinedPath(whereToInitializeGhostVariables: BrboFunction): List[CFGNode] = {
+    val newGroupInitializations = groupIds.values.flatten.flatMap({
+      groupId => GhostVariableUtils.declareVariables(groupId).map(c => CFGNode(Left(c), whereToInitializeGhostVariables, CFGNode.DONT_CARE_ID))
+    }).toList.sortWith({ case (n1, n2) => n1.value.left.get.toIR() < n2.value.left.get.toIR() })
+    // logger.traceOrError(s"Path (length `${path.size}`):\n`$path`")
     val afterSplit: List[CFGNode] = splitUses.foldLeft(path)({
       case (acc, (i, replacement)) => acc.updated(i, replacement.newNode)
     })
@@ -20,7 +29,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
     afterSplit.indices.foreach({
       i => if (!removeResets.contains(i)) result = afterSplit(i) :: result
     })
-    result.reverse
+    newGroupInitializations ::: result.reverse
   }
 
   // A map from new group IDs to indices of use instances (of the given use command) in the path that
@@ -120,6 +129,10 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
   }
 
   def toStringNoPath: String = s"$splitsString\n$removedString"
+}
+
+object Refinement {
+  private val logger = MyLogger.createLogger(Refinement.getClass, debugMode = true)
 }
 
 abstract class Replace(val newNode: CFGNode, val newGroupId: Int)

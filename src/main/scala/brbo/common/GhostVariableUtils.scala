@@ -32,7 +32,7 @@ object GhostVariableUtils {
     val (resource: Identifier, sharp: Identifier, counter: Identifier) = GhostVariableUtils.generateVariables(Some(groupId))
     val declaration1 = VariableDeclaration(resource, Number(0))
     val declaration2 = VariableDeclaration(sharp, Number(0))
-    val declaration3 = VariableDeclaration(counter, Number(0))
+    val declaration3 = VariableDeclaration(counter, Number(-1))
     List(declaration1, declaration2, declaration3)
   }
 

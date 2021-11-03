@@ -23,22 +23,22 @@ class Z3Solver {
   private val context: Context = Z3Solver.createContext
   private val solver: Solver = Z3Solver.createSolverUnderContext(context)
 
-  def checkSAT(printUnsatCore: Boolean): Boolean = this.synchronized {
-    Z3Solver.solverCheck(solver, printUnsatCore)
+  private def checkSAT(debugMode: Boolean): Boolean = this.synchronized {
+    Z3Solver.solverCheck(solver, debugMode)
   }
 
-  def checkAssertionPushPop(ast: AST, printUnsatCore: Boolean = false): Boolean = this.synchronized {
+  def checkAssertionPushPop(ast: AST, debugMode: Boolean = false): Boolean = this.synchronized {
     push()
     mkAssert(ast)
-    val result = checkSAT(printUnsatCore)
+    val result = checkSAT(debugMode)
     pop()
     result
   }
 
-  def checkAssertionForallPushPop(ast: AST, printUnsatCore: Boolean = false): Boolean = this.synchronized {
+  def checkAssertionForallPushPop(ast: AST, debugMode: Boolean = false): Boolean = this.synchronized {
     push()
     mkAssert(mkNot(ast))
-    val result = checkSAT(printUnsatCore)
+    val result = checkSAT(debugMode)
     pop()
     !result
   }
@@ -300,18 +300,22 @@ object Z3Solver {
 
   private def createContext: Context = new Context(configuration)
 
-  private def solverCheck(solver: Solver, printUnsatCore: Boolean): Boolean = {
+  private def solverCheck(solver: Solver, debugMode: Boolean): Boolean = {
     // val start = System.nanoTime()
     val result = {
       solver.check() match {
         case Status.UNSATISFIABLE =>
-          if (printUnsatCore) {
+          if (debugMode) {
             logger.error("Unsat core is:")
-            solver.getUnsatCore.foreach(expression => println(expression))
+            solver.getUnsatCore.foreach(expression => logger.error(expression))
             // FYI: https://stackoverflow.com/questions/18132243/get-unsat-core-returns-empty-in-z3
           }
           false
-        case Status.SATISFIABLE => true
+        case Status.SATISFIABLE =>
+          if (debugMode) {
+            logger.error(s"SAT model is: `${solver.getModel.toString}`")
+          }
+          true
         case Status.UNKNOWN => throw Z3UnknownException(s"`${Status.UNKNOWN}` - Reason: `${solver.getReasonUnknown}`")
       }
     }

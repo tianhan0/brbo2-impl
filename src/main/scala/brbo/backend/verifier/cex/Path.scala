@@ -31,7 +31,7 @@ case class Path(pathNodes: List[CFGNode]) {
   groupsInPath.foreach({
     groupId =>
       val (resource: Identifier, sharp: Identifier, counter: Identifier) = GhostVariableUtils.generateVariables(Some(groupId))
-      // Every ghost variable that appears in the path must be initialized by an assignment
+      // Every ghost variable that appears in the path must be initialized by a variable declaration
       assert(existDeclaration(resource), s"Resource variable `${resource.identifier}` is used but not declared!")
       assert(existDeclaration(sharp), s"Sharp variable `${sharp.identifier}` is used but not declared!")
       assert(existDeclaration(counter), s"Counter variable `${counter.identifier}` is used but not declared!")
@@ -72,8 +72,7 @@ case class Path(pathNodes: List[CFGNode]) {
         node.value match {
           case Left(command) =>
             command match {
-              case VariableDeclaration(variable, _, _) =>
-                (variable.identifier == ghostVariable.identifier) && (variable.typ == ghostVariable.typ)
+              case VariableDeclaration(variable, _, _) => variable.sameAs(ghostVariable)
               case _ => false
             }
           case Right(_) => false

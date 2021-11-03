@@ -145,7 +145,7 @@ class CommandLineArguments {
 }
 
 object CommandLineArguments {
-  private val DEFAULT_MAX_GROUPS = 2
+  private val DEFAULT_MAX_GROUPS = 3
 
   private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)
 

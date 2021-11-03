@@ -323,3 +323,20 @@ case class ITEExpr(condition: BrboExpr, thenExpr: BrboExpr, elseExpr: BrboExpr) 
 
   override def getDefs: Set[Identifier] = condition.getDefs ++ thenExpr.getDefs ++ elseExpr.getDefs
 }
+
+case class Imply(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
+  assert(left.typ == BOOL)
+  assert(right.typ == BOOL)
+
+  override def prettyPrintToC(indent: Int): String = s"(!${left.prettyPrintToC()} || ${right.prettyPrintToC()})"
+
+  override def prettyPrintToCFG: String = s"(${left.prettyPrintToC()} => ${right.prettyPrintToC()})"
+
+  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
+
+  override def toZ3AST(solver: Z3Solver): AST = solver.mkImplies(left.toZ3AST(solver), right.toZ3AST(solver))
+
+  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
+
+  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
+}

@@ -56,7 +56,7 @@ object ProgramSynthesisUnitTest {
     val path = List(
       CFGNode(Left(VariableDeclaration(reset.resourceVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID), // 0
       CFGNode(Left(VariableDeclaration(reset.sharpVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID), // 1
-      CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID), // 2
+      CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(-1))), mainFunction, CFGNode.DONT_CARE_ID), // 2
       CFGNode(Left(declaration), mainFunction, CFGNode.DONT_CARE_ID), // 3
       CFGNode(Right(condition), mainFunction, CFGNode.DONT_CARE_ID), // 4
       CFGNode(Left(reset), mainFunction, CFGNode.DONT_CARE_ID), // 5
@@ -80,8 +80,8 @@ object ProgramSynthesisUnitTest {
       TestCase("Split Uses", Refinement(path, splitUsesTest01, Set(), groupIdsTest01),
         """void main(int n)
           |{
-          |  int C2 = 0;
-          |  int C3 = 0;
+          |  int C2 = -1;
+          |  int C3 = -1;
           |  int R2 = 0;
           |  int R3 = 0;
           |  int S2 = 0;
@@ -103,7 +103,7 @@ object ProgramSynthesisUnitTest {
       TestCase("Remove Resets", Refinement(path, Map(), Set(5), Map()),
         """void main(int n)
           |{
-          |  int C1 = 0;
+          |  int C1 = -1;
           |  int R1 = 0;
           |  int S1 = 0;
           |  int i = 0;
@@ -121,8 +121,8 @@ object ProgramSynthesisUnitTest {
       TestCase("Split Uses and Remove Resets", Refinement(path, splitUsesTest01, Set(5), groupIdsTest01),
         """void main(int n)
           |{
-          |  int C2 = 0;
-          |  int C3 = 0;
+          |  int C2 = -1;
+          |  int C3 = -1;
           |  int R2 = 0;
           |  int R3 = 0;
           |  int S2 = 0;

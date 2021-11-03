@@ -11,6 +11,7 @@ class PathRefinement(arguments: CommandLineArguments, targetFunction: BrboFuncti
 
   // Perform command transformations to commands in the given path
   def refine(path: Path): List[Refinement] = {
+    logger.infoOrError(s"Refining path: `$path`")
     val useInsertedPaths: Set[Refinement] = replaceUseOnly(path)
     useInsertedPaths.flatMap({
       useInsertedPath: Refinement => removeResetOnly(useInsertedPath)
@@ -46,7 +47,9 @@ class PathRefinement(arguments: CommandLineArguments, targetFunction: BrboFuncti
     val numberOfResets = refineUseOnly.path.count({ node => node.isReset(None, Some(targetFunction)) })
 
     Range.inclusive(0, numberOfResets).toSet.flatMap({
-      numberToKeep => helper(numberToKeep, Refinement(Nil, refineUseOnly.splitUses, Set(), refineUseOnly.groupIds), currentIndex = 0, refineUseOnly.path)
+      numberToKeep =>
+        helper(numberToKeep,
+          Refinement(refineUseOnly.path, refineUseOnly.splitUses, Set(), refineUseOnly.groupIds), currentIndex = 0, refineUseOnly.path)
     })
   }
 
@@ -84,16 +87,16 @@ class PathRefinement(arguments: CommandLineArguments, targetFunction: BrboFuncti
       // Not consider the first segment, because BrboFunction and Path both guarantees that, the accumulation in the first segment
       // of any group is 0, because any concrete path begins with initializatin ghost variables
       // Hence, it does not really matter we "assign" the first segment to which new group
-      val segmentCount = segments.size - 1
+      val segmentSizeMinusOne = segments.size - 1
       var result: Set[Refinement] = helper(existingGroups, currentRefine, toSplitGroupIds.tail) // Not split the group
       val minGroupId = existingGroups.max + 1
       val maxGroupId = {
-        val a = existingGroups.max + segmentCount
+        val a = existingGroups.max + segmentSizeMinusOne
         val b = maxGroups - existingGroups.size + existingGroups.max
         if (a <= b) a else b
       }
-      logger.traceOrError(s"Number of segments minus 1: `$segmentCount`, minGroupId: `$minGroupId`, maxGroupId: `$maxGroupId` (maxGroups: `$maxGroups`)")
-      val possibilities: Set[List[Int]] = MathUtils.generateUniqueSequences(segmentCount, minGroupId, maxGroupId)
+      logger.traceOrError(s"Number of segments minus 1: `$segmentSizeMinusOne`, minGroupId: `$minGroupId`, maxGroupId: `$maxGroupId` (maxGroups: `$maxGroups`)")
+      val possibilities: Set[List[Int]] = MathUtils.generateUniqueSequences(segmentSizeMinusOne, minGroupId, maxGroupId)
       result = result ++ possibilities.flatMap({
         possibility =>
           val oneNewGroup = possibility.min == possibility.max
@@ -104,22 +107,22 @@ class PathRefinement(arguments: CommandLineArguments, targetFunction: BrboFuncti
           }
           else {
             logger.traceOrError(s"Possibility: `$possibility`")
-            assert(possibility.size == segmentCount)
+            assert(possibility.size == segmentSizeMinusOne)
             val splitUses = segments.tail.zip(possibility).foldLeft(currentRefine.splitUses)({
               case (acc, (segment, newGroupId)) =>
                 pathIndices.slice(segment.begin, segment.end + 1).foldLeft(acc)({
-                  case (acc2, index) =>
+                  case (acc2, pathIndex) =>
                     // Every node in the segment now "belongs to" the new group
-                    val node = path.pathNodes(index)
-                    assert(!acc2.contains(index))
-                    // Do not transform commands in functions other than the main function
+                    val node = path.pathNodes(pathIndex)
+                    assert(!acc2.contains(pathIndex))
+                    // Do not transform commands in functions other than the target function
                     if (node.isReset(Some(toSplitGroupId), Some(targetFunction))) {
                       val newReset = CFGNode(Left(node.value.left.get.asInstanceOf[Reset].replace(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
-                      acc2 + (index -> ResetNode(newReset, newGroupId))
+                      acc2 + (pathIndex -> ResetNode(newReset, newGroupId))
                     }
                     else if (node.isUse(Some(toSplitGroupId), Some(targetFunction))) {
                       val newUse = CFGNode(Left(node.value.left.get.asInstanceOf[Use].replace(newGroupId)), targetFunction, CFGNode.DONT_CARE_ID)
-                      acc2 + (index -> UseNode(newUse, newGroupId))
+                      acc2 + (pathIndex -> UseNode(newUse, newGroupId))
                     }
                     else acc2
                 })
