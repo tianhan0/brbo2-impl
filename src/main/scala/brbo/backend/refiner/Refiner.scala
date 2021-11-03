@@ -20,7 +20,7 @@ class Refiner(arguments: CommandLineArguments) {
         val symbolicExecution = new SymbolicExecution(programToRefine.mainFunction.parameters)
         val solver = symbolicExecution.solver
         logger.infoOrError(s"Generating all possible path refinements")
-        val refinementsMap = pathRefinement.refine(counterexamplePath2, programToRefine.mainFunction).foldLeft(Map[Expr, (Refinement, Expr)]())({
+        val refinementsMap = pathRefinement.refine(counterexamplePath2, programToRefine.mainFunction.identifier).foldLeft(Map[Expr, (Refinement, Expr)]())({
           (acc, refinement) =>
             // It is expected that, the refined path is empty when there is no refinement (over the original path)
             if (refinement.noRefinement || avoidRefinementsInCegar.contains(refinement)) acc
@@ -49,7 +49,7 @@ class Refiner(arguments: CommandLineArguments) {
         })
 
         logger.infoOrError(s"Search for a successful refinement for path `$counterexamplePath2`.")
-        val programSynthesis = new ProgramSynthesis(programToRefine, arguments.getRelationalPredicates, arguments)
+        val programSynthesis = new Synthesizer(programToRefine, arguments.getRelationalPredicates, arguments)
         // Keep finding new path transformations until either finding a program transformation that can realize it,
         // or there exists no program transformation that can realize any path transformation
         var avoidRefinementInSynthesis: Set[Refinement] = Set()

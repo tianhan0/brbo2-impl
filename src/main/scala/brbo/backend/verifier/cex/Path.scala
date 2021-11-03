@@ -43,15 +43,16 @@ case class Path(pathNodes: List[CFGNode]) {
   }
 
   // Get segments of the given group in the given function
-  def getSegments(groupId: Int, function: BrboFunction): List[Segment] = {
-    val nodes = pathNodes.filter(node => node.function == function)
-    if (nodes.isEmpty) return Nil
+  def getSegments(groupId: Int, functionName: String): List[Segment] = {
+    val nodes = pathNodes.filter(node => node.functionIdentifier == functionName)
+    if (nodes.isEmpty)
+      return Nil
     var results: List[Segment] = Nil
     var begin = 0
     var end = 0
     var i = 1
     while (i < nodes.size) {
-      if (nodes(i).isReset(Some(groupId), Some(function))) {
+      if (nodes(i).isReset(Some(groupId), Some(functionName))) {
         results = Segment(this, begin, end) :: results
         begin = i
         end = i
@@ -97,9 +98,10 @@ object Path {
             case Left(command) =>
               command match {
                 case CallFunction(callee, _) =>
-                  if (callee == assertFunction) {
+                  if (callee.identifier == assertFunction.identifier) {
                     i = i + 1
                     val nextNode = nodes(i)
+                    logger.trace(s"nextNode: `$nextNode`")
                     nextNode.value match {
                       case Left(_) => throw new Exception
                       case Right(condition) =>
@@ -127,8 +129,8 @@ object Path {
               i = i + 1
           }
         }
-        logger.error(s"Old path: $nodes")
-        logger.error(s"New path: ${newNodes.reverse}")
+        logger.trace(s"Old path: $nodes")
+        logger.trace(s"New path: ${newNodes.reverse}")
         Some(Path(newNodes.reverse))
       case None => path
     }

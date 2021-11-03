@@ -6,8 +6,8 @@ import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import com.microsoft.z3.AST
 
-class ProgramSynthesis(programToSynthesizeFrom: BrboProgram, relationalPredicates: Boolean, commandLineArguments: CommandLineArguments) {
-  private val logger = MyLogger.createLogger(classOf[ProgramSynthesis], commandLineArguments.getDebugMode)
+class Synthesizer(programToSynthesizeFrom: BrboProgram, relationalPredicates: Boolean, argument: CommandLineArguments) {
+  private val logger = MyLogger.createLogger(classOf[Synthesizer], argument.getDebugMode)
   private val allCommands = BrboAstUtils.collectCommands(programToSynthesizeFrom.mainFunction.actualBody)
   private val useCommands = allCommands.filter(command => command.isInstanceOf[Use])
   private val resetCommands = allCommands.filter(command => command.isInstanceOf[Reset])
@@ -15,7 +15,8 @@ class ProgramSynthesis(programToSynthesizeFrom: BrboProgram, relationalPredicate
   private val symbolicExecution = new SymbolicExecution(programToSynthesizeFrom.mainFunction.parameters)
   private val predicates: List[Predicate] = {
     val allNonGhostVariables = {
-      val allVariables = programToSynthesizeFrom.mainFunction.parameters.toSet ++ BrboAstUtils.collectUseDefVariables(programToSynthesizeFrom.mainFunction.bodyWithoutInitialization)
+      val allVariables = programToSynthesizeFrom.mainFunction.parameters.toSet ++
+        BrboAstUtils.collectUseDefVariables(programToSynthesizeFrom.mainFunction.bodyNoInitialization)
       allVariables.filter(v => !GhostVariableUtils.isGhostVariable(v.identifier))
     }
     val allPredicates = Predicate.generatePredicates(allNonGhostVariables, relationalPredicates)
@@ -46,6 +47,7 @@ class ProgramSynthesis(programToSynthesizeFrom: BrboProgram, relationalPredicate
             Set(use)
           }
         }
+        logger.traceOrError(s"Split-Use: Old use `${use.prettyPrintToCFG}` is replaced by `$newUses`")
         useMap + (use -> newUses)
     })
 
@@ -54,20 +56,17 @@ class ProgramSynthesis(programToSynthesizeFrom: BrboProgram, relationalPredicate
         val reset = resetCommand.asInstanceOf[Reset]
         logger.traceOrError(s"Synthesize-Reset: Synthesize new reset(s) from old reset: `${reset.prettyPrintToCFG}`")
         val indexMap = refinement.getResetInstances(reset)
-        val newResets: Set[Command] = {
-          val result = indexMap.foldLeft(Set[Command]())({
-            case (acc, (newGroupId, (keepSet, removeSet))) =>
-              logger.traceOrError(s"Synthesize-Reset: New group `$newGroupId` (which replaces old group: `${reset.groupId})")
-              val newReset = computeNewReset(refinement.path, newGroupId, keepSet, removeSet, reset.condition)
-              acc + newReset
-          })
-          logger.traceOrError(s"New resets: `$result`")
-          result
-        }
+        val newResets: Set[Command] = indexMap.foldLeft(Set[Command]())({
+          case (acc, (newGroupId, (keepSet, removeSet))) =>
+            logger.traceOrError(s"Synthesize-Reset: New group `$newGroupId` (which replaces old group: `${reset.groupId})")
+            val newReset = computeNewReset(refinement.path, newGroupId, keepSet, removeSet, reset.condition)
+            acc + newReset
+        })
+        logger.traceOrError(s"Synthesize-Reset: Old reset `${reset.prettyPrintToCFG}` is replaced by `$newResets`")
         acc + (reset -> newResets)
     })
 
-    val newMainBody = (useReplacements ++ resetReplacements).foldLeft(programToSynthesizeFrom.mainFunction.bodyWithoutInitialization: BrboAst)({
+    val newMainBody = (useReplacements ++ resetReplacements).foldLeft(programToSynthesizeFrom.mainFunction.bodyNoInitialization: BrboAst)({
       case (acc, (command, newCommands)) =>
         val commandsInList = newCommands.toList.sortWith({ case (c1, c2) => c1.prettyPrintToC() < c2.prettyPrintToC() })
         BrboAstUtils.replace(acc, command, Block(commandsInList))
@@ -160,9 +159,9 @@ class ProgramSynthesis(programToSynthesizeFrom: BrboProgram, relationalPredicate
   def computeCandidatePredicates(predicates: Iterable[Iterable[Predicate]], notConflictWith: BrboExpr): List[List[Predicate]] = {
     val candidatePredicates = MathUtils.crossJoin(predicates).filter({
       predicates =>
-        val isPartitionResult = ProgramSynthesis.isDisjoint(predicates, symbolicExecution.solver)
-        val isCoverResult = ProgramSynthesis.isCover(predicates, symbolicExecution.solver)
-        val notConflictWithResult = ProgramSynthesis.notConflictWith(predicates, notConflictWith, symbolicExecution.solver)
+        val isPartitionResult = Synthesizer.isDisjoint(predicates, symbolicExecution.solver)
+        val isCoverResult = Synthesizer.isCover(predicates, symbolicExecution.solver)
+        val notConflictWithResult = Synthesizer.notConflictWith(predicates, notConflictWith, symbolicExecution.solver)
         // logger.traceOrError(s"Predicates `$predicates` ${if (isPartitionResult) "are" else "are not"} a partition, and ${if (isCoverResult) "are" else "are not"} a cover.")
         isPartitionResult && isCoverResult && notConflictWithResult
     })
@@ -175,8 +174,8 @@ class ProgramSynthesis(programToSynthesizeFrom: BrboProgram, relationalPredicate
   }
 }
 
-object ProgramSynthesis {
-  private val logger = MyLogger.createLogger(ProgramSynthesis.getClass, debugMode = false)
+object Synthesizer {
+  private val logger = MyLogger.createLogger(Synthesizer.getClass, debugMode = false)
 
   // Any two predicate should be disjoint with each other
   def isDisjoint(predicates: Iterable[Predicate], solver: Z3Solver): Boolean = {

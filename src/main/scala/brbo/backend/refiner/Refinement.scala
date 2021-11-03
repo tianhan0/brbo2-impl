@@ -19,7 +19,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
 
   def refinedPath(whereToInitializeGhostVariables: BrboFunction): List[CFGNode] = {
     val newGroupInitializations = groupIds.values.flatten.flatMap({
-      groupId => GhostVariableUtils.declareVariables(groupId).map(c => CFGNode(Left(c), whereToInitializeGhostVariables, CFGNode.DONT_CARE_ID))
+      groupId => GhostVariableUtils.declareVariables(groupId).map(c => CFGNode(Left(c), Some(whereToInitializeGhostVariables), CFGNode.DONT_CARE_ID))
     }).toList.sortWith({ case (n1, n2) => n1.value.left.get.toIR() < n2.value.left.get.toIR() })
     // logger.traceOrError(s"Path (length `${path.size}`):\n`$path`")
     val afterSplit: List[CFGNode] = splitUses.foldLeft(path)({

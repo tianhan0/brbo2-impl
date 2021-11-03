@@ -79,27 +79,27 @@ object RefinerUnitTest {
 
   val testCases1: List[TestCase] = {
     val path = Path(
-      mainFunction1.ghostVariableInitializations.map(c => CFGNode(Left(c), mainFunction1, CFGNode.DONT_CARE_ID)) :::
+      mainFunction1.ghostVariableInitializations.map(c => CFGNode(Left(c), Some(mainFunction1), CFGNode.DONT_CARE_ID)) :::
         List(
           // This path does not correspond to a path in the main function above due to the first three nodes
           // that essentially encode the pre-condition, but this is fine, because we are not parsing the path
           // (against the program). Instead, we only need to symbolically execute the path and find the suitable
           // path refinement.
-          CFGNode(Right(GreaterThanOrEqualTo(n, Number(0))), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Right(GreaterThanOrEqualTo(a, Number(0))), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Right(GreaterThanOrEqualTo(b, Number(0))), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(declaration1), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Right(loopCondition1), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Right(iteCondition), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(assignWithA), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(reset1), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(use1), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(increment), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Right(loopCondition1), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Right(Negative(iteCondition)), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(assignWithB), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(reset1), mainFunction1, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(use1), mainFunction1, CFGNode.DONT_CARE_ID),
+          CFGNode(Right(GreaterThanOrEqualTo(n, Number(0))), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Right(GreaterThanOrEqualTo(a, Number(0))), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Right(GreaterThanOrEqualTo(b, Number(0))), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(declaration1), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Right(loopCondition1), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Right(iteCondition), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(assignWithA), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(reset1), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(use1), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(increment), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Right(loopCondition1), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Right(Negative(iteCondition)), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(assignWithB), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(reset1), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(use1), Some(mainFunction1), CFGNode.DONT_CARE_ID),
         ))
 
     List(
@@ -164,18 +164,18 @@ object RefinerUnitTest {
 
   val testCases2: List[TestCase] = {
     val path = Path(
-      mainFunction2.ghostVariableInitializations.map(c => CFGNode(Left(c), mainFunction2, CFGNode.DONT_CARE_ID)) :::
+      mainFunction2.ghostVariableInitializations.map(c => CFGNode(Left(c), Some(mainFunction2), CFGNode.DONT_CARE_ID)) :::
         List(
-          CFGNode(Right(GreaterThanOrEqualTo(n, Number(0))), mainFunction2, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(declaration2), mainFunction2, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(reset2), mainFunction2, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(use2), mainFunction2, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(updateK1), mainFunction2, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(reset3), mainFunction2, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(use3), mainFunction2, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(updateK2), mainFunction2, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(reset4), mainFunction2, CFGNode.DONT_CARE_ID),
-          CFGNode(Left(use4), mainFunction2, CFGNode.DONT_CARE_ID),
+          CFGNode(Right(GreaterThanOrEqualTo(n, Number(0))), Some(mainFunction2), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(declaration2), Some(mainFunction2), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(reset2), Some(mainFunction2), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(use2), Some(mainFunction2), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(updateK1), Some(mainFunction2), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(reset3), Some(mainFunction2), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(use3), Some(mainFunction2), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(updateK2), Some(mainFunction2), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(reset4), Some(mainFunction2), CFGNode.DONT_CARE_ID),
+          CFGNode(Left(use4), Some(mainFunction2), CFGNode.DONT_CARE_ID),
         ))
     List(
       TestCase("Refine Test 02", path,

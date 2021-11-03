@@ -62,7 +62,7 @@ class SymbolicExecution(inputVariables: List[Identifier]) {
               value match {
                 case Some(value2) =>
                   val (returnValue, newReturnValues) = evaluateExpression(valuation, state.returnValues, value2)
-                  val currentFunctionName = node.function.identifier
+                  val currentFunctionName = node.functionIdentifier
                   val newList: List[Value] =
                     state.returnValues.get(currentFunctionName) match {
                       case Some(list) => Value(returnValue.get) :: list

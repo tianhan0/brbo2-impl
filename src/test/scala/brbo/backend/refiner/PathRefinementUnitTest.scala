@@ -31,7 +31,7 @@ class PathRefinementUnitTest extends AnyFlatSpec {
     PathRefinementUnitTest.testUses.foreach({
       testCase =>
         val pathRefinement = new PathRefinement(arguments)
-        val paths = pathRefinement.replaceUseOnly(testCase.input.asInstanceOf[Path], PathRefinementTestCases.brboProgram.mainFunction)
+        val paths = pathRefinement.replaceUseOnly(testCase.input.asInstanceOf[Path], PathRefinementTestCases.brboProgram.mainFunction.identifier)
         (StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
     })
   }
@@ -40,7 +40,7 @@ class PathRefinementUnitTest extends AnyFlatSpec {
     PathRefinementUnitTest.testResets.foreach({
       testCase =>
         val pathRefinement = new PathRefinement(arguments)
-        val paths = pathRefinement.removeResetOnly(testCase.input.asInstanceOf[Refinement], PathRefinementTestCases.brboProgram.mainFunction)
+        val paths = pathRefinement.removeResetOnly(testCase.input.asInstanceOf[Refinement], PathRefinementTestCases.brboProgram.mainFunction.identifier)
         (StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
     })
   }

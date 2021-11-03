@@ -47,7 +47,7 @@ object DriverUnitTest {
 
     List(
       TestCase("Driver Test 1", ("Test", program1, bound1), ""),
-      TestCase("Driver Test 2", ("Test", program2, bound2), ""),
+      // TestCase("Driver Test 2", ("Test", program2, bound2), ""),
     )
   }
 }

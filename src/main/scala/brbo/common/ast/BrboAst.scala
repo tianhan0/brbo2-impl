@@ -31,7 +31,7 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
  * @param identifier                Function name
  * @param returnType                Return type
  * @param parameters                Function parameters
- * @param bodyWithoutInitialization Function body without initializing ghost variables
+ * @param bodyNoInitialization Function body without initializing ghost variables
  * @param groupIds                  IDs of amortizations groups that *may* be used in this function,
  *                                  so that their ghost variables will be initialized.
  *                                  This set is empty iff. no amortization (i.e., selectively, worst-case, or fully-amortized reasoning)
@@ -39,16 +39,16 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
  * @param uuid                      Unique ID
  */
 case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier],
-                        bodyWithoutInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
+                        bodyNoInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
   extends PrettyPrintToC with ToInternalRepresentationOverrideToString {
   val ghostVariableInitializations: List[Command] = groupIds.flatMap({
     groupId => GhostVariableUtils.declareVariables(groupId)
   }).toList.sortWith({ case (c1, c2) => c1.toIR() < c2.toIR() })
 
   // Declare and initialize ghost variables in the function
-  val actualBody: Statement = bodyWithoutInitialization match {
+  val actualBody: Statement = bodyNoInitialization match {
     case Block(asts, _) => Block(ghostVariableInitializations ::: asts)
-    case ITE(_, _, _, _) | Loop(_, _, _) => Block(ghostVariableInitializations :+ bodyWithoutInitialization)
+    case ITE(_, _, _, _) | Loop(_, _, _) => Block(ghostVariableInitializations :+ bodyNoInitialization)
     case _ => throw new Exception
   }
 
@@ -66,7 +66,7 @@ case class BrboFunction(identifier: String, returnType: BrboType, parameters: Li
 
   def replaceBodyWithoutInitialization(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody, groupIds)
 
-  def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, bodyWithoutInitialization, newGroupIds)
+  def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, bodyNoInitialization, newGroupIds)
 }
 
 abstract class BrboAst extends PrettyPrintToC with ToInternalRepresentationOverrideToString

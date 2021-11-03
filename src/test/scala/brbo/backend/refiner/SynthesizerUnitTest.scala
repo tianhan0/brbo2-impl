@@ -1,17 +1,17 @@
 package brbo.backend.refiner
 
 import brbo.TestCase
-import brbo.backend.refiner.ProgramSynthesisUnitTest.{coverTests, disjointTests, synthesizeTests}
+import brbo.backend.refiner.SynthesizerUnitTest.{coverTests, disjointTests, synthesizeTests}
 import brbo.common.BrboType.{INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.{BrboType, CommandLineArguments, StringCompare, Z3Solver}
 import org.scalatest.flatspec.AnyFlatSpec
 
-class ProgramSynthesisUnitTest extends AnyFlatSpec {
+class SynthesizerUnitTest extends AnyFlatSpec {
   "Synthesizing programs" should "succeed" in {
     // val programSynthesis = new ProgramSynthesis(ProgramSynthesisUnitTest.program, CommandLineArguments.DEBUG_MODE_ARGUMENTS)
-    val programSynthesis = new ProgramSynthesis(ProgramSynthesisUnitTest.program, relationalPredicates = false, CommandLineArguments.DEFAULT_ARGUMENTS)
+    val programSynthesis = new Synthesizer(SynthesizerUnitTest.program, relationalPredicates = false, CommandLineArguments.DEFAULT_ARGUMENTS)
     synthesizeTests.foreach({
       testCase =>
         val newFunction = programSynthesis.synthesize(testCase.input.asInstanceOf[Refinement]).mainFunction
@@ -24,7 +24,7 @@ class ProgramSynthesisUnitTest extends AnyFlatSpec {
       testCase =>
         val predicates = testCase.input.asInstanceOf[Iterable[Predicate]]
         val solver = new Z3Solver
-        assert(StringCompare.ignoreWhitespaces(ProgramSynthesis.isDisjoint(predicates, solver).toString, testCase.expectedOutput, s"Test case `${testCase.name}` failed!"))
+        assert(StringCompare.ignoreWhitespaces(Synthesizer.isDisjoint(predicates, solver).toString, testCase.expectedOutput, s"Test case `${testCase.name}` failed!"))
     })
   }
 
@@ -33,12 +33,12 @@ class ProgramSynthesisUnitTest extends AnyFlatSpec {
       testCase =>
         val predicates = testCase.input.asInstanceOf[Iterable[Predicate]]
         val solver = new Z3Solver
-        assert(StringCompare.ignoreWhitespaces(ProgramSynthesis.isCover(predicates, solver).toString, testCase.expectedOutput, s"Test case `${testCase.name}` failed!"))
+        assert(StringCompare.ignoreWhitespaces(Synthesizer.isCover(predicates, solver).toString, testCase.expectedOutput, s"Test case `${testCase.name}` failed!"))
     })
   }
 }
 
-object ProgramSynthesisUnitTest {
+object SynthesizerUnitTest {
   private val i: Identifier = Identifier("i", INT)
   private val n: Identifier = Identifier("n", INT)
 
@@ -54,24 +54,24 @@ object ProgramSynthesisUnitTest {
 
   val synthesizeTests: List[TestCase] = {
     val path = List(
-      CFGNode(Left(VariableDeclaration(reset.resourceVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID), // 0
-      CFGNode(Left(VariableDeclaration(reset.sharpVariable, Number(0))), mainFunction, CFGNode.DONT_CARE_ID), // 1
-      CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(-1))), mainFunction, CFGNode.DONT_CARE_ID), // 2
-      CFGNode(Left(declaration), mainFunction, CFGNode.DONT_CARE_ID), // 3
-      CFGNode(Right(condition), mainFunction, CFGNode.DONT_CARE_ID), // 4
-      CFGNode(Left(reset), mainFunction, CFGNode.DONT_CARE_ID), // 5
-      CFGNode(Left(use), mainFunction, CFGNode.DONT_CARE_ID), // 6
-      CFGNode(Left(increment), mainFunction, CFGNode.DONT_CARE_ID), // 7
-      CFGNode(Right(condition), mainFunction, CFGNode.DONT_CARE_ID), // 8
-      CFGNode(Left(reset), mainFunction, CFGNode.DONT_CARE_ID), // 9
-      CFGNode(Left(use), mainFunction, CFGNode.DONT_CARE_ID), // 10
+      CFGNode(Left(VariableDeclaration(reset.resourceVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 0
+      CFGNode(Left(VariableDeclaration(reset.sharpVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 1
+      CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(-1))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 2
+      CFGNode(Left(declaration), Some(mainFunction), CFGNode.DONT_CARE_ID), // 3
+      CFGNode(Right(condition), Some(mainFunction), CFGNode.DONT_CARE_ID), // 4
+      CFGNode(Left(reset), Some(mainFunction), CFGNode.DONT_CARE_ID), // 5
+      CFGNode(Left(use), Some(mainFunction), CFGNode.DONT_CARE_ID), // 6
+      CFGNode(Left(increment), Some(mainFunction), CFGNode.DONT_CARE_ID), // 7
+      CFGNode(Right(condition), Some(mainFunction), CFGNode.DONT_CARE_ID), // 8
+      CFGNode(Left(reset), Some(mainFunction), CFGNode.DONT_CARE_ID), // 9
+      CFGNode(Left(use), Some(mainFunction), CFGNode.DONT_CARE_ID), // 10
     )
 
     val splitUsesTest01 = {
-      val reset2 = CFGNode(Left(Reset(2)), mainFunction, CFGNode.DONT_CARE_ID)
-      val use2 = CFGNode(Left(Use(Some(2), use.update, use.condition)), mainFunction, CFGNode.DONT_CARE_ID)
-      val reset3 = CFGNode(Left(Reset(3)), mainFunction, CFGNode.DONT_CARE_ID)
-      val use3 = CFGNode(Left(Use(Some(3), use.update, use.condition)), mainFunction, CFGNode.DONT_CARE_ID)
+      val reset2 = CFGNode(Left(Reset(2)), Some(mainFunction), CFGNode.DONT_CARE_ID)
+      val use2 = CFGNode(Left(Use(Some(2), use.update, use.condition)), Some(mainFunction), CFGNode.DONT_CARE_ID)
+      val reset3 = CFGNode(Left(Reset(3)), Some(mainFunction), CFGNode.DONT_CARE_ID)
+      val use3 = CFGNode(Left(Use(Some(3), use.update, use.condition)), Some(mainFunction), CFGNode.DONT_CARE_ID)
       Map(5 -> ResetNode(reset2, 2), 6 -> UseNode(use2, 2), 9 -> ResetNode(reset3, 3), 10 -> UseNode(use3, 3))
     }
     val groupIdsTest01 = Map(1 -> Set(2, 3))

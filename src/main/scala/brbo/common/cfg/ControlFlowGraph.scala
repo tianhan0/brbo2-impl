@@ -82,7 +82,7 @@ object ControlFlowGraph {
         case Some(node) => node
         case None =>
           val id = nodes.size + 1
-          val node = CFGNode(content, brboFunction, id)
+          val node = CFGNode(content, Some(brboFunction), id)
           nodes = nodes + (content -> node)
           addNode(node)
           node

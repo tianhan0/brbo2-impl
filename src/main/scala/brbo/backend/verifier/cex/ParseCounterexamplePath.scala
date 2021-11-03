@@ -108,7 +108,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
 
     val functionWhenMatchSucceed = BrboFunction("!!!", VOID, Nil, Block(List(Skip())), Set())
-    val nodeWhenMatchSucceed = CFGNode(Left(Skip()), functionWhenMatchSucceed, 0)
+    val nodeWhenMatchSucceed = CFGNode(Left(Skip()))
 
     /**
      *
@@ -219,7 +219,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               State(
                 SubState(functionEntry, processFunctionCalls = true, function),
                 SubState(returnTarget, processFunctionCalls, currentFunction) :: state.callStack, // Push into the call stack
-                CFGNode(Left(CallFunction(function, actualArguments)), currentFunction, CFGNode.DONT_CARE_ID) :: newState.matchedNodes, // Insert a special command, signaling function calls
+                CFGNode(Left(CallFunction(function, actualArguments)), Some(currentFunction), CFGNode.DONT_CARE_ID) :: newState.matchedNodes, // Insert a special command, signaling function calls
                 newState.remainingPath,
                 newState.shouldContinue
               )
