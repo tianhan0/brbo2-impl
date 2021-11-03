@@ -12,10 +12,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 class RefinerUnitTest extends AnyFlatSpec {
   private val debugMode = false
   private val arguments = if (debugMode) CommandLineArguments.DEBUG_MODE_ARGUMENTS else CommandLineArguments.DEFAULT_ARGUMENTS
-  val refiner1 = new Refiner(program1, arguments)
-  val refiner2 = new Refiner(program2, arguments)
 
   "Refining program 1" should "succeed" in {
+    val refiner1 = new Refiner(arguments)
     testCases1.foreach({
       testCase =>
         val (newProgram, refinement) = refiner1.refine(program1, Some(testCase.input.asInstanceOf[Path]), boundExpression1, Set())
@@ -24,6 +23,7 @@ class RefinerUnitTest extends AnyFlatSpec {
   }
 
   "Refining program 2" should "succeed" in {
+    val refiner2 = new Refiner(arguments)
     testCases2.foreach({
       testCase =>
         val (newProgram, refinement) = refiner2.refine(program2, Some(testCase.input.asInstanceOf[Path]), boundExpression2, Set())
@@ -232,7 +232,7 @@ object RefinerUnitTest {
           |      if (false) reset R3
           |    }
           |    {
-          |      if (true && true) use R3 n - k
+          |      if (true && true) use R3 (n - k)
           |    }
           |  })""".stripMargin)
     )

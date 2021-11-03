@@ -394,7 +394,7 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
 
   override def toIR(indent: Int): String = {
     val indentString = " " * indent
-    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) use ${resourceVariable.identifier} ${update.prettyPrintToCNoOuterBrackets}"
+    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) use ${resourceVariable.identifier} ${update.prettyPrintToCFG}"
   }
 
   override def replace(newGroupId: Int): Use = Use(Some(newGroupId), update, condition)
@@ -456,4 +456,6 @@ case class CallFunction(callee: BrboFunction, actualArguments: List[BrboExpr]) e
   override def getUses: Set[Identifier] = throw new Exception
 
   override def getDefs: Set[Identifier] = throw new Exception
+
+  override def toIR(indent: Int): String = prettyPrintToCFG
 }

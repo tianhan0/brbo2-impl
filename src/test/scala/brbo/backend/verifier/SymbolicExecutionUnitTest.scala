@@ -64,7 +64,7 @@ object SymbolicExecutionUnitTest {
         CFGNode(Right(Negative(LessThan(i, Number(1)))), mainFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Left(CallFunction(assertFunction, List(LessThanOrEqualTo(R, a)))), mainFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Right(Negative(assertCond)), assertFunction, CFGNode.DONT_CARE_ID),
-        CFGNode(Left(LabeledCommand("ERROR", FunctionCall(FunctionCallExpr("__VERIFIER_error", Nil, VOID)))), assertFunction, CFGNode.DONT_CARE_ID),
+        CFGNode(Left(LabeledCommand("ERROR", FunctionCall(FunctionCallExpr(PreDefinedFunctions.VERIFIER_ERROR, Nil, VOID)))), assertFunction, CFGNode.DONT_CARE_ID),
         CFGNode(Left(Return(None)), assertFunction, CFGNode.DONT_CARE_ID)
       ))
     }

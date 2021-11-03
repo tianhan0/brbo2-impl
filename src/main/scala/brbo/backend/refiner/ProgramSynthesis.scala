@@ -6,16 +6,16 @@ import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import com.microsoft.z3.AST
 
-class ProgramSynthesis(brboProgram: BrboProgram, relationalPredicates: Boolean, commandLineArguments: CommandLineArguments) {
+class ProgramSynthesis(programToSynthesizeFrom: BrboProgram, relationalPredicates: Boolean, commandLineArguments: CommandLineArguments) {
   private val logger = MyLogger.createLogger(classOf[ProgramSynthesis], commandLineArguments.getDebugMode)
-  private val allCommands = BrboAstUtils.collectCommands(brboProgram.mainFunction.actualBody)
+  private val allCommands = BrboAstUtils.collectCommands(programToSynthesizeFrom.mainFunction.actualBody)
   private val useCommands = allCommands.filter(command => command.isInstanceOf[Use])
   private val resetCommands = allCommands.filter(command => command.isInstanceOf[Reset])
 
-  private val symbolicExecution = new SymbolicExecution(brboProgram.mainFunction.parameters)
+  private val symbolicExecution = new SymbolicExecution(programToSynthesizeFrom.mainFunction.parameters)
   private val predicates: List[Predicate] = {
     val allNonGhostVariables = {
-      val allVariables = brboProgram.mainFunction.parameters.toSet ++ BrboAstUtils.collectUseDefVariables(brboProgram.mainFunction.bodyWithoutInitialization)
+      val allVariables = programToSynthesizeFrom.mainFunction.parameters.toSet ++ BrboAstUtils.collectUseDefVariables(programToSynthesizeFrom.mainFunction.bodyWithoutInitialization)
       allVariables.filter(v => !GhostVariableUtils.isGhostVariable(v.identifier))
     }
     val allPredicates = Predicate.generatePredicates(allNonGhostVariables, relationalPredicates)
@@ -67,21 +67,21 @@ class ProgramSynthesis(brboProgram: BrboProgram, relationalPredicates: Boolean, 
         acc + (reset -> newResets)
     })
 
-    val newMainBody = (useReplacements ++ resetReplacements).foldLeft(brboProgram.mainFunction.bodyWithoutInitialization: BrboAst)({
+    val newMainBody = (useReplacements ++ resetReplacements).foldLeft(programToSynthesizeFrom.mainFunction.bodyWithoutInitialization: BrboAst)({
       case (acc, (command, newCommands)) =>
         val commandsInList = newCommands.toList.sortWith({ case (c1, c2) => c1.prettyPrintToC() < c2.prettyPrintToC() })
         BrboAstUtils.replace(acc, command, Block(commandsInList))
     })
     logger.infoOrError(s"[Synthesis successful] New main function body:\n`$newMainBody`")
 
-    val newGroupIds: Set[Int] = brboProgram.mainFunction.groupIds -- refinement.groupIds.keySet ++ refinement.groupIds.values.flatten
-    logger.traceOrError(s"oldGroups: `${brboProgram.mainFunction.groupIds}`; splitGroups: `${refinement.groupIds.keySet}`; newGroups: `${refinement.groupIds.values.flatten}`")
+    val newGroupIds: Set[Int] = programToSynthesizeFrom.mainFunction.groupIds -- refinement.groupIds.keySet ++ refinement.groupIds.values.flatten
+    logger.traceOrError(s"oldGroups: `${programToSynthesizeFrom.mainFunction.groupIds}`; splitGroups: `${refinement.groupIds.keySet}`; newGroups: `${refinement.groupIds.values.flatten}`")
     logger.infoOrError(s"[Synthesis successful] New groups: `$newGroupIds`")
     val newMainFunction =
-      brboProgram.mainFunction
+      programToSynthesizeFrom.mainFunction
         .replaceBodyWithoutInitialization(newMainBody.asInstanceOf[Statement])
         .replaceGroupIds(newGroupIds)
-    brboProgram.replaceMainFunction(newMainFunction)
+    programToSynthesizeFrom.replaceMainFunction(newMainFunction)
   }
 
   def computeNewUses(path: List[CFGNode], oldUse: Use, indexMap: Map[Int, Set[Int]]): Set[Command] = {

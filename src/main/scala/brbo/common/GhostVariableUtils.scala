@@ -61,29 +61,4 @@ object GhostVariableUtils {
       case _ => false
     }
   }
-
-  // To successfully extract, the assignment must be in the form of `R = R + e`
-  /*def extractUseFromAssignment(cfgNode: Either[Command, BrboExpr]): Option[Use] = {
-    cfgNode match {
-      case Left(command) =>
-        command match {
-          case assignment@Assignment(variable, expression, _) =>
-            if (variable.identifier == resourceVariablePrefix) {
-              expression match {
-                case Addition(left, right, _) =>
-                  left match {
-                    case Identifier(identifier, _, _) =>
-                      if (identifier == variable.identifier) Some(Use(None, right))
-                      else None
-                    case _ => None
-                  }
-                case _ => None
-              }
-            }
-            else None
-          case _ => None
-        }
-      case Right(_) => None
-    }
-  }*/
 }

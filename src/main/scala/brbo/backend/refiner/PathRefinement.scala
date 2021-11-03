@@ -5,20 +5,20 @@ import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.{CommandLineArguments, MathUtils, MyLogger}
 
-class PathRefinement(arguments: CommandLineArguments, targetFunction: BrboFunction) {
+class PathRefinement(arguments: CommandLineArguments) {
   private val maxGroups = arguments.getMaxGroups
   private val logger = MyLogger.createLogger(classOf[PathRefinement], arguments.getDebugMode)
 
   // Perform command transformations to commands in the given path
-  def refine(path: Path): List[Refinement] = {
+  def refine(path: Path, targetFunction: BrboFunction): List[Refinement] = {
     logger.infoOrError(s"Refining path: `$path`")
-    val useInsertedPaths: Set[Refinement] = replaceUseOnly(path)
+    val useInsertedPaths: Set[Refinement] = replaceUseOnly(path, targetFunction)
     useInsertedPaths.flatMap({
-      useInsertedPath: Refinement => removeResetOnly(useInsertedPath)
+      useInsertedPath: Refinement => removeResetOnly(useInsertedPath, targetFunction)
     }).toList.sortWith({ case (r1, r2) => r1.toString <= r2.toString })
   }
 
-  def removeResetOnly(refineUseOnly: Refinement): Set[Refinement] = {
+  def removeResetOnly(refineUseOnly: Refinement, targetFunction: BrboFunction): Set[Refinement] = {
     def helper(numberToKeep: Int, currentRefine: Refinement, currentIndex: Int, remaining: List[CFGNode]): Set[Refinement] = {
       assert(numberToKeep >= 0)
       remaining match {
@@ -53,7 +53,7 @@ class PathRefinement(arguments: CommandLineArguments, targetFunction: BrboFuncti
     })
   }
 
-  def replaceUseOnly(path: Path): Set[Refinement] = {
+  def replaceUseOnly(path: Path, targetFunction: BrboFunction): Set[Refinement] = {
     val pathIndices = path.pathNodes.indices
 
     val groupIds: List[Int] = {
@@ -72,6 +72,7 @@ class PathRefinement(arguments: CommandLineArguments, targetFunction: BrboFuncti
       })
       groupIds.toList.sorted
     }
+    logger.traceOrError(s"All groups: `$groupIds`")
 
     val allSegments: Map[Int, List[Segment]] = {
       groupIds.foldLeft(Map[Int, List[Segment]]())({

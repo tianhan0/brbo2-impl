@@ -8,29 +8,29 @@ import brbo.common.ast.{BrboExpr, BrboProgram}
 import brbo.common.{CommandLineArguments, GhostVariableUtils, MyLogger}
 import com.microsoft.z3.{AST, Expr}
 
-class Refiner(originalProgram: BrboProgram, arguments: CommandLineArguments) {
+class Refiner(arguments: CommandLineArguments) {
   private val logger = MyLogger.createLogger(classOf[Refiner], arguments.getDebugMode)
-  private val pathRefinement = new PathRefinement(arguments, originalProgram.mainFunction)
+  private val pathRefinement = new PathRefinement(arguments)
 
-  def refine(refinedProgram: BrboProgram, counterexamplePath: Option[Path],
+  def refine(programToRefine: BrboProgram, counterexamplePath: Option[Path],
              boundAssertion: BrboExpr, avoidRefinementsInCegar: Set[Refinement]): (Option[BrboProgram], Option[Refinement]) = {
     logger.infoOrError(s"Refine ${if (counterexamplePath.isEmpty) "without" else "with"} a counterexample path")
     counterexamplePath match {
       case Some(counterexamplePath2) =>
-        val symbolicExecution = new SymbolicExecution(refinedProgram.mainFunction.parameters)
+        val symbolicExecution = new SymbolicExecution(programToRefine.mainFunction.parameters)
         val solver = symbolicExecution.solver
         logger.infoOrError(s"Generating all possible path refinements")
-        val refinementsMap = pathRefinement.refine(counterexamplePath2).foldLeft(Map[Expr, (Refinement, Expr)]())({
+        val refinementsMap = pathRefinement.refine(counterexamplePath2, programToRefine.mainFunction).foldLeft(Map[Expr, (Refinement, Expr)]())({
           (acc, refinement) =>
             // It is expected that, the refined path is empty when there is no refinement (over the original path)
             if (refinement.noRefinement || avoidRefinementsInCegar.contains(refinement)) acc
             else {
-              val refinedPath = refinement.refinedPath(refinedProgram.mainFunction)
+              val refinedPath = refinement.refinedPath(programToRefine.mainFunction)
               logger.infoOrError(s"Symbolically executing refined path:\n`${refinedPath.mkString("\n")}`")
               val finalState = symbolicExecution.execute(refinedPath)
               logger.traceOrError(s"Final state:\n`$finalState`")
               // Get all group IDs and then all ghost variables
-              val allGroupIds: List[Int] = (refinedProgram.mainFunction.groupIds -- refinement.groupIds.keys ++ refinement.groupIds.values.flatten).toList.sorted
+              val allGroupIds: List[Int] = (programToRefine.mainFunction.groupIds -- refinement.groupIds.keys ++ refinement.groupIds.values.flatten).toList.sorted
               logger.traceOrError(s"All groups considered: `$allGroupIds`")
               var sum: AST = solver.mkIntVal(0)
               allGroupIds.foreach({
@@ -49,7 +49,7 @@ class Refiner(originalProgram: BrboProgram, arguments: CommandLineArguments) {
         })
 
         logger.infoOrError(s"Search for a successful refinement for path `$counterexamplePath2`.")
-        val programSynthesis = new ProgramSynthesis(refinedProgram, arguments.getRelationalPredicates, arguments)
+        val programSynthesis = new ProgramSynthesis(programToRefine, arguments.getRelationalPredicates, arguments)
         // Keep finding new path transformations until either finding a program transformation that can realize it,
         // or there exists no program transformation that can realize any path transformation
         var avoidRefinementInSynthesis: Set[Refinement] = Set()

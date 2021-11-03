@@ -1,9 +1,9 @@
 package brbo.backend.verifier.cex
 
 import brbo.common.BrboType.BOOL
-import brbo.common.GhostVariableUtils
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
+import brbo.common.{GhostVariableUtils, MyLogger}
 
 case class Path(pathNodes: List[CFGNode]) {
   pathNodes.map(pathNode => pathNode.value).foreach({
@@ -66,18 +66,72 @@ case class Path(pathNodes: List[CFGNode]) {
     results.reverse
   }
 
-  private def existDeclaration(ghostVariable: Identifier): Boolean = {
+  private def existDeclaration(identifier: Identifier): Boolean = {
     pathNodes.exists({
       node =>
         node.value match {
           case Left(command) =>
             command match {
-              case VariableDeclaration(variable, _, _) => variable.sameAs(ghostVariable)
+              case VariableDeclaration(variable, _, _) => variable.sameAs(identifier)
               case _ => false
             }
           case Right(_) => false
         }
     })
+  }
+}
+
+object Path {
+  private val logger = MyLogger.createLogger(Path.getClass, debugMode = false)
+
+  def removeCommandsForUBCheck(path: Option[Path]): Option[Path] = {
+    path match {
+      case Some(actualPath) =>
+        val assertFunction: BrboFunction = PreDefinedFunctions.assert
+        val nodes = actualPath.pathNodes
+        var newNodes: List[CFGNode] = Nil
+        var i = 0
+        while (i < nodes.size) {
+          val node = nodes(i)
+          node.value match {
+            case Left(command) =>
+              command match {
+                case CallFunction(callee, _) =>
+                  if (callee == assertFunction) {
+                    i = i + 1
+                    val nextNode = nodes(i)
+                    nextNode.value match {
+                      case Left(_) => throw new Exception
+                      case Right(condition) =>
+                        condition match {
+                          case Negative(Negative(cond, _), _) =>
+                            assert(cond.prettyPrintToC() == "cond")
+                            i = i + 2 // Directly exit
+                          case Negative(cond, _) =>
+                            assert(cond.prettyPrintToC() == "cond")
+                            i = i + 3 // Reach the error location
+                          case _ => throw new Exception
+                        }
+                    }
+                  }
+                  else {
+                    newNodes = node :: newNodes
+                    i = i + 1
+                  }
+                case _ =>
+                  newNodes = node :: newNodes
+                  i = i + 1
+              }
+            case Right(_) =>
+              newNodes = node :: newNodes
+              i = i + 1
+          }
+        }
+        logger.error(s"Old path: $nodes")
+        logger.error(s"New path: ${newNodes.reverse}")
+        Some(Path(newNodes.reverse))
+      case None => path
+    }
   }
 }
 
