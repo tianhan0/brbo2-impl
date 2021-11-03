@@ -54,22 +54,15 @@ class ProgramSynthesis(brboProgram: BrboProgram, relationalPredicates: Boolean, 
         val reset = resetCommand.asInstanceOf[Reset]
         logger.traceOrError(s"Synthesize-Reset: Synthesize new reset(s) from old reset: `${reset.prettyPrintToCFG}`")
         val indexMap = refinement.getResetInstances(reset)
-        val newResets: Set[Command] = indexMap.size match {
-          case 0 => Set()
-          case 1 =>
-            logger.traceOrError(s"Synthesize-Reset: Old group `${reset.groupId}`")
-            val newReset = computeNewReset(refinement.path, reset.groupId, indexMap.head._2._1, indexMap.head._2._2, reset.condition)
-            logger.traceOrError(s"New reset: `$newReset`")
-            Set(newReset)
-          case _ =>
-            val result = indexMap.foldLeft(Set[Command]())({
-              case (acc, (newGroupId, (keepSet, removeSet))) =>
-                logger.traceOrError(s"Synthesize-Reset: New group `$newGroupId` (which replaces old group: `${reset.groupId})")
-                val newReset = computeNewReset(refinement.path, newGroupId, keepSet, removeSet, reset.condition)
-                acc + newReset
-            })
-            logger.traceOrError(s"New resets: `$result`")
-            result
+        val newResets: Set[Command] = {
+          val result = indexMap.foldLeft(Set[Command]())({
+            case (acc, (newGroupId, (keepSet, removeSet))) =>
+              logger.traceOrError(s"Synthesize-Reset: New group `$newGroupId` (which replaces old group: `${reset.groupId})")
+              val newReset = computeNewReset(refinement.path, newGroupId, keepSet, removeSet, reset.condition)
+              acc + newReset
+          })
+          logger.traceOrError(s"New resets: `$result`")
+          result
         }
         acc + (reset -> newResets)
     })

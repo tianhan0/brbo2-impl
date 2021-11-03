@@ -95,7 +95,7 @@ object PreDefinedFunctions {
       val returnCommand = Return(Some(x))
       Block(List(variableDeclaration, assume, returnCommand))
     }
-    BrboFunction(NDBOOL, INT, Nil, body, Set())
+    BrboFunction(NDBOOL, BOOL, Nil, body, Set())
   }
 
   val ndInt2: BrboFunction = {

@@ -60,7 +60,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
               case Right(_) =>
             }
         })
-        assert(map.keySet == newGroupIds, s"keySet: `${map.keySet}`. newGroupIds: `$newGroupIds`")
+        assert(map.keySet.subsetOf(newGroupIds), s"Find instances for use `${useInOriginalPath.toIR()}`. newGroupIds: `${map.keySet}`. allNewGroupIds: `$newGroupIds`")
         map
       case None => Map[Int, Set[Int]]() // This use does not split
     }
@@ -97,11 +97,11 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
           case Right(_) => acc
         }
     })
-    result.size match {
+    /*result.size match {
       case 0 =>
-      case 1 => assert(result.head._1 == thisGroupId) // The given reset command is not split
-      case _ => result.keys.toSet.subsetOf(groupIds(thisGroupId)) // The given reset command is split
-    }
+      case 1 => assert(result.head._1 == thisGroupId, s"result.head._1: `${result.head._1}`, thisGroupId: `$thisGroupId`") // The given reset command is not split
+      case _ => assert(result.keySet.subsetOf(groupIds(thisGroupId))) // The given reset command is split
+    }*/
     result
   }
 

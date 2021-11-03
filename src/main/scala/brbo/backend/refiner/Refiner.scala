@@ -22,6 +22,7 @@ class Refiner(originalProgram: BrboProgram, arguments: CommandLineArguments) {
         logger.infoOrError(s"Generating all possible path refinements")
         val refinementsMap = pathRefinement.refine(counterexamplePath2).foldLeft(Map[Expr, (Refinement, Expr)]())({
           (acc, refinement) =>
+            // It is expected that, the refined path is empty when there is no refinement (over the original path)
             if (refinement.noRefinement || avoidRefinementsInCegar.contains(refinement)) acc
             else {
               val refinedPath = refinement.refinedPath(refinedProgram.mainFunction)

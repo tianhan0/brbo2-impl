@@ -1,4 +1,4 @@
-  package brbo.backend.verifier
+package brbo.backend.verifier
 
 import brbo.backend.verifier.SymbolicExecution._
 import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
