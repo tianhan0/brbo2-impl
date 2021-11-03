@@ -7,9 +7,10 @@ import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.{UAutomizerVerifier, VerifierResult}
 import brbo.common.ast._
 import brbo.common.{CommandLineArguments, GhostVariableTyp, GhostVariableUtils, MyLogger}
+import org.jgrapht.graph.{DefaultEdge, SimpleDirectedGraph}
 
 import scala.annotation.tailrec
-import scala.collection.mutable
+import scala.collection.JavaConverters._
 
 class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
   private val logger = MyLogger.createLogger(classOf[Driver], arguments.getDebugMode)
@@ -41,28 +42,28 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         None
     }
 
-    var nodes: Set[TreeNode] = Set()
-
-    def createNode(program: BrboProgram, counterexample: Option[Path], refinement: Option[Refinement],
-                   parent: Option[TreeNode], knownChildren: mutable.Map[TreeNode, NodeStatus]): TreeNode = {
-      val node = TreeNode(program, counterexample, refinement, parent, knownChildren, nodes.size)
-      nodes = nodes + node
-      node
-    }
-
-    val root = createNode(initialAbstraction, counterexamplePath, None, None, mutable.Map[TreeNode, NodeStatus]())
+    // No Self-loops; No Multiple edges; No Weighted
+    val tree = new SimpleDirectedGraph[TreeNode, DefaultEdge](classOf[DefaultEdge])
+    val root = createNode(tree, parent = None, initialAbstraction, counterexamplePath, refinement = None)
     val refiner = new Refiner(arguments)
 
     @tailrec
     def helper(node: TreeNode): VerifierRawResult = {
       // Avoid refinements / child nodes that should not be explored
-      val avoidRefinements: Set[Refinement] = node.knownChildren.foldLeft(Set[Refinement]())({
-        (acc, child) =>
-          child._2 match {
-            case EXPLORING => acc
-            case SHOULD_NOT_EXPLORE => acc + child._1.refinement.get
-          }
-      })
+      val avoidRefinements: Set[Refinement] = {
+        tree.outgoingEdgesOf(node).asScala.foldLeft(Set[Refinement]())({
+          (acc, edge) =>
+            val childNode = tree.getEdgeTarget(edge)
+            childNode.getNodeStatus match {
+              case Some(status) =>
+                status match {
+                  case EXPLORING => acc
+                  case SHOULD_NOT_EXPLORE => acc + childNode.refinement.get
+                }
+              case None => acc
+            }
+        })
+      }
       // Assume that all assert() in node.program are ub checks, so that we can safely remove all assert() from the cex.
       val pathWithoutUBChecks = Path.removeCommandsForUBCheck(result.counterexamplePath)
       // Refine the current node, possibly once again, based on the same counterexample
@@ -75,32 +76,33 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
             case TRUE_RESULT | FALSE_RESULT => EXPLORING
             case UNKNOWN_RESULT => if (reRefineWhenVerifierTimeout) EXPLORING else SHOULD_NOT_EXPLORE
           }
-          val newChildNode = createNode(refinedProgram, pathWithoutUBChecks,
-            Some(refinement), Some(node), mutable.Map[TreeNode, NodeStatus]())
-          node.knownChildren.+=(newChildNode -> exploreRefinedProgram)
-          assert(node.knownChildren.contains(newChildNode)) // TODO: Remove this!
+          val newChildNode = createNode(tree, parent = Some(node), refinedProgram, pathWithoutUBChecks, Some(refinement))
+          newChildNode.setNodeStatus(exploreRefinedProgram)
           if (result.rawResult == TRUE_RESULT) {
             logger.infoOrError(s"Successfully verified the sibling of the current node!")
             TRUE_RESULT
           } else {
             if (reRefineWhenVerifierTimeout) {
               logger.infoOrError(s"Explore a new child node (because verifying the current child node returns unknown) by re-refining the current node.")
-              helper(node) // Re-refine the current node
+              helper(node)
             }
             else {
-              logger.infoOrError(s"Explore the current child node (which has failed).")
-              helper(newChildNode) // Explore the child node
+              logger.infoOrError(s"Explore child nodes of the current child node (which has failed).")
+              helper(newChildNode)
             }
           }
         case (None, None) =>
           logger.infoOrError(s"Stop refining (because no refinement can be found). Backtracking now.")
-          node.parent match {
-            case Some(parent) =>
-              parent.knownChildren.+=(node -> SHOULD_NOT_EXPLORE)
-              helper(parent) // Backtrack
-            case None =>
+          val parents = tree.incomingEdgesOf(node).asScala
+          parents.size match {
+            case 0 =>
               logger.infoOrError(s"There is no parent node to backtrack to. Verification has failed!")
               FALSE_RESULT
+            case 1 =>
+              node.setNodeStatus(SHOULD_NOT_EXPLORE)
+              val parent = tree.getEdgeSource(parents.head)
+              helper(parent) // Backtrack
+            case _ => throw new Exception
           }
         case _ => throw new Exception
       }
@@ -169,6 +171,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
           val (r, rSharp, rCounter) = GhostVariableUtils.generateVariables(Some(id))
           Addition(r, Multiplication(rSharp, rCounter))
         }
+
         program.mainFunction.groupIds.map(id => summand(id)).foldLeft(Number(0): BrboExpr)({
           (acc, summand) => Addition(acc, summand)
         })
@@ -183,6 +186,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
       // the refined cex. from the program with UB checks
       List(use, assertion)
     }
+
     replaceUses(program, generateNewUse, program.mainFunction.groupIds)
   }
 
@@ -195,6 +199,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
       val newUse = Use(Some(initialAbstractionGroupId), use.update, use.condition)
       List(Reset(initialAbstractionGroupId), newUse)
     }
+
     replaceUses(program, generateNewUse, Set(initialAbstractionGroupId))
   }
 
@@ -215,5 +220,19 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
       BrboFunction(f.identifier, f.returnType, f.parameters, newBody.asInstanceOf[Statement], newGroupIds)
     }
     program.replaceMainFunction(newMainFunction)
+  }
+
+  private def createNode(tree: SimpleDirectedGraph[TreeNode, DefaultEdge], parent: Option[TreeNode],
+                         program: BrboProgram, counterexample: Option[Path], refinement: Option[Refinement]): TreeNode = {
+    assert(parent.isEmpty == refinement.isEmpty)
+    val node = TreeNode(program, counterexample, refinement, tree.vertexSet().size())
+    tree.addVertex(node)
+    parent match {
+      case Some(value) =>
+        assert(tree.containsVertex(value))
+        tree.addEdge(value, node)
+      case None =>
+    }
+    node
   }
 }

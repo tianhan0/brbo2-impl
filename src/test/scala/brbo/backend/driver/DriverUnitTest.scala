@@ -35,6 +35,8 @@ object DriverUnitTest {
     val program2 =
       """class Test {
         |  void main(int n) {
+        |    if (n < 0)
+        |      return;
         |    int R = 0;
         |    int i = 0;
         |    while (i < n) {
@@ -46,8 +48,8 @@ object DriverUnitTest {
     val bound2 = Addition(Identifier("n", BrboType.INT), Number(2))
 
     List(
-      TestCase("Driver Test 1", ("Test", program1, bound1), ""),
-      // TestCase("Driver Test 2", ("Test", program2, bound2), ""),
+      // TestCase("Driver Test 1", ("Test", program1, bound1), ""),
+      TestCase("Driver Test 2", ("Test", program2, bound2), ""),
     )
   }
 }

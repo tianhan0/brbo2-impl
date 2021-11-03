@@ -107,8 +107,11 @@ class ParseCounterexamplePath(debugMode: Boolean) {
   private def parsePathString(path: List[String], brboProgram: BrboProgram): Path = {
     val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
 
-    val functionWhenMatchSucceed = BrboFunction("!!!", VOID, Nil, Block(List(Skip())), Set())
-    val nodeWhenMatchSucceed = CFGNode(Left(Skip()))
+    val subStateWhenMatchSucceed = {
+      val functionWhenMatchSucceed = BrboFunction("!!!", VOID, Nil, Block(List(Skip())), Set())
+      val nodeWhenMatchSucceed = CFGNode(Left(Skip()))
+      SubState(nodeWhenMatchSucceed, processFunctionCalls = true, functionWhenMatchSucceed)
+    }
 
     /**
      *
@@ -119,7 +122,14 @@ class ParseCounterexamplePath(debugMode: Boolean) {
      */
     def matchPath(state: State): State = {
       logger.traceOrError(s"Current state:\n$state")
-      if (!state.shouldContinue) return state
+      if (!state.shouldContinue) {
+        throw new Exception
+        return state
+      }
+      if (state.remainingPath.isEmpty && state.callStack.isEmpty) {
+        logger.traceOrError(s"Stop matching, because the remaining path and the call stack are both empty!")
+        return State(subStateWhenMatchSucceed, Nil, state.matchedNodes, Nil, shouldContinue = false)
+      }
 
       val currentNode = state.subState.currentNode
       val currentFunction = state.subState.currentFunction
@@ -129,12 +139,12 @@ class ParseCounterexamplePath(debugMode: Boolean) {
         case Left(command) =>
           command match {
             case FunctionExit(_) | Return(None, _) =>
-              // Pop from the call stack
+              logger.traceOrError(s"Pop from the call stack")
               if (state.callStack.isEmpty) {
                 if (state.remainingPath.nonEmpty)
                   throw new Exception(s"Exiting function `${currentFunction.identifier}`, " +
                     s"but the call stack is empty and the remaining path is not empty: `${state.remainingPath}`")
-                return State(SubState(nodeWhenMatchSucceed, processFunctionCalls = true, functionWhenMatchSucceed), Nil, state.matchedNodes, Nil, shouldContinue = false)
+                return State(subStateWhenMatchSucceed, Nil, state.matchedNodes, Nil, shouldContinue = false)
               }
               else {
                 val top = state.callStack.head
@@ -159,7 +169,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                 return matchPath(State(top, state.callStack.tail, matchedNodes, state.remainingPath, state.shouldContinue))
               }
             case _: CFGOnly | Skip(_) =>
-              // Skip the empty command and CFGOnly nodes ( )except for FunctionExit)
+              logger.traceOrError(s"Skip the empty command and CFGOnly nodes (except for FunctionExit): `$currentNode`")
               val successorNodes = cfg.findSuccessorNodes(currentNode)
               successorNodes.size match {
                 case 1 =>
@@ -215,10 +225,11 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               else (currentNode, false) // If not skipping the current node, then there is no need to process the function calls again
             }
             logger.traceOrError(s"Set the return target: `$returnTarget` in function `${currentFunction.identifier}`. Process function calls: $processFunctionCalls.")
+            logger.traceOrError(s"Push the current function into the call stack: `${currentFunction.identifier}`")
             newState = matchPath(
               State(
                 SubState(functionEntry, processFunctionCalls = true, function),
-                SubState(returnTarget, processFunctionCalls, currentFunction) :: state.callStack, // Push into the call stack
+                SubState(returnTarget, processFunctionCalls, currentFunction) :: state.callStack,
                 CFGNode(Left(CallFunction(function, actualArguments)), Some(currentFunction), CFGNode.DONT_CARE_ID) :: newState.matchedNodes, // Insert a special command, signaling function calls
                 newState.remainingPath,
                 newState.shouldContinue
@@ -311,8 +322,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     val entryNode = cfg.cfgs(brboProgram.mainFunction).root
     val state = matchPath(State(SubState(entryNode, processFunctionCalls = true, brboProgram.mainFunction), Nil, Nil, path, shouldContinue = true))
     logger.traceOrError(s"State after matching:\n$state")
-    assert(state.subState.currentNode == nodeWhenMatchSucceed)
-    assert(state.subState.currentFunction == functionWhenMatchSucceed)
+    assert(state.subState == subStateWhenMatchSucceed)
     assert(!state.shouldContinue)
     Path(state.matchedNodes.reverse)
   }

@@ -43,6 +43,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
             path(i).value match {
               case Left(command) =>
                 if (command == useInOriginalPath) {
+                  // Assume the given command and the cex. path are generated from the same program, because their uuids are the same
                   splitUses.get(i) match {
                     case Some(replace: Replace) =>
                       replace match {
@@ -70,11 +71,12 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
   // belong to the group and are kept and removed
   def getResetInstances(resetInOriginalPath: Reset): Map[Int, (Set[Int], Set[Int])] = {
     val thisGroupId = resetInOriginalPath.groupId
-    val result = path.indices.foldLeft(Map[Int, (Set[Int], Set[Int])]())({
+    path.indices.foldLeft(Map[Int, (Set[Int], Set[Int])]())({
       (acc, i) =>
         path(i).value match {
           case Left(command) =>
             if (command == resetInOriginalPath) {
+              // Assume the given command and the cex. path are generated from the same program, because their uuids are the same
               val newGroupId: Int = splitUses.get(i) match {
                 case Some(replace: Replace) =>
                   replace match {
@@ -97,12 +99,6 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
           case Right(_) => acc
         }
     })
-    /*result.size match {
-      case 0 =>
-      case 1 => assert(result.head._1 == thisGroupId, s"result.head._1: `${result.head._1}`, thisGroupId: `$thisGroupId`") // The given reset command is not split
-      case _ => assert(result.keySet.subsetOf(groupIds(thisGroupId))) // The given reset command is split
-    }*/
-    result
   }
 
   def removeReset(index: Int): Refinement = Refinement(path, splitUses, removeResets + index, groupIds)
