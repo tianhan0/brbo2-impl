@@ -40,6 +40,7 @@ val nativeLibraryPath = {
 
 // To avoid "javaOptions will be ignored, fork is set to false": https://github.com/sbt/sbt/issues/3832
 fork in(Test, test) := true
+fork in(Test, testOnly) := true
 
 javaOptions in Test += s"-Djava.library.path=$nativeLibraryPath"
 javaOptions in Runtime += s"-Djava.library.path=$nativeLibraryPath"

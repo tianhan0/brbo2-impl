@@ -2,12 +2,31 @@ package brbo.backend.driver
 
 import brbo.TestCase
 import brbo.backend.driver.DriverUnitTest.testCases
+import brbo.backend.verifier.AmortizationMode.UNKNOWN_MODE
+import brbo.backend.verifier.UAutomizerVerifier
+import brbo.common.CommandLineArguments.DEFAULT_MAX_GROUPS
 import brbo.common.ast._
 import brbo.common.{BrboType, CommandLineArguments}
 import brbo.frontend.BasicProcessor
 import org.scalatest.flatspec.AnyFlatSpec
 
 class DriverUnitTest extends AnyFlatSpec {
+  val arguments = new CommandLineArguments
+  arguments.initialize(
+    UNKNOWN_MODE,
+    debugMode = true,
+    "",
+    skipSanityCheck = false,
+    printModelCheckerInputs = false,
+    modelCheckerTimeout = 60,
+    printCFG = false,
+    lessPreciseBound = false,
+    generateSynthetic = 0,
+    maxGroups = DEFAULT_MAX_GROUPS,
+    modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
+    relationalPredicates = false,
+  )
+
   "Driver" should "correctly verify with selective amortization" in {
     testCases.foreach({
       testCase =>
@@ -35,12 +54,13 @@ object DriverUnitTest {
     val program2 =
       """class Test {
         |  void main(int n) {
-        |    if (n < 0)
+        |    if (n <= 0)
         |      return;
         |    int R = 0;
         |    int i = 0;
         |    while (i < n) {
         |      R = R + 1;
+        |      i = i + 1;
         |    }
         |    R = R + 2;
         |  }

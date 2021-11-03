@@ -12,14 +12,16 @@ import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, Future, TimeoutException, blocking}
 import scala.sys.process.{ProcessLogger, _}
 
-class UAutomizerVerifier(override val commandLineArguments: CommandLineArguments) extends Verifier {
+class UAutomizerVerifier(override val arguments: CommandLineArguments) extends Verifier {
   override val toolName = "UAutomizer"
-  override val toolDirectory: String = commandLineArguments.getModelCheckerDirectory
-  private val TIMEOUT = commandLineArguments.getModelCheckerTimeout // Unit: Seconds
+  override val toolDirectory: String = arguments.getModelCheckerDirectory
 
+  private val TIMEOUT = arguments.getModelCheckerTimeout // Unit: Seconds
+  // TODO: Use option `--witness-name` to randomize the name of this file
   private val VIOLATION_WITNESS_FILE = s"$toolDirectory/witness.graphml"
   private val PROPERTY_FILE = s"$toolDirectory/unreach-call.prp"
-  private val EXECUTABLE_FILE = s"$toolDirectory/Ultimate.py"
+  private val EXECUTABLE_FILE = s"./Ultimate.py"
+  private val FULL_OUTPUT = "--full-output"
 
   override def verify(program: BrboProgram): VerifierResult = {
     val programInC = BrboProgramInC(program)
@@ -46,7 +48,7 @@ class UAutomizerVerifier(override val commandLineArguments: CommandLineArguments
         assert(violationWitnessFile.exists())
 
         val counterexamplePath: String = FileUtils.readFromFile(VIOLATION_WITNESS_FILE)
-        val parseCounterexamplePath = new ParseCounterexamplePath(commandLineArguments.getDebugMode)
+        val parseCounterexamplePath = new ParseCounterexamplePath(arguments.getDebugMode)
         val pathInC = parseCounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, programInC.program)
         VerifierResult(result, Some(parseCounterexamplePath.extractUseResetFromCRepresentation(pathInC, programInC)))
       case VerifierRawResult.TRUE_RESULT | VerifierRawResult.UNKNOWN_RESULT => VerifierResult(result, None)
@@ -65,12 +67,16 @@ class UAutomizerVerifier(override val commandLineArguments: CommandLineArguments
 
     try {
       val deleteCounterexampleFile = s"rm $VIOLATION_WITNESS_FILE"
-      logger.trace(s"Delete violation witness file: `$deleteCounterexampleFile`")
+      logger.traceOrError(s"Delete violation witness file: `$deleteCounterexampleFile`")
       deleteCounterexampleFile.run(ProcessLogger(stdout append _, stderr append _))
 
-      val runVerifier = s"$EXECUTABLE_FILE --spec $PROPERTY_FILE --architecture 64bit --file ${file.toAbsolutePath} --witness-type violation_witness"
-      val process = runVerifier.run(ProcessLogger(stdout append _, stderr append _))
-      logger.trace(s"Run `$toolName`: `$runVerifier`")
+      // logger.infoOrError(s"Please put binary file `mathsat` (provided by Ultimate) under directory `/usr/bin`")
+      // E.g., `~/Documents/workspace/UAutomizer-linux$ ./Ultimate.py --spec unreach-call.prp --architecture 64bit --file ~/win_c/Desktop/test.c --witness-type violation_witness`
+      val command = s"$EXECUTABLE_FILE --spec $PROPERTY_FILE --architecture 64bit --file ${file.toAbsolutePath} --witness-type violation_witness"
+      // Set the working directory for the command
+      val processBuilder = sys.process.Process(command, new java.io.File(toolDirectory))
+      val process = processBuilder.run(ProcessLogger(stdout append _, stderr append _))
+      logger.traceOrError(s"Run `$toolName` via command `$command`")
 
       val future = Future(blocking(process.exitValue())) // wrap in Future
       val actualTimeout = {
@@ -87,13 +93,14 @@ class UAutomizerVerifier(override val commandLineArguments: CommandLineArguments
             process.exitValue()
         }
       if (result == 0) {
-        logger.trace(s"`$toolName` stdout:\n$stdout")
+        logger.traceOrError(s"stdout:\n$stdout")
         val removeFile = s"rm $file"
         removeFile.!!
         Some(stdout.toString())
       }
       else {
         logger.fatal(s"Error when running `$toolName`. Exit code: `$result`")
+        logger.fatal(s"stdout:\n$stdout")
         logger.fatal(s"stderr:\n$stderr")
         None
       }

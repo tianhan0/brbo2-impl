@@ -1,17 +1,35 @@
 package brbo.backend.verifier
 
 import brbo.TestCase
+import brbo.backend.verifier.AmortizationMode.UNKNOWN_MODE
 import brbo.common.BrboType.{INT, VOID}
+import brbo.common.CommandLineArguments.DEFAULT_MAX_GROUPS
 import brbo.common.ast._
 import brbo.common.{CommandLineArguments, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class UAutomizerVerifierUnitTest extends AnyFlatSpec {
+  val arguments = new CommandLineArguments
+  arguments.initialize(
+    UNKNOWN_MODE,
+    debugMode = false,
+    "",
+    skipSanityCheck = false,
+    printModelCheckerInputs = false,
+    modelCheckerTimeout = 10,
+    printCFG = false,
+    lessPreciseBound = false,
+    generateSynthetic = 0,
+    maxGroups = DEFAULT_MAX_GROUPS,
+    modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
+    relationalPredicates = false,
+  )
+
   "Parsing counterexample paths" should "be correct" in {
     UAutomizerVerifierUnitTest.testCases.foreach({
       testCase =>
         // val verifier = new UAutomizerVerifier(CommandLineArguments.DEBUG_MODE_ARGUMENTS)
-        val verifier = new UAutomizerVerifier(CommandLineArguments.DEFAULT_ARGUMENTS)
+        val verifier = new UAutomizerVerifier(arguments)
         val result = verifier.verify(testCase.input.asInstanceOf[BrboProgram])
         assert(StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"Test `${testCase.name}` failed"))
     })
@@ -109,7 +127,7 @@ object UAutomizerVerifierUnitTest {
         |  return; [Function `assert`]))""".stripMargin
 
     List[TestCase](
-      TestCase("Must be unknown", test01, test01Expected),
+      TestCase("Must be unknown", test01, test01Expected), // This must time out!
       TestCase("Must fail", test02, test02Expected),
       TestCase("Identify uses and resets", test03, test03Expected),
     )

@@ -145,7 +145,8 @@ class CommandLineArguments {
 }
 
 object CommandLineArguments {
-  private val DEFAULT_MAX_GROUPS = 3
+  val DEFAULT_MAX_GROUPS = 3
+  val DEFAULT_TIMEOUT = 20
 
   private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)
 
@@ -173,7 +174,7 @@ object CommandLineArguments {
       "",
       skipSanityCheck = false,
       printModelCheckerInputs = false,
-      modelCheckerTimeout = 20,
+      modelCheckerTimeout = DEFAULT_TIMEOUT,
       printCFG = false,
       lessPreciseBound = false,
       generateSynthetic = 0,
@@ -192,7 +193,7 @@ object CommandLineArguments {
       "",
       skipSanityCheck = false,
       printModelCheckerInputs = false,
-      modelCheckerTimeout = 20,
+      modelCheckerTimeout = DEFAULT_TIMEOUT,
       printCFG = false,
       lessPreciseBound = false,
       generateSynthetic = 0,

@@ -5,11 +5,11 @@ import brbo.common.{CommandLineArguments, MyLogger}
 import org.apache.logging.log4j.LogManager
 
 abstract class Verifier {
-  val commandLineArguments: CommandLineArguments
+  val arguments: CommandLineArguments
   val toolName: String
   val toolDirectory: String
 
-  protected val logger: MyLogger = MyLogger(LogManager.getLogger(classOf[Verifier]), commandLineArguments.getDebugMode)
+  protected val logger: MyLogger = MyLogger(LogManager.getLogger(classOf[Verifier]), arguments.getDebugMode)
 
   def verify(program: BrboProgram): VerifierResult
 }
