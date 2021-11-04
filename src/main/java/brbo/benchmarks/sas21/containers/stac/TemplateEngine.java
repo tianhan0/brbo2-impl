@@ -4,7 +4,7 @@ import brbo.benchmarks.Common;
 
 public abstract class TemplateEngine extends Common {
   void main(int text) {
-    if (text <= 0) {
+    if (text <= 0 || text > LARGE_INT) {
       return;
     }
     int R = 0;

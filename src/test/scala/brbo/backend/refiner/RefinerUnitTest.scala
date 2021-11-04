@@ -17,7 +17,7 @@ class RefinerUnitTest extends AnyFlatSpec {
     val refiner1 = new Refiner(arguments)
     testCases1.foreach({
       testCase =>
-        val (newProgram, refinement) = refiner1.refine(program1, Some(testCase.input.asInstanceOf[Path]), boundExpression1, Set())
+        val (newProgram, refinement) = refiner1.refine(program1, testCase.input.asInstanceOf[Path], boundExpression1, Set())
         StringCompare.ignoreWhitespaces(s"$refinement\n$newProgram", testCase.expectedOutput, s"Test `${testCase.name}` failed!")
     })
   }
@@ -26,7 +26,7 @@ class RefinerUnitTest extends AnyFlatSpec {
     val refiner2 = new Refiner(arguments)
     testCases2.foreach({
       testCase =>
-        val (newProgram, refinement) = refiner2.refine(program2, Some(testCase.input.asInstanceOf[Path]), boundExpression2, Set())
+        val (newProgram, refinement) = refiner2.refine(program2, testCase.input.asInstanceOf[Path], boundExpression2, Set())
         StringCompare.ignoreWhitespaces(s"$refinement\n$newProgram", testCase.expectedOutput, s"Test `${testCase.name}` failed!")
     })
   }

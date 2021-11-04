@@ -7,7 +7,7 @@ import brbo.backend.verifier.UAutomizerVerifier
 import brbo.common.CommandLineArguments.{DEFAULT_MAX_GROUPS, DEFAULT_MAX_ITERATIONS}
 import brbo.common.ast._
 import brbo.common.{BrboType, CommandLineArguments}
-import brbo.frontend.BasicProcessor
+import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class DriverUnitTest extends AnyFlatSpec {
@@ -18,7 +18,7 @@ class DriverUnitTest extends AnyFlatSpec {
     "",
     skipSanityCheck = false,
     printModelCheckerInputs = false,
-    modelCheckerTimeout = 60,
+    modelCheckerTimeout = 20,
     printCFG = false,
     lessPreciseBound = false,
     generateSynthetic = 0,
@@ -33,7 +33,7 @@ class DriverUnitTest extends AnyFlatSpec {
       testCase =>
         val (className, code, bound) = testCase.input.asInstanceOf[(String, String, BrboExpr)]
         val targetProgram = BasicProcessor.getTargetProgram(className, code)
-        val driver = new Driver(CommandLineArguments.DEFAULT_ARGUMENTS, targetProgram.program)
+        val driver = new Driver(arguments, targetProgram.program)
         driver.verifySelectivelyAmortize(bound)
     })
   }
@@ -53,9 +53,9 @@ object DriverUnitTest {
     val bound1 = Number(6)
 
     val program2 =
-      """class Test {
+      s"""class Test {
         |  void main(int n) {
-        |    if (n <= 0)
+        |    if (n <= 0 || n > ${TargetProgram.LARGE_INT}) // Otherwise, int overflow will cause unexpected cex.
         |      return;
         |    int R = 0;
         |    int i = 0;

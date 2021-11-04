@@ -30,7 +30,7 @@ class CommandLineArguments {
     usage = "The amount of timeout (unit: seconds) allowed for each invocation to the model checker (i.e., UAutomizer). Negative numbers mean no timeout will be set.")
   private var modelCheckerTimeout: Int = DEFAULT_MODEL_CHECKER_TIME_OUT
 
-  @Option(name = "--print-cfg", aliases = Array("--cfg"), required = false, usage = "Print the control flow graph of the input graph.")
+  @Option(name = "--print-cfg", aliases = Array("--cfg"), required = false, usage = "Print the control flow graph of the main function (Not implemented!).")
   private var printCFG: Boolean = false
 
   @Option(name = "--less-precise", required = false, usage = "Verify the bounds specified by function `lessPreciseBound`.")

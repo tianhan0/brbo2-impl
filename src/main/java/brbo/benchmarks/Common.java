@@ -1,9 +1,8 @@
 package brbo.benchmarks;
 
 public abstract class Common {
-  // public int INT_SIZE = 4;
-  // public int BOOL_SIZE = 1;
   public int MAX = 8;
+  public int LARGE_INT = 10000000;
 
   /**
    *

@@ -6,8 +6,8 @@ import brbo.backend.refiner.{Refinement, Refiner}
 import brbo.backend.verifier.VerifierRawResult._
 import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.{UAutomizerVerifier, VerifierResult}
-import brbo.common.ast._
 import brbo.common._
+import brbo.common.ast._
 import org.apache.commons.io.FileUtils
 import org.jgrapht.graph.{DefaultEdge, SimpleDirectedGraph}
 
@@ -83,51 +83,55 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         })
       }
       // Assume that all assert() in node.program are ub checks, so that we can safely remove all assert() from the cex.
-      val pathWithoutUBChecks = Path.removeCommandsForUBCheck(result.counterexamplePath)
-      // Refine the current node, possibly once again, based on the same counterexample
-      // When a node is visited for a second (or more) time, then it must be caused by backtracking, which
-      // implies that all nodes in one of its subtree have failed
-      refiner.refine(node.program, pathWithoutUBChecks, upperBound, avoidRefinements) match {
-        case (Some(refinedProgram), Some(refinement)) =>
-          val result = verify(refinedProgram, upperBound)
-          val exploreRefinedProgram: NodeStatus = result.rawResult match {
-            case TRUE_RESULT | FALSE_RESULT => EXPLORING
-            case UNKNOWN_RESULT => if (keepExploringWhenVerifierTimeout) EXPLORING else SHOULD_NOT_EXPLORE
-          }
-          val newChildNode = createNode(tree, parent = Some(node), refinedProgram, pathWithoutUBChecks, Some(refinement))
-          newChildNode.setNodeStatus(exploreRefinedProgram)
+      Path.removeCommandsForUBCheck(result.counterexamplePath) match {
+        case Some(pathWithoutUBChecks) =>
+          // Refine the current node, possibly once again, based on the same counterexample
+          // When a node is visited for a second (or more) time, then it must be caused by backtracking, which
+          // implies that all nodes in one of its subtree have failed
+          refiner.refine(node.program, pathWithoutUBChecks, upperBound, avoidRefinements) match {
+            case (Some(refinedProgram), Some(refinement)) =>
+              val result = verify(refinedProgram, upperBound)
+              val exploreRefinedProgram: NodeStatus = result.rawResult match {
+                case TRUE_RESULT | FALSE_RESULT => EXPLORING
+                case UNKNOWN_RESULT => if (keepExploringWhenVerifierTimeout) EXPLORING else SHOULD_NOT_EXPLORE
+              }
+              val newChildNode = createNode(tree, parent = Some(node), refinedProgram, Some(pathWithoutUBChecks), Some(refinement))
+              newChildNode.setNodeStatus(exploreRefinedProgram)
 
-          result.rawResult match {
-            case TRUE_RESULT =>
-              logger.infoOrError(s"Successfully verified the sibling of the current node!")
-              TRUE_RESULT
-            case FALSE_RESULT =>
-              logger.infoOrError(s"Explore child nodes of the current child node (which has failed).")
-              helper(newChildNode)
-            case UNKNOWN_RESULT =>
-              if (keepExploringWhenVerifierTimeout) {
-                logger.infoOrError(s"Explore child nodes of the current child node (which has failed).")
-                helper(newChildNode)
+              result.rawResult match {
+                case TRUE_RESULT =>
+                  logger.infoOrError(s"Successfully verified the child of the current node!")
+                  TRUE_RESULT
+                case FALSE_RESULT =>
+                  logger.infoOrError(s"Explore child nodes of the child of the current node (which has failed).")
+                  helper(newChildNode)
+                case UNKNOWN_RESULT =>
+                  if (keepExploringWhenVerifierTimeout) {
+                    logger.infoOrError(s"Explore child nodes of the child of the current node (which has failed).")
+                    helper(newChildNode)
+                  }
+                  else {
+                    logger.infoOrError(s"Explore a new child node of the current node (because the verification returns unknown) by re-refining the current node.")
+                    helper(node)
+                  }
               }
-              else {
-                logger.infoOrError(s"Explore a new child node (because verifying the current child node returns unknown) by re-refining the current node.")
-                helper(node)
+            case (None, None) =>
+              backtrack(tree, node) match {
+                case Some(parent) => helper(parent)
+                case None =>
+                  logger.infoOrError(s"No parent node to backtrack to.")
+                  UNKNOWN_RESULT
               }
-          }
-        case (None, None) =>
-          logger.infoOrError(s"Stop refining (because no refinement can be found). Backtracking now.")
-          val parents = tree.incomingEdgesOf(node).asScala
-          parents.size match {
-            case 0 =>
-              logger.infoOrError(s"There is no parent node to backtrack to. Verification has failed!")
-              FALSE_RESULT
-            case 1 =>
-              node.setNodeStatus(SHOULD_NOT_EXPLORE)
-              val parent = tree.getEdgeSource(parents.head)
-              helper(parent)
             case _ => throw new Exception
           }
-        case _ => throw new Exception
+        case None =>
+          logger.infoOrError(s"Will backtrack because no counterexample is provided for the current node.")
+          backtrack(tree, node) match {
+            case Some(parent) => helper(parent)
+            case None =>
+              logger.infoOrError(s"No parent node to backtrack to.")
+              UNKNOWN_RESULT
+          }
       }
     }
 
@@ -259,5 +263,19 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
       case None =>
     }
     node
+  }
+
+  private def backtrack(tree: SimpleDirectedGraph[TreeNode, DefaultEdge], node: TreeNode): Option[TreeNode] = {
+    logger.infoOrError(s"Backtracking now.")
+    val parents = tree.incomingEdgesOf(node).asScala
+    parents.size match {
+      case 0 =>
+        logger.infoOrError(s"There is no parent node to backtrack to. Verification has failed!")
+        None
+      case 1 =>
+        node.setNodeStatus(SHOULD_NOT_EXPLORE)
+        Some(tree.getEdgeSource(parents.head))
+      case _ => throw new Exception
+    }
   }
 }
