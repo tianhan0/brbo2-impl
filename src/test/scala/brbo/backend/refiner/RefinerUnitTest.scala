@@ -124,10 +124,10 @@ object RefinerUnitTest {
           |  if (true) reset R1 [Function `main`]
           |  if (true) use R1 e [Function `main`]
           |Splits:
-          |  10: if (true) reset R2
-          |  11: if (true) use R2 e
-          |  16: if (true) reset R3
-          |  17: if (true) use R3 e
+          |  [010] if (true) reset R1 [Function `main`] -> if (true) reset R2
+          |  [011] if (true) use R1 e [Function `main`] -> if (true) use R2 e
+          |  [016] if (true) reset R1 [Function `main`] -> if (true) reset R3
+          |  [017] if (true) use R1 e [Function `main`] -> if (true) use R3 e
           |Removed resets:
           |  )
           |Some(Program name: `Test program`
@@ -194,14 +194,14 @@ object RefinerUnitTest {
           |  if (true) reset R1 [Function `main`]
           |  if (true) use R1 (n - k) [Function `main`]
           |Splits:
-          |  11: if (true) reset R3
-          |  12: if (true) use R3 (n - k)
-          |  5: if (true) reset R2
-          |  6: if (true) use R2 1
-          |  8: if (true) reset R2
-          |  9: if (true) use R2 2
+          |  [005] if (true) reset R1 [Function `main`] -> if (true) reset R2
+          |  [006] if (true) use R1 1 [Function `main`] -> if (true) use R2 1
+          |  [008] if (true) reset R1 [Function `main`] -> if (true) reset R3
+          |  [009] if (true) use R1 2 [Function `main`] -> if (true) use R3 2
+          |  [011] if (true) reset R1 [Function `main`] -> if (true) reset R2
+          |  [012] if (true) use R1 (n - k) [Function `main`] -> if (true) use R2 (n - k)
           |Removed resets:
-          |  11)
+          |  [005]: if (true) reset R1 [Function `main`])
           |Some(Program name: `Test program`
           |Most precise bound: `None`
           |Less precise bound: `None`
@@ -215,24 +215,24 @@ object RefinerUnitTest {
           |    int S3 = 0;
           |    int k = 0;
           |    {
-          |      if (true) reset R2
+          |      if (false) reset R2
           |    }
           |    {
           |      if (true && true) use R2 1
           |    }
           |    k = k + 1;
           |    {
-          |      if (true) reset R2
+          |      if (true) reset R3
           |    }
           |    {
-          |      if (true && true) use R2 2
+          |      if (true && true) use R3 2
           |    }
           |    k = k + 2;
           |    {
-          |      if (false) reset R3
+          |      if (true) reset R2
           |    }
           |    {
-          |      if (true && true) use R3 (n - k)
+          |      if (true && true) use R2 (n - k)
           |    }
           |  })""".stripMargin)
     )

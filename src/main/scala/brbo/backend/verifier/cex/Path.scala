@@ -3,7 +3,7 @@ package brbo.backend.verifier.cex
 import brbo.common.BrboType.BOOL
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{GhostVariableUtils, MyLogger}
+import brbo.common.{GhostVariableUtils, MyLogger, StringFormatUtils}
 
 case class Path(pathNodes: List[CFGNode]) {
   pathNodes.map(pathNode => pathNode.value).foreach({
@@ -38,8 +38,8 @@ case class Path(pathNodes: List[CFGNode]) {
   })
 
   override def toString: String = {
-    val nodes = pathNodes.map({ node => node.toString }).mkString("\n  ")
-    s"Path:\n  $nodes"
+    val nodes = pathNodes.zipWithIndex.map({ case (node, index: Int) => s"  [${StringFormatUtils.integer(index)}] ${node.toString}" }).mkString("\n")
+    s"Path:\n$nodes"
   }
 
   // Get segments of the given group in the given function

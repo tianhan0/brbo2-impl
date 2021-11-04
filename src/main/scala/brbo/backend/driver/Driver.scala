@@ -7,7 +7,7 @@ import brbo.backend.verifier.VerifierRawResult._
 import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.{UAutomizerVerifier, VerifierResult}
 import brbo.common.ast._
-import brbo.common.{CommandLineArguments, GhostVariableTyp, GhostVariableUtils, MyLogger, StringFormatUtils}
+import brbo.common._
 import org.apache.commons.io.FileUtils
 import org.jgrapht.graph.{DefaultEdge, SimpleDirectedGraph}
 
@@ -31,7 +31,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
     ???
   }
 
-  def verifySelectivelyAmortize(upperBound: BrboExpr, reRefineWhenVerifierTimeout: Boolean = false): VerifierRawResult = {
+  def verifySelectivelyAmortize(upperBound: BrboExpr, keepExploringWhenVerifierTimeout: Boolean = false): VerifierRawResult = {
     val initialAbstraction = generateInitialAbstraction(afterExtractingUses)
     val result = verify(initialAbstraction, upperBound)
     val counterexamplePath: Option[Path] = result.rawResult match {
@@ -53,7 +53,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
 
     @tailrec
     def helper(node: TreeNode): VerifierRawResult = {
-      logger.infoOrError(s"We have explored `${tree.vertexSet().size()}` programs. We will stop at `${arguments.getMaxIterations}`.")
+      logger.infoOrError(s"We have explored `${tree.vertexSet().size()}` programs. We will stop at `${arguments.getMaxIterations + 1}`.")
       if (tree.vertexSet().size() > arguments.getMaxIterations) {
         logger.infoOrError(s"Output all unknown amortizations to `${BrboMain.OUTPUT_DIRECTORY}/amortizations/`")
         tree.vertexSet().asScala.zipWithIndex.foreach({
@@ -92,22 +92,27 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
           val result = verify(refinedProgram, upperBound)
           val exploreRefinedProgram: NodeStatus = result.rawResult match {
             case TRUE_RESULT | FALSE_RESULT => EXPLORING
-            case UNKNOWN_RESULT => if (reRefineWhenVerifierTimeout) EXPLORING else SHOULD_NOT_EXPLORE
+            case UNKNOWN_RESULT => if (keepExploringWhenVerifierTimeout) EXPLORING else SHOULD_NOT_EXPLORE
           }
           val newChildNode = createNode(tree, parent = Some(node), refinedProgram, pathWithoutUBChecks, Some(refinement))
           newChildNode.setNodeStatus(exploreRefinedProgram)
-          if (result.rawResult == TRUE_RESULT) {
-            logger.infoOrError(s"Successfully verified the sibling of the current node!")
-            TRUE_RESULT
-          } else {
-            if (reRefineWhenVerifierTimeout) {
-              logger.infoOrError(s"Explore a new child node (because verifying the current child node returns unknown) by re-refining the current node.")
-              helper(node)
-            }
-            else {
+
+          result.rawResult match {
+            case TRUE_RESULT =>
+              logger.infoOrError(s"Successfully verified the sibling of the current node!")
+              TRUE_RESULT
+            case FALSE_RESULT =>
               logger.infoOrError(s"Explore child nodes of the current child node (which has failed).")
               helper(newChildNode)
-            }
+            case UNKNOWN_RESULT =>
+              if (keepExploringWhenVerifierTimeout) {
+                logger.infoOrError(s"Explore child nodes of the current child node (which has failed).")
+                helper(newChildNode)
+              }
+              else {
+                logger.infoOrError(s"Explore a new child node (because verifying the current child node returns unknown) by re-refining the current node.")
+                helper(node)
+              }
           }
         case (None, None) =>
           logger.infoOrError(s"Stop refining (because no refinement can be found). Backtracking now.")
@@ -119,7 +124,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
             case 1 =>
               node.setNodeStatus(SHOULD_NOT_EXPLORE)
               val parent = tree.getEdgeSource(parents.head)
-              helper(parent) // Backtrack
+              helper(parent)
             case _ => throw new Exception
           }
         case _ => throw new Exception
@@ -132,7 +137,9 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
   private def verify(program: BrboProgram, upperBound: BrboExpr): VerifierResult = {
     val ubcheckInserted = insertUBCheck(program, upperBound)
     logger.infoOrError(s"Verify with upper bound `${upperBound.prettyPrintToCNoOuterBrackets}`")
-    uAutomizerVerifier.verify(ubcheckInserted)
+    val result = uAutomizerVerifier.verify(ubcheckInserted)
+    logger.infoOrError(s"Verifier result: `${result.rawResult}`.")
+    result
   }
 
   private def extractUsesFromMain(program: BrboProgram): BrboProgram = {

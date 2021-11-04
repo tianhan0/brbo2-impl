@@ -1,7 +1,7 @@
 package brbo.backend.refiner
 
 import brbo.backend.refiner.Refinement.logger
-import brbo.common.{GhostVariableUtils, MyLogger}
+import brbo.common.{GhostVariableUtils, MyLogger, StringFormatUtils}
 import brbo.common.ast.{BrboFunction, Reset, Use}
 import brbo.common.cfg.CFGNode
 import brbo.frontend.JavacUtils
@@ -105,13 +105,13 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
 
   private val separator = "\n  "
   private val removedString = {
-    val s = removeResets.toList.sorted.mkString(separator)
+    val s = removeResets.toList.sorted.map(index => s"[${StringFormatUtils.integer(index)}]: ${path(index)}").mkString(separator)
     s"Removed resets:$separator$s"
   }
   private val splitsString = {
     val s = splitUses.toList.map({
       case (index, replace) =>
-        s"$index: $replace"
+        s"[${StringFormatUtils.integer(index)}] ${path(index)} -> $replace"
     }).sorted.mkString(separator)
     s"Splits:$separator$s"
   }
