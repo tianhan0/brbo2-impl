@@ -2,7 +2,7 @@ package brbo.common
 
 import brbo.backend.verifier.AmortizationMode._
 import brbo.backend.verifier.UAutomizerVerifier
-import brbo.common.CommandLineArguments.logger
+import brbo.common.CommandLineArguments._
 import org.apache.logging.log4j.LogManager
 import org.kohsuke.args4j.{CmdLineException, CmdLineParser, Option}
 
@@ -18,10 +18,6 @@ class CommandLineArguments {
     usage = "Turn on the debug mode.")
   private var debugMode: Boolean = false
 
-  @Option(name = "--skip-sanity-check", aliases = Array("-s"), required = false,
-    usage = "Skip the sanity check.")
-  private var skipSanityCheck: Boolean = false
-
   @Option(name = "--print-model-checker-inputs", aliases = Array("-i"), required = false,
     usage = "Print input programs to the model checker.")
   private var printModelCheckerInputs: Boolean = false
@@ -32,7 +28,7 @@ class CommandLineArguments {
 
   @Option(name = "--model-checker-timeout", aliases = Array("-t"),
     usage = "The amount of timeout (unit: seconds) allowed for each invocation to the model checker (i.e., UAutomizer). Negative numbers mean no timeout will be set.")
-  private var modelCheckerTimeout: Int = CommandLineArguments.DEFAULT_MODEL_CHECKER_TIME_OUT
+  private var modelCheckerTimeout: Int = DEFAULT_MODEL_CHECKER_TIME_OUT
 
   @Option(name = "--print-cfg", aliases = Array("--cfg"), required = false, usage = "Print the control flow graph of the input graph.")
   private var printCFG: Boolean = false
@@ -40,11 +36,8 @@ class CommandLineArguments {
   @Option(name = "--less-precise", required = false, usage = "Verify the bounds specified by function `lessPreciseBound`.")
   private var lessPreciseBound: Boolean = false
 
-  @Option(name = "--generate-synthetic", required = false, usage = "Generate `n` synthetic programs")
-  private var generateSynthetic: Int = 0
-
   @Option(name = "--max-group", required = false, usage = "The max number of amortization groups")
-  private var maxGroups: Int = CommandLineArguments.DEFAULT_MAX_GROUPS
+  private var maxGroups: Int = DEFAULT_MAX_GROUPS
 
   @Option(name = "--model-checker-path", required = false,
     usage = "The absolute path of the directory containing all files of the model checker.")
@@ -52,6 +45,10 @@ class CommandLineArguments {
 
   @Option(name = "--relational-predicates", required = false, usage = "Search relational (i.e., Octagon) predicates when synthesizing new predicates.")
   private var relationalPredicates: Boolean = false
+
+  @Option(name = "--iterations", aliases = Array("--it"), required = false,
+    usage = "The max number of refinement iterations when analyzing a program.")
+  private var maxIterations: Int = DEFAULT_MAX_ITERATIONS
 
   def getAmortizationMode: AmortizationMode = {
     amortizationMode.toLowerCase() match {
@@ -67,8 +64,6 @@ class CommandLineArguments {
 
   def getDirectoryToAnalyze: String = directoryToAnalyze
 
-  def getSkipSanityCheck: Boolean = skipSanityCheck
-
   def getPrintModelCheckerInputs: Boolean = printModelCheckerInputs
 
   def getModelCheckerTimeout: Int = modelCheckerTimeout
@@ -77,13 +72,13 @@ class CommandLineArguments {
 
   def getLessPreciseBound: Boolean = lessPreciseBound
 
-  def getGenerateSynthetic: Int = generateSynthetic
-
   def getMaxGroups: Int = maxGroups
 
   def getModelCheckerDirectory: String = modelCheckerDirectory
 
   def getRelationalPredicates: Boolean = relationalPredicates
+
+  def getMaxIterations: Int = maxIterations
 
   private var initialized = false
 
@@ -98,7 +93,8 @@ class CommandLineArguments {
                  generateSynthetic: Int,
                  maxGroups: Int,
                  modelCheckerDirectory: String,
-                 relationalPredicates: Boolean): Unit = {
+                 relationalPredicates: Boolean,
+                 maxIterations: Int): Unit = {
     if (initialized) {
       logger.info(s"Already initialized")
       return
@@ -107,15 +103,14 @@ class CommandLineArguments {
     this.amortizationMode = amortizationModeToShortString(amortizationMode)
     this.debugMode = debugMode
     this.directoryToAnalyze = directoryToAnalyze
-    this.skipSanityCheck = skipSanityCheck
     this.printModelCheckerInputs = printModelCheckerInputs
     this.modelCheckerTimeout = modelCheckerTimeout
     this.printCFG = printCFG
     this.lessPreciseBound = lessPreciseBound
-    this.generateSynthetic = generateSynthetic
     this.maxGroups = maxGroups
     this.modelCheckerDirectory = modelCheckerDirectory
     this.relationalPredicates = relationalPredicates
+    this.maxIterations = maxIterations
   }
 
   override def toString: String = {
@@ -123,15 +118,14 @@ class CommandLineArguments {
       s"Infer resource usage upper bounds for each method in each file `*.java` under directory `$directoryToAnalyze`",
       s"Amortization mode: `$getAmortizationMode`",
       s"Debug mode? `$debugMode`",
-      s"Skip sanity check? `$skipSanityCheck`",
       s"Print inputs to the model checker? `$printModelCheckerInputs`",
       s"Model checker's time out: `$modelCheckerTimeout` seconds",
       s"Print CFG? `$printCFG`",
       s"Check less precise bounds? `$lessPreciseBound`",
-      s"Generate `$generateSynthetic` synthetic programs",
       s"Max number of groups: `$maxGroups`",
       s"Model check's directory is `$modelCheckerDirectory`",
       s"Search relational predicates? `$relationalPredicates`",
+      s"Max number of refinement iterations: `$maxIterations`",
     )
     strings.mkString("\n")
   }
@@ -147,6 +141,7 @@ class CommandLineArguments {
 object CommandLineArguments {
   val DEFAULT_MAX_GROUPS = 3
   val DEFAULT_TIMEOUT = 20
+  val DEFAULT_MAX_ITERATIONS = 1000
 
   private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)
 
@@ -181,6 +176,7 @@ object CommandLineArguments {
       maxGroups = DEFAULT_MAX_GROUPS,
       modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false,
+      maxIterations = DEFAULT_MAX_ITERATIONS,
     )
     arguments
   }
@@ -200,6 +196,7 @@ object CommandLineArguments {
       maxGroups = DEFAULT_MAX_GROUPS,
       modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false,
+      maxIterations = DEFAULT_MAX_ITERATIONS,
     )
     arguments
   }

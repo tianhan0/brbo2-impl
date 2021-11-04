@@ -5,6 +5,7 @@
 # Create output directory
 mkdir -p output/
 mkdir -p output/cfg
+mkdir -p output/amortizations
 
 # Machine-dependent path configurations
 tools_jar="/home/tianhan/.sdkman/candidates/java/current/lib/tools.jar"

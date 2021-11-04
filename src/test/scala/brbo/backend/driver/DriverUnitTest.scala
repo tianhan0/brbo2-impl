@@ -4,7 +4,7 @@ import brbo.TestCase
 import brbo.backend.driver.DriverUnitTest.testCases
 import brbo.backend.verifier.AmortizationMode.UNKNOWN_MODE
 import brbo.backend.verifier.UAutomizerVerifier
-import brbo.common.CommandLineArguments.DEFAULT_MAX_GROUPS
+import brbo.common.CommandLineArguments.{DEFAULT_MAX_GROUPS, DEFAULT_MAX_ITERATIONS}
 import brbo.common.ast._
 import brbo.common.{BrboType, CommandLineArguments}
 import brbo.frontend.BasicProcessor
@@ -25,6 +25,7 @@ class DriverUnitTest extends AnyFlatSpec {
     maxGroups = DEFAULT_MAX_GROUPS,
     modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
     relationalPredicates = false,
+    maxIterations = DEFAULT_MAX_ITERATIONS,
   )
 
   "Driver" should "correctly verify with selective amortization" in {

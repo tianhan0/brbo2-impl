@@ -3,7 +3,7 @@ package brbo.backend.verifier
 import brbo.TestCase
 import brbo.backend.verifier.AmortizationMode.UNKNOWN_MODE
 import brbo.common.BrboType.{INT, VOID}
-import brbo.common.CommandLineArguments.DEFAULT_MAX_GROUPS
+import brbo.common.CommandLineArguments.{DEFAULT_MAX_GROUPS, DEFAULT_MAX_ITERATIONS}
 import brbo.common.ast._
 import brbo.common.{CommandLineArguments, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -23,6 +23,7 @@ class UAutomizerVerifierUnitTest extends AnyFlatSpec {
     maxGroups = DEFAULT_MAX_GROUPS,
     modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
     relationalPredicates = false,
+    maxIterations = DEFAULT_MAX_ITERATIONS,
   )
 
   "Parsing counterexample paths" should "be correct" in {

@@ -4,6 +4,7 @@ import brbo.TestCase
 import brbo.backend.verifier.AmortizationMode.UNKNOWN_MODE
 import brbo.backend.verifier.UAutomizerVerifier
 import brbo.backend.verifier.cex.Path
+import brbo.common.CommandLineArguments.DEFAULT_MAX_ITERATIONS
 import brbo.common.{CommandLineArguments, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -23,6 +24,7 @@ class PathRefinementUnitTest extends AnyFlatSpec {
       maxGroups = 5,
       modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false,
+      maxIterations = DEFAULT_MAX_ITERATIONS,
     )
     arguments
   }

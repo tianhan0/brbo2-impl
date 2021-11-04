@@ -1,14 +1,18 @@
 package brbo.backend.driver
 
+import brbo.BrboMain
 import brbo.backend.driver.NodeStatus._
 import brbo.backend.refiner.{Refinement, Refiner}
 import brbo.backend.verifier.VerifierRawResult._
 import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.{UAutomizerVerifier, VerifierResult}
 import brbo.common.ast._
-import brbo.common.{CommandLineArguments, GhostVariableTyp, GhostVariableUtils, MyLogger}
+import brbo.common.{CommandLineArguments, GhostVariableTyp, GhostVariableUtils, MyLogger, StringFormatUtils}
+import org.apache.commons.io.FileUtils
 import org.jgrapht.graph.{DefaultEdge, SimpleDirectedGraph}
 
+import java.io.File
+import java.nio.charset.Charset
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
@@ -49,7 +53,20 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
 
     @tailrec
     def helper(node: TreeNode): VerifierRawResult = {
-      // TODO: Print the exploration tree every 100 refinement
+      logger.infoOrError(s"We have explored `${tree.vertexSet().size()}` programs. We will stop at `${arguments.getMaxIterations}`.")
+      if (tree.vertexSet().size() > arguments.getMaxIterations) {
+        logger.infoOrError(s"Output all unknown amortizations to `${BrboMain.OUTPUT_DIRECTORY}/amortizations/`")
+        tree.vertexSet().asScala.zipWithIndex.foreach({
+          case (node, index) =>
+            val programInC = BrboProgramInC(node.program)
+            val cSourceCode = programInC.program.prettyPrintToC()
+            val file = new File(s"${BrboMain.OUTPUT_DIRECTORY}/amortizations/${originalProgram.name}-${StringFormatUtils.integer(index, 3)}.txt")
+            FileUtils.writeStringToFile(file, cSourceCode, Charset.forName("UTF-8"))
+        })
+
+        logger.infoOrError(s"Reached the max number of refinement iterations: `${arguments.getMaxIterations}`. Will stop now.")
+        return UNKNOWN_RESULT
+      }
       // Avoid refinements / child nodes that should not be explored
       val avoidRefinements: Set[Refinement] = {
         tree.outgoingEdgesOf(node).asScala.foldLeft(Set[Refinement]())({
