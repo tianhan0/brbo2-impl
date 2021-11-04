@@ -3,7 +3,7 @@ package brbo.benchmarks.sas21.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class AppendRecursiveTypes extends Common {
-  void f(int argumentTypes, int recursiveTypeIndexes) {
+  void main(int argumentTypes, int recursiveTypeIndexes) {
     if (argumentTypes <= 0 || recursiveTypeIndexes <= 0) {
       return;
     }

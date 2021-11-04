@@ -3,7 +3,7 @@ package brbo.benchmarks.sas21.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class SubstringsBetween extends Common {
-  void f(int str, int open, int close) {
+  void main(int str, int open, int close) {
     if (str <= 0 || open <= 0 || close <= 0) {
       return;
     }

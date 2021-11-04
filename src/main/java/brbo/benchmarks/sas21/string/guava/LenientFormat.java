@@ -3,7 +3,7 @@ package brbo.benchmarks.sas21.string.guava;
 import brbo.benchmarks.Common;
 
 abstract public class LenientFormat extends Common {
-  void f(int template, int args) {
+  void main(int template, int args) {
     if (template <= 0 || args <= 0) {
       return;
     }

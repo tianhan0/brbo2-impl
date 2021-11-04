@@ -3,7 +3,7 @@ package brbo.benchmarks.sas21.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class JoinWith extends Common {
-  void f(int separator, int n) {
+  void main(int separator, int n) {
     if (separator <= 0 || n <= 0) {
       return;
     }

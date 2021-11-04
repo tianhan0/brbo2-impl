@@ -3,7 +3,7 @@ package brbo.benchmarks.sas21.string.guava;
 import brbo.benchmarks.Common;
 
 abstract public class PadStart extends Common {
-  void f(int string, int minLength) {
+  void main(int string, int minLength) {
     if (string <= 0 || minLength <= 0) {
       return;
     }

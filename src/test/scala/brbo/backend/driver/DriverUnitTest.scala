@@ -14,7 +14,7 @@ class DriverUnitTest extends AnyFlatSpec {
   val arguments = new CommandLineArguments
   arguments.initialize(
     UNKNOWN_MODE,
-    debugMode = true,
+    debugMode = false,
     "",
     skipSanityCheck = false,
     printModelCheckerInputs = false,
@@ -32,7 +32,7 @@ class DriverUnitTest extends AnyFlatSpec {
       testCase =>
         val (className, code, bound) = testCase.input.asInstanceOf[(String, String, BrboExpr)]
         val targetProgram = BasicProcessor.getTargetProgram(className, code)
-        val driver = new Driver(CommandLineArguments.DEBUG_MODE_ARGUMENTS, targetProgram.program)
+        val driver = new Driver(CommandLineArguments.DEFAULT_ARGUMENTS, targetProgram.program)
         driver.verifySelectivelyAmortize(bound)
     })
   }

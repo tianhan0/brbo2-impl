@@ -1,12 +1,11 @@
 package brbo.backend.verifier
 
-import brbo.backend.verifier.VerifierRawResult.VerifierRawResult
 import brbo.backend.verifier.cex.ParseCounterexamplePath
 import brbo.common.ast.{BrboProgram, BrboProgramInC}
 import brbo.common.{CommandLineArguments, FileUtils}
 
-import java.io.{File, PrintWriter}
-import java.nio.file.Files
+import java.io.PrintWriter
+import java.nio.file.{Files, Path, Paths}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, Future, TimeoutException, blocking}
@@ -17,8 +16,6 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
   override val toolDirectory: String = arguments.getModelCheckerDirectory
 
   private val TIMEOUT = arguments.getModelCheckerTimeout // Unit: Seconds
-  // TODO: Use option `--witness-name` to randomize the name of this file
-  private val VIOLATION_WITNESS_FILE = s"$toolDirectory/witness.graphml"
   private val PROPERTY_FILE = s"$toolDirectory/unreach-call.prp"
   private val EXECUTABLE_FILE = s"./Ultimate.py"
   private val FULL_OUTPUT = "--full-output"
@@ -26,36 +23,35 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
   override def verify(program: BrboProgram): VerifierResult = {
     val programInC = BrboProgramInC(program)
 
-    val result: VerifierRawResult = {
-      val cSourceCode = programInC.program.prettyPrintToC()
-      logger.traceOrError(s"Input to UAutomizer:\n$cSourceCode")
-      runAndGetStdOutput(cSourceCode) match {
-        case Some(output) =>
-          if (output.endsWith("Result:FALSE")) VerifierRawResult.FALSE_RESULT
-          else if (output.endsWith("Result:TRUE")) VerifierRawResult.TRUE_RESULT
-          else if (output.endsWith("Result:UNKNOWN")) VerifierRawResult.UNKNOWN_RESULT
-          else {
-            logger.error(s"Cannot interpret results from `$toolName`:\n$output")
-            throw new Exception
-          }
-        case None => VerifierRawResult.UNKNOWN_RESULT
-      }
-    }
+    val cSourceCode = programInC.program.prettyPrintToC()
+    logger.traceOrError(s"Input to UAutomizer:\n$cSourceCode")
+    runAndGetStdOutput(cSourceCode) match {
+      case (Some(output), violationWitnessFile) =>
+        if (output.endsWith("Result:FALSE")) {
+          val counterexamplePath: String = FileUtils.readFromFile(violationWitnessFile.toAbsolutePath.toString)
+          val parseCounterexamplePath = new ParseCounterexamplePath(arguments.getDebugMode)
+          val pathInC = parseCounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, programInC.program)
 
-    result match {
-      case VerifierRawResult.FALSE_RESULT =>
-        val violationWitnessFile = new File(VIOLATION_WITNESS_FILE)
-        assert(violationWitnessFile.exists())
+          val removeFile = s"rm ${violationWitnessFile.toAbsolutePath.toString}"
+          removeFile.!!
 
-        val counterexamplePath: String = FileUtils.readFromFile(VIOLATION_WITNESS_FILE)
-        val parseCounterexamplePath = new ParseCounterexamplePath(arguments.getDebugMode)
-        val pathInC = parseCounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, programInC.program)
-        VerifierResult(result, Some(parseCounterexamplePath.extractUseResetFromCRepresentation(pathInC, programInC)))
-      case VerifierRawResult.TRUE_RESULT | VerifierRawResult.UNKNOWN_RESULT => VerifierResult(result, None)
+          VerifierResult(VerifierRawResult.FALSE_RESULT, Some(parseCounterexamplePath.extractUseResetFromCRepresentation(pathInC, programInC)))
+        }
+        else if (output.endsWith("Result:TRUE")) {
+          VerifierResult(VerifierRawResult.TRUE_RESULT, None)
+        }
+        else if (output.endsWith("Result:UNKNOWN")) {
+          VerifierResult(VerifierRawResult.UNKNOWN_RESULT, None)
+        }
+        else {
+          logger.error(s"Cannot interpret results from `$toolName`:\n$output")
+          throw new Exception
+        }
+      case _ => VerifierResult(VerifierRawResult.UNKNOWN_RESULT, None)
     }
   }
 
-  private def runAndGetStdOutput(sourceCode: String): Option[String] = {
+  private def runAndGetStdOutput(sourceCode: String): (Option[String], Path) = {
     val stdout = new StringBuilder
     val stderr = new StringBuilder
 
@@ -66,13 +62,12 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
     }
 
     try {
-      val deleteCounterexampleFile = s"rm $VIOLATION_WITNESS_FILE"
-      logger.traceOrError(s"Delete violation witness file: `$deleteCounterexampleFile`")
-      deleteCounterexampleFile.run(ProcessLogger(stdout append _, stderr append _))
+      // Use option `--witness-name` to randomize the name of this file
+      val violationWitnessFile = Files.createTempFile(Paths.get(toolDirectory),"witness-", ".graphml")
 
       // logger.infoOrError(s"Please put binary file `mathsat` (provided by Ultimate) under directory `/usr/bin`")
       // E.g., `~/Documents/workspace/UAutomizer-linux$ ./Ultimate.py --spec unreach-call.prp --architecture 64bit --file ~/win_c/Desktop/test.c --witness-type violation_witness`
-      val command = s"$EXECUTABLE_FILE --spec $PROPERTY_FILE --architecture 64bit --file ${file.toAbsolutePath} --witness-type violation_witness"
+      val command = s"$EXECUTABLE_FILE --spec $PROPERTY_FILE --architecture 64bit --file ${file.toAbsolutePath} --witness-type violation_witness --witness-name ${violationWitnessFile.toAbsolutePath.toString}"
       // Set the working directory for the command
       val processBuilder = sys.process.Process(command, new java.io.File(toolDirectory))
       val process = processBuilder.run(ProcessLogger(stdout append _, stderr append _))
@@ -96,13 +91,13 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
         logger.traceOrError(s"stdout:\n$stdout")
         val removeFile = s"rm $file"
         removeFile.!!
-        Some(stdout.toString())
+        (Some(stdout.toString()), violationWitnessFile)
       }
       else {
         logger.fatal(s"Error when running `$toolName`. Exit code: `$result`")
         logger.fatal(s"stdout:\n$stdout")
         logger.fatal(s"stderr:\n$stderr")
-        None
+        (None, violationWitnessFile)
       }
     }
     catch {

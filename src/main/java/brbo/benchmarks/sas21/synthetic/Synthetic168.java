@@ -1,7 +1,7 @@
 package brbo.benchmarks.sas21.synthetic;
 import brbo.benchmarks.Common;
 public abstract class Synthetic168 extends Common {
-  void f(int n) {
+  void main(int n) {
     if (n <= 0) {
       return;
     }

@@ -1,6 +1,6 @@
 package brbo.frontend
 
-import brbo.common.MyLogger
+import brbo.common.{GhostVariableTyp, GhostVariableUtils, MyLogger}
 import brbo.common.ast._
 import brbo.frontend.TreeUtils.isCommand
 import com.sun.source.tree.Tree.Kind
@@ -228,11 +228,11 @@ case class TargetProgram(fullQualifiedClassName: String,
           functionName match {
             case PreDefinedFunctions.MOST_PRECISE_BOUND =>
               assert(mostPreciseAssertion.isEmpty, s"We allow at most 1 call to function `${PreDefinedFunctions.MOST_PRECISE_BOUND}`")
-              mostPreciseAssertion = Some(arguments.head)
+              extractBound(arguments.head)
               Right(Skip())
             case PreDefinedFunctions.LESS_PRECISE_BOUND =>
               assert(lessPreciseAssertion.isEmpty, s"We allow at most 1 call to function `${PreDefinedFunctions.LESS_PRECISE_BOUND}`")
-              lessPreciseAssertion = Some(arguments.head)
+              extractBound(arguments.head)
               Right(Skip())
             case _ => Left(FunctionCallExpr(functionName, arguments, returnType))
           }
@@ -260,6 +260,20 @@ case class TargetProgram(fullQualifiedClassName: String,
             case _ => throw new Exception(s"Unsupported unary tree: `$expressionTree` (Kind: `${tree.getKind}`)")
           }
       }
+    }
+  }
+
+  private def extractBound(boundAssertion: BrboExpr): Unit = {
+    val errorMessage = "Require specifying bounds in the form of R<=e for some R, e"
+    boundAssertion match {
+      case LessThanOrEqualTo(left, right, _) =>
+        left match {
+          case identifier: Identifier =>
+            assert(GhostVariableUtils.isGhostVariable(identifier.identifier, GhostVariableTyp.Resource))
+            mostPreciseAssertion = Some(right)
+          case _ => throw new Exception(s"$errorMessage: `$boundAssertion`")
+        }
+      case _ => throw new Exception(s"$errorMessage: `$boundAssertion`")
     }
   }
 

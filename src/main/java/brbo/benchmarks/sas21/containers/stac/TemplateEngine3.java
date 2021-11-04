@@ -3,7 +3,7 @@ package brbo.benchmarks.sas21.containers.stac;
 import brbo.benchmarks.Common;
 
 public abstract class TemplateEngine3 extends Common {
-  void replaceTagsBuilder(int text, int ts, int sep, int tags, int rep) {
+  void main(int text, int ts, int sep, int tags, int rep) {
     if (text <= 0 || ts <= 0 || sep <= 0 || tags <= 0 || rep <= 0) {
       return;
     }

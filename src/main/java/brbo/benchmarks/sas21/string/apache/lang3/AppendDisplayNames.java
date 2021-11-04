@@ -3,7 +3,7 @@ package brbo.benchmarks.sas21.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class AppendDisplayNames extends Common {
-  void f(int sorted) {
+  void main(int sorted) {
     if (sorted <= 0) {
       return;
     }

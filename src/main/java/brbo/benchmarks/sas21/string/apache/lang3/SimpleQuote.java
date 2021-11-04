@@ -3,7 +3,7 @@ package brbo.benchmarks.sas21.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class SimpleQuote extends Common {
-  void f(int value) {
+  void main(int value) {
     if (value <= 0) {
       return;
     }

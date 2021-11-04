@@ -84,7 +84,7 @@ public class TemplateEngine {
      * @param sb
      *            The string builder to put the data in
      */
-    public void replaceTagsBuilder(Map<String, String> dictionary, StringBuilder sb) {
+    public void main(Map<String, String> dictionary, StringBuilder sb) {
         // keep track of where we are on the text string
         int linePointer = 0;
         int startTagLength = StringEscapeUtils.unescapeJava(startTag).length();
@@ -135,7 +135,7 @@ public class TemplateEngine {
         return replaceTags(templateds, "");
     }
 
-    private void findTagsHelper(List<Pair<Integer, Integer>> tagsList, Matcher matcher) {
+    private void main(List<Pair<Integer, Integer>> tagsList, Matcher matcher) {
         tagsList.add(Pair.of(matcher.start(), matcher.end()));
     }
 }

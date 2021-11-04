@@ -3,7 +3,7 @@ package brbo.benchmarks.sas21.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class GetDigits extends Common {
-  void f(int str) {
+  void main(int str) {
     if (str <= 0) {
       return;
     }
