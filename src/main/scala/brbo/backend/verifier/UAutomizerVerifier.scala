@@ -3,13 +3,18 @@ package brbo.backend.verifier
 import brbo.backend.verifier.cex.ParseCounterexamplePath
 import brbo.common.ast.{BrboProgram, BrboProgramInC}
 import brbo.common.{CommandLineArguments, FileUtils}
+import org.apache.commons.io.IOUtils
 
-import java.io.PrintWriter
+import java.io.{BufferedReader, InputStreamReader, PrintWriter}
+import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
+import java.util.concurrent.TimeUnit
+import java.util.stream.Collectors
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, Future, TimeoutException, blocking}
-import scala.sys.process.{ProcessLogger, _}
+import scala.sys.process._
+import scala.collection.JavaConverters._
 
 class UAutomizerVerifier(override val arguments: CommandLineArguments) extends Verifier {
   override val toolName = "UAutomizer"
@@ -27,7 +32,8 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
     logger.traceOrError(s"Input to UAutomizer:\n$cSourceCode")
     runAndGetStdOutput(cSourceCode) match {
       case (Some(output), violationWitnessFile) =>
-        if (output.endsWith("Result:FALSE")) {
+        val outputTrimmed = output.replaceAll("\\s", "")
+        if (outputTrimmed.endsWith("Result:FALSE")) {
           val counterexamplePath: String = FileUtils.readFromFile(violationWitnessFile.toAbsolutePath.toString)
           val parseCounterexamplePath = new ParseCounterexamplePath(arguments.getDebugMode)
           val pathInC = parseCounterexamplePath.graphMLToCounterexamplePath(counterexamplePath, programInC.program)
@@ -37,14 +43,14 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
 
           VerifierResult(VerifierRawResult.FALSE_RESULT, Some(parseCounterexamplePath.extractUseResetFromCRepresentation(pathInC, programInC)))
         }
-        else if (output.endsWith("Result:TRUE")) {
+        else if (outputTrimmed.endsWith("Result:TRUE")) {
           VerifierResult(VerifierRawResult.TRUE_RESULT, None)
         }
-        else if (output.endsWith("Result:UNKNOWN")) {
+        else if (outputTrimmed.endsWith("Result:UNKNOWN")) {
           VerifierResult(VerifierRawResult.UNKNOWN_RESULT, None)
         }
         else {
-          logger.error(s"Cannot interpret results from `$toolName`:\n$output")
+          logger.error(s"Cannot interpret results from `$toolName`:\n$outputTrimmed")
           throw new Exception
         }
       case _ => VerifierResult(VerifierRawResult.UNKNOWN_RESULT, None)
@@ -63,35 +69,51 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
 
     try {
       // Use option `--witness-name` to randomize the name of this file
-      val violationWitnessFile = Files.createTempFile(Paths.get(toolDirectory),"witness-", ".graphml")
+      val violationWitnessFile = Files.createTempFile(Paths.get(toolDirectory), "witness-", ".graphml")
 
       // logger.infoOrError(s"Please put binary file `mathsat` (provided by Ultimate) under directory `/usr/bin`")
       // E.g., `~/Documents/workspace/UAutomizer-linux$ ./Ultimate.py --spec unreach-call.prp --architecture 64bit --file ~/win_c/Desktop/test.c --witness-type violation_witness`
       val command = s"$EXECUTABLE_FILE --spec $PROPERTY_FILE --architecture 64bit --file ${file.toAbsolutePath} --witness-type violation_witness --witness-name ${violationWitnessFile.toAbsolutePath.toString}"
+      // val processBuilder = sys.process.Process(command, new java.io.File(toolDirectory))
+      // val process: Process = processBuilder.run(ProcessLogger(stdout append _, stderr append _))
       // Set the working directory for the command
-      val processBuilder = sys.process.Process(command, new java.io.File(toolDirectory))
-      val process = processBuilder.run(ProcessLogger(stdout append _, stderr append _))
+      val processBuilder: java.lang.ProcessBuilder = new java.lang.ProcessBuilder(command.split(" ").toList.asJava)
+        .directory(new java.io.File(toolDirectory))
+        .redirectErrorStream(true)
+      val process: java.lang.Process = processBuilder.start()
       logger.traceOrError(s"Run `$toolName` via command `$command`")
 
-      val future = Future(blocking(process.exitValue())) // wrap in Future
       val actualTimeout = {
         if (TIMEOUT >= 0) Duration(TIMEOUT, SECONDS)
         else Duration.Inf
       }
-      val result =
-        try {
-          Await.result(future, actualTimeout)
-        } catch {
-          case _: TimeoutException =>
-            logger.fatal(s"`$toolName` timed out after `$actualTimeout`!")
-            process.destroy()
-            process.exitValue()
+      val result: Int = {
+        if(!process.waitFor(actualTimeout.toSeconds, TimeUnit.SECONDS)) {
+          logger.fatal(s"`$toolName` timed out after `$actualTimeout`!")
+          process.descendants().forEach({
+            handle =>
+              logger.traceOrError(s"Kill descendant process `${handle.pid()}`")
+              handle.destroy()
+          })
+          logger.traceOrError(s"Kill current process `${process.pid()}`")
+          process.destroy(); // consider using destroyForcibly instead
+          -1
         }
+        else process.exitValue()
+      }
+      val stdout = {
+        try {
+          IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
+        }
+        catch {
+          case _: Exception => ""
+        }
+      }
       if (result == 0) {
         logger.traceOrError(s"stdout:\n$stdout")
         val removeFile = s"rm $file"
         removeFile.!!
-        (Some(stdout.toString()), violationWitnessFile)
+        (Some(stdout), violationWitnessFile)
       }
       else {
         logger.fatal(s"Error when running `$toolName`. Exit code: `$result`")

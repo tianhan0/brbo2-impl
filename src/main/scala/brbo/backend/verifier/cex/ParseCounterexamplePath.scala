@@ -260,16 +260,12 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               if (!result.matched) {
                 currentNode.value match {
                   case Left(_) => throw new Exception
-                  case Right(brboExpr) =>
-                    brboExpr match {
-                      case Bool(true, _) =>
-                        logger.traceOrError(s"Decide to match AST node `$currentNode` with an empty path node.") // because constant bool expressions never show up in a path!
-                        logger.traceOrError(s"Will re-match current path node `$head`.")
-                        // TODO: If brboExpr is not a constant but can be statically determined as a constant,
-                        //  and Ultimate performs constant propagation, then this is insufficient!
-                        (MatchResult(matched = true, matchedExpression = true, matchedTrueBranch = true), true)
-                      case _ => throw new Exception
-                    }
+                  case Right(_) =>
+                    // Decide to match anyway, since constant bool expressions never show up in a path
+                    // This will always match the true branch, because otherwise this node will appear in the trace (and thus we won't end up here)
+                    logger.traceOrError(s"Decide to match AST node `$currentNode` with an empty path node.")
+                    logger.traceOrError(s"Will re-match current path node `$head`.")
+                    (MatchResult(matched = true, matchedExpression = true, matchedTrueBranch = true), true)
                 }
               }
               else (result, false)
