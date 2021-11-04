@@ -49,6 +49,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
 
     @tailrec
     def helper(node: TreeNode): VerifierRawResult = {
+      // TODO: Print the exploration tree every 100 refinement
       // Avoid refinements / child nodes that should not be explored
       val avoidRefinements: Set[Refinement] = {
         tree.outgoingEdgesOf(node).asScala.foldLeft(Set[Refinement]())({
@@ -111,9 +112,9 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
     helper(root)
   }
 
-  private def verify(program: BrboProgram, boundAssertion: BrboExpr): VerifierResult = {
-    val ubcheckInserted = insertUBCheck(program, boundAssertion)
-    logger.infoOrError(s"Verify with upper bound `${boundAssertion.prettyPrintToCNoOuterBrackets}`")
+  private def verify(program: BrboProgram, upperBound: BrboExpr): VerifierResult = {
+    val ubcheckInserted = insertUBCheck(program, upperBound)
+    logger.infoOrError(s"Verify with upper bound `${upperBound.prettyPrintToCNoOuterBrackets}`")
     uAutomizerVerifier.verify(ubcheckInserted)
   }
 
