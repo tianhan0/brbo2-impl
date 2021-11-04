@@ -106,6 +106,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
    */
   private def parsePathString(path: List[String], brboProgram: BrboProgram): Path = {
     val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
+    if (debugMode) cfg.printPDF()
 
     val subStateWhenMatchSucceed = {
       val functionWhenMatchSucceed = BrboFunction("!!!", VOID, Nil, Block(List(Skip())), Set())
@@ -264,6 +265,8 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                       case Bool(true, _) =>
                         logger.traceOrError(s"Decide to match AST node `$currentNode` with an empty path node.") // because constant bool expressions never show up in a path!
                         logger.traceOrError(s"Will re-match current path node `$head`.")
+                        // TODO: If brboExpr is not a constant but can be statically determined as a constant,
+                        //  and Ultimate performs constant propagation, then this is insufficient!
                         (MatchResult(matched = true, matchedExpression = true, matchedTrueBranch = true), true)
                       case _ => throw new Exception
                     }
@@ -275,7 +278,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               val successorNodes = cfg.findSuccessorNodes(currentNode)
               if (matchResult.matchedExpression) {
                 // Matched an expression
-                assert(successorNodes.size == 2)
+                assert(successorNodes.size == 2, s"Successor nodes:\n`${successorNodes.map(n => n.prettyPrintToCFG).mkString("\n")}`")
                 // Find the branch to proceed
                 val (trueNode: CFGNode, falseNode: CFGNode) = {
                   val n1 = successorNodes.head

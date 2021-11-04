@@ -105,29 +105,29 @@ object RefinerUnitTest {
     List(
       TestCase("Refine Test 01", path,
         """Some(Path:
-          |  int C1 = -1; [Function `main`]
-          |  int R1 = 0; [Function `main`]
-          |  int S1 = 0; [Function `main`]
-          |  (n >= 0) [Function `main`]
-          |  (a >= 0) [Function `main`]
-          |  (b >= 0) [Function `main`]
-          |  int i = 0; [Function `main`]
-          |  (i < n) [Function `main`]
-          |  (i == 0) [Function `main`]
-          |  e = a; [Function `main`]
-          |  if (true) reset R1 [Function `main`]
-          |  if (true) use R1 e [Function `main`]
-          |  i = i + 1; [Function `main`]
-          |  (i < n) [Function `main`]
-          |  !((i == 0)) [Function `main`]
-          |  e = b; [Function `main`]
-          |  if (true) reset R1 [Function `main`]
-          |  if (true) use R1 e [Function `main`]
+          |  (-1) int C1 = -1; [Function `main`]
+          |  (-1) int R1 = 0; [Function `main`]
+          |  (-1) int S1 = 0; [Function `main`]
+          |  (-1) (n >= 0) [Function `main`]
+          |  (-1) (a >= 0) [Function `main`]
+          |  (-1) (b >= 0) [Function `main`]
+          |  (-1) int i = 0; [Function `main`]
+          |  (-1) (i < n) [Function `main`]
+          |  (-1) (i == 0) [Function `main`]
+          |  (-1) e = a; [Function `main`]
+          |  (-1) if (true) reset R1 [Function `main`]
+          |  (-1) if (true) use R1 e [Function `main`]
+          |  (-1) i = i + 1; [Function `main`]
+          |  (-1) (i < n) [Function `main`]
+          |  (-1) !((i == 0)) [Function `main`]
+          |  (-1) e = b; [Function `main`]
+          |  (-1) if (true) reset R1 [Function `main`]
+          |  (-1) if (true) use R1 e [Function `main`]
           |Splits:
-          |  [010] if (true) reset R1 [Function `main`] -> if (true) reset R2
-          |  [011] if (true) use R1 e [Function `main`] -> if (true) use R2 e
-          |  [016] if (true) reset R1 [Function `main`] -> if (true) reset R3
-          |  [017] if (true) use R1 e [Function `main`] -> if (true) use R3 e
+          |  [010] (-1) if (true) reset R1 [Function `main`] -> if (true) reset R2
+          |  [011] (-1) if (true) use R1 e [Function `main`] -> if (true) use R2 e
+          |  [016] (-1) if (true) reset R1 [Function `main`] -> if (true) reset R3
+          |  [017] (-1) if (true) use R1 e [Function `main`] -> if (true) use R3 e
           |Removed resets:
           |  )
           |Some(Program name: `Test program`
@@ -180,28 +180,28 @@ object RefinerUnitTest {
     List(
       TestCase("Refine Test 02", path,
         """Some(Path:
-          |  int C1 = -1; [Function `main`]
-          |  int R1 = 0; [Function `main`]
-          |  int S1 = 0; [Function `main`]
-          |  (n >= 0) [Function `main`]
-          |  int k = 0; [Function `main`]
-          |  if (true) reset R1 [Function `main`]
-          |  if (true) use R1 1 [Function `main`]
-          |  k = k + 1; [Function `main`]
-          |  if (true) reset R1 [Function `main`]
-          |  if (true) use R1 2 [Function `main`]
-          |  k = k + 2; [Function `main`]
-          |  if (true) reset R1 [Function `main`]
-          |  if (true) use R1 (n - k) [Function `main`]
+          |  (-1) int C1 = -1; [Function `main`]
+          |  (-1) int R1 = 0; [Function `main`]
+          |  (-1) int S1 = 0; [Function `main`]
+          |  (-1) (n >= 0) [Function `main`]
+          |  (-1) int k = 0; [Function `main`]
+          |  (-1) if (true) reset R1 [Function `main`]
+          |  (-1) if (true) use R1 1 [Function `main`]
+          |  (-1) k = k + 1; [Function `main`]
+          |  (-1) if (true) reset R1 [Function `main`]
+          |  (-1) if (true) use R1 2 [Function `main`]
+          |  (-1) k = k + 2; [Function `main`]
+          |  (-1) if (true) reset R1 [Function `main`]
+          |  (-1) if (true) use R1 (n - k) [Function `main`]
           |Splits:
-          |  [005] if (true) reset R1 [Function `main`] -> if (true) reset R2
-          |  [006] if (true) use R1 1 [Function `main`] -> if (true) use R2 1
-          |  [008] if (true) reset R1 [Function `main`] -> if (true) reset R3
-          |  [009] if (true) use R1 2 [Function `main`] -> if (true) use R3 2
-          |  [011] if (true) reset R1 [Function `main`] -> if (true) reset R2
-          |  [012] if (true) use R1 (n - k) [Function `main`] -> if (true) use R2 (n - k)
+          |  [005] (-1) if (true) reset R1 [Function `main`] -> if (true) reset R2
+          |  [006] (-1) if (true) use R1 1 [Function `main`] -> if (true) use R2 1
+          |  [008] (-1) if (true) reset R1 [Function `main`] -> if (true) reset R3
+          |  [009] (-1) if (true) use R1 2 [Function `main`] -> if (true) use R3 2
+          |  [011] (-1) if (true) reset R1 [Function `main`] -> if (true) reset R2
+          |  [012] (-1) if (true) use R1 (n - k) [Function `main`] -> if (true) use R2 (n - k)
           |Removed resets:
-          |  [005]: if (true) reset R1 [Function `main`])
+          |  [005]: (-1) if (true) reset R1 [Function `main`])
           |Some(Program name: `Test program`
           |Most precise bound: `None`
           |Less precise bound: `None`

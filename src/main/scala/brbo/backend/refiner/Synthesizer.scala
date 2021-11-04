@@ -101,14 +101,14 @@ class Synthesizer(programToSynthesizeFrom: BrboProgram, relationalPredicates: Bo
       case (groupId, predicate) =>
         val finalPredicate = And(predicate.expr, oldUse.condition)
         logger.traceOrError(s"Split-Use: Choose predicate `$finalPredicate` for new group `$groupId` (partitioned from old group `${oldUse.groupId.get})`")
-        Use(Some(groupId), oldUse.update, finalPredicate).asInstanceOf[Command]
+        Use(Some(groupId), oldUse.update.uniqueCopyExpr, finalPredicate).asInstanceOf[Command]
     }).toSet
   }
 
   def computeNewReset(path: List[CFGNode], groupIdForNewReset: Int, keepSet: Set[Int], removeSet: Set[Int], guardOfReset: BrboExpr): Reset = {
     // Necessary short circuit. Otherwise we will compute post-conditions for an empty trace, whose semantics is unclear.
     if (removeSet.isEmpty)
-      return Reset(groupIdForNewReset, guardOfReset)
+      return Reset(groupIdForNewReset, guardOfReset.uniqueCopyExpr)
     if (keepSet.isEmpty)
       return Reset(groupIdForNewReset, Bool(b = false))
     val postConditionKeep = computePostCondition(path, keepSet)
@@ -122,7 +122,7 @@ class Synthesizer(programToSynthesizeFrom: BrboProgram, relationalPredicates: Bo
     logger.traceOrError(s"Synthesize-Reset: Compute candidate predicates for partitioning resets from group `$groupIdForNewReset`")
     val candidatePredicates = computeCandidatePredicates(List(impliedPredicatesKeep, impliedPredicatesRemove), guardOfReset)
     val (predicateKeep, _) = (candidatePredicates.head.head, candidatePredicates.head.last)
-    Reset(groupIdForNewReset, And(guardOfReset, predicateKeep.expr)) // Only keep the reset under the computed predicate
+    Reset(groupIdForNewReset, And(guardOfReset.uniqueCopyExpr, predicateKeep.expr)) // Only keep the reset under the computed predicate
   }
 
   def computePostCondition(path: List[CFGNode], indices: Set[Int]): AST = {

@@ -1,6 +1,7 @@
 package brbo
 
 import brbo.backend.driver.Driver
+import brbo.common.cfg.ControlFlowGraph
 import brbo.common.{CommandLineArguments, MyLogger, StringFormatUtils}
 import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.apache.commons.io.{FileUtils, FilenameUtils}
@@ -95,6 +96,9 @@ object BrboMain {
     if (className != "brbo.benchmarks.Common") {
       logger.info(s"Parsing...")
       val targetProgram = BasicProcessor.getTargetProgram(className, sourceFileContents)
+      if (arguments.getPrintCFG) {
+        ControlFlowGraph.toControlFlowGraph(targetProgram.program).printPDF()
+      }
       val driver = new Driver(arguments, targetProgram.program)
       // TODO: Analyze based on the specified mode in the arguments
       targetProgram.program.mostPreciseAssertion match {

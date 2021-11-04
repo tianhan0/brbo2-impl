@@ -116,7 +116,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
                   }
               }
             case (None, None) =>
-              backtrack(tree, node) match {
+              getParentNode(tree, node) match {
                 case Some(parent) => helper(parent)
                 case None =>
                   logger.infoOrError(s"No parent node to backtrack to.")
@@ -126,7 +126,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
           }
         case None =>
           logger.infoOrError(s"Will backtrack because no counterexample is provided for the current node.")
-          backtrack(tree, node) match {
+          getParentNode(tree, node) match {
             case Some(parent) => helper(parent)
             case None =>
               logger.infoOrError(s"No parent node to backtrack to.")
@@ -265,7 +265,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
     node
   }
 
-  private def backtrack(tree: SimpleDirectedGraph[TreeNode, DefaultEdge], node: TreeNode): Option[TreeNode] = {
+  private def getParentNode(tree: SimpleDirectedGraph[TreeNode, DefaultEdge], node: TreeNode): Option[TreeNode] = {
     logger.infoOrError(s"Backtracking now.")
     val parents = tree.incomingEdgesOf(node).asScala
     parents.size match {

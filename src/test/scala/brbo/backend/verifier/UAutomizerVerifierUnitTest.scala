@@ -32,7 +32,7 @@ class UAutomizerVerifierUnitTest extends AnyFlatSpec {
         // val verifier = new UAutomizerVerifier(CommandLineArguments.DEBUG_MODE_ARGUMENTS)
         val verifier = new UAutomizerVerifier(arguments)
         val result = verifier.verify(testCase.input.asInstanceOf[BrboProgram])
-        assert(StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"Test `${testCase.name}` failed"))
+        StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"Test `${testCase.name}` failed")
     })
   }
 }
@@ -71,36 +71,36 @@ object UAutomizerVerifierUnitTest {
     }
     val test02Expected =
       """VerifierResult(FALSE_RESULT,Some(Path:
-        |  [000] int i = 0; [Function `main`]
-        |  [001] int R = 0; [Function `main`]
-        |  [002] Call function `assume` with `(n > 0)` [Function `main`]
-        |  [003] !(!(cond)) [Function `assume`]
-        |  [004] [Function Exit] [Function `assume`]
-        |  [005] Call function `ndBool` no arguments [Function `main`]
-        |  [006] Call function `ndInt` no arguments [Function `ndBool`]
-        |  [007] return __VERIFIER_nondet_int(); [Function `ndInt`]
-        |  [008] int x = ndInt(); [Function `ndBool`]
-        |  [009] Call function `assume` with `((x == 0) || (x == 1))` [Function `ndBool`]
-        |  [010] !(!(cond)) [Function `assume`]
-        |  [011] [Function Exit] [Function `assume`]
-        |  [012] return x; [Function `ndBool`]
-        |  [013] (i < n) [Function `main`]
-        |  [014] int e = 0; [Function `main`]
-        |  [015] (i < 1) [Function `main`]
-        |  [016] e = a; [Function `main`]
-        |  [017] R = R + e; [Function `main`]
-        |  [018] i = i + 1; [Function `main`]
-        |  [019] (i < n) [Function `main`]
-        |  [020] int e = 0; [Function `main`]
-        |  [021] !((i < 1)) [Function `main`]
-        |  [022] e = b; [Function `main`]
-        |  [023] R = R + e; [Function `main`]
-        |  [024] i = i + 1; [Function `main`]
-        |  [025] !((i < n)) [Function `main`]
-        |  [026] Call function `assert` with `(R <= a)` [Function `main`]
-        |  [027] !(cond) [Function `assert`]
-        |  [028] ERROR: __VERIFIER_error(); [Function `assert`]
-        |  [029] return; [Function `assert`]))""".stripMargin
+        |  [000] (2) int i = 0; [Function `main`]
+        |  [001] (3) int R = 0; [Function `main`]
+        |  [002] (-1) Call function `assume` with `(n > 0)` [Function `main`]
+        |  [003] (21) !(!(cond)) [Function `assume`]
+        |  [004] (20) [Function Exit] [Function `assume`]
+        |  [005] (-1) Call function `ndBool` no arguments [Function `main`]
+        |  [006] (-1) Call function `ndInt` no arguments [Function `ndBool`]
+        |  [007] (25) return __VERIFIER_nondet_int(); [Function `ndInt`]
+        |  [008] (27) int x = ndInt(); [Function `ndBool`]
+        |  [009] (-1) Call function `assume` with `((x == 0) || (x == 1))` [Function `ndBool`]
+        |  [010] (21) !(!(cond)) [Function `assume`]
+        |  [011] (20) [Function Exit] [Function `assume`]
+        |  [012] (29) return x; [Function `ndBool`]
+        |  [013] (6) (i < n) [Function `main`]
+        |  [014] (8) int e = 0; [Function `main`]
+        |  [015] (9) (i < 1) [Function `main`]
+        |  [016] (10) e = a; [Function `main`]
+        |  [017] (12) R = R + e; [Function `main`]
+        |  [018] (13) i = i + 1; [Function `main`]
+        |  [019] (6) (i < n) [Function `main`]
+        |  [020] (8) int e = 0; [Function `main`]
+        |  [021] (9) !((i < 1)) [Function `main`]
+        |  [022] (11) e = b; [Function `main`]
+        |  [023] (12) R = R + e; [Function `main`]
+        |  [024] (13) i = i + 1; [Function `main`]
+        |  [025] (6) !((i < n)) [Function `main`]
+        |  [026] (-1) Call function `assert` with `(R <= a)` [Function `main`]
+        |  [027] (16) !(cond) [Function `assert`]
+        |  [028] (17) ERROR: __VERIFIER_error(); [Function `assert`]
+        |  [029] (19) return; [Function `assert`]))""".stripMargin
 
     val test03 = {
       val n = Identifier("n", INT)
@@ -115,17 +115,17 @@ object UAutomizerVerifierUnitTest {
     }
     val test03Expected =
       """VerifierResult(FALSE_RESULT,Some(Path:
-        |  [000] int C2 = -1; [Function `main`]
-        |  [001] int R2 = 0; [Function `main`]
-        |  [002] int S2 = 0; [Function `main`]
-        |  [003] if (n > 0) reset R2 [Function `main`]
-        |  [004] if (n > 1) use R2 1 [Function `main`]
-        |  [005] if (true) reset R2 [Function `main`]
-        |  [006] if (true) use R2 2 [Function `main`]
-        |  [007] Call function `assert` with `(R2 <= 1)` [Function `main`]
-        |  [008] !(cond) [Function `assert`]
-        |  [009] ERROR: __VERIFIER_error(); [Function `assert`]
-        |  [010] return; [Function `assert`]))""".stripMargin
+        |  [000] (2) int C2 = -1; [Function `main`]
+        |  [001] (3) int R2 = 0; [Function `main`]
+        |  [002] (4) int S2 = 0; [Function `main`]
+        |  [003] (-1) if (n > 0) reset R2 [Function `main`]
+        |  [004] (-1) if (n > 1) use R2 1 [Function `main`]
+        |  [005] (-1) if (true) reset R2 [Function `main`]
+        |  [006] (-1) if (true) use R2 2 [Function `main`]
+        |  [007] (-1) Call function `assert` with `(R2 <= 1)` [Function `main`]
+        |  [008] (27) !(cond) [Function `assert`]
+        |  [009] (28) ERROR: __VERIFIER_error(); [Function `assert`]
+        |  [010] (30) return; [Function `assert`]))""".stripMargin
 
     List[TestCase](
       TestCase("Must be unknown", test01, test01Expected), // This must time out!
