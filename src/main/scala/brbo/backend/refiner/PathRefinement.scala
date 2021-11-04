@@ -11,7 +11,7 @@ class PathRefinement(arguments: CommandLineArguments) {
 
   // Perform command transformations to commands in the given path, and only for commands in the specified function
   def refine(path: Path, targetFunctionName: String): List[Refinement] = {
-    logger.infoOrError(s"Refining path: `$path`")
+    logger.traceOrError(s"Refining path: `$path`")
     val useInsertedPaths: Set[Refinement] = replaceUseOnly(path, targetFunctionName)
     useInsertedPaths.flatMap({
       useInsertedPath: Refinement => removeResetOnly(useInsertedPath, targetFunctionName)

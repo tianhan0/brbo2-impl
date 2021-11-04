@@ -1,13 +1,13 @@
 package brbo.frontend
 
-import brbo.common.{GhostVariableTyp, GhostVariableUtils, MyLogger}
 import brbo.common.ast._
+import brbo.common.{GhostVariableTyp, GhostVariableUtils, MyLogger}
+import brbo.frontend.TargetProgram.PREDEFINED_VARIABLES
 import brbo.frontend.TreeUtils.isCommand
 import com.sun.source.tree.Tree.Kind
 import com.sun.source.tree._
 import com.sun.source.util.TreePath
 
-import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
 case class TargetProgram(fullQualifiedClassName: String,
@@ -196,7 +196,11 @@ case class TargetProgram(fullQualifiedClassName: String,
           val name = tree.getName.toString
           allVariables.get(name) match {
             case Some(identifier) => Left(identifier)
-            case None => throw new Exception(s"Variable `$name` is neither an input or a local variable")
+            case None =>
+              PREDEFINED_VARIABLES.get(name) match {
+                case Some(value) => Left(Number(value))
+                case None => throw new Exception(s"Variable `$name` is neither an input or a local variable")
+              }
           }
         case tree: LiteralTree =>
           tree.getKind match {
@@ -228,11 +232,11 @@ case class TargetProgram(fullQualifiedClassName: String,
           functionName match {
             case PreDefinedFunctions.MOST_PRECISE_BOUND =>
               assert(mostPreciseAssertion.isEmpty, s"We allow at most 1 call to function `${PreDefinedFunctions.MOST_PRECISE_BOUND}`")
-              extractBound(arguments.head)
+              extractBound(arguments.head, mostPrecise = true)
               Right(Skip())
             case PreDefinedFunctions.LESS_PRECISE_BOUND =>
               assert(lessPreciseAssertion.isEmpty, s"We allow at most 1 call to function `${PreDefinedFunctions.LESS_PRECISE_BOUND}`")
-              extractBound(arguments.head)
+              extractBound(arguments.head, mostPrecise = false)
               Right(Skip())
             case _ => Left(FunctionCallExpr(functionName, arguments, returnType))
           }
@@ -263,14 +267,15 @@ case class TargetProgram(fullQualifiedClassName: String,
     }
   }
 
-  private def extractBound(boundAssertion: BrboExpr): Unit = {
+  private def extractBound(boundAssertion: BrboExpr, mostPrecise: Boolean): Unit = {
     val errorMessage = "Require specifying bounds in the form of R<=e for some R, e"
     boundAssertion match {
       case LessThanOrEqualTo(left, right, _) =>
         left match {
           case identifier: Identifier =>
             assert(GhostVariableUtils.isGhostVariable(identifier.identifier, GhostVariableTyp.Resource))
-            mostPreciseAssertion = Some(right)
+            if (mostPrecise) mostPreciseAssertion = Some(right)
+            else lessPreciseAssertion = Some(right)
           case _ => throw new Exception(s"$errorMessage: `$boundAssertion`")
         }
       case _ => throw new Exception(s"$errorMessage: `$boundAssertion`")
@@ -281,4 +286,5 @@ case class TargetProgram(fullQualifiedClassName: String,
 
 object TargetProgram {
   val MAIN_FUNCTION = "main"
+  val PREDEFINED_VARIABLES: Map[String, Int] = Map("MAX" -> 8)
 }

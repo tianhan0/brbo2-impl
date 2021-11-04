@@ -1,6 +1,7 @@
 package brbo.common.ast
 
 import brbo.common.BrboType.{BOOL, INT, VOID}
+import brbo.frontend.TargetProgram
 
 object PreDefinedFunctions {
   val VERIFIER_ERROR: String = "__VERIFIER_error"
@@ -22,12 +23,14 @@ object PreDefinedFunctions {
        |extern void $ABORT(void);
        |extern int $VERIFIER_NONDET_INT ();""".stripMargin
 
-  val SYMBOLS_MACRO: String =
-    """#define true 1
-      |#define false 0
-      |#define boolean int
-      |#define MAX 8
-      |""".stripMargin
+  val SYMBOLS_MACRO: String = {
+    val predefinedVariables = TargetProgram.PREDEFINED_VARIABLES.map({ case (name, value) => s"#define $name $value" }).toList.sorted.mkString("\n")
+    s"""#define true 1
+       |#define false 0
+       |#define boolean int
+       |$predefinedVariables
+       |""".stripMargin
+  }
 
   /*val __VERIFIER_assert: BrboFunction = {
     val cond = Identifier("cond", BOOL)

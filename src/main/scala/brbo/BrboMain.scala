@@ -2,7 +2,7 @@ package brbo
 
 import brbo.backend.driver.Driver
 import brbo.common.{CommandLineArguments, MyLogger, StringFormatUtils}
-import brbo.frontend.BasicProcessor
+import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.apache.commons.io.{FileUtils, FilenameUtils}
 
 import java.io.File
@@ -22,7 +22,7 @@ object BrboMain {
     logger.info(s"$TOOL_NAME has started.")
 
     arguments.toString.split("\n").foreach(s => logger.info(s"Command line argument - $s"))
-    logger.warn(s"We assume each class contains exactly one method")
+    logger.warn(s"We assume each class contains exactly one method named `${TargetProgram.MAIN_FUNCTION}`")
 
     val sourceFiles: List[(File, String)] = {
       val file = new java.io.File(arguments.getDirectoryToAnalyze)

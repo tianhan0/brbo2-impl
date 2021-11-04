@@ -26,7 +26,7 @@ class Refiner(arguments: CommandLineArguments) {
             if (refinement.noRefinement || avoidRefinementsInCegar.contains(refinement)) acc
             else {
               val refinedPath = refinement.refinedPath(programToRefine.mainFunction)
-              logger.infoOrError(s"Symbolically executing refined path:\n`${refinedPath.mkString("\n")}`")
+              logger.traceOrError(s"Symbolically executing refined path:\n`${refinedPath.mkString("\n")}`")
               val finalState = symbolicExecution.execute(refinedPath)
               logger.traceOrError(s"Final state:\n`$finalState`")
               // Get all group IDs and then all ghost variables
