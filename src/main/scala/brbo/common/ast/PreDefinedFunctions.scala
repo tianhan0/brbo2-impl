@@ -94,9 +94,8 @@ object PreDefinedFunctions {
     val body = {
       val x = Identifier("x", INT)
       val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
-      val assume = createAssume(Or(Equal(x, Number(0)), Equal(x, Number(1))))
-      val returnCommand = Return(Some(x))
-      Block(List(variableDeclaration, assume, returnCommand))
+      val ite = ITE(GreaterThan(x, Number(0)), Return(Some(Bool(b = true))), Return(Some(Bool(b = false))))
+      Block(List(variableDeclaration, ite))
     }
     BrboFunction(NDBOOL, BOOL, Nil, body, Set())
   }

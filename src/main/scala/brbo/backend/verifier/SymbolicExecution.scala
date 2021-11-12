@@ -4,12 +4,14 @@ import brbo.backend.verifier.SymbolicExecution._
 import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{StringCompare, Z3Solver}
+import brbo.common.{MyLogger, StringCompare, Z3Solver}
 import com.microsoft.z3.{AST, BoolExpr, Expr}
 
 import scala.annotation.tailrec
 
-class SymbolicExecution(inputVariables: List[Identifier]) {
+class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
+  private val logger = MyLogger.createLogger(classOf[SymbolicExecution], debugMode)
+
   val solver: Z3Solver = new Z3Solver
 
   val inputs: Valuation = inputVariables.foldLeft(Map[String, (BrboType, Value)]())({
@@ -108,7 +110,10 @@ class SymbolicExecution(inputVariables: List[Identifier]) {
                 newReturnValues2 = r._2
             })
             State(newValuation :: state.valuations.tail, solver.mkAnd(state.pathCondition, extraPathCondition.get), newReturnValues2)
-          case _: CFGOnly | Skip(_) | Break(_) | Continue(_) => throw new Exception(s"Unexpected command: `$command`")
+          case Break(_) | Continue(_) =>
+            // It is expected that, when parsing cex. paths, the result contains break or continue commands
+            state
+          case _: CFGOnly | Skip(_) => throw new Exception(s"Unexpected command: `$command`")
         }
       case Right(brboExpr) =>
         val (extraPathCondition, newReturnValues) = evaluateExpression(valuation, state.returnValues, brboExpr)

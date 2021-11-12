@@ -14,7 +14,7 @@ class Refiner(arguments: CommandLineArguments) {
 
   def refine(programToRefine: BrboProgram, counterexamplePath: Path, boundAssertion: BrboExpr,
              avoidRefinementsInCegar: Set[Refinement]): (Option[BrboProgram], Option[Refinement]) = {
-    val symbolicExecution = new SymbolicExecution(programToRefine.mainFunction.parameters)
+    val symbolicExecution = new SymbolicExecution(programToRefine.mainFunction.parameters, arguments.getDebugMode)
     val solver = symbolicExecution.solver
     logger.infoOrError(s"Generating all possible path refinements")
     val refinementsMap = pathRefinement.refine(counterexamplePath, programToRefine.mainFunction.identifier).foldLeft(Map[Expr, (Refinement, Expr)]())({

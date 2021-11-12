@@ -123,10 +123,8 @@ class ParseCounterexamplePath(debugMode: Boolean) {
      */
     def matchPath(state: State): State = {
       logger.traceOrError(s"Current state:\n$state")
-      if (!state.shouldContinue) {
+      if (!state.shouldContinue)
         throw new Exception
-        return state
-      }
       if (state.remainingPath.isEmpty && state.callStack.isEmpty) {
         logger.traceOrError(s"Stop matching, because the remaining path and the call stack are both empty!")
         return State(subStateWhenMatchSucceed, Nil, state.matchedNodes, Nil, shouldContinue = false)
@@ -259,11 +257,18 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               logger.traceOrError(s"Current AST node `$currentNode` ${if (result.matched) "indeed matches" else "does not match"} current path node `$head`")
               if (!result.matched) {
                 currentNode.value match {
-                  case Left(_) => throw new Exception
+                  case Left(command) =>
+                    command match {
+                      case c@(Continue(_) | Break(_)) =>
+                        logger.traceOrError(s"Decide to match control flow AST node `$currentNode` with no path node.")
+                        logger.traceOrError(s"Will re-match current path node `$head`.")
+                        (MatchResult(matched = true, matchedExpression = false, matchedTrueBranch = false), true)
+                      case _ => throw new Exception
+                    }
                   case Right(_) =>
                     // Decide to match anyway, since constant bool expressions never show up in a path
                     // This will always match the true branch, because otherwise this node will appear in the trace (and thus we won't end up here)
-                    logger.traceOrError(s"Decide to match AST node `$currentNode` with an empty path node.")
+                    logger.traceOrError(s"Decide to match conditional AST node `$currentNode` with no path node.")
                     logger.traceOrError(s"Will re-match current path node `$head`.")
                     (MatchResult(matched = true, matchedExpression = true, matchedTrueBranch = true), true)
                 }

@@ -4,7 +4,8 @@ import brbo.benchmarks.Common;
 
 abstract public class LenientFormat extends Common {
   void main(int template, int args) {
-    if (template <= 0 || args <= 0) {
+    if (template <= 0 || args <= 0
+        || template > LARGE_INT || args > LARGE_INT) {
       return;
     }
     int builder = 0;
@@ -14,7 +15,9 @@ abstract public class LenientFormat extends Common {
     int templateStart = 0;
     int i = 0;
     while (i < args) {
-      int placeholderStart = ndBool() ? -1 : ndInt2(templateStart, template - 1);
+      int placeholderStart = 0;
+      if (ndBool()) placeholderStart = -1;
+      else placeholderStart = ndInt2(templateStart, template - 1);
       if (placeholderStart == -1) {
         break;
       }

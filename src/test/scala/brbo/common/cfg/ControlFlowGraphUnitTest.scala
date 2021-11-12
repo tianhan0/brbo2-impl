@@ -16,7 +16,7 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
         val controlFlowGraph = ControlFlowGraph.toControlFlowGraph(testCase.input.asInstanceOf[BrboProgram])
         controlFlowGraph.printPDF()
         val dotRepresentation = controlFlowGraph.exportToDOT
-        assert(StringCompare.ignoreWhitespaces(dotRepresentation, testCase.expectedOutput, s"${testCase.name} failed!"))
+        StringCompare.ignoreWhitespaces(dotRepresentation, testCase.expectedOutput, s"${testCase.name} failed!")
     })
   }
 }
@@ -50,16 +50,17 @@ object ControlFlowGraphUnitTest {
                            |  17 [ shape=rectangle label="(17) return __VERIFIER_nondet_int();" ];
                            |  18 [ shape=oval label="(18) [Function Exit]" ];
                            |  19 [ shape=rectangle label="(19) int x = ndInt();" ];
-                           |  20 [ shape=rectangle label="(20) assume((x == 0) || (x == 1));" ];
-                           |  21 [ shape=rectangle label="(21) return x;" ];
-                           |  22 [ shape=oval label="(22) [Function Exit]" ];
-                           |  23 [ shape=rectangle label="(23) int x = ndInt();" ];
-                           |  24 [ shape=rectangle label="(24) assume((lower <= x) && (x <= upper));" ];
-                           |  25 [ shape=rectangle label="(25) return x;" ];
-                           |  26 [ shape=oval label="(26) [Function Exit]" ];
-                           |  27 [ shape=oval label="(27) [Empty node]" ];
-                           |  28 [ shape=oval label="(28) [Function Exit]" ];
-                           |  29 [ shape=oval label="(29) [Empty node]" ];
+                           |  20 [ shape=diamond label="(20) (x > 0)" ];
+                           |  21 [ shape=rectangle label="(21) return true;" ];
+                           |  22 [ shape=rectangle label="(22) return false;" ];
+                           |  23 [ shape=oval label="(23) [Function Exit]" ];
+                           |  24 [ shape=rectangle label="(24) int x = ndInt();" ];
+                           |  25 [ shape=rectangle label="(25) assume((lower <= x) && (x <= upper));" ];
+                           |  26 [ shape=rectangle label="(26) return x;" ];
+                           |  27 [ shape=oval label="(27) [Function Exit]" ];
+                           |  28 [ shape=oval label="(28) [Empty node]" ];
+                           |  29 [ shape=oval label="(29) [Function Exit]" ];
+                           |  30 [ shape=oval label="(30) [Empty node]" ];
                            |  6 -> 4 [ label="0.0" ];
                            |  5 -> 6 [ label="0.0" ];
                            |  3 -> 4 [ label="-1.0" ];
@@ -77,13 +78,15 @@ object ControlFlowGraphUnitTest {
                            |  15 -> 12 [ label="0.0" ];
                            |  17 -> 16 [ label="0.0" ];
                            |  21 -> 18 [ label="0.0" ];
+                           |  22 -> 18 [ label="0.0" ];
+                           |  20 -> 21 [ label="1.0" ];
+                           |  20 -> 22 [ label="-1.0" ];
                            |  19 -> 20 [ label="0.0" ];
-                           |  20 -> 21 [ label="0.0" ];
-                           |  25 -> 22 [ label="0.0" ];
-                           |  23 -> 24 [ label="0.0" ];
+                           |  26 -> 23 [ label="0.0" ];
                            |  24 -> 25 [ label="0.0" ];
-                           |  27 -> 26 [ label="0.0" ];
-                           |  29 -> 28 [ label="0.0" ];
+                           |  25 -> 26 [ label="0.0" ];
+                           |  28 -> 27 [ label="0.0" ];
+                           |  30 -> 29 [ label="0.0" ];
                            |}""".stripMargin
 
     val test02 = {
@@ -113,16 +116,17 @@ object ControlFlowGraphUnitTest {
                            |  17 [ shape=rectangle label="(17) return __VERIFIER_nondet_int();" ];
                            |  18 [ shape=oval label="(18) [Function Exit]" ];
                            |  19 [ shape=rectangle label="(19) int x = ndInt();" ];
-                           |  20 [ shape=rectangle label="(20) assume((x == 0) || (x == 1));" ];
-                           |  21 [ shape=rectangle label="(21) return x;" ];
-                           |  22 [ shape=oval label="(22) [Function Exit]" ];
-                           |  23 [ shape=rectangle label="(23) int x = ndInt();" ];
-                           |  24 [ shape=rectangle label="(24) assume((lower <= x) && (x <= upper));" ];
-                           |  25 [ shape=rectangle label="(25) return x;" ];
-                           |  26 [ shape=oval label="(26) [Function Exit]" ];
-                           |  27 [ shape=oval label="(27) [Empty node]" ];
-                           |  28 [ shape=oval label="(28) [Function Exit]" ];
-                           |  29 [ shape=oval label="(29) [Empty node]" ];
+                           |  20 [ shape=diamond label="(20) (x > 0)" ];
+                           |  21 [ shape=rectangle label="(21) return true;" ];
+                           |  22 [ shape=rectangle label="(22) return false;" ];
+                           |  23 [ shape=oval label="(23) [Function Exit]" ];
+                           |  24 [ shape=rectangle label="(24) int x = ndInt();" ];
+                           |  25 [ shape=rectangle label="(25) assume((lower <= x) && (x <= upper));" ];
+                           |  26 [ shape=rectangle label="(26) return x;" ];
+                           |  27 [ shape=oval label="(27) [Function Exit]" ];
+                           |  28 [ shape=oval label="(28) [Empty node]" ];
+                           |  29 [ shape=oval label="(29) [Function Exit]" ];
+                           |  30 [ shape=oval label="(30) [Empty node]" ];
                            |  5 -> 3 [ label="0.0" ];
                            |  3 -> 4 [ label="-1.0" ];
                            |  3 -> 5 [ label="1.0" ];
@@ -140,13 +144,15 @@ object ControlFlowGraphUnitTest {
                            |  15 -> 12 [ label="0.0" ];
                            |  17 -> 16 [ label="0.0" ];
                            |  21 -> 18 [ label="0.0" ];
+                           |  22 -> 18 [ label="0.0" ];
+                           |  20 -> 21 [ label="1.0" ];
+                           |  20 -> 22 [ label="-1.0" ];
                            |  19 -> 20 [ label="0.0" ];
-                           |  20 -> 21 [ label="0.0" ];
-                           |  25 -> 22 [ label="0.0" ];
-                           |  23 -> 24 [ label="0.0" ];
+                           |  26 -> 23 [ label="0.0" ];
                            |  24 -> 25 [ label="0.0" ];
-                           |  27 -> 26 [ label="0.0" ];
-                           |  29 -> 28 [ label="0.0" ];
+                           |  25 -> 26 [ label="0.0" ];
+                           |  28 -> 27 [ label="0.0" ];
+                           |  30 -> 29 [ label="0.0" ];
                            |}""".stripMargin
 
     val test03 = {
@@ -171,16 +177,17 @@ object ControlFlowGraphUnitTest {
                            |  13 [ shape=rectangle label="(13) return __VERIFIER_nondet_int();" ];
                            |  14 [ shape=oval label="(14) [Function Exit]" ];
                            |  15 [ shape=rectangle label="(15) int x = ndInt();" ];
-                           |  16 [ shape=rectangle label="(16) assume((x == 0) || (x == 1));" ];
-                           |  17 [ shape=rectangle label="(17) return x;" ];
-                           |  18 [ shape=oval label="(18) [Function Exit]" ];
-                           |  19 [ shape=rectangle label="(19) int x = ndInt();" ];
-                           |  20 [ shape=rectangle label="(20) assume((lower <= x) && (x <= upper));" ];
-                           |  21 [ shape=rectangle label="(21) return x;" ];
-                           |  22 [ shape=oval label="(22) [Function Exit]" ];
-                           |  23 [ shape=oval label="(23) [Empty node]" ];
-                           |  24 [ shape=oval label="(24) [Function Exit]" ];
-                           |  25 [ shape=oval label="(25) [Empty node]" ];
+                           |  16 [ shape=diamond label="(16) (x > 0)" ];
+                           |  17 [ shape=rectangle label="(17) return true;" ];
+                           |  18 [ shape=rectangle label="(18) return false;" ];
+                           |  19 [ shape=oval label="(19) [Function Exit]" ];
+                           |  20 [ shape=rectangle label="(20) int x = ndInt();" ];
+                           |  21 [ shape=rectangle label="(21) assume((lower <= x) && (x <= upper));" ];
+                           |  22 [ shape=rectangle label="(22) return x;" ];
+                           |  23 [ shape=oval label="(23) [Function Exit]" ];
+                           |  24 [ shape=oval label="(24) [Empty node]" ];
+                           |  25 [ shape=oval label="(25) [Function Exit]" ];
+                           |  26 [ shape=oval label="(26) [Empty node]" ];
                            |  2 -> 1 [ label="0.0" ];
                            |  4 -> 5 [ label="1.0" ];
                            |  4 -> 6 [ label="-1.0" ];
@@ -193,13 +200,15 @@ object ControlFlowGraphUnitTest {
                            |  11 -> 8 [ label="0.0" ];
                            |  13 -> 12 [ label="0.0" ];
                            |  17 -> 14 [ label="0.0" ];
+                           |  18 -> 14 [ label="0.0" ];
+                           |  16 -> 17 [ label="1.0" ];
+                           |  16 -> 18 [ label="-1.0" ];
                            |  15 -> 16 [ label="0.0" ];
-                           |  16 -> 17 [ label="0.0" ];
-                           |  21 -> 18 [ label="0.0" ];
-                           |  19 -> 20 [ label="0.0" ];
+                           |  22 -> 19 [ label="0.0" ];
                            |  20 -> 21 [ label="0.0" ];
-                           |  23 -> 22 [ label="0.0" ];
-                           |  25 -> 24 [ label="0.0" ];
+                           |  21 -> 22 [ label="0.0" ];
+                           |  24 -> 23 [ label="0.0" ];
+                           |  26 -> 25 [ label="0.0" ];
                            |}""".stripMargin
 
     val test04 = {
@@ -235,16 +244,17 @@ object ControlFlowGraphUnitTest {
                            |  17 [ shape=rectangle label="(17) return __VERIFIER_nondet_int();" ];
                            |  18 [ shape=oval label="(18) [Function Exit]" ];
                            |  19 [ shape=rectangle label="(19) int x = ndInt();" ];
-                           |  20 [ shape=rectangle label="(20) assume((x == 0) || (x == 1));" ];
-                           |  21 [ shape=rectangle label="(21) return x;" ];
-                           |  22 [ shape=oval label="(22) [Function Exit]" ];
-                           |  23 [ shape=rectangle label="(23) int x = ndInt();" ];
-                           |  24 [ shape=rectangle label="(24) assume((lower <= x) && (x <= upper));" ];
-                           |  25 [ shape=rectangle label="(25) return x;" ];
-                           |  26 [ shape=oval label="(26) [Function Exit]" ];
-                           |  27 [ shape=oval label="(27) [Empty node]" ];
-                           |  28 [ shape=oval label="(28) [Function Exit]" ];
-                           |  29 [ shape=oval label="(29) [Empty node]" ];
+                           |  20 [ shape=diamond label="(20) (x > 0)" ];
+                           |  21 [ shape=rectangle label="(21) return true;" ];
+                           |  22 [ shape=rectangle label="(22) return false;" ];
+                           |  23 [ shape=oval label="(23) [Function Exit]" ];
+                           |  24 [ shape=rectangle label="(24) int x = ndInt();" ];
+                           |  25 [ shape=rectangle label="(25) assume((lower <= x) && (x <= upper));" ];
+                           |  26 [ shape=rectangle label="(26) return x;" ];
+                           |  27 [ shape=oval label="(27) [Function Exit]" ];
+                           |  28 [ shape=oval label="(28) [Empty node]" ];
+                           |  29 [ shape=oval label="(29) [Function Exit]" ];
+                           |  30 [ shape=oval label="(30) [Empty node]" ];
                            |  3 -> 4 [ label="1.0" ];
                            |  3 -> 5 [ label="-1.0" ];
                            |  2 -> 3 [ label="0.0" ];
@@ -262,13 +272,15 @@ object ControlFlowGraphUnitTest {
                            |  15 -> 12 [ label="0.0" ];
                            |  17 -> 16 [ label="0.0" ];
                            |  21 -> 18 [ label="0.0" ];
+                           |  22 -> 18 [ label="0.0" ];
+                           |  20 -> 21 [ label="1.0" ];
+                           |  20 -> 22 [ label="-1.0" ];
                            |  19 -> 20 [ label="0.0" ];
-                           |  20 -> 21 [ label="0.0" ];
-                           |  25 -> 22 [ label="0.0" ];
-                           |  23 -> 24 [ label="0.0" ];
+                           |  26 -> 23 [ label="0.0" ];
                            |  24 -> 25 [ label="0.0" ];
-                           |  27 -> 26 [ label="0.0" ];
-                           |  29 -> 28 [ label="0.0" ];
+                           |  25 -> 26 [ label="0.0" ];
+                           |  28 -> 27 [ label="0.0" ];
+                           |  30 -> 29 [ label="0.0" ];
                            |}""".stripMargin
 
     val test05 = {
@@ -309,16 +321,17 @@ object ControlFlowGraphUnitTest {
                            |  21 [ shape=rectangle label="(21) return __VERIFIER_nondet_int();" ];
                            |  22 [ shape=oval label="(22) [Function Exit]" ];
                            |  23 [ shape=rectangle label="(23) int x = ndInt();" ];
-                           |  24 [ shape=rectangle label="(24) assume((x == 0) || (x == 1));" ];
-                           |  25 [ shape=rectangle label="(25) return x;" ];
-                           |  26 [ shape=oval label="(26) [Function Exit]" ];
-                           |  27 [ shape=rectangle label="(27) int x = ndInt();" ];
-                           |  28 [ shape=rectangle label="(28) assume((lower <= x) && (x <= upper));" ];
-                           |  29 [ shape=rectangle label="(29) return x;" ];
-                           |  30 [ shape=oval label="(30) [Function Exit]" ];
-                           |  31 [ shape=oval label="(31) [Empty node]" ];
-                           |  32 [ shape=oval label="(32) [Function Exit]" ];
-                           |  33 [ shape=oval label="(33) [Empty node]" ];
+                           |  24 [ shape=diamond label="(24) (x > 0)" ];
+                           |  25 [ shape=rectangle label="(25) return true;" ];
+                           |  26 [ shape=rectangle label="(26) return false;" ];
+                           |  27 [ shape=oval label="(27) [Function Exit]" ];
+                           |  28 [ shape=rectangle label="(28) int x = ndInt();" ];
+                           |  29 [ shape=rectangle label="(29) assume((lower <= x) && (x <= upper));" ];
+                           |  30 [ shape=rectangle label="(30) return x;" ];
+                           |  31 [ shape=oval label="(31) [Function Exit]" ];
+                           |  32 [ shape=oval label="(32) [Empty node]" ];
+                           |  33 [ shape=oval label="(33) [Function Exit]" ];
+                           |  34 [ shape=oval label="(34) [Empty node]" ];
                            |  8 -> 6 [ label="0.0" ];
                            |  9 -> 5 [ label="0.0" ];
                            |  7 -> 8 [ label="1.0" ];
@@ -342,13 +355,15 @@ object ControlFlowGraphUnitTest {
                            |  19 -> 16 [ label="0.0" ];
                            |  21 -> 20 [ label="0.0" ];
                            |  25 -> 22 [ label="0.0" ];
+                           |  26 -> 22 [ label="0.0" ];
+                           |  24 -> 25 [ label="1.0" ];
+                           |  24 -> 26 [ label="-1.0" ];
                            |  23 -> 24 [ label="0.0" ];
-                           |  24 -> 25 [ label="0.0" ];
-                           |  29 -> 26 [ label="0.0" ];
-                           |  27 -> 28 [ label="0.0" ];
+                           |  30 -> 27 [ label="0.0" ];
                            |  28 -> 29 [ label="0.0" ];
-                           |  31 -> 30 [ label="0.0" ];
-                           |  33 -> 32 [ label="0.0" ];
+                           |  29 -> 30 [ label="0.0" ];
+                           |  32 -> 31 [ label="0.0" ];
+                           |  34 -> 33 [ label="0.0" ];
                            |}""".stripMargin
 
     List[TestCase](

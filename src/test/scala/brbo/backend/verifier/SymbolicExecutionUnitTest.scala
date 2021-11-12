@@ -12,7 +12,7 @@ class SymbolicExecutionUnitTest extends AnyFlatSpec {
   "Symbolic execution a path" should "be correct" in {
     SymbolicExecutionUnitTest.tests.foreach({
       testCase =>
-        val symbolicExecution = new SymbolicExecution(SymbolicExecutionUnitTest.program.mainFunction.parameters)
+        val symbolicExecution = new SymbolicExecution(SymbolicExecutionUnitTest.program.mainFunction.parameters, debugMode = false)
         val result = symbolicExecution.execute(testCase.input.asInstanceOf[Path].pathNodes)
         assert(StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"${testCase.name} failed!"))
     })

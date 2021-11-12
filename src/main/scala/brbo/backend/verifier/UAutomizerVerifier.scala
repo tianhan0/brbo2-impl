@@ -59,7 +59,6 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
 
   private def runAndGetStdOutput(sourceCode: String): (Option[String], Path) = {
     val stdout = new StringBuilder
-    val stderr = new StringBuilder
 
     val file = Files.createTempFile("prefix-", ".c")
     new PrintWriter(file.toAbsolutePath.toString) {
@@ -106,7 +105,7 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
           IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
         }
         catch {
-          case _: Exception => ""
+          case _: Exception => "stdout is empty (Since the process timed out)"
         }
       }
       if (result == 0) {
@@ -118,15 +117,12 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
       else {
         logger.fatal(s"Error when running `$toolName`. Exit code: `$result`")
         logger.fatal(s"stdout:\n$stdout")
-        logger.fatal(s"stderr:\n$stderr")
         (None, violationWitnessFile)
       }
     }
     catch {
       case e: Exception =>
         logger.fatal(s"Exception!", e)
-        logger.fatal(s"stdout:\n$stdout")
-        logger.fatal(s"stderr:\n$stderr")
         throw new RuntimeException(s"Error when running `$toolName`")
     }
   }

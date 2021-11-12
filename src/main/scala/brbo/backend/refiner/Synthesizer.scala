@@ -12,7 +12,7 @@ class Synthesizer(programToSynthesizeFrom: BrboProgram, relationalPredicates: Bo
   private val useCommands = allCommands.filter(command => command.isInstanceOf[Use])
   private val resetCommands = allCommands.filter(command => command.isInstanceOf[Reset])
 
-  private val symbolicExecution = new SymbolicExecution(programToSynthesizeFrom.mainFunction.parameters)
+  private val symbolicExecution = new SymbolicExecution(programToSynthesizeFrom.mainFunction.parameters, argument.getDebugMode)
   private val predicates: List[Predicate] = {
     val allNonGhostVariables = {
       val allVariables = programToSynthesizeFrom.mainFunction.parameters.toSet ++
