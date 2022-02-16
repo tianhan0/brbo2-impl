@@ -8,6 +8,7 @@ abstract class Verifier {
   val arguments: CommandLineArguments
   val toolName: String
   val toolDirectory: String
+  val TIMEOUT: Int = arguments.getModelCheckerTimeout // Unit: Seconds
 
   protected val logger: MyLogger = MyLogger(LogManager.getLogger(classOf[Verifier]), arguments.getDebugMode)
 

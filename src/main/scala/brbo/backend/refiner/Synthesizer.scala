@@ -140,11 +140,9 @@ class Synthesizer(programToSynthesizeFrom: BrboProgram, relationalPredicates: Bo
 
   def computeImpliedPredicates(whatToImplyFrom: AST): List[Predicate] = {
     val solver = symbolicExecution.solver
-    val isFalse = {
-      val query = solver.mkIff(whatToImplyFrom, solver.mkFalse())
-      solver.checkAssertionForallPushPop(query)
-    }
-    assert(!isFalse)
+    val query = solver.mkIff(whatToImplyFrom, solver.mkFalse())
+    val isFalse = solver.checkAssertionForallPushPop(query)
+    assert(!isFalse, s"$query")
     // Return false (instead of all predicates) when whatToImplyFrom is false
     // if (isFalse) return List(Predicate(Bool(b = false)))
     val result = predicates.filter({

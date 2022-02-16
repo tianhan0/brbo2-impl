@@ -5,22 +5,18 @@ import brbo.common.ast.{BrboProgram, BrboProgramInC}
 import brbo.common.{CommandLineArguments, FileUtils}
 import org.apache.commons.io.IOUtils
 
-import java.io.{BufferedReader, InputStreamReader, PrintWriter}
+import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.TimeUnit
-import java.util.stream.Collectors
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.{Duration, SECONDS}
-import scala.concurrent.{Await, Future, TimeoutException, blocking}
-import scala.sys.process._
 import scala.collection.JavaConverters._
+import scala.concurrent.duration.{Duration, SECONDS}
+import scala.sys.process._
 
 class UAutomizerVerifier(override val arguments: CommandLineArguments) extends Verifier {
   override val toolName = "UAutomizer"
   override val toolDirectory: String = arguments.getModelCheckerDirectory
 
-  private val TIMEOUT = arguments.getModelCheckerTimeout // Unit: Seconds
   private val PROPERTY_FILE = s"$toolDirectory/unreach-call.prp"
   private val EXECUTABLE_FILE = s"./Ultimate.py"
   private val FULL_OUTPUT = "--full-output"
@@ -87,7 +83,7 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
         else Duration.Inf
       }
       val result: Int = {
-        if(!process.waitFor(actualTimeout.toSeconds, TimeUnit.SECONDS)) {
+        if (!process.waitFor(actualTimeout.toSeconds, TimeUnit.SECONDS)) {
           logger.fatal(s"`$toolName` timed out after `$actualTimeout`!")
           process.descendants().forEach({
             handle =>
