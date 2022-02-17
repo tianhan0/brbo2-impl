@@ -48,4 +48,31 @@ object BrboAstUtils {
       case _ => throw new Exception
     }
   }
+
+  def findParentStatements(currentNode: BrboAstNode, parent: Option[Statement] = None): Map[BrboAstNode, Statement] = {
+    val currentMap: Map[BrboAstNode, Statement] = parent match {
+      case Some(value) => Map(currentNode -> value)
+      case None => Map()
+    }
+    val childrenMap: Map[BrboAstNode, Statement] = currentNode match {
+      case brboAst: BrboAst =>
+        brboAst match {
+          case _: Command => Map()
+          case statement: Statement =>
+            statement match {
+              case Block(asts, _) =>
+                asts.flatMap(ast => findParentStatements(ast, Some(statement))).toMap
+              case ITE(condition, thenAst, elseAst, _) =>
+                findParentStatements(condition, Some(statement)) ++ findParentStatements(thenAst, Some(statement)) ++
+                  findParentStatements(elseAst, Some(statement))
+              case Loop(condition, loopBody, _) =>
+                findParentStatements(condition, Some(statement)) ++ findParentStatements(loopBody, Some(statement))
+              case _ => throw new Exception
+            }
+          case _ => throw new Exception
+        }
+      case _: BrboExpr => Map()
+    }
+    currentMap ++ childrenMap
+  }
 }

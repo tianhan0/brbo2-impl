@@ -69,7 +69,7 @@ case class BrboFunction(identifier: String, returnType: BrboType, parameters: Li
   def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, bodyNoInitialization, newGroupIds)
 }
 
-abstract class BrboAst extends PrettyPrintToC with ToInternalRepresentationOverrideToString
+abstract class BrboAst extends BrboAstNode with PrettyPrintToC with ToInternalRepresentationOverrideToString
 
 abstract class Command extends BrboAst with PrettyPrintToCFG with GetFunctionCalls with UseDefVariables {
   override def toIR(indent: Int): String = prettyPrintToC(indent)

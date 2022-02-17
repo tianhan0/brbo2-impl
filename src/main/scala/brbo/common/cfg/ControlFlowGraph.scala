@@ -201,7 +201,7 @@ object ControlFlowGraph {
  *
  * @param entryNode    Root node of the CFG. Every node is either a command or an expression.
  * @param cfgs         A mapping from functions to their entries and exits in the CFG
- * @param brboProgram  The program for which the CFG is generated
+ * @param brboProgram  The program from which the CFG is generated
  * @param walaGraph    A CFG that connects CFGs of all functions, in WALA representation
  * @param jgraphtGraph A CFG that connects CFGs of all functions, in jgrapht representation
  */
