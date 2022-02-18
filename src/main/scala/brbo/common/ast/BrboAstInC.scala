@@ -14,7 +14,7 @@ case class BrboProgramInC(originalProgram: BrboProgram) {
         (c.function :: acc._1, acc._2 ++ c.map)
     })
     val newProgram = BrboProgram(originalProgram.name, newMainFunction,
-      originalProgram.mostPreciseAssertion, originalProgram.lessPreciseAssertion, functions.reverse)
+      originalProgram.boundAssertions, functions.reverse)
     (newProgram, map)
   }
 }

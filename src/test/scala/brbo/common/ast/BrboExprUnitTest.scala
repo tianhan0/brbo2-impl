@@ -10,7 +10,9 @@ class BrboExprUnitTest extends AnyFlatSpec {
   "Pretty-printing BrboExpr to C expression" should "be correct" in {
     BrboExprUnitTest.prettyPrintToCUnitTest.foreach({
       testCase =>
-        StringCompare.compareLiteral(testCase.input.asInstanceOf[BrboExpr].prettyPrintToC(), testCase.expectedOutput, s"${testCase.name} failed!")
+        val expr = testCase.input.asInstanceOf[BrboExpr]
+        StringCompare.compareLiteral(expr.prettyPrintToC(), testCase.expectedOutput, s"${testCase.name} failed!")
+        BrboExprUtils.visit(expr) // Ensure every expression is handled by this pattern matching
     })
   }
 }

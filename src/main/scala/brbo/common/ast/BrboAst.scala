@@ -7,23 +7,23 @@ import brbo.common.{BrboType, GhostVariableUtils}
 import java.util.UUID
 
 case class BrboProgram(name: String, mainFunction: BrboFunction,
-                       mostPreciseAssertion: Option[BrboExpr] = None, lessPreciseAssertion: Option[BrboExpr] = None,
+                       boundAssertions: List[BoundAssertion] = Nil,
                        functions: List[BrboFunction] = Nil, uuid: UUID = UUID.randomUUID())
-  extends PrettyPrintToC with ToInternalRepresentationOverrideToString {
+  extends PrettyPrintToC with OverrideToString {
   override def prettyPrintToC(indent: Int): String = {
     val functionsString = (functions :+ mainFunction).map(function => function.prettyPrintToC(indent)).mkString("\n")
     s"${PreDefinedFunctions.UNDEFINED_FUNCTIONS_MACRO}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
   }
 
   override def toIR(indent: Int = 0): String = {
+    val separator  = ", "
     s"Program name: `$name`\n" +
-      s"Most precise bound: `$mostPreciseAssertion`\n" +
-      s"Less precise bound: `$lessPreciseAssertion`\n" +
+      s"Global assertions to verify: `${boundAssertions.map(a => a.assertion.toString).mkString(separator)}`\n" +
       s"${(functions :+ mainFunction).map(function => function.toIR(DEFAULT_INDENT_IR)).mkString("\n")}"
   }
 
   def replaceMainFunction(newMainFunction: BrboFunction): BrboProgram =
-    BrboProgram(name, newMainFunction, mostPreciseAssertion, lessPreciseAssertion, functions)
+    BrboProgram(name, newMainFunction, boundAssertions, functions)
 }
 
 /**
@@ -40,7 +40,7 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
  */
 case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier],
                         bodyNoInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
-  extends PrettyPrintToC with ToInternalRepresentationOverrideToString {
+  extends PrettyPrintToC with OverrideToString {
   val ghostVariableInitializations: List[Command] = groupIds.flatMap({
     groupId => GhostVariableUtils.declareVariables(groupId)
   }).toList.sortWith({ case (c1, c2) => c1.toIR() < c2.toIR() })
@@ -69,7 +69,7 @@ case class BrboFunction(identifier: String, returnType: BrboType, parameters: Li
   def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, bodyNoInitialization, newGroupIds)
 }
 
-abstract class BrboAst extends BrboAstNode with PrettyPrintToC with ToInternalRepresentationOverrideToString
+abstract class BrboAst extends BrboAstNode with PrettyPrintToC with OverrideToString
 
 abstract class Command extends BrboAst with PrettyPrintToCFG with GetFunctionCalls with UseDefVariables {
   override def toIR(indent: Int): String = prettyPrintToC(indent)

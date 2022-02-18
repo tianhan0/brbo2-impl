@@ -31,18 +31,18 @@ object BrboAstUtils {
     }
   }
 
-  def replace(body: BrboAst, oldAst: BrboAst, newAst: BrboAst): BrboAst = {
+  def replaceAst(body: BrboAst, oldAst: BrboAst, newAst: BrboAst): BrboAst = {
     if (body == oldAst) return newAst
     body match {
       case command: Command => command
       case statement: Statement =>
         statement match {
           case Block(asts, _) =>
-            Block(asts.map(ast => replace(ast, oldAst, newAst)))
+            Block(asts.map(ast => replaceAst(ast, oldAst, newAst)))
           case ITE(condition, thenAst, elseAst, _) =>
-            ITE(condition, replace(thenAst, oldAst, newAst), replace(elseAst, oldAst, newAst))
+            ITE(condition, replaceAst(thenAst, oldAst, newAst), replaceAst(elseAst, oldAst, newAst))
           case Loop(condition, loopBody, _) =>
-            Loop(condition, replace(loopBody, oldAst, newAst))
+            Loop(condition, replaceAst(loopBody, oldAst, newAst))
           case _ => throw new Exception
         }
       case _ => throw new Exception

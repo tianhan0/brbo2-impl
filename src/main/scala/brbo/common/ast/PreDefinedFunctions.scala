@@ -51,8 +51,7 @@ object PreDefinedFunctions {
   val NDINT: String = "ndInt"
   val NDBOOL: String = "ndBool"
   val NDINT2: String = "ndInt2"
-  val MOST_PRECISE_BOUND: String = "mostPreciseBound"
-  val LESS_PRECISE_BOUND: String = "lessPreciseBound"
+  val BOUND_ASSERTION: String = "boundAssertion"
 
   val assert: BrboFunction = {
     val cond = Identifier("cond", BOOL)
@@ -113,17 +112,13 @@ object PreDefinedFunctions {
     BrboFunction(NDINT2, INT, List(lower, upper), body, Set())
   }
 
-  val mostPreciseBound: BrboFunction = {
-    BrboFunction(MOST_PRECISE_BOUND, VOID, List(Identifier("assertion", BOOL)), Block(Nil), Set())
+  val boundAssertion: BrboFunction = {
+    BrboFunction(BOUND_ASSERTION, VOID, List(Identifier("assertion", BOOL)), Block(Nil), Set())
   }
 
-  val lessPreciseBound: BrboFunction = {
-    BrboFunction(LESS_PRECISE_BOUND, VOID, List(Identifier("assertion", BOOL)), Block(Nil), Set())
-  }
-
-  val allFunctions = Map(ASSERT -> assert, ASSUME -> assume, NDINT -> ndInt, NDBOOL -> ndBool, NDINT2 -> ndInt2,
-    MOST_PRECISE_BOUND -> mostPreciseBound, LESS_PRECISE_BOUND -> lessPreciseBound)
-  val allFunctionsList = List(assert, assume, ndInt, ndBool, ndInt2, mostPreciseBound, lessPreciseBound)
+  val allFunctions = Map(ASSERT -> assert, ASSUME -> assume, NDINT -> ndInt,
+    NDBOOL -> ndBool, NDINT2 -> ndInt2, BOUND_ASSERTION -> boundAssertion)
+  val allFunctionsList = List(assert, assume, ndInt, ndBool, ndInt2, boundAssertion)
 
   def createAssert(expression: BrboExpr): FunctionCall = FunctionCall(FunctionCallExpr(ASSERT, List(expression), BOOL))
 

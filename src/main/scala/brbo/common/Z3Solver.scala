@@ -1,7 +1,7 @@
 package brbo.common
 
 import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
-import brbo.common.ast.Identifier
+import brbo.common.ast.{Identifier, Z3AST}
 import com.microsoft.z3._
 import org.apache.logging.log4j.LogManager
 
@@ -215,6 +215,10 @@ class Z3Solver {
 
   def getModel: Model = this.synchronized {
     solver.getModel
+  }
+
+  def substitute(body: AST, from: AST, to: AST): Expr = {
+    body.asInstanceOf[Expr].substitute(from.asInstanceOf[Expr], to.asInstanceOf[Expr])
   }
 }
 

@@ -1,6 +1,7 @@
 package brbo
 
 import brbo.backend.driver.Driver
+import brbo.common.CommandLineArguments.DEFAULT_ASSERTION_INDEX
 import brbo.common.cfg.ControlFlowGraph
 import brbo.common.{CommandLineArguments, MyLogger, StringFormatUtils}
 import brbo.frontend.{BasicProcessor, TargetProgram}
@@ -100,20 +101,18 @@ object BrboMain {
         ControlFlowGraph.toControlFlowGraph(targetProgram.program).printPDF()
       }
       val driver = new Driver(arguments, targetProgram.program)
-      // TODO: Analyze based on the specified mode in the arguments
-      targetProgram.program.mostPreciseAssertion match {
-        case Some(bound) =>
-          logger.info(s"Verify the most precise bound via selective amortization")
-          driver.verifySelectivelyAmortize(bound)
-        case None =>
-          logger.info(s"Most precise bound does not exist!")
-      }
-      targetProgram.program.lessPreciseAssertion match {
-        case Some(bound) =>
-          logger.info(s"Verify the less precise bound via selective amortization")
-          driver.verifySelectivelyAmortize(bound)
-        case None =>
-          logger.info(s"Less precise bound does not exist!")
+      arguments.getAssertionIndex match {
+        case DEFAULT_ASSERTION_INDEX =>
+          logger.info(s"Verify every global assertion in every file")
+          targetProgram.program.boundAssertions.zipWithIndex.foreach({
+            case (assertion, index) =>
+              logger.info(s"Verify every global assertion in every file [`$index`/`${targetProgram.program.boundAssertions.size}`]")
+              driver.verify(assertion)
+          })
+        case index if index > 0 =>
+          logger.info(s"Verify the $index-th global assertion in every file")
+          driver.verify(targetProgram.program.boundAssertions(index - 1))
+        case _ => throw new Exception(s"Invalid assertion index: Must be a positive integer or `$DEFAULT_ASSERTION_INDEX`")
       }
     }
     else {

@@ -1,10 +1,8 @@
 package brbo.backend.refiner
 
-import brbo.backend.refiner.Refinement.logger
-import brbo.common.{GhostVariableUtils, MyLogger, StringFormatUtils}
 import brbo.common.ast.{BrboFunction, Reset, Use}
 import brbo.common.cfg.CFGNode
-import brbo.frontend.JavacUtils
+import brbo.common.{GhostVariableUtils, MyLogger, StringFormatUtils}
 
 /**
  *

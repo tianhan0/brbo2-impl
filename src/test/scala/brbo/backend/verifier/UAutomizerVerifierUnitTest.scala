@@ -1,9 +1,9 @@
 package brbo.backend.verifier
 
 import brbo.TestCase
-import brbo.backend.verifier.AmortizationMode.UNKNOWN_MODE
+import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.common.BrboType.{INT, VOID}
-import brbo.common.CommandLineArguments.{DEFAULT_MAX_GROUPS, DEFAULT_MAX_ITERATIONS}
+import brbo.common.CommandLineArguments.{DEFAULT_ASSERTION_INDEX, DEFAULT_MAX_GROUPS, DEFAULT_MAX_ITERATIONS}
 import brbo.common.ast._
 import brbo.common.{CommandLineArguments, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -11,19 +11,19 @@ import org.scalatest.flatspec.AnyFlatSpec
 class UAutomizerVerifierUnitTest extends AnyFlatSpec {
   val arguments = new CommandLineArguments
   arguments.initialize(
-    UNKNOWN_MODE,
+    TEST_MODE,
     debugMode = false,
     "",
     skipSanityCheck = false,
-    printModelCheckerInputs = false,
-    modelCheckerTimeout = 10,
+    printVerifierInputs = false,
+    verifierTimeout = 10,
     printCFG = false,
-    lessPreciseBound = false,
     generateSynthetic = 0,
     maxGroups = DEFAULT_MAX_GROUPS,
-    modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
+    verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
     relationalPredicates = false,
     maxIterations = DEFAULT_MAX_ITERATIONS,
+    assertionIndex = DEFAULT_ASSERTION_INDEX,
   )
 
   "Parsing counterexample paths" should "be correct" in {
@@ -61,13 +61,13 @@ object UAutomizerVerifierUnitTest {
 
     val test01 = {
       val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionTrue)), Set())
-      BrboProgram("test01", function, None, None, PreDefinedFunctions.allFunctionsList)
+      BrboProgram("test01", function, Nil, PreDefinedFunctions.allFunctionsList)
     }
     val test01Expected = """VerifierResult(UNKNOWN_RESULT,None)"""
 
     val test02 = {
       val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionFalse)), Set())
-      BrboProgram("test02", function, None, None, PreDefinedFunctions.allFunctionsList)
+      BrboProgram("test02", function, Nil, PreDefinedFunctions.allFunctionsList)
     }
     val test02Expected =
       """VerifierResult(FALSE_RESULT,Some(Path:
@@ -109,7 +109,7 @@ object UAutomizerVerifierUnitTest {
       val use2 = Use(Some(2), Number(2))
       val assertion = PreDefinedFunctions.createAssert(LessThanOrEqualTo(R2, Number(1)))
       val function = BrboFunction("main", VOID, List(n), Block(List(reset1, use1, reset2, use2, assertion)), Set[Int](2))
-      BrboProgram("test03", function, None, None, PreDefinedFunctions.allFunctionsList)
+      BrboProgram("test03", function, Nil, PreDefinedFunctions.allFunctionsList)
     }
     val test03Expected =
       """VerifierResult(FALSE_RESULT,Some(Path:

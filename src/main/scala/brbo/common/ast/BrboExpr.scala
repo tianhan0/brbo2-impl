@@ -7,7 +7,7 @@ import com.microsoft.z3.AST
 import java.util.UUID
 
 abstract class BrboExpr(val typ: BrboType) extends BrboAstNode with PrettyPrintToC with PrettyPrintToCFG
-  with GetFunctionCalls with ToZ3AST with UseDefVariables with UniqueCopy {
+  with GetFunctionCalls with Z3AST with UseDefVariables with UniqueCopy {
   override def prettyPrintToC(indent: Int): String
 
   override def toString: String = prettyPrintToC()
@@ -342,7 +342,7 @@ case class FunctionCallExpr(identifier: String, arguments: List[BrboExpr], retur
   override def uniqueCopyExpr: BrboExpr = FunctionCallExpr(identifier, arguments, returnType)
 }
 
-case class ITEExpr(condition: BrboExpr, thenExpr: BrboExpr, elseExpr: BrboExpr) extends BrboExpr(thenExpr.typ) {
+case class ITEExpr(condition: BrboExpr, thenExpr: BrboExpr, elseExpr: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(thenExpr.typ) {
   assert(condition.typ == BOOL)
   assert(thenExpr.typ == elseExpr.typ)
 

@@ -207,7 +207,7 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
           case Some(value) => (Some(value._2.v), returnValues)
           case None => throw new Exception(s"Find the value of `$e` from `$valuation`")
         }
-      case ITEExpr(condition, thenExpr, elseExpr) =>
+      case ITEExpr(condition, thenExpr, elseExpr, _) =>
         val (conditionValue, returnValues1) = evaluateExpression(valuation, returnValues, condition)
         val (thenValue, returnValues2) = evaluateExpression(valuation, returnValues1, thenExpr)
         val (elseValue, returnValues3) = evaluateExpression(valuation, returnValues1, elseExpr)

@@ -23,17 +23,41 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
 
   private val initialAbstractionGroupId = 0
 
-  def verifyFullyAmortize(upperBound: BrboExpr): VerifierResult = {
+  def verify(boundAssertion: BoundAssertion): Unit = {
+    arguments.getAmortizationMode match {
+      case brbo.backend.verifier.AmortizationMode.NO_AMORTIZE =>
+        logger.info("Mode: Worst-case reasoning [1/1]")
+        verifyWorstCase(boundAssertion)
+      case brbo.backend.verifier.AmortizationMode.FULL_AMORTIZE =>
+        logger.info("Mode: Fully-amortized reasoning [1/1]")
+        verifyFullyAmortize(boundAssertion)
+      case brbo.backend.verifier.AmortizationMode.SELECTIVE_AMORTIZE =>
+        logger.info("Mode: Selectively-amortized reasoning [1/1]")
+        verifySelectivelyAmortize(boundAssertion)
+      case brbo.backend.verifier.AmortizationMode.ALL_AMORTIZE =>
+        logger.info("Mode: Worst-case reasoning [1/3]")
+        verifyWorstCase(boundAssertion)
+        logger.info("Mode: Fully-amortized reasoning [2/3]")
+        verifyFullyAmortize(boundAssertion)
+        logger.info("Mode: Selectively-amortized reasoning [3/3]")
+        verifySelectivelyAmortize(boundAssertion)
+      case brbo.backend.verifier.AmortizationMode.TEST_MODE =>
+        logger.info("Unknown mode. Exiting.")
+        sys.exit(-1)
+    }
+  }
+
+  def verifyFullyAmortize(boundAssertion: BoundAssertion): VerifierResult = {
     ???
   }
 
-  def verifyWorstCase(upperBound: BrboExpr): VerifierResult = {
+  def verifyWorstCase(boundAssertion: BoundAssertion): VerifierResult = {
     ???
   }
 
-  def verifySelectivelyAmortize(upperBound: BrboExpr, keepExploringWhenVerifierTimeout: Boolean = false): VerifierRawResult = {
+  def verifySelectivelyAmortize(boundAssertion: BoundAssertion, keepExploringWhenVerifierTimeout: Boolean = false): VerifierRawResult = {
     val initialAbstraction = generateInitialAbstraction(afterExtractingUses)
-    val result = verify(initialAbstraction, upperBound)
+    val result = verify(initialAbstraction, boundAssertion)
     val counterexamplePath: Option[Path] = result.rawResult match {
       case TRUE_RESULT =>
         logger.infoOrError(s"Verifier successfully verifies the initial abstraction!")
@@ -46,14 +70,15 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         None
     }
 
-    // No Self-loops; No Multiple edges; No Weighted
+    // No Self-loops; No Multiple Edges; No Weighted
     val tree = new SimpleDirectedGraph[TreeNode, DefaultEdge](classOf[DefaultEdge])
     val root = createNode(tree, parent = None, initialAbstraction, counterexamplePath, refinement = None)
     val refiner = new Refiner(arguments)
 
     @tailrec
     def helper(node: TreeNode): VerifierRawResult = {
-      logger.infoOrError(s"We have explored `${tree.vertexSet().size()}` programs. We will stop at `${arguments.getMaxIterations + 1}`.")
+      logger.infoOrError(s"Explored `${tree.vertexSet().size()}` variations of the input program. " +
+        s"Will stop at `${arguments.getMaxIterations + 1}`.")
       if (tree.vertexSet().size() > arguments.getMaxIterations) {
         logger.infoOrError(s"Output all unknown amortizations to `${BrboMain.OUTPUT_DIRECTORY}/amortizations/`")
         tree.vertexSet().asScala.zipWithIndex.foreach({
@@ -88,9 +113,9 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
           // Refine the current node, possibly once again, based on the same counterexample
           // When a node is visited for a second (or more) time, then it must be caused by backtracking, which
           // implies that all nodes in one of its subtree have failed
-          refiner.refine(node.program, pathWithoutUBChecks, upperBound, avoidRefinements) match {
+          refiner.refine(node.program, pathWithoutUBChecks, boundAssertion, avoidRefinements) match {
             case (Some(refinedProgram), Some(refinement)) =>
-              val result = verify(refinedProgram, upperBound)
+              val result = verify(refinedProgram, boundAssertion)
               val exploreRefinedProgram: NodeStatus = result.rawResult match {
                 case TRUE_RESULT | FALSE_RESULT => EXPLORING
                 case UNKNOWN_RESULT => if (keepExploringWhenVerifierTimeout) EXPLORING else SHOULD_NOT_EXPLORE
@@ -138,9 +163,9 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
     helper(root)
   }
 
-  private def verify(program: BrboProgram, upperBound: BrboExpr): VerifierResult = {
-    val ubcheckInserted = insertUBCheck(program, upperBound)
-    logger.infoOrError(s"Verify with upper bound `${upperBound.prettyPrintToCNoOuterBrackets}`")
+  private def verify(program: BrboProgram, boundAssertion: BoundAssertion): VerifierResult = {
+    val ubcheckInserted = insertUBCheck(program, boundAssertion)
+    logger.infoOrError(s"Verify global assertion `${boundAssertion.assertion.prettyPrintToCNoOuterBrackets}`")
     val result = uAutomizerVerifier.verify(ubcheckInserted)
     logger.infoOrError(s"Verifier result: `${result.rawResult}`.")
     result
@@ -186,14 +211,13 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         }
     })
     val newBody = replacements.foldLeft(program.mainFunction.bodyNoInitialization: BrboAst)({
-      case (acc, (oldCommand, newCommand)) => BrboAstUtils.replace(acc, oldCommand, newCommand)
+      case (acc, (oldCommand, newCommand)) => BrboAstUtils.replaceAst(acc, oldCommand, newCommand)
     })
     val newMainFunction = program.mainFunction.replaceBodyWithoutInitialization(newBody.asInstanceOf[Statement])
     program.replaceMainFunction(newMainFunction)
   }
 
-  private def insertUBCheck(program: BrboProgram, upperBound: BrboExpr): BrboProgram = {
-    logger.infoOrError(s"Insert ub check `${upperBound.prettyPrintToCNoOuterBrackets}`")
+  private def insertUBCheck(program: BrboProgram, boundAssertion: BoundAssertion): BrboProgram = {
     val assertion = {
       val sum: BrboExpr = {
         def summand(id: Int): BrboExpr = {
@@ -206,9 +230,10 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         })
       }
       val assertFunction: BrboFunction = PreDefinedFunctions.assert
-      FunctionCall(FunctionCallExpr(assertFunction.identifier, List(LessThanOrEqualTo(sum, upperBound)), assertFunction.returnType))
+      val assertion = boundAssertion.replaceResourceVariable(sum)
+      FunctionCall(FunctionCallExpr(assertFunction.identifier, List(assertion), assertFunction.returnType))
     }
-    logger.traceOrError(s"ub check assertion: `${assertion.prettyPrintToC()}`")
+    logger.infoOrError(s"Insert ub check assertion: `${assertion.prettyPrintToC()}`")
 
     def generateNewUse(use: Use): List[Command] = {
       // Use the same uuid so that, we can succeed in using commands from the program without UB checks to match against
@@ -242,7 +267,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         }
     })
     val newBody = replacements.foldLeft(program.mainFunction.bodyNoInitialization: BrboAst)({
-      case (acc, (oldCode, newCode)) => BrboAstUtils.replace(acc, oldCode, newCode)
+      case (acc, (oldCode, newCode)) => BrboAstUtils.replaceAst(acc, oldCode, newCode)
     })
     val newMainFunction = {
       val f = program.mainFunction

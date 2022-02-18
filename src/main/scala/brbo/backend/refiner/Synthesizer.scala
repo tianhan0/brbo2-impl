@@ -69,7 +69,7 @@ class Synthesizer(programToSynthesizeFrom: BrboProgram, relationalPredicates: Bo
     val newMainBody = (useReplacements ++ resetReplacements).foldLeft(programToSynthesizeFrom.mainFunction.bodyNoInitialization: BrboAst)({
       case (acc, (command, newCommands)) =>
         val commandsInList = newCommands.toList.sortWith({ case (c1, c2) => c1.prettyPrintToC() < c2.prettyPrintToC() })
-        BrboAstUtils.replace(acc, command, Block(commandsInList))
+        BrboAstUtils.replaceAst(acc, command, Block(commandsInList))
     })
     logger.infoOrError(s"[Synthesis successful] New main function body:\n`$newMainBody`")
 

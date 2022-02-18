@@ -1,10 +1,10 @@
 package brbo.backend.refiner
 
 import brbo.TestCase
-import brbo.backend.verifier.AmortizationMode.UNKNOWN_MODE
+import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.backend.verifier.UAutomizerVerifier
 import brbo.backend.verifier.cex.Path
-import brbo.common.CommandLineArguments.DEFAULT_MAX_ITERATIONS
+import brbo.common.CommandLineArguments.{DEFAULT_ASSERTION_INDEX, DEFAULT_MAX_ITERATIONS}
 import brbo.common.{CommandLineArguments, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -12,19 +12,19 @@ class PathRefinementUnitTest extends AnyFlatSpec {
   private val arguments = {
     val arguments = new CommandLineArguments
     arguments.initialize(
-      UNKNOWN_MODE,
+      TEST_MODE,
       debugMode = false,
       "",
       skipSanityCheck = false,
-      printModelCheckerInputs = false,
-      modelCheckerTimeout = 20,
+      printVerifierInputs = false,
+      verifierTimeout = 20,
       printCFG = false,
-      lessPreciseBound = false,
       generateSynthetic = 0,
       maxGroups = 5,
-      modelCheckerDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
+      verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false,
       maxIterations = DEFAULT_MAX_ITERATIONS,
+      assertionIndex = DEFAULT_ASSERTION_INDEX,
     )
     arguments
   }

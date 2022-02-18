@@ -15,7 +15,7 @@ import scala.sys.process._
 
 class UAutomizerVerifier(override val arguments: CommandLineArguments) extends Verifier {
   override val toolName = "UAutomizer"
-  override val toolDirectory: String = arguments.getModelCheckerDirectory
+  override val toolDirectory: String = arguments.getVerifierDirectory
 
   private val PROPERTY_FILE = s"$toolDirectory/unreach-call.prp"
   private val EXECUTABLE_FILE = s"./Ultimate.py"

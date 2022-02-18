@@ -28,7 +28,7 @@ object ControlFlowGraphUnitTest {
       val variableDeclaration = VariableDeclaration(i, Number(0))
       val loop = Loop(LessThan(i, Number(10)), Block(List(Assignment(i, Addition(i, Number(1))), Break())))
       val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set())
-      BrboProgram("test01", main, None, None, PreDefinedFunctions.allFunctionsList)
+      BrboProgram("test01", main, Nil, PreDefinedFunctions.allFunctionsList)
     }
     val test01Expected = """strict digraph G {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
@@ -59,8 +59,6 @@ object ControlFlowGraphUnitTest {
                            |  26 [ shape=rectangle label="(26) return x;" ];
                            |  27 [ shape=oval label="(27) [Function Exit]" ];
                            |  28 [ shape=oval label="(28) [Empty node]" ];
-                           |  29 [ shape=oval label="(29) [Function Exit]" ];
-                           |  30 [ shape=oval label="(30) [Empty node]" ];
                            |  6 -> 4 [ label="0.0" ];
                            |  5 -> 6 [ label="0.0" ];
                            |  3 -> 4 [ label="-1.0" ];
@@ -86,7 +84,6 @@ object ControlFlowGraphUnitTest {
                            |  24 -> 25 [ label="0.0" ];
                            |  25 -> 26 [ label="0.0" ];
                            |  28 -> 27 [ label="0.0" ];
-                           |  30 -> 29 [ label="0.0" ];
                            |}""".stripMargin
 
     val test02 = {
@@ -94,7 +91,7 @@ object ControlFlowGraphUnitTest {
       val variableDeclaration = VariableDeclaration(i, Number(0))
       val loop = Loop(LessThan(i, Number(10)), Block(List(Continue(), Assignment(i, Addition(i, Number(1))))))
       val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set())
-      BrboProgram("test02", main, None, None, PreDefinedFunctions.allFunctionsList)
+      BrboProgram("test02", main, Nil, PreDefinedFunctions.allFunctionsList)
     }
     val test02Expected = """strict digraph G {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
@@ -125,8 +122,6 @@ object ControlFlowGraphUnitTest {
                            |  26 [ shape=rectangle label="(26) return x;" ];
                            |  27 [ shape=oval label="(27) [Function Exit]" ];
                            |  28 [ shape=oval label="(28) [Empty node]" ];
-                           |  29 [ shape=oval label="(29) [Function Exit]" ];
-                           |  30 [ shape=oval label="(30) [Empty node]" ];
                            |  5 -> 3 [ label="0.0" ];
                            |  3 -> 4 [ label="-1.0" ];
                            |  3 -> 5 [ label="1.0" ];
@@ -152,14 +147,13 @@ object ControlFlowGraphUnitTest {
                            |  24 -> 25 [ label="0.0" ];
                            |  25 -> 26 [ label="0.0" ];
                            |  28 -> 27 [ label="0.0" ];
-                           |  30 -> 29 [ label="0.0" ];
                            |}""".stripMargin
 
     val test03 = {
       val i = Identifier("i", INT)
       val variableDeclaration = VariableDeclaration(i, FunctionCallExpr("ndInt2", List(Number(0), Number(1)), INT))
       val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration)), Set())
-      BrboProgram("test03", main, None, None, PreDefinedFunctions.allFunctionsList)
+      BrboProgram("test03", main, Nil, PreDefinedFunctions.allFunctionsList)
     }
     val test03Expected = """strict digraph G {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
@@ -186,8 +180,6 @@ object ControlFlowGraphUnitTest {
                            |  22 [ shape=rectangle label="(22) return x;" ];
                            |  23 [ shape=oval label="(23) [Function Exit]" ];
                            |  24 [ shape=oval label="(24) [Empty node]" ];
-                           |  25 [ shape=oval label="(25) [Function Exit]" ];
-                           |  26 [ shape=oval label="(26) [Empty node]" ];
                            |  2 -> 1 [ label="0.0" ];
                            |  4 -> 5 [ label="1.0" ];
                            |  4 -> 6 [ label="-1.0" ];
@@ -208,7 +200,6 @@ object ControlFlowGraphUnitTest {
                            |  20 -> 21 [ label="0.0" ];
                            |  21 -> 22 [ label="0.0" ];
                            |  24 -> 23 [ label="0.0" ];
-                           |  26 -> 25 [ label="0.0" ];
                            |}""".stripMargin
 
     val test04 = {
@@ -222,7 +213,7 @@ object ControlFlowGraphUnitTest {
       }
       val assignment = Assignment(i, Number(3))
       val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, ite, assignment)), Set())
-      BrboProgram("test04", main, None, None, PreDefinedFunctions.allFunctionsList)
+      BrboProgram("test04", main, Nil, PreDefinedFunctions.allFunctionsList)
     }
     val test04Expected = """strict digraph G {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
@@ -253,8 +244,6 @@ object ControlFlowGraphUnitTest {
                            |  26 [ shape=rectangle label="(26) return x;" ];
                            |  27 [ shape=oval label="(27) [Function Exit]" ];
                            |  28 [ shape=oval label="(28) [Empty node]" ];
-                           |  29 [ shape=oval label="(29) [Function Exit]" ];
-                           |  30 [ shape=oval label="(30) [Empty node]" ];
                            |  3 -> 4 [ label="1.0" ];
                            |  3 -> 5 [ label="-1.0" ];
                            |  2 -> 3 [ label="0.0" ];
@@ -280,7 +269,6 @@ object ControlFlowGraphUnitTest {
                            |  24 -> 25 [ label="0.0" ];
                            |  25 -> 26 [ label="0.0" ];
                            |  28 -> 27 [ label="0.0" ];
-                           |  30 -> 29 [ label="0.0" ];
                            |}""".stripMargin
 
     val test05 = {
@@ -295,7 +283,7 @@ object ControlFlowGraphUnitTest {
         Loop(LessThan(i, Number(5)), Block(List(loop, assignment)))
       }
       val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set())
-      BrboProgram("test05", main, None, None, PreDefinedFunctions.allFunctionsList)
+      BrboProgram("test05", main, Nil, PreDefinedFunctions.allFunctionsList)
     }
     val test05Expected = """strict digraph G {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
@@ -330,8 +318,6 @@ object ControlFlowGraphUnitTest {
                            |  30 [ shape=rectangle label="(30) return x;" ];
                            |  31 [ shape=oval label="(31) [Function Exit]" ];
                            |  32 [ shape=oval label="(32) [Empty node]" ];
-                           |  33 [ shape=oval label="(33) [Function Exit]" ];
-                           |  34 [ shape=oval label="(34) [Empty node]" ];
                            |  8 -> 6 [ label="0.0" ];
                            |  9 -> 5 [ label="0.0" ];
                            |  7 -> 8 [ label="1.0" ];
@@ -363,7 +349,6 @@ object ControlFlowGraphUnitTest {
                            |  28 -> 29 [ label="0.0" ];
                            |  29 -> 30 [ label="0.0" ];
                            |  32 -> 31 [ label="0.0" ];
-                           |  34 -> 33 [ label="0.0" ];
                            |}""".stripMargin
 
     List[TestCase](

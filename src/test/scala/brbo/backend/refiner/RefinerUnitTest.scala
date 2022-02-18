@@ -6,7 +6,7 @@ import brbo.backend.verifier.cex.Path
 import brbo.common.BrboType.{INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{CommandLineArguments, StringCompare}
+import brbo.common.{BrboType, CommandLineArguments, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class RefinerUnitTest extends AnyFlatSpec {
@@ -17,7 +17,8 @@ class RefinerUnitTest extends AnyFlatSpec {
     val refiner1 = new Refiner(arguments)
     testCases1.foreach({
       testCase =>
-        val (newProgram, refinement) = refiner1.refine(program1, testCase.input.asInstanceOf[Path], boundExpression1, Set())
+        val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), boundExpression1))
+        val (newProgram, refinement) = refiner1.refine(program1, testCase.input.asInstanceOf[Path], boundAssertion, Set())
         StringCompare.ignoreWhitespaces(s"$refinement\n$newProgram", testCase.expectedOutput, s"Test `${testCase.name}` failed!")
     })
   }
@@ -26,7 +27,8 @@ class RefinerUnitTest extends AnyFlatSpec {
     val refiner2 = new Refiner(arguments)
     testCases2.foreach({
       testCase =>
-        val (newProgram, refinement) = refiner2.refine(program2, testCase.input.asInstanceOf[Path], boundExpression2, Set())
+        val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), boundExpression2))
+        val (newProgram, refinement) = refiner2.refine(program2, testCase.input.asInstanceOf[Path], boundAssertion, Set())
         StringCompare.ignoreWhitespaces(s"$refinement\n$newProgram", testCase.expectedOutput, s"Test `${testCase.name}` failed!")
     })
   }
@@ -131,8 +133,7 @@ object RefinerUnitTest {
           |Removed resets:
           |  )
           |Some(Program name: `Test program`
-          |Most precise bound: `None`
-          |Less precise bound: `None`
+          |Global assertions to verify: ``
           |void main(int n, int a, int b)
           |  {
           |    int C2 = -1;
@@ -203,8 +204,7 @@ object RefinerUnitTest {
           |Removed resets:
           |  [005]: (-1) if (true) reset R1 [Function `main`])
           |Some(Program name: `Test program`
-          |Most precise bound: `None`
-          |Less precise bound: `None`
+          |Global assertions to verify: ``
           |void main(int n)
           |  {
           |    int C2 = -1;
