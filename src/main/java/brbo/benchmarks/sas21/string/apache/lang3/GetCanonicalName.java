@@ -15,8 +15,8 @@ abstract public class GetCanonicalName extends Common {
     }
     int canonicalClassNameBuffer = 0;
     int R = 0;
-    mostPreciseBound(R <= className);
-    lessPreciseBound(R <= MAX * className + MAX);
+    boundAssertion("most", R <= className);
+    boundAssertion("less", R <= MAX * className + MAX);
     if (dim < 1) {
       return;
     }

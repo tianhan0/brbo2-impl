@@ -10,7 +10,7 @@ class BasicProcessorUnitTest extends AnyFlatSpec {
       testCase =>
         val (className, code) = testCase.input.asInstanceOf[(String, String)]
         val result = BasicProcessor.getTargetProgram(className, code)
-        assert(StringCompare.ignoreWhitespaces(result.program.mainFunction.toString, testCase.expectedOutput, s"`${testCase.name}` failed!"))
+        StringCompare.ignoreWhitespaces(result.program.mainFunction.toString, testCase.expectedOutput, s"`${testCase.name}` failed!")
     })
   }
 }
@@ -125,6 +125,12 @@ object BasicProcessorUnitTest {
         |      ;
         |  }
         |}""".stripMargin
+    val test13 =
+      """class Test {
+        |  void main(String arg) {
+        |    String x = "helloworld";
+        |  }
+        |}""".stripMargin
 
     List(
       TestCase("Variable declaration", ("Test", test01),
@@ -206,38 +212,46 @@ object BasicProcessorUnitTest {
           |  int z = 0;
           |  ;
           |}""".stripMargin),
-      TestCase("For and Break", ("Test", test10), """void main(int n, int m)
-                                                    |{
-                                                    |  {
-                                                    |    int i = 0;
-                                                    |    int k = 0;
-                                                    |    while (i < 10)
-                                                    |    {
-                                                    |      {
-                                                    |        int j = 0;
-                                                    |        break;
-                                                    |      }
-                                                    |      i = i + 1;
-                                                    |      k = 1;
-                                                    |    }
-                                                    |  }
-                                                    |}""".stripMargin),
-      TestCase("While and Continue", ("Test", test11), """void main(int n, int m)
-                                                         |{
-                                                         |  int i = 0;
-                                                         |  while (i < n)
-                                                         |  {
-                                                         |    int j = 0;
-                                                         |    continue;
-                                                         |  }
-                                                         |}""".stripMargin),
-      TestCase("ITE", ("Test", test12), """void main(int n, int m)
-                                          |{
-                                          |  if (n > 0)
-                                          |    return;
-                                          |  else
-                                          |    ;
-                                          |}""".stripMargin),
+      TestCase("For and Break", ("Test", test10),
+        """void main(int n, int m)
+          |{
+          |  {
+          |    int i = 0;
+          |    int k = 0;
+          |    while (i < 10)
+          |    {
+          |      {
+          |        int j = 0;
+          |        break;
+          |      }
+          |      i = i + 1;
+          |      k = 1;
+          |    }
+          |  }
+          |}""".stripMargin),
+      TestCase("While and Continue", ("Test", test11),
+        """void main(int n, int m)
+          |{
+          |  int i = 0;
+          |  while (i < n)
+          |  {
+          |    int j = 0;
+          |    continue;
+          |  }
+          |}""".stripMargin),
+      TestCase("ITE", ("Test", test12),
+        """void main(int n, int m)
+          |{
+          |  if (n > 0)
+          |    return;
+          |  else
+          |    ;
+          |}""".stripMargin),
+      TestCase("StringLiteral", ("Test", test13),
+        """void main($string$ arg)
+          |{
+          |  $string$ x = helloworld;
+          |}""".stripMargin),
     )
   }
 }

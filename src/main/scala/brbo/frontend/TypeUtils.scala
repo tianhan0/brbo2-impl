@@ -1,6 +1,6 @@
 package brbo.frontend
 
-import brbo.common.BrboType.{BOOL, BrboType, INT}
+import brbo.common.BrboType.{BOOL, BrboType, INT, STRING}
 import org.checkerframework.framework.`type`.AnnotatedTypeMirror
 
 import javax.lang.model.`type`.TypeMirror
@@ -8,11 +8,11 @@ import scala.collection.immutable.HashMap
 
 object TypeUtils {
   def typeTranslation(typ: TypeMirror): BrboType = {
-    val defaultTyp = INT
     typ.toString match {
       case "int" | "java.lang.Integer" => INT
       case "boolean" | "java.lang.Boolean" => BOOL
-      case _ => defaultTyp
+      case "java.lang.String" => STRING
+      case _ => throw new Exception(s"Unknown type `$typ`")
     }
   }
 

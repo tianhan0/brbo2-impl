@@ -9,8 +9,8 @@ public abstract class TemplateEngine2 extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= text * templateds + separator * templateds);
-    lessPreciseBound(R <= MAX * text * templateds +
+    boundAssertion("most", R <= text * templateds + separator * templateds);
+    boundAssertion("less", R <= MAX * text * templateds +
         MAX * separator * templateds +
         MAX * separator * text +
         MAX * text * text +

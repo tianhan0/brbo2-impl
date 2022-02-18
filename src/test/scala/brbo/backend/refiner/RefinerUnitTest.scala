@@ -17,7 +17,7 @@ class RefinerUnitTest extends AnyFlatSpec {
     val refiner1 = new Refiner(arguments)
     testCases1.foreach({
       testCase =>
-        val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), boundExpression1))
+        val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), boundExpression1), tag = "IrrelevantTag")
         val (newProgram, refinement) = refiner1.refine(program1, testCase.input.asInstanceOf[Path], boundAssertion, Set())
         StringCompare.ignoreWhitespaces(s"$refinement\n$newProgram", testCase.expectedOutput, s"Test `${testCase.name}` failed!")
     })
@@ -27,7 +27,7 @@ class RefinerUnitTest extends AnyFlatSpec {
     val refiner2 = new Refiner(arguments)
     testCases2.foreach({
       testCase =>
-        val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), boundExpression2))
+        val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), boundExpression2), tag = "IrrelevantTag")
         val (newProgram, refinement) = refiner2.refine(program2, testCase.input.asInstanceOf[Path], boundAssertion, Set())
         StringCompare.ignoreWhitespaces(s"$refinement\n$newProgram", testCase.expectedOutput, s"Test `${testCase.name}` failed!")
     })

@@ -50,7 +50,7 @@ class CommandLineArguments {
     usage = "The max number of refinement iterations when analyzing a program.")
   private var maxIterations: Int = DEFAULT_MAX_ITERATIONS
 
-  @Option(name = "--assertion-index", aliases = Array("-i"), required = false,
+  @Option(name = "--assertion-index", required = false,
     usage = "The i-th assertion to verify in the file, beginning with 1. Verify all assertions if i is the default value.")
   private var assertionIndex: Int = DEFAULT_ASSERTION_INDEX
 

@@ -6,8 +6,8 @@ public abstract class Synthetic019 extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= n * n);
-    lessPreciseBound(R <= n * n * 8);
+    boundAssertion("most", R <= n * n);
+    boundAssertion("less", R <= n * n * 8);
     for (int i0 = 0; i0 < n; i0++) {
       R = R + n;
     }

@@ -1,7 +1,7 @@
 package brbo.common.ast
 
 import brbo.common.{BrboType, Z3Solver}
-import brbo.common.BrboType.{BOOL, BrboType, INT}
+import brbo.common.BrboType.{BOOL, BrboType, INT, STRING}
 import com.microsoft.z3.AST
 
 import java.util.UUID
@@ -32,7 +32,7 @@ case class Identifier(identifier: String, override val typ: BrboType, uuid: UUID
     typ match {
       case INT => solver.mkIntVar(identifier)
       case BOOL => solver.mkBoolVar(identifier)
-      case brbo.common.BrboType.VOID => throw new Exception
+      case _ => throw new Exception
     }
   }
 
@@ -43,6 +43,22 @@ case class Identifier(identifier: String, override val typ: BrboType, uuid: UUID
   override def uniqueCopyExpr: BrboExpr = Identifier(identifier, typ)
 
   def sameAs(other: Identifier):  Boolean = identifier == other.identifier && typ == other.typ
+}
+
+case class StringLiteral(value: String, uuid: UUID = UUID.randomUUID()) extends BrboExpr(STRING) {
+  override def prettyPrintToC(indent: Int): String = value
+
+  override def prettyPrintToCFG: String = prettyPrintToC()
+
+  override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def toZ3AST(solver: Z3Solver): AST = ???
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
+
+  override def uniqueCopyExpr: BrboExpr = StringLiteral(value)
 }
 
 case class Bool(b: Boolean, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {

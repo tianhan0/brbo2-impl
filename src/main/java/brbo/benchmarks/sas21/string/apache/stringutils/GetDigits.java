@@ -8,8 +8,8 @@ abstract public class GetDigits extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= str);
-    lessPreciseBound(R <= MAX * str);
+    boundAssertion("most", R <= str);
+    boundAssertion("less", R <= MAX * str);
     int strDigits = 0;
     for (int i = 0; i < str; i++) {
       if (ndBool()) {

@@ -8,8 +8,8 @@ abstract public class SubstringsBetween extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= str);
-    lessPreciseBound(R <= MAX * str + MAX);
+    boundAssertion("most", R <= str);
+    boundAssertion("less", R <= MAX * str + MAX);
     int list = 0;
     int pos = 0;
     while (pos < str - close) {

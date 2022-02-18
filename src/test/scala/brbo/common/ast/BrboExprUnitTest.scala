@@ -23,6 +23,7 @@ object BrboExprUnitTest {
       TestCase("Identifier", Identifier("z", BrboType.INT), "z"),
       TestCase("Boolean", Bool(true), "true"),
       TestCase("Number", Number(23), "23"),
+      TestCase("StringLiteral", StringLiteral("helloworld"), "helloworld"),
       TestCase("Addition", Addition(Number(2), Number(3)), "(2 + 3)"),
       TestCase("Subtraction", Subtraction(Number(2), Number(3)), "(2 - 3)"),
       TestCase("Multiplication", Multiplication(Number(2), Number(3)), "(2 * 3)"),

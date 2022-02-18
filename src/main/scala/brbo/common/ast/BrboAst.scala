@@ -179,8 +179,9 @@ case class VariableDeclaration(variable: Identifier, initialValue: BrboExpr, uui
   override def prettyPrintToC(indent: Int): String = {
     val initialValueString =
       variable.typ match {
-        case INT => assert(initialValue.typ == INT); initialValue.prettyPrintToCNoOuterBrackets
+        case INT => assert(initialValue.typ == INT, s"variable: `$variable` (type: `${variable.typ}`); initialValue: `$initialValue` (type: `${initialValue.typ}`)"); initialValue.prettyPrintToCNoOuterBrackets
         case BOOL => assert(initialValue.typ == BOOL); initialValue.prettyPrintToCNoOuterBrackets
+        case STRING => assert(initialValue.typ == STRING); initialValue.prettyPrintToCNoOuterBrackets
         case VOID => throw new Exception
       }
     val indentString = " " * indent

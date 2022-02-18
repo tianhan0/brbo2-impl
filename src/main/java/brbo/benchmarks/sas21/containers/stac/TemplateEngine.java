@@ -8,8 +8,8 @@ public abstract class TemplateEngine extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= text);
-    lessPreciseBound(R <= MAX * text + MAX);
+    boundAssertion("most", R <= text);
+    boundAssertion("less", R <= MAX * text + MAX);
 
     int linePointer = 0;
     int startTagLocation = 0;

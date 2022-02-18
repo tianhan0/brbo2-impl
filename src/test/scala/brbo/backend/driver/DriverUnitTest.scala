@@ -34,7 +34,7 @@ class DriverUnitTest extends AnyFlatSpec {
         val (className, code, upperBound) = testCase.input.asInstanceOf[(String, String, BrboExpr)]
         val targetProgram = BasicProcessor.getTargetProgram(className, code)
         val driver = new Driver(arguments, targetProgram.program)
-        val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), upperBound))
+        val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), upperBound), tag = "IrrelevantTag")
         driver.verifySelectivelyAmortize(boundAssertion)
     })
   }

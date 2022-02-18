@@ -10,8 +10,8 @@ abstract public class ReplaceChars extends Common {
     boolean modified = false;
     int buf = 0;
     int R = 0;
-    mostPreciseBound(R <= str);
-    lessPreciseBound(R <= MAX * str + MAX);
+    boundAssertion("most", R <= str);
+    boundAssertion("less", R <= MAX * str + MAX);
     for (int i = 0; i < str; i++) {
       int index = ndBool() ? -1 : ndInt2(0, searchChars - 1);
       if (index >= 0) {

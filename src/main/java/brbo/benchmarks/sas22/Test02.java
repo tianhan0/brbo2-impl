@@ -8,7 +8,7 @@ public abstract class Test02 extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= n * a);
+    boundAssertion("most", R <= n * a);
 
     int i = 0;
     while (i < n) {

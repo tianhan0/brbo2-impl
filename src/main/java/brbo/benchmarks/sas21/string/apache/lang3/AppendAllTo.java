@@ -9,8 +9,8 @@ abstract public class AppendAllTo extends Common {
     }
     int builder = 0;
     int R = 0;
-    mostPreciseBound(R <= types * sep + types + 1);
-    lessPreciseBound(R <= MAX * types * types +
+    boundAssertion("most", R <= types * sep + types + 1);
+    boundAssertion("less", R <= MAX * types * types +
         MAX * sep * sep +
         MAX * types * sep +
         MAX * types + MAX * sep +

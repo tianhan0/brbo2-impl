@@ -205,6 +205,7 @@ case class TargetProgram(fullQualifiedClassName: String,
           tree.getKind match {
             case Kind.INT_LITERAL => Left(Number(tree.getValue.asInstanceOf[Int]))
             case Kind.BOOLEAN_LITERAL => Left(Bool(tree.getValue.asInstanceOf[Boolean]))
+            case Kind.STRING_LITERAL => Left(StringLiteral(tree.getValue.asInstanceOf[String]))
             case _ => throw new Exception(s"Unsupported literal `$tree`")
           }
         case tree: MethodInvocationTree =>
@@ -231,7 +232,7 @@ case class TargetProgram(fullQualifiedClassName: String,
           functionName match {
             case PreDefinedFunctions.BOUND_ASSERTION =>
               logger.trace(s"Extract bound assertion `${arguments.head}`")
-              boundAssertions = BoundAssertion(???, arguments.head) :: boundAssertions
+              boundAssertions = BoundAssertion.parse(arguments.head, arguments(1)) :: boundAssertions
               Right(Skip())
             case _ => Left(FunctionCallExpr(functionName, arguments, returnType))
           }

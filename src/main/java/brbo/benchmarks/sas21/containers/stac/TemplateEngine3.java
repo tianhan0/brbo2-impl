@@ -9,8 +9,8 @@ public abstract class TemplateEngine3 extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= ts * (text + tags * rep + sep));
-    lessPreciseBound(R <= MAX * text * ts +
+    boundAssertion("most", R <= ts * (text + tags * rep + sep));
+    boundAssertion("less", R <= MAX * text * ts +
         MAX * text * sep +
         MAX * text * tags +
         MAX * text * rep +

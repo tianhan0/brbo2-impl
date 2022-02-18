@@ -8,8 +8,8 @@ abstract public class SplitByWholeSeparatorWorker extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= str);
-    lessPreciseBound(R <= MAX * str + MAX);
+    boundAssertion("most", R <= str);
+    boundAssertion("less", R <= MAX * str + MAX);
     int substrings = 0;
     int numberOfStrings = 0;
     int beg = 0;

@@ -9,8 +9,8 @@ abstract public class LongToHex extends Common {
     }
     int sb = 0;
     int R = 0;
-    mostPreciseBound(R <= nHexs);
-    lessPreciseBound(R <= MAX * nHexs + MAX);
+    boundAssertion("most", R <= nHexs);
+    boundAssertion("less", R <= MAX * nHexs + MAX);
     for (int i = 0;i < nHexs; i++) {
       if (ndBool()) {
         sb++;
