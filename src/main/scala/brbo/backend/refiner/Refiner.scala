@@ -4,7 +4,7 @@ import brbo.backend.verifier.SymbolicExecution
 import brbo.backend.verifier.cex.Path
 import brbo.common.BrboType.BOOL
 import brbo.common.GhostVariableTyp._
-import brbo.common.ast.{BrboAstUtils, BrboProgram, BoundAssertion}
+import brbo.common.ast.{BoundAssertion, BrboProgram}
 import brbo.common.{CommandLineArguments, GhostVariableUtils, MyLogger}
 import com.microsoft.z3.{AST, Expr}
 
@@ -67,7 +67,7 @@ class Refiner(arguments: CommandLineArguments) {
         val inputs = symbolicExecution.inputs.values.map(pair => pair._2.v)
         solver.mkForall(inputs, solver.mkAnd(disjunction, iffConjunction))
       }
-      val z3Result = solver.checkAssertionPushPop(query, arguments.getDebugMode)
+      val z3Result = solver.checkAssertionForallPushPop(query, arguments.getDebugMode)
       if (z3Result) {
         val model = solver.getModel
         val goodRefinements = refinementsMap.filter({ case (variableAST: AST, _) => model.eval(variableAST, false).toString == "true" })

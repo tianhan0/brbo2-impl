@@ -73,7 +73,7 @@ object BrboMain {
         val progress: Double = fileIndex.toDouble / totalFiles * 100
         logger.info(s"Verify `$fileIndex`-th input file. Progress: ${StringFormatUtils.float(progress, 2)}%")
         analyze(logger, sourceFile.getAbsolutePath, sourceFileContents, arguments)
-        // TODO: Store results into csv files
+      // TODO: Store results into csv files
     })
   }
 
@@ -106,7 +106,8 @@ object BrboMain {
           logger.info(s"Verify every global assertion in every file")
           targetProgram.program.boundAssertions.zipWithIndex.foreach({
             case (assertion, index) =>
-              logger.info(s"Verify every global assertion in every file [`$index`/`${targetProgram.program.boundAssertions.size}`]")
+              val progress: Double  = (index + 1) / targetProgram.program.boundAssertions.size * 100
+              logger.info(s"Verify a global assertion in every file [${index + 1}/${targetProgram.program.boundAssertions.size}]. Progress: ${StringFormatUtils.float(progress, 2)}%")
               driver.verify(assertion)
           })
         case index if index > 0 =>

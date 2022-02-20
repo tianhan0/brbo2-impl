@@ -25,7 +25,8 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
     val programInC = BrboProgramInC(program)
 
     val cSourceCode = programInC.program.prettyPrintToC()
-    logger.traceOrError(s"Input to UAutomizer:\n$cSourceCode")
+    if (arguments.getPrintVerifierInputs) logger.info(s"Input to UAutomizer:\n$cSourceCode")
+    else logger.traceOrError(s"Input to UAutomizer:\n$cSourceCode")
     runAndGetStdOutput(cSourceCode) match {
       case (Some(output), violationWitnessFile) =>
         val outputTrimmed = output.replaceAll("\\s", "")
@@ -76,7 +77,8 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
         .directory(new java.io.File(toolDirectory))
         .redirectErrorStream(true)
       val process: java.lang.Process = processBuilder.start()
-      logger.traceOrError(s"Run `$toolName` via command `$command`")
+      if (arguments.getPrintVerifierInputs) logger.info(s"Run `$toolName` via command `$command`")
+      else logger.traceOrError(s"Run `$toolName` via command `$command`")
 
       val actualTimeout = {
         if (TIMEOUT >= 0) Duration(TIMEOUT, SECONDS)

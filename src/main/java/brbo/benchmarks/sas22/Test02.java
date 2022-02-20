@@ -8,11 +8,11 @@ public abstract class Test02 extends Common {
       return;
     }
     int R = 0;
-    boundAssertion("most", R <= n * a);
+    boundAssertion("most", R <= n * 1);
 
     int i = 0;
     while (i < n) {
-      R = R + a;
+      R = R + 1;
       i++;
     }
   }
