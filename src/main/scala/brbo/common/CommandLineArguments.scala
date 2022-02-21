@@ -53,12 +53,16 @@ class CommandLineArguments {
   private var maxIterations: Int = DEFAULT_MAX_ITERATIONS
 
   @Option(name = "--assertion-index", aliases = Array("--idx"), required = false,
-    usage = "The i-th assertion to verify in the file, beginning with 1. Verify all assertions if i is the default value.")
-  private var assertionIndex: Int = DEFAULT_ASSERTION_INDEX
+    usage = "Only verify the assertion associated with this tag. Verify all assertions if the tag is the default value.")
+  private var assertionTag: String = DEFAULT_ASSERTION_TAG
 
   @Option(name = "--abstract-domain", aliases = Array("--dom"), required = false,
     usage = "The abstract domain to use in the verifier. Choose from: `OCTAGON`, `POLKA` (case-insensitive)")
   private var abstractDomain: String = DEFAULT_ABSTRACT_DOMAIN
+
+  @Option(name = "--max-path-length", aliases = Array("--len"), required = false,
+    usage = "The maximum length of a single path that the verifier will explore.")
+  private var maxPathLength: Int = DEFAULT_MAX_PATH_LENGTH
 
   def getAmortizationMode: AmortizationMode = {
     amortizationMode.toLowerCase() match {
@@ -67,13 +71,6 @@ class CommandLineArguments {
       case "selective" => SELECTIVE_AMORTIZE
       case "all" => ALL_AMORTIZE
       case "unknown" => TEST_MODE
-    }
-  }
-
-  def getAbstractDomain: AbstractDomainName = {
-    abstractDomain.toLowerCase() match {
-      case "octagon" => OCTAGON
-      case "polka" => POLKA
     }
   }
 
@@ -95,14 +92,24 @@ class CommandLineArguments {
 
   def getMaxIterations: Int = maxIterations
 
-  def getAssertionIndex: Int = assertionIndex
+  def getAssertionIndex: String = assertionTag
+
+  def getAbstractDomain: AbstractDomainName = {
+    abstractDomain.toLowerCase() match {
+      case "octagon" => OCTAGON
+      case "polka" => POLKA
+    }
+  }
+
+  def getMaxPathLength: Int = maxPathLength
 
   private var initialized = false
 
   def initialize(amortizationMode: AmortizationMode, debugMode: Boolean, directoryToAnalyze: String,
                  skipSanityCheck: Boolean, printVerifierInputs: Boolean, verifierTimeout: Int,
                  printCFG: Boolean, generateSynthetic: Int, maxGroups: Int, verifierDirectory: String,
-                 relationalPredicates: Boolean, maxIterations: Int, assertionIndex: Int, abstractDomain: String): Unit = {
+                 relationalPredicates: Boolean, maxIterations: Int, assertionTag: String,
+                 abstractDomain: String, maxPathLength: Int): Unit = {
     if (initialized) throw new Exception(s"Already initialized")
     initialized = true
     this.amortizationMode = amortizationModeToShortString(amortizationMode)
@@ -115,8 +122,9 @@ class CommandLineArguments {
     this.verifierDirectory = verifierDirectory
     this.relationalPredicates = relationalPredicates
     this.maxIterations = maxIterations
-    this.assertionIndex = assertionIndex
+    this.assertionTag = assertionTag
     this.abstractDomain = abstractDomain
+    this.maxPathLength = maxPathLength
   }
 
   override def toString: String = {
@@ -131,8 +139,9 @@ class CommandLineArguments {
       s"Verifier directory: `$verifierDirectory`",
       s"Search relational predicates? `$relationalPredicates`",
       s"Max number of refinement iterations: `$maxIterations`",
-      s"The index of the assertion to verify: `$assertionIndex`",
-      s"The abstract domain to use: `$abstractDomain`"
+      s"The index of the assertion to verify: `$assertionTag`",
+      s"The abstract domain to use: `$abstractDomain`",
+      s"The maximum length of a single path that the verifier will explore: `$maxPathLength`"
     )
     strings.mkString("\n")
   }
@@ -140,7 +149,7 @@ class CommandLineArguments {
   def toFileName: String = {
     val amortizationMode = amortizationModeToShortString(getAmortizationMode)
     val timeoutString = if (verifierTimeout < 0) "noTimeout" else s"${verifierTimeout}s"
-    val assertionIndexString = if (assertionIndex == DEFAULT_ASSERTION_INDEX) "allAssertions" else s"assertion$assertionIndex"
+    val assertionIndexString = s"assert-$assertionTag"
     s"""$amortizationMode-$timeoutString-$assertionIndexString-$abstractDomain"""
   }
 }
@@ -149,8 +158,9 @@ object CommandLineArguments {
   val DEFAULT_MAX_GROUPS = 3
   val DEFAULT_TIMEOUT = 20
   val DEFAULT_MAX_ITERATIONS = 1000
-  val DEFAULT_ASSERTION_INDEX = 0
+  val DEFAULT_ASSERTION_TAG: String = "all"
   val DEFAULT_ABSTRACT_DOMAIN: String = OCTAGON.toString
+  val DEFAULT_MAX_PATH_LENGTH = 100
 
   private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)
 
@@ -175,8 +185,8 @@ object CommandLineArguments {
       printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
       generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
-      relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionIndex = DEFAULT_ASSERTION_INDEX,
-      abstractDomain = DEFAULT_ABSTRACT_DOMAIN)
+      relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
+      abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH)
     arguments
   }
 
@@ -186,8 +196,8 @@ object CommandLineArguments {
       printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
       generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
-      relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionIndex = DEFAULT_ASSERTION_INDEX,
-      abstractDomain = DEFAULT_ABSTRACT_DOMAIN)
+      relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
+      abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH)
     arguments
   }
 }

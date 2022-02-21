@@ -1,7 +1,7 @@
 package brbo
 
 import brbo.backend.driver.Driver
-import brbo.common.CommandLineArguments.DEFAULT_ASSERTION_INDEX
+import brbo.common.CommandLineArguments.DEFAULT_ASSERTION_TAG
 import brbo.common.cfg.ControlFlowGraph
 import brbo.common.{CommandLineArguments, MyLogger, StringFormatUtils}
 import brbo.frontend.{BasicProcessor, TargetProgram}
@@ -101,20 +101,22 @@ object BrboMain {
         ControlFlowGraph.toControlFlowGraph(targetProgram.program).printPDF()
       }
       val driver = new Driver(arguments, targetProgram.program)
-      arguments.getAssertionIndex match {
-        case DEFAULT_ASSERTION_INDEX =>
-          logger.info(s"Verify every global assertion in every file")
-          targetProgram.program.boundAssertions.zipWithIndex.foreach({
-            case (assertion, index) =>
-              val progress: Double  = (index + 1) / targetProgram.program.boundAssertions.size * 100
-              logger.info(s"Verify a global assertion in every file [${index + 1}/${targetProgram.program.boundAssertions.size}]. Progress: ${StringFormatUtils.float(progress, 2)}%")
-              driver.verify(assertion)
-          })
-        case index if index > 0 =>
-          logger.info(s"Verify the $index-th global assertion in every file")
-          driver.verify(targetProgram.program.boundAssertions(index - 1))
-        case _ => throw new Exception(s"Invalid assertion index: Must be a positive integer or `$DEFAULT_ASSERTION_INDEX`")
+      val assertionsToVerify = {
+        arguments.getAssertionIndex match {
+          case DEFAULT_ASSERTION_TAG =>
+            logger.info(s"Verify every assertion in every file")
+            targetProgram.program.boundAssertions
+          case assertionTag =>
+            logger.info(s"Verify the assertion associated with tag `$assertionTag` in every file")
+            targetProgram.program.boundAssertions.filter(a => a.tag == assertionTag)
+        }
       }
+      assertionsToVerify.zipWithIndex.foreach({
+        case (assertion, index) =>
+          val progress: Double = (index + 1) / assertionsToVerify.size * 100
+          logger.info(s"Verify assertion(s) with tag `${assertion.tag}` in every file [${index + 1}/${assertionsToVerify.size}]. Progress: ${StringFormatUtils.float(progress, 2)}%")
+          driver.verify(assertion)
+      })
     }
     else {
       logger.info(s"Skipping bound checking for file `$sourceFilePath`")

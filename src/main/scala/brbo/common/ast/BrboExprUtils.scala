@@ -1,5 +1,9 @@
 package brbo.common.ast
 
+import apron._
+import brbo.backend.verifier.modelchecker.AbstractMachine.Variable
+import brbo.backend.verifier.modelchecker.Apron
+
 object BrboExprUtils {
   def visit(expr: BrboExpr): Unit = {
     expr match {
@@ -106,4 +110,93 @@ object BrboExprUtils {
         collectIdentifiers(left) ++ collectIdentifiers(right)
     }
   }
+
+  /*def toApron(expr: BrboExpr, variables: List[ApronVariable]): Either[Texpr0Node, Conjunction] = {
+    expr match {
+      case Identifier(identifier, typ, _) =>
+        val index = variables.indexWhere(v => v.name == identifier && v.typ == typ)
+        if (index == -1) throw new Exception
+        typ match {
+          case brbo.common.BrboType.INT => Left(new Texpr0DimNode(index))
+          case brbo.common.BrboType.BOOL => Left(new Texpr0DimNode(index))
+          case _ => throw new Exception
+        }
+      case Bool(b, _) => Left(Apron.createBoolLiteral(b))
+      case Number(n, _) => Left(Apron.createIntegerLiteral(n))
+      case StringLiteral(_, _) => throw new Exception
+      case Addition(left, right, _) =>
+        (toApron(left, variables), toApron(right, variables)) match {
+          case (Left(left), Left(right)) => Left(new Texpr0BinNode(Texpr0BinNode.OP_ADD, left, right))
+          case _ => throw new Exception
+        }
+      case Subtraction(left, right, _) =>
+        (toApron(left, variables), toApron(right, variables)) match {
+          case (Left(left), Left(right)) => Left(new Texpr0BinNode(Texpr0BinNode.OP_SUB, left, right))
+          case _ => throw new Exception
+        }
+      case Multiplication(left, right, _) =>
+        (toApron(left, variables), toApron(right, variables)) match {
+          case (Left(left), Left(right)) => Left(new Texpr0BinNode(Texpr0BinNode.OP_MUL, left, right))
+          case _ => throw new Exception
+        }
+      case Division(left, right, _) =>
+        (toApron(left, variables), toApron(right, variables)) match {
+          case (Left(left), Left(right)) => Left(new Texpr0BinNode(Texpr0BinNode.OP_DIV, left, right))
+          case _ => throw new Exception
+        }
+      case Negative(expression, _) =>
+      case LessThan(left, right, _) =>
+        (toApron(left, variables), toApron(right, variables)) match {
+          case (Left(left), Left(right)) =>
+            Right(Conjunction(Set(Apron.generateConstraintGt(new Texpr0BinNode(Texpr0BinNode.OP_SUB, right, left)))))
+          case _ => throw new Exception
+        }
+      case LessThanOrEqualTo(left, right, _) =>
+        (toApron(left, variables), toApron(right, variables)) match {
+          case (Left(left), Left(right)) =>
+            Right(Conjunction(Set(Apron.generateConstraintGe(new Texpr0BinNode(Texpr0BinNode.OP_SUB, right, left)))))
+          case _ => throw new Exception
+        }
+      case GreaterThan(left, right, _) =>
+        (toApron(left, variables), toApron(right, variables)) match {
+          case (Left(left), Left(right)) =>
+            Right(Conjunction(Set(Apron.generateConstraintGt(new Texpr0BinNode(Texpr0BinNode.OP_SUB, left, right)))))
+          case _ => throw new Exception
+        }
+      case GreaterThanOrEqualTo(left, right, _) =>
+        (toApron(left, variables), toApron(right, variables)) match {
+          case (Left(left), Left(right)) =>
+            Right(Conjunction(Set(Apron.generateConstraintGe(new Texpr0BinNode(Texpr0BinNode.OP_SUB, left, right)))))
+          case _ => throw new Exception
+        }
+      case Equal(left, right, _) =>
+      case NotEqual(left, right, _) =>
+      case And(left, right, _) =>
+      case Or(left, right, _) =>
+      case FunctionCallExpr(_, _, _, _) => throw new Exception
+      case ITEExpr(condition, thenExpr, elseExpr, _) => // toApron(And(Imply(condition, th)))
+      case Imply(left, right, _) => toApron(Or(Negative(left), right), variables)
+    }
+  }
+
+  case class Conjunction(set: Set[Tcons0]) {
+    def negate(): Set[Conjunction] = {
+      set.map({
+        constraint =>
+          val newConstraint: Tcons0 =
+            constraint.kind match {
+              case Tcons0.EQ =>
+                new Tcons0(Tcons0.DISEQ, new Texpr0Intern(constraint.toTexpr0Node))
+              case Tcons0.SUPEQ =>
+              case Tcons0.SUP =>
+              case Tcons0.EQMOD => throw new Exception
+              case Tcons0.DISEQ =>
+                new Tcons0(Tcons0.EQ, new Texpr0Intern(constraint.toTexpr0Node))
+            }
+          Disjunction(Set(newConstraint))
+      })
+    }
+  }
+
+  case class Disjunction(set: Set[Tcons0])*/
 }
