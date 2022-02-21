@@ -4,7 +4,7 @@ import brbo.TestCase
 import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.backend.verifier.UAutomizerVerifier
 import brbo.backend.verifier.cex.Path
-import brbo.common.CommandLineArguments.{DEFAULT_ASSERTION_INDEX, DEFAULT_MAX_ITERATIONS}
+import brbo.common.CommandLineArguments.{DEFAULT_ABSTRACT_DOMAIN, DEFAULT_ASSERTION_INDEX, DEFAULT_MAX_ITERATIONS}
 import brbo.common.{CommandLineArguments, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -25,6 +25,7 @@ class PathRefinementUnitTest extends AnyFlatSpec {
       relationalPredicates = false,
       maxIterations = DEFAULT_MAX_ITERATIONS,
       assertionIndex = DEFAULT_ASSERTION_INDEX,
+      abstractDomain = DEFAULT_ABSTRACT_DOMAIN
     )
     arguments
   }

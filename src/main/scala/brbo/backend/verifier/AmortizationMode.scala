@@ -6,10 +6,10 @@ object AmortizationMode extends Enumeration {
 
   def amortizationModeToShortString(amortizationMode: AmortizationMode): String = {
     amortizationMode match {
-      case NO_AMORTIZE => "noAmortize"
-      case FULL_AMORTIZE => "fullAmortize"
-      case SELECTIVE_AMORTIZE => "selectiveAmortize"
-      case ALL_AMORTIZE => "allAmortize"
+      case NO_AMORTIZE => "noAmtz"
+      case FULL_AMORTIZE => "fullAmtz"
+      case SELECTIVE_AMORTIZE => "selAmtz"
+      case ALL_AMORTIZE => "allAmtz"
       case TEST_MODE => "test"
     }
   }

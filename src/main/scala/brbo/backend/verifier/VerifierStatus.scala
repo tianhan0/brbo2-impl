@@ -1,6 +1,6 @@
 package brbo.backend.verifier
 
-object VerifierRawResult extends Enumeration {
-  type VerifierRawResult = Value
+object VerifierStatus extends Enumeration {
+  type VerifierStatus = Value
   val TRUE_RESULT, FALSE_RESULT, UNKNOWN_RESULT = Value
 }

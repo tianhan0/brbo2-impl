@@ -3,7 +3,7 @@ package brbo.backend.driver
 import brbo.BrboMain
 import brbo.backend.driver.NodeStatus._
 import brbo.backend.refiner.{Refinement, Refiner}
-import brbo.backend.verifier.VerifierRawResult._
+import brbo.backend.verifier.VerifierStatus._
 import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.{UAutomizerVerifier, VerifierResult}
 import brbo.common._
@@ -55,7 +55,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
     ???
   }
 
-  def verifySelectivelyAmortize(boundAssertion: BoundAssertion, keepExploringWhenVerifierTimeout: Boolean = false): VerifierRawResult = {
+  def verifySelectivelyAmortize(boundAssertion: BoundAssertion, keepExploringWhenVerifierTimeout: Boolean = false): VerifierStatus = {
     val initialAbstraction = generateInitialAbstraction(afterExtractingUses)
     val result = verify(initialAbstraction, boundAssertion)
     val counterexamplePath: Option[Path] = result.rawResult match {
@@ -76,7 +76,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
     val refiner = new Refiner(arguments)
 
     @tailrec
-    def helper(node: TreeNode): VerifierRawResult = {
+    def helper(node: TreeNode): VerifierStatus = {
       logger.infoOrError(s"Explored `${tree.vertexSet().size()}` variations of the input program. " +
         s"Will stop at `${arguments.getMaxIterations + 1}`.")
       if (tree.vertexSet().size() > arguments.getMaxIterations) {

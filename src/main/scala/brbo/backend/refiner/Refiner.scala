@@ -48,7 +48,7 @@ class Refiner(arguments: CommandLineArguments) {
       })
 
     logger.infoOrError(s"Search for a refinement for path `$counterexamplePath`.")
-    val programSynthesis = new Synthesizer(programToRefine, arguments.getRelationalPredicates, arguments)
+    val programSynthesis = new Synthesizer(programToRefine, arguments)
     // Keep finding new path transformations until either finding a program transformation that can realize it,
     // or there exists no program transformation that can realize any path transformation
     var avoidRefinementInSynthesis: Set[Refinement] = Set()

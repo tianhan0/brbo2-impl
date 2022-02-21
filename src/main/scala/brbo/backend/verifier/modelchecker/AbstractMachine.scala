@@ -1,15 +1,28 @@
 package brbo.backend.verifier.modelchecker
 
 import apron._
+import brbo.backend.verifier.VerifierStatus.VerifierStatus
+import brbo.backend.verifier.VerifierResult
+import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.modelchecker.AbstractDomainName._
-import brbo.common.BrboType.BrboType
-import brbo.common.ast.{BrboFunction, BrboProgram, Command, Statement}
+import brbo.common.BrboType.{BOOL, BrboType}
+import brbo.common.CommandLineArguments
+import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 
-class AbstractMachine(brboProgram: BrboProgram) {
-  private val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
+import scala.collection.immutable.Queue
 
-  val manager = new Octagon // new Polka(false)
+class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments) {
+  private val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
+  private val parentStatements = (brboProgram.mainFunction :: brboProgram.functions).foldLeft(Map[BrboAstNode, Statement]())({
+    (acc, function) =>
+      acc ++ BrboAstUtils.findParentStatements(function.actualBody)
+  })
+  private val manager = arguments.getAbstractDomain match {
+    case OCTAGON => new Octagon
+    case POLKA => new Polka(false)
+  }
+
   val state = new Abstract0(manager, 3, 0)
   val a = new Texpr0DimNode(0)
   val rStar = new Texpr0DimNode(1)
@@ -27,14 +40,8 @@ class AbstractMachine(brboProgram: BrboProgram) {
   constraints.foreach(c => println(c.toString))
   // apronState.meetCopy(apronManager.getManager, constraint)
 
-  class State(abstractDomainName: AbstractDomainName) {
-    private var variables = List[Variable]()
-    private val manager = abstractDomainName match {
-      case OCTAGON => new Octagon
-      case POLKA => new Polka(false)
-    }
-    private var apronState = new Abstract0(manager, 0, 0)
-
+  case class Valuation(private var variables: List[Variable] = Nil,
+                       private var apronState: Abstract0 = new Abstract0(manager, 0, 0)) {
     def declareNewVariable(variable: Variable): Unit = {
       variables = variable :: variables
       val dimensionChange = new Dimchange(1, 0, Array(0))
@@ -48,15 +55,51 @@ class AbstractMachine(brboProgram: BrboProgram) {
       else new Texpr0DimNode(index)
       // Texpr0Node is a parent class of Texpr0BinNode, Texpr0DimNode, Texpr0UnNode, Texpr0CstNode
     }
+
+    def sameAs(valuation: Valuation): Boolean = apronState.isEqual(manager, valuation.apronState)
+
+    def join(valuation: Valuation): Valuation = {
+      val newApronState = apronState.joinCopy(manager, valuation.apronState)
+      Valuation(variables, newApronState)
+    }
+  }
+
+  case class State(path: Path, node: CFGNode, valuation: Valuation) {
+    def sameAs(state: State): Boolean = node == state.node && path == state.path && valuation.sameAs(state.valuation)
+
+    def join(state: State): Option[State] = {
+      if (node == state.node && path == state.path) Some(State(path, node, valuation.join(state.valuation)))
+      else None
+    }
   }
 
   case class LexicalScope(block: Option[Statement], brboFunction: BrboFunction)
 
   case class Variable(name: String, typ: BrboType, scope: LexicalScope)
 
-  private def step(currentNode: CFGNode, currentState: State): (CFGNode, State) = {
+  private val fakeInitialNode = CFGNode(Right(Bool(b = true)), function = Some(brboProgram.mainFunction))
+
+  def verify(): VerifierResult = {
+    val initialState = State(Path(Nil), fakeInitialNode, Valuation())
+    // Every CFGNode corresponds to a location, which is the location right after the node
+    // fakeInitialNode corresponds to the program entry, which is right before the first command / expression
+    var reached = Map[Path, Map[CFGNode, Valuation]](initialState.path -> Map(initialState.node -> initialState.valuation))
+    var waitlist = Queue(initialState) // Breadth First Search
+    while (waitlist.nonEmpty) {
+      val (head, newWaitlist) = waitlist.dequeue
+      waitlist = newWaitlist
+      val newStates = step(head)
+    }
+    ???
+  }
+
+  private def step(state: State): Set[State] = {
     // If the lexical scope of the next node is none or is different from the scope of the current node, then
     // forget all variables declared in the scope of the current node
+    val nextNodes: Set[CFGNode] = {
+      if (state.node == fakeInitialNode) Set(cfg.entryNode)
+      else cfg.findSuccessorNodes(state.node)
+    }
     ???
   }
 

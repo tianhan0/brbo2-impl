@@ -6,7 +6,7 @@ import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import com.microsoft.z3.AST
 
-class Synthesizer(programToSynthesizeFrom: BrboProgram, relationalPredicates: Boolean, argument: CommandLineArguments) {
+class Synthesizer(programToSynthesizeFrom: BrboProgram, argument: CommandLineArguments) {
   private val logger = MyLogger.createLogger(classOf[Synthesizer], argument.getDebugMode)
   private val allCommands = BrboAstUtils.collectCommands(programToSynthesizeFrom.mainFunction.actualBody)
   private val useCommands = allCommands.filter(command => command.isInstanceOf[Use])
@@ -19,7 +19,7 @@ class Synthesizer(programToSynthesizeFrom: BrboProgram, relationalPredicates: Bo
         BrboAstUtils.collectUseDefVariables(programToSynthesizeFrom.mainFunction.bodyNoInitialization)
       allVariables.filter(v => !GhostVariableUtils.isGhostVariable(v.identifier))
     }
-    val allPredicates = Predicate.generatePredicates(allNonGhostVariables, relationalPredicates)
+    val allPredicates = Predicate.generatePredicates(allNonGhostVariables, argument.getRelationalPredicates)
     val filterFalsePredicates = allPredicates.filter({
       p =>
         val solver = symbolicExecution.solver

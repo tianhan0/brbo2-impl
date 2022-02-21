@@ -2,6 +2,8 @@ package brbo.common
 
 import brbo.backend.verifier.AmortizationMode._
 import brbo.backend.verifier.UAutomizerVerifier
+import brbo.backend.verifier.modelchecker.AbstractDomainName
+import brbo.backend.verifier.modelchecker.AbstractDomainName.{AbstractDomainName, OCTAGON, POLKA}
 import brbo.common.CommandLineArguments._
 import org.apache.logging.log4j.LogManager
 import org.kohsuke.args4j.{CmdLineException, CmdLineParser, Option}
@@ -50,9 +52,13 @@ class CommandLineArguments {
     usage = "The max number of refinement iterations when analyzing a program.")
   private var maxIterations: Int = DEFAULT_MAX_ITERATIONS
 
-  @Option(name = "--assertion-index", required = false,
+  @Option(name = "--assertion-index", aliases = Array("--idx"), required = false,
     usage = "The i-th assertion to verify in the file, beginning with 1. Verify all assertions if i is the default value.")
   private var assertionIndex: Int = DEFAULT_ASSERTION_INDEX
+
+  @Option(name = "--abstract-domain", aliases = Array("--dom"), required = false,
+    usage = "The abstract domain to use in the verifier. Choose from: `OCTAGON`, `POLKA` (case-insensitive)")
+  private var abstractDomain: String = DEFAULT_ABSTRACT_DOMAIN
 
   def getAmortizationMode: AmortizationMode = {
     amortizationMode.toLowerCase() match {
@@ -61,6 +67,13 @@ class CommandLineArguments {
       case "selective" => SELECTIVE_AMORTIZE
       case "all" => ALL_AMORTIZE
       case "unknown" => TEST_MODE
+    }
+  }
+
+  def getAbstractDomain: AbstractDomainName = {
+    abstractDomain.toLowerCase() match {
+      case "octagon" => OCTAGON
+      case "polka" => POLKA
     }
   }
 
@@ -89,7 +102,7 @@ class CommandLineArguments {
   def initialize(amortizationMode: AmortizationMode, debugMode: Boolean, directoryToAnalyze: String,
                  skipSanityCheck: Boolean, printVerifierInputs: Boolean, verifierTimeout: Int,
                  printCFG: Boolean, generateSynthetic: Int, maxGroups: Int, verifierDirectory: String,
-                 relationalPredicates: Boolean, maxIterations: Int, assertionIndex: Int): Unit = {
+                 relationalPredicates: Boolean, maxIterations: Int, assertionIndex: Int, abstractDomain: String): Unit = {
     if (initialized) throw new Exception(s"Already initialized")
     initialized = true
     this.amortizationMode = amortizationModeToShortString(amortizationMode)
@@ -103,6 +116,7 @@ class CommandLineArguments {
     this.relationalPredicates = relationalPredicates
     this.maxIterations = maxIterations
     this.assertionIndex = assertionIndex
+    this.abstractDomain = abstractDomain
   }
 
   override def toString: String = {
@@ -117,7 +131,8 @@ class CommandLineArguments {
       s"Verifier directory: `$verifierDirectory`",
       s"Search relational predicates? `$relationalPredicates`",
       s"Max number of refinement iterations: `$maxIterations`",
-      s"The index of the assertion to verify: `$assertionIndex`"
+      s"The index of the assertion to verify: `$assertionIndex`",
+      s"The abstract domain to use: `$abstractDomain`"
     )
     strings.mkString("\n")
   }
@@ -126,7 +141,7 @@ class CommandLineArguments {
     val amortizationMode = amortizationModeToShortString(getAmortizationMode)
     val timeoutString = if (verifierTimeout < 0) "noTimeout" else s"${verifierTimeout}s"
     val assertionIndexString = if (assertionIndex == DEFAULT_ASSERTION_INDEX) "allAssertions" else s"assertion$assertionIndex"
-    s"""$amortizationMode-$timeoutString-$assertionIndexString"""
+    s"""$amortizationMode-$timeoutString-$assertionIndexString-$abstractDomain"""
   }
 }
 
@@ -135,6 +150,7 @@ object CommandLineArguments {
   val DEFAULT_TIMEOUT = 20
   val DEFAULT_MAX_ITERATIONS = 1000
   val DEFAULT_ASSERTION_INDEX = 0
+  val DEFAULT_ABSTRACT_DOMAIN: String = OCTAGON.toString
 
   private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)
 
@@ -159,7 +175,8 @@ object CommandLineArguments {
       printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
       generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
-      relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionIndex = DEFAULT_ASSERTION_INDEX)
+      relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionIndex = DEFAULT_ASSERTION_INDEX,
+      abstractDomain = DEFAULT_ABSTRACT_DOMAIN)
     arguments
   }
 
@@ -169,7 +186,8 @@ object CommandLineArguments {
       printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
       generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
-      relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionIndex = DEFAULT_ASSERTION_INDEX)
+      relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionIndex = DEFAULT_ASSERTION_INDEX,
+      abstractDomain = DEFAULT_ABSTRACT_DOMAIN)
     arguments
   }
 }

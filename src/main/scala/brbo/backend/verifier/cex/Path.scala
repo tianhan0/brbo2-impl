@@ -136,5 +136,3 @@ object Path {
     }
   }
 }
-
-case class Segment(path: Path, begin: Int, end: Int)
