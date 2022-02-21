@@ -259,7 +259,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                 currentNode.value match {
                   case Left(command) =>
                     command match {
-                      case c@(Continue(_) | Break(_)) =>
+                      case _@(Continue(_) | Break(_)) =>
                         logger.traceOrError(s"Decide to match control flow AST node `$currentNode` with no path node.")
                         logger.traceOrError(s"Will re-match current path node `$head`.")
                         (MatchResult(matched = true, matchedExpression = false, matchedTrueBranch = false), true)

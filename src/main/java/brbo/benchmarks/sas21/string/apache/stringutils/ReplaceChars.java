@@ -13,7 +13,13 @@ abstract public class ReplaceChars extends Common {
     boundAssertion("most", R <= str);
     boundAssertion("less", R <= MAX * str + MAX);
     for (int i = 0; i < str; i++) {
-      int index = ndBool() ? -1 : ndInt2(0, searchChars - 1);
+      int index = 0;
+      if (ndBool()) {
+        index = -1;
+      }
+      else {
+        index = ndInt2(0, searchChars - 1);
+      }
       if (index >= 0) {
         modified = true;
         if (index < replaceChars) {

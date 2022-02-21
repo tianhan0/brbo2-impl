@@ -15,7 +15,12 @@ abstract public class SplitByWholeSeparatorWorker extends Common {
     int beg = 0;
     int end = 0;
     while (end < str) {
-      end = ndBool() ? -1 : ndInt2(beg, str - 1);
+      if (ndBool()) {
+        end = -1;
+      }
+      else {
+        end = ndInt2(beg, str - 1);
+      }
       if (end > -1) {
         if (end > beg) {
           numberOfStrings++;

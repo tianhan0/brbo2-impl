@@ -13,10 +13,12 @@ abstract public class Lexx extends Common {
     boundAssertion("less", R <= MAX * format + MAX);
     int inLiteral = 0;
     for (int i = 0; i < format; i++) {
-      if (inLiteral > 0 && ndBool()) {
-        buffer++;
-        R = R + 1;
-        continue;
+      if (inLiteral > 0) {
+        if (ndBool()) { // Let this function call be on a separate line. Otherwise parsing counterexamples may fail.
+          buffer++;
+          R = R + 1;
+          continue;
+        }
       }
       if (ndBool()) {
         if (inLiteral > 0) {

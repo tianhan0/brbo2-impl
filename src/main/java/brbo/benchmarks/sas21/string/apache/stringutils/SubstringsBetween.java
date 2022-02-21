@@ -12,13 +12,25 @@ abstract public class SubstringsBetween extends Common {
     boundAssertion("less", R <= MAX * str + MAX);
     int list = 0;
     int pos = 0;
+    // Move this declaration outside the loop, so that the symbolic execution can be simple (i.e., it doesn't have to
+    // deal with declaring a variable twice, if the declaration is inside the loop)
+    int start = 0;
+    int end = 0;
     while (pos < str - close) {
-      int start = ndBool() ? -1 : ndInt2(pos, str - 1);
+      if (ndBool()) {
+        start = -1;
+      } else {
+        start = ndInt2(pos, str - 1);
+      }
       if (start < 0) {
         break;
       }
       start += open;
-      int end = ndBool() ? -1 : ndInt2(start, str - 1);
+      if (ndBool()) {
+        end = -1;
+      } else {
+        end = ndInt2(start, str - 1);
+      }
       if (end < 0) {
         break;
       }
