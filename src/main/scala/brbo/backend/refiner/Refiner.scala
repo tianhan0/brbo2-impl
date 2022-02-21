@@ -67,10 +67,14 @@ class Refiner(arguments: CommandLineArguments) {
         val inputs = symbolicExecution.inputs.values.map(pair => pair._2.v)
         solver.mkForall(inputs, solver.mkAnd(disjunction, iffConjunction))
       }
-      val z3Result = solver.checkAssertionForallPushPop(query, arguments.getDebugMode)
+      val z3Result = solver.checkAssertionPushPop(query, arguments.getDebugMode)
       if (z3Result) {
         val model = solver.getModel
         val goodRefinements = refinementsMap.filter({ case (variableAST: AST, _) => model.eval(variableAST, false).toString == "true" })
+        if (goodRefinements.isEmpty) {
+          logger.infoOrError(s"Cannot find the path refinement, even though Z3 returns `$z3Result`. Model: `$model`.")
+          return (None, None)
+        }
         val refinement = goodRefinements.head._2._1
         try {
           val newProgram = programSynthesis.synthesize(refinement)

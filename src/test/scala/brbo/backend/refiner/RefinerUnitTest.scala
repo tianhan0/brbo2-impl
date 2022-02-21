@@ -42,7 +42,14 @@ object RefinerUnitTest {
   private val e: Identifier = Identifier("e", INT)
   private val k: Identifier = Identifier("k", INT)
 
-  private val boundExpression1: BrboExpr = Addition(a, Multiplication(b, ITEExpr(GreaterThan(Number(0), Subtraction(n, Number(1))), Number(0), Subtraction(n, Number(1)))))
+  private val boundExpression1: BrboExpr =
+    Addition(
+      a,
+      Multiplication(
+        b,
+        ITEExpr(GreaterThanOrEqualTo(Subtraction(n, Number(1)), Number(0)), Subtraction(n, Number(1)), Number(0))
+      )
+    )
   private val boundExpression2: BrboExpr = n
 
   private val declaration1 = VariableDeclaration(i, Number(0))
