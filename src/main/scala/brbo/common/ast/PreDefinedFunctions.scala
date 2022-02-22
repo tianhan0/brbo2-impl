@@ -57,7 +57,7 @@ object PreDefinedFunctions {
     val cond = Identifier("cond", BOOL)
     val body = {
       val ite = {
-        val condition = Negative(cond)
+        val condition = Negation(cond)
         val thenStatement = LabeledCommand("ERROR", FunctionCall(FunctionCallExpr("__VERIFIER_error", Nil, VOID)))
         val elseStatement = Skip()
         ITE(condition, thenStatement, elseStatement)
@@ -71,7 +71,7 @@ object PreDefinedFunctions {
     val cond = Identifier("cond", BOOL)
     val body = {
       val ite = {
-        val condition = Negative(cond)
+        val condition = Negation(cond)
         val thenStatement = FunctionCall(FunctionCallExpr("abort", Nil, VOID))
         val elseStatement = Skip()
         ITE(condition, thenStatement, elseStatement)

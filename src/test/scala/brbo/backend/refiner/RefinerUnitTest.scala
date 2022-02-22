@@ -105,7 +105,7 @@ object RefinerUnitTest {
           CFGNode(Left(use1), Some(mainFunction1), CFGNode.DONT_CARE_ID),
           CFGNode(Left(increment), Some(mainFunction1), CFGNode.DONT_CARE_ID),
           CFGNode(Right(loopCondition1), Some(mainFunction1), CFGNode.DONT_CARE_ID),
-          CFGNode(Right(Negative(iteCondition)), Some(mainFunction1), CFGNode.DONT_CARE_ID),
+          CFGNode(Right(Negation(iteCondition)), Some(mainFunction1), CFGNode.DONT_CARE_ID),
           CFGNode(Left(assignWithB), Some(mainFunction1), CFGNode.DONT_CARE_ID),
           CFGNode(Left(reset1), Some(mainFunction1), CFGNode.DONT_CARE_ID),
           CFGNode(Left(use1), Some(mainFunction1), CFGNode.DONT_CARE_ID),

@@ -169,7 +169,7 @@ case class Division(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
   override def uniqueCopyExpr: BrboExpr = Division(left, right)
 }
 
-case class Negative(expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
+case class Negation(expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
   assert(expression.typ == BOOL)
 
   override def prettyPrintToC(indent: Int): String = s"!(${expression.prettyPrintToC()})"
@@ -184,7 +184,7 @@ case class Negative(expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extend
 
   override def getDefs: Set[Identifier] = expression.getDefs
 
-  override def uniqueCopyExpr: BrboExpr = Negative(expression)
+  override def uniqueCopyExpr: BrboExpr = Negation(expression)
 }
 
 case class LessThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {

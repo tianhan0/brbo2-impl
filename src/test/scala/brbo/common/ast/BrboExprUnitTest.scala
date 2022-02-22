@@ -1,9 +1,9 @@
 package brbo.common.ast
 
 import brbo.TestCase
-import brbo.common.StringCompare
-import brbo.common.BrboType
 import brbo.common.BrboType.INT
+import brbo.common.ast.BrboExprUnitTest.variables
+import brbo.common.{BrboType, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BrboExprUnitTest extends AnyFlatSpec {
@@ -13,6 +13,17 @@ class BrboExprUnitTest extends AnyFlatSpec {
         val expr = testCase.input.asInstanceOf[BrboExpr]
         StringCompare.compareLiteral(expr.prettyPrintToC(), testCase.expectedOutput, s"${testCase.name} failed!")
         BrboExprUtils.visit(expr) // Ensure every expression is handled by this pattern matching
+    })
+  }
+
+  "Translating expressions to Apron" should "be correct" in {
+    BrboExprUnitTest.toApronTest.foreach({
+      testCase =>
+        val actual = BrboExprUtils.toApron(testCase.input.asInstanceOf[BrboExpr], variables) match {
+          case Left(value) => value.toString(variables.map(v => v.identifier).toArray)
+          case Right(value) => value
+        }
+        StringCompare.compareLiteral(actual.toString, testCase.expectedOutput, s"${testCase.name} failed!")
     })
   }
 }
@@ -28,7 +39,7 @@ object BrboExprUnitTest {
       TestCase("Subtraction", Subtraction(Number(2), Number(3)), "(2 - 3)"),
       TestCase("Multiplication", Multiplication(Number(2), Number(3)), "(2 * 3)"),
       TestCase("Division", Division(Number(2), Number(3)), "(2 / 3)"),
-      TestCase("Negative", Negative(Bool(true)), "!(true)"),
+      TestCase("Negation", Negation(Bool(true)), "!(true)"),
       TestCase("LessThan", LessThan(Number(2), Number(3)), "(2 < 3)"),
       TestCase("LessThanOrEqualTo", LessThanOrEqualTo(Number(2), Number(3)), "(2 <= 3)"),
       TestCase("GreaterThan", GreaterThan(Number(2), Number(3)), "(2 > 3)"),
@@ -38,6 +49,37 @@ object BrboExprUnitTest {
       TestCase("And", And(Bool(true), Bool(false)), "(true && false)"),
       TestCase("Or", Or(Bool(true), Bool(false)), "(true || false)"),
       TestCase("FunctionCallExpr", FunctionCallExpr("f", List(Identifier("a", INT), Identifier("b", INT), Identifier("c", INT)), BrboType.INT), "f(a, b, c)"),
-      TestCase("ITEExpr", ITEExpr(Bool(true), Number(0), Number(1)), "true ? 0 : 1")
+      TestCase("ITEExpr", ITEExpr(Bool(true), Number(0), Number(1)), "true ? 0 : 1"),
+      TestCase("Imply", Imply(Bool(true), Bool(false)), "(!true || false)"),
     )
+
+  private val x = Identifier("x", BrboType.INT)
+  private val y = Identifier("y", BrboType.INT)
+  private val z = Identifier("z", BrboType.BOOL)
+  private val variables = List(x, y, z)
+  val toApronTest: List[TestCase] = {
+    List[TestCase](
+      TestCase("IdentifierInt", x, "x"),
+      TestCase("IdentifierBool", z, "Singleton(x2 <> 0)"),
+      TestCase("Boolean", Bool(true), "Singleton(1.0 <> 0)"),
+      TestCase("Number", Number(23), "23.0"),
+      TestCase("Addition", Addition(x, Number(3)), "x + 3.0"),
+      TestCase("Addition2", Addition(x, y), "x + y"),
+      TestCase("Subtraction", Subtraction(x, Number(3)), "x - 3.0"),
+      TestCase("Multiplication", Multiplication(x, Number(3)), "x * 3.0"),
+      TestCase("Division", Division(x, Number(3)), "x / 3.0"),
+      TestCase("Negation", Negation(Bool(true)), "Singleton(1.0 = 0)"),
+      TestCase("LessThan", LessThan(x, Number(3)), "Singleton(3.0 - x0 > 0)"),
+      TestCase("LessThanOrEqualTo", LessThanOrEqualTo(x, Number(3)), "Singleton(3.0 - x0 >= 0)"),
+      TestCase("GreaterThan", GreaterThan(x, Number(3)), "Singleton(x0 - 3.0 > 0)"),
+      TestCase("GreaterThanOrEqualTo", GreaterThanOrEqualTo(x, Number(3)), "Singleton(x0 - 3.0 >= 0)"),
+      TestCase("Equal", Equal(x, Number(3)), "Singleton(x0 - 3.0 = 0)"),
+      TestCase("NotEqual", NotEqual(x, Number(3)), "Singleton(x0 - 3.0 <> 0)"),
+      TestCase("And", And(Bool(true), Bool(false)), "Conjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0))"),
+      TestCase("Or", Or(Bool(true), Bool(false)), "Disjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0))"),
+      TestCase("ITEExpr", ITEExpr(Bool(true), Bool(true), Bool(false)),
+        "Conjunction(Disjunction(Singleton(1.0 = 0),Singleton(1.0 <> 0)),Disjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0)))"),
+      TestCase("Imply", Imply(Bool(true), Bool(false)), "Disjunction(Singleton(1.0 = 0),Singleton(1.0 = 0))"),
+    )
+  }
 }

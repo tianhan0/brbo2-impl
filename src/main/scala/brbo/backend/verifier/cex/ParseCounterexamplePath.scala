@@ -75,7 +75,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
           case Left(_) => extractUseReset(node.value, node)
           case Right(brboExpr) =>
             brboExpr match {
-              case Negative(notNegated, _) =>
+              case Negation(notNegated, _) =>
                 // Properly extract a use / reset when its conditionals are negated
                 extractUseReset(Right(notNegated), node)
               case _ => extractUseReset(node.value, node)
@@ -309,7 +309,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                   case Left(_) => throw new Exception
                   case Right(brboExpr) =>
                     if (matchResult.matchedTrueBranch) currentNode // Match the true branch
-                    else CFGNode(Right(Negative(brboExpr)), currentNode.function, currentNode.id) // Match the false branch
+                    else CFGNode(Right(Negation(brboExpr)), currentNode.function, currentNode.id) // Match the false branch
                 }
               }
             }

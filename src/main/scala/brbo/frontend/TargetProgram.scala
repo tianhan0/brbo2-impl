@@ -245,7 +245,7 @@ case class TargetProgram(fullQualifiedClassName: String,
           tree.getKind match {
             case Kind.UNARY_MINUS => Left(Subtraction(Number(0), value))
             case Kind.UNARY_PLUS => toAST(tree.getExpression)
-            case Kind.LOGICAL_COMPLEMENT => Left(Negative(value))
+            case Kind.LOGICAL_COMPLEMENT => Left(Negation(value))
             case Kind.POSTFIX_INCREMENT | Kind.PREFIX_INCREMENT | Kind.POSTFIX_DECREMENT | Kind.PREFIX_DECREMENT =>
               val identifier = value.asInstanceOf[Identifier]
               val rhs = tree.getKind match {

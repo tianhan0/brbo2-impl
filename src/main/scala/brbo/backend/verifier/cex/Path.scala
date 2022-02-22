@@ -106,10 +106,10 @@ object Path {
                       case Left(_) => throw new Exception
                       case Right(condition) =>
                         condition match {
-                          case Negative(Negative(cond, _), _) =>
+                          case Negation(Negation(cond, _), _) =>
                             assert(cond.prettyPrintToC() == "cond")
                             i = i + 2 // Directly exit
-                          case Negative(cond, _) =>
+                          case Negation(cond, _) =>
                             assert(cond.prettyPrintToC() == "cond")
                             i = i + 3 // Reach the error location
                           case _ => throw new Exception

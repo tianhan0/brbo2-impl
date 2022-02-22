@@ -4,8 +4,7 @@ import apron._
 import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.modelchecker.AbstractDomainName._
 import brbo.backend.verifier.modelchecker.AbstractMachine.Variable
-import brbo.backend.verifier.{VerifierResult, VerifierStatus}
-import brbo.common.BrboType.BrboType
+import brbo.backend.verifier._
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 import brbo.common.{CommandLineArguments, MyLogger, Z3Solver}
@@ -82,12 +81,13 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                     }
                     else {
                       logger.traceOrError(s"The new valuation is not included in the old one")
-                      val joinedValuation = newState.valuation.join(existingValuation)
+                      val joinedValuation = newState.valuation.joinCopy(existingValuation)
                       logger.traceOrError(s"Joined valuation: `$joinedValuation`")
                       if (newState.numberOfVisits <= arguments.getMaxPathLength) (joinedValuation, true)
                       else {
                         logger.traceOrError(s"Will stop exploring path: `$path`")
                         stoppedEarly = true
+                        // TODO: Add this path to the counterexamples, so that it can be avoided in the future
                         (joinedValuation, false)
                       }
                     }
@@ -126,29 +126,59 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     ???
   }
 
-  case class Valuation(private var variables: List[Variable] = Nil,
-                       private var apronState: Abstract0 = new Abstract0(manager, 0, 0)) {
-    def declareNewVariable(variable: Variable): Unit = {
-      variables = variable :: variables
-      val dimensionChange = new Dimchange(1, 0, Array(0))
-      apronState = apronState.addDimensionsCopy(manager, dimensionChange, false)
-      assert(apronState != null)
+  def interpret(valuation: Valuation, brboAstNode: BrboAstNode): Valuation = {
+    brboAstNode match {
+      case ast: BrboAst =>
+        ast match {
+          case command: Command => ???
+          case _ => throw new Exception
+        }
+      case expr: BrboExpr =>
+        val newStates = BrboExprUtils.toApron(expr, valuation.variablesNoScope) match {
+          case Left(_) => throw new Exception
+          case Right(constraint) => Apron.imposeConstraint(valuation.apronState, constraint)
+        }
+        if (newStates.size > 1)
+          logger.traceOrError(s"Approximate the disjunction in `${expr.prettyPrintToCFG}` with a conjunctive domain")
+        val joinedState = newStates.tail.foldLeft(newStates.head)({
+          (acc, newState) => acc.joinCopy(manager, newState)
+        })
+        Valuation(valuation.variables, joinedState)
+      case _ => throw new Exception
     }
+  }
 
-    def getVariable(variable: String): Texpr0Node = {
-      val index = variables.indexWhere({ case Variable(Identifier(identifier, _, _), _) => identifier == variable })
-      if (index == -1) throw new Exception
-      else new Texpr0DimNode(index)
-    }
-
+  case class Valuation(variables: List[Variable] = Nil,
+                       apronState: Abstract0 = new Abstract0(manager, 0, 0)) {
+    assert(apronState != null)
+    logger.traceOrError(s"Create a new state. isTop: `${apronState.isTop(manager)}`. isBottom: `${apronState.isBottom(manager)}`")
     val variablesNoScope: List[Identifier] = variables.map(v => v.variable)
+
+    def declareNewVariable(variable: Variable): Unit = {
+      val newVariables = variable :: variables
+      val dimensionChange = new Dimchange(1, 0, Array(0))
+      val newApronState = apronState.addDimensionsCopy(manager, dimensionChange, false)
+      Valuation(newVariables, newApronState)
+    }
 
     def include(other: Valuation): Boolean = other.apronState.isIncluded(manager, apronState)
 
-    def join(valuation: Valuation): Valuation = {
+    def joinCopy(valuation: Valuation): Valuation = {
       val newApronState = apronState.joinCopy(manager, valuation.apronState)
-      // TODO: Variable set inclusion???
+      // TODO: Compare the two sets of variables?
       Valuation(variables, newApronState)
+    }
+
+    // def meetCopy(constraint: Tcons0): Valuation = Valuation(variables, apronState.meetCopy(manager, constraint))
+
+    def assignCopy(variable: String, expression: Texpr0Node): Valuation = {
+      val index = getVariableIndex(variable)
+      val newState = apronState.assignCopy(manager, index, new Texpr0Intern(expression), null)
+      Valuation(variables, newState)
+    }
+
+    def getVariableIndex(variable: String): Int = {
+      variables.indexWhere({ case Variable(Identifier(identifier, _, _), _) => identifier == variable })
     }
 
     override def toString: String = {

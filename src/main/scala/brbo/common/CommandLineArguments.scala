@@ -140,7 +140,7 @@ class CommandLineArguments {
       s"Search relational predicates? `$relationalPredicates`",
       s"Max number of refinement iterations: `$maxIterations`",
       s"The index of the assertion to verify: `$assertionTag`",
-      s"The abstract domain to use: `$abstractDomain`",
+      s"The abstract domain to use: `$getAbstractDomain`",
       s"The maximum length of a single path that the verifier will explore: `$maxPathLength`"
     )
     strings.mkString("\n")

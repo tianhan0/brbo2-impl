@@ -151,7 +151,7 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
         val (leftValue, returnValues1) = evaluateExpression(valuation, returnValues, left)
         val (rightValue, returnValues2) = evaluateExpression(valuation, returnValues1, right)
         (Some(solver.mkAnd(leftValue.get, rightValue.get)), returnValues2)
-      case Negative(expression, _) =>
+      case Negation(expression, _) =>
         val (value, returnValues1) = evaluateExpression(valuation, returnValues, expression)
         (Some(solver.mkNot(value.get)), returnValues1)
       case Addition(left, right, _) =>
