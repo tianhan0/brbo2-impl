@@ -97,7 +97,7 @@ object Path {
           node.value match {
             case Left(command) =>
               command match {
-                case CallFunction(callee, _) =>
+                case BeforeFunctionCall(callee, _) =>
                   if (callee.identifier == assertFunction.identifier) {
                     i = i + 1
                     val nextNode = nodes(i)

@@ -442,7 +442,7 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID 
 
 sealed trait CexPathOnly
 
-case class CallFunction(callee: BrboFunction, actualArguments: List[BrboExpr]) extends Command with CexPathOnly {
+case class BeforeFunctionCall(callee: BrboFunction, actualArguments: List[BrboExpr]) extends Command with CexPathOnly {
   override def prettyPrintToCFG: String = {
     val argumentsString =
       if (actualArguments.nonEmpty) s" with `${actualArguments.map(a => a.prettyPrintToCFG).mkString(", ")}`"

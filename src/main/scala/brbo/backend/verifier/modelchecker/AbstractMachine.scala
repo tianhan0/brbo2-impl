@@ -1,13 +1,14 @@
 package brbo.backend.verifier.modelchecker
 
 import apron._
+import brbo.backend.verifier._
 import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.modelchecker.AbstractDomainName._
 import brbo.backend.verifier.modelchecker.AbstractMachine.Variable
-import brbo.backend.verifier._
+import brbo.backend.verifier.modelchecker.Apron.{ApronRepr, ApronVariable, Constraint, Singleton}
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
-import brbo.common.{CommandLineArguments, MyLogger, Z3Solver}
+import brbo.common.{BrboType, CommandLineArguments, MyLogger, Z3Solver}
 import org.apache.logging.log4j.LogManager
 
 import scala.collection.immutable.Queue
@@ -126,24 +127,50 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     ???
   }
 
-  def interpret(valuation: Valuation, brboAstNode: BrboAstNode): Valuation = {
-    brboAstNode match {
-      case ast: BrboAst =>
-        ast match {
-          case command: Command => ???
-          case _ => throw new Exception
+  def evalCommand(valuation: Valuation, brboAst: BrboAst): Valuation = {
+    val scope = parentStatements.get(brboAst)
+
+    def evalExprHelper(expr: BrboExpr): (ApronVariable, Valuation) = {
+      val (apronRepr, newVariables) = BrboExprUtils.toApron(expr, valuation.variablesNoScope)
+      // Register new variables
+      val valuationWithNewVariables = newVariables.foldLeft(valuation)({
+        case (acc, (name, ApronVariable(index, _))) =>
+          acc.declareNewVariable(Variable(name, scope), index)
+      })
+      // Impose constraints on new variables
+      val valuationWithConstraints = newVariables.foldLeft(valuationWithNewVariables)({
+        case (acc, (_, ApronVariable(_, constraint))) =>
+          constraint match {
+            case Some(constraint) => valuationWithNewVariables.imposeConstraint(constraint)
+            case None => acc
+          }
+      })
+      (apronRepr.asInstanceOf[ApronVariable], valuationWithConstraints)
+    }
+
+    brboAst match {
+      case command: Command =>
+        command match {
+          case VariableDeclaration(variable, initialValue, _) =>
+            val (apronVariable, newValuation) = evalExprHelper(initialValue)
+            val newValuation2 = newValuation.declareNewVariable(Variable(variable, scope), apronVariable.index)
+            val constraint = Singleton(Apron.mkEq(Apron.mkSub(???, Apron.mkVar(apronVariable.index))))
+            newValuation2.imposeConstraint(constraint)
+          case Assignment(variable, expression, _) => ???
+          case _: CFGOnly => valuation
+          case Return(value, _) => ???
+          case Use(groupId, update, condition, _) => ???
+          case Reset(groupId, condition, _) =>
+            // For r*, interpret as joining the post states of r* = r and r* = r*, instead of r* = r*>=r ? r* : r, because
+            // (1) we only want to learn paths (as root causes), and
+            // (2) this is sound and precise for the bound verification
+            ???
+          case FunctionCall(functionCallExpr, _) => ???
+          case LabeledCommand(_, command, _) => evalCommand(valuation, command)
+          case _: CexPathOnly => throw new Exception
+          case Skip(_) => valuation
+          case _@(Break(_) | Continue(_)) => throw new Exception
         }
-      case expr: BrboExpr =>
-        val newStates = BrboExprUtils.toApron(expr, valuation.variablesNoScope) match {
-          case Left(_) => throw new Exception
-          case Right(constraint) => Apron.imposeConstraint(valuation.apronState, constraint)
-        }
-        if (newStates.size > 1)
-          logger.traceOrError(s"Approximate the disjunction in `${expr.prettyPrintToCFG}` with a conjunctive domain")
-        val joinedState = newStates.tail.foldLeft(newStates.head)({
-          (acc, newState) => acc.joinCopy(manager, newState)
-        })
-        Valuation(valuation.variables, joinedState)
       case _ => throw new Exception
     }
   }
@@ -151,14 +178,17 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
   case class Valuation(variables: List[Variable] = Nil,
                        apronState: Abstract0 = new Abstract0(manager, 0, 0)) {
     assert(apronState != null)
+    assert(apronState.getDimension(manager).intDim == variables.size)
     logger.traceOrError(s"Create a new state. isTop: `${apronState.isTop(manager)}`. isBottom: `${apronState.isBottom(manager)}`")
     val variablesNoScope: List[Identifier] = variables.map(v => v.variable)
 
-    def declareNewVariable(variable: Variable): Unit = {
+    def declareNewVariable(variable: Variable, index: Int): Valuation = {
       val newVariables = variable :: variables
-      val dimensionChange = new Dimchange(1, 0, Array(0))
+      assert(index == variables.size)
+      val dimensionChange = new Dimchange(1, 0, Array(index))
       val newApronState = apronState.addDimensionsCopy(manager, dimensionChange, false)
       Valuation(newVariables, newApronState)
+      // TODO: Test this
     }
 
     def include(other: Valuation): Boolean = other.apronState.isIncluded(manager, apronState)
@@ -201,6 +231,16 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
       }
       solver.checkAssertionPushPop(query, arguments.getDebugMode)
     }
+
+    def imposeConstraint(constraint: Constraint): Valuation = {
+      val newStates = Apron.imposeConstraint(apronState, constraint)
+      if (newStates.size > 1)
+        logger.traceOrError(s"Approximate the disjunction in `$constraint` with a conjunctive domain")
+      val joinedState = newStates.tail.foldLeft(newStates.head)({
+        (acc, newState) => acc.joinCopy(manager, newState)
+      })
+      Valuation(variables, joinedState)
+    }
   }
 
   case class State(node: CFGNode, valuation: Valuation, numberOfVisits: Int, shouldVerify: Boolean) {
@@ -213,8 +253,12 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
 }
 
 object AbstractMachine {
-
+  /**
+   *
+   * @param block        The statement that defines the current scope
+   * @param brboFunction The function that defines the statement
+   */
   case class LexicalScope(block: Option[Statement], brboFunction: BrboFunction)
 
-  case class Variable(variable: Identifier, scope: LexicalScope)
+  case class Variable(variable: Identifier, scope: Option[Statement])
 }

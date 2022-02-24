@@ -229,7 +229,8 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               State(
                 SubState(functionEntry, processFunctionCalls = true, function),
                 SubState(returnTarget, processFunctionCalls, currentFunction) :: state.callStack,
-                CFGNode(Left(CallFunction(function, actualArguments)), Some(currentFunction), CFGNode.DONT_CARE_ID) :: newState.matchedNodes, // Insert a special command, signaling function calls
+                // Insert a special command, indicating the immediate next commands are from the called function
+                CFGNode(Left(BeforeFunctionCall(function, actualArguments)), Some(currentFunction), CFGNode.DONT_CARE_ID) :: newState.matchedNodes,
                 newState.remainingPath,
                 newState.shouldContinue
               )

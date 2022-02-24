@@ -1,9 +1,8 @@
 package brbo.common.ast
 
-import apron._
 import brbo.backend.verifier.modelchecker.Apron
 import brbo.backend.verifier.modelchecker.Apron._
-import brbo.common.BrboType
+import brbo.common.{BrboType, RandomString}
 
 object BrboExprUtils {
   def visit(expr: BrboExpr): Unit = {
@@ -112,101 +111,173 @@ object BrboExprUtils {
     }
   }
 
-  def toApron(expr: BrboExpr, variables: List[Identifier]): Either[Texpr0Node, Constraint] = {
-    val result: Either[Texpr0Node, Constraint] = expr match {
-      case Identifier(identifier, typ, _) =>
-        val index = variables.indexWhere(v => v.identifier == identifier && v.typ == typ)
-        if (index == -1) throw new Exception
-        val variable = Apron.mkVar(index)
-        typ match {
-          case brbo.common.BrboType.INT => Left(variable)
-          case brbo.common.BrboType.BOOL =>
-            // Bool-typed variable v is translated into constraint v!=0, because we assume v=true iff. v!=0
-            Right(Singleton(Apron.mkNe(variable)))
-          case _ => throw new Exception
-        }
-      case Bool(b, _) => Right(Singleton(Apron.mkBoolVal(b)))
-      case Number(n, _) => Left(Apron.mkIntVal(n))
-      case StringLiteral(_, _) => throw new Exception
-      case Addition(left, right, _) =>
-        (toApron(left, variables), toApron(right, variables)) match {
-          case (Left(left), Left(right)) => Left(Apron.mkAdd(left, right))
-          case _ => throw new Exception
-        }
-      case Subtraction(left, right, _) =>
-        (toApron(left, variables), toApron(right, variables)) match {
-          case (Left(left), Left(right)) => Left(Apron.mkSub(left, right))
-          case _ => throw new Exception
-        }
-      case Multiplication(left, right, _) =>
-        (toApron(left, variables), toApron(right, variables)) match {
-          case (Left(left), Left(right)) => Left(Apron.mkMul(left, right))
-          case _ => throw new Exception
-        }
-      case Division(left, right, _) =>
-        (toApron(left, variables), toApron(right, variables)) match {
-          case (Left(left), Left(right)) => Left(Apron.mkDiv(left, right))
-          case _ => throw new Exception
-        }
-      case Negation(expression, _) =>
-        toApron(expression, variables) match {
-          case Left(_) => throw new Exception
-          case Right(constraint) => Right(constraint.negate())
-        }
-      case LessThan(left, right, _) =>
-        (toApron(left, variables), toApron(right, variables)) match {
-          case (Left(left), Left(right)) => Right(Singleton(Apron.mkGt(mkSub(right, left))))
-          case _ => throw new Exception
-        }
-      case LessThanOrEqualTo(left, right, _) =>
-        (toApron(left, variables), toApron(right, variables)) match {
-          case (Left(left), Left(right)) => Right(Singleton(Apron.mkGe(mkSub(right, left))))
-          case _ => throw new Exception
-        }
-      case GreaterThan(left, right, _) =>
-        (toApron(left, variables), toApron(right, variables)) match {
-          case (Left(left), Left(right)) => Right(Singleton(Apron.mkGt(mkSub(left, right))))
-          case _ => throw new Exception
-        }
-      case GreaterThanOrEqualTo(left, right, _) =>
-        (toApron(left, variables), toApron(right, variables)) match {
-          case (Left(left), Left(right)) => Right(Singleton(Apron.mkGe(mkSub(left, right))))
-          case _ => throw new Exception
-        }
-      case Equal(left, right, _) =>
-        (toApron(left, variables), toApron(right, variables)) match {
-          case (Left(left), Left(right)) => Right(Singleton(Apron.mkEq(mkSub(left, right))))
-          case _ => throw new Exception
-        }
-      case NotEqual(left, right, _) =>
-        (toApron(left, variables), toApron(right, variables)) match {
-          case (Left(left), Left(right)) => Right(Singleton(Apron.mkNe(mkSub(left, right))))
-          case _ => throw new Exception
-        }
-      case And(left, right, _) =>
-        (toApron(left, variables), toApron(right, variables)) match {
-          case (Right(left), Right(right)) => Right(Conjunction(left, right))
-          case _ => throw new Exception
-        }
-      case Or(left, right, _) =>
-        (toApron(left, variables), toApron(right, variables)) match {
-          case (Right(left), Right(right)) => Right(Disjunction(left, right))
-          case _ => throw new Exception
-        }
-      case FunctionCallExpr(_, _, _, _) => throw new Exception
-      case ITEExpr(condition, thenExpr, elseExpr, _) =>
-        (thenExpr.typ, elseExpr.typ) match {
-          case (BrboType.BOOL, BrboType.BOOL) =>
-            toApron(And(Imply(condition, thenExpr), Imply(Negation(condition), elseExpr)), variables)
-          case (BrboType.INT, BrboType.INT) => throw new Exception // TODO: Support this
-          case _ => throw new Exception
-        }
-      case Imply(left, right, _) => toApron(Or(Negation(left), right), variables)
+  def toApron(expr: BrboExpr, variables: List[Identifier]): (ApronRepr, List[(Identifier, ApronVariable)]) = {
+    // Integer-typed variables that are created when translating the expression into an Apron-compatible representation
+    // Such variable must satisfy the associated constraints
+    var temporaryVariables = Map[String, ApronVariable]()
+    val existingNames: List[String] = variables.map(i => i.identifier)
+
+    def createNewVariable(): (Identifier, Int) = {
+      val name = RandomString.generate(existingNames ++ temporaryVariables.keySet)
+      val temporaryVariable = Identifier(name, BrboType.INT)
+      val index = temporaryVariables.size + variables.size
+      // Register the temporary variable s.t. its index can be found when recursively translating expressions
+      temporaryVariables = temporaryVariables.updated(name, ApronVariable(index, None))
+      (temporaryVariable, index)
     }
-    result match {
-      case Left(_) => assert(expr.typ == BrboType.INT)
-      case Right(_) => assert(expr.typ == BrboType.BOOL)
+
+    def toApronHelper(expr: BrboExpr): ApronRepr = {
+      val result: ApronRepr = expr match {
+        case Identifier(identifier, typ, _) =>
+          val index = {
+            val index = variables.indexWhere(v => v.identifier == identifier && v.typ == typ)
+            if (index != -1) index
+            else {
+              temporaryVariables.get(identifier) match {
+                case Some(ApronVariable(index, _)) => index
+                case None => throw new Exception
+              }
+            }
+          }
+          val variable = Apron.mkVar(index)
+          typ match {
+            case brbo.common.BrboType.INT => ApronExpr(variable)
+            case brbo.common.BrboType.BOOL =>
+              // Bool-typed variable v is translated into constraint v!=0, because we assume v=true iff. v!=0
+              Singleton(Apron.mkNe(variable))
+            case _ => throw new Exception
+          }
+        case Bool(b, _) => Singleton(Apron.mkBoolVal(b))
+        case Number(n, _) => ApronExpr(Apron.mkIntVal(n))
+        case StringLiteral(_, _) => throw new Exception
+        case Addition(left, right, _) =>
+          (toApronHelper(left), toApronHelper(right)) match {
+            case (ApronExpr(left), ApronExpr(right)) => ApronExpr(Apron.mkAdd(left, right))
+            case _ => throw new Exception
+          }
+        case Subtraction(left, right, _) =>
+          (toApronHelper(left), toApronHelper(right)) match {
+            case (ApronExpr(left), ApronExpr(right)) => ApronExpr(Apron.mkSub(left, right))
+            case _ => throw new Exception
+          }
+        case Multiplication(left, right, _) =>
+          (toApronHelper(left), toApronHelper(right)) match {
+            case (ApronExpr(left), ApronExpr(right)) => ApronExpr(Apron.mkMul(left, right))
+            case _ => throw new Exception
+          }
+        case Division(left, right, _) =>
+          (toApronHelper(left), toApronHelper(right)) match {
+            case (ApronExpr(left), ApronExpr(right)) => ApronExpr(Apron.mkDiv(left, right))
+            case _ => throw new Exception
+          }
+        case Negation(expression, _) =>
+          toApronHelper(expression) match {
+            case ApronExpr(_) => throw new Exception
+            case constraint: Constraint => constraint.negate()
+          }
+        case LessThan(left, right, _) =>
+          (toApronHelper(left), toApronHelper(right)) match {
+            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGt(mkSub(right, left)))
+            case _ => throw new Exception
+          }
+        case LessThanOrEqualTo(left, right, _) =>
+          (toApronHelper(left), toApronHelper(right)) match {
+            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGe(mkSub(right, left)))
+            case _ => throw new Exception
+          }
+        case GreaterThan(left, right, _) =>
+          (toApronHelper(left), toApronHelper(right)) match {
+            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGt(mkSub(left, right)))
+            case _ => throw new Exception
+          }
+        case GreaterThanOrEqualTo(left, right, _) =>
+          (toApronHelper(left), toApronHelper(right)) match {
+            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGe(mkSub(left, right)))
+            case _ => throw new Exception
+          }
+        case Equal(left, right, _) =>
+          (toApronHelper(left), toApronHelper(right)) match {
+            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkEq(mkSub(left, right)))
+            case _ => throw new Exception
+          }
+        case NotEqual(left, right, _) =>
+          (toApronHelper(left), toApronHelper(right)) match {
+            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkNe(mkSub(left, right)))
+            case _ => throw new Exception
+          }
+        case And(left, right, _) =>
+          (toApronHelper(left), toApronHelper(right)) match {
+            case (left: Constraint, right: Constraint) => Conjunction(left, right)
+            case _ => throw new Exception
+          }
+        case Or(left, right, _) =>
+          (toApronHelper(left), toApronHelper(right)) match {
+            case (left: Constraint, right: Constraint) => Disjunction(left, right)
+            case _ => throw new Exception
+          }
+        case FunctionCallExpr(identifier, arguments, _, _) =>
+          val (temporaryVariable, index) = createNewVariable()
+          identifier match {
+            case PreDefinedFunctions.NDINT =>
+            case PreDefinedFunctions.NDINT2 =>
+              assert(arguments.size == 2)
+              val lower = arguments.head
+              val upper = arguments.tail.head
+              toApronHelper(And(
+                LessThanOrEqualTo(lower, temporaryVariable),
+                LessThanOrEqualTo(temporaryVariable, upper))) match {
+                case constraint: Constraint =>
+                  temporaryVariables =
+                    temporaryVariables.updated(temporaryVariable.identifier, ApronVariable(index, Some(constraint)))
+                case _ => throw new Exception
+              }
+            case PreDefinedFunctions.NDBOOL =>
+              toApronHelper(Or(
+                Equal(temporaryVariable, Number(BOOLEAN_NEGATIVE)),
+                Equal(temporaryVariable, Number(BOOLEAN_POSITIVE)))) match {
+                case constraint: Constraint =>
+                  temporaryVariables =
+                    temporaryVariables.updated(temporaryVariable.identifier, ApronVariable(index, Some(constraint)))
+                case _ => throw new Exception
+              }
+            case _ => throw new Exception
+          }
+          ApronExpr(Apron.mkVar(index))
+        case ITEExpr(condition, thenExpr, elseExpr, _) =>
+          (thenExpr.typ, elseExpr.typ) match {
+            case (BrboType.BOOL, BrboType.BOOL) =>
+              toApronHelper(And(Imply(condition, thenExpr), Imply(Negation(condition), elseExpr)))
+            case (BrboType.INT, BrboType.INT) =>
+              val (temporaryVariable, index) = createNewVariable()
+              temporaryVariables =
+                temporaryVariables.updated(temporaryVariable.identifier, ApronVariable(index, None))
+              val constraint = {
+                val trueCase = toApronHelper(Imply(condition, Equal(temporaryVariable, thenExpr)))
+                val falseCase = toApronHelper(Imply(Negation(condition), Equal(temporaryVariable, elseExpr)))
+                (trueCase, falseCase) match {
+                  case (left: Constraint, right: Constraint) => Conjunction(left, right)
+                  case _ => throw new Exception
+                }
+              }
+              temporaryVariables =
+                temporaryVariables.updated(temporaryVariable.identifier, ApronVariable(index, Some(constraint)))
+              ApronExpr(Apron.mkVar(index))
+            case _ => throw new Exception
+          }
+        case Imply(left, right, _) => toApronHelper(Or(Negation(left), right))
+      }
+      result match {
+        case ApronExpr(_) => assert(expr.typ == BrboType.INT)
+        case _: Constraint => assert(expr.typ == BrboType.BOOL)
+        case _ => throw new Exception
+      }
+      result
     }
-    result
+
+    val newMap = temporaryVariables
+      .map({ case (name, information) => (Identifier(name, BrboType.INT), information) })
+      .toList
+      .sortWith({case ((_, v1), (_, v2)) => v1.index < v2.index})
+    (toApronHelper(expr), newMap)
   }
 }

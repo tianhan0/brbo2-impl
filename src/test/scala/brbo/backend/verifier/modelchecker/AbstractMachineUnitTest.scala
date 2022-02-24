@@ -20,8 +20,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     arguments
   }
 
-  "" should "succeed" in {
-    // val machine = new AbstractMachine(???)
+  "Operations over Valuation" should "be correct" in {
+    // TODO
   }
 }
 

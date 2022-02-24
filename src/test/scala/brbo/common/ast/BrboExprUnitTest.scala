@@ -19,11 +19,8 @@ class BrboExprUnitTest extends AnyFlatSpec {
   "Translating expressions to Apron" should "be correct" in {
     BrboExprUnitTest.toApronTest.foreach({
       testCase =>
-        val actual = BrboExprUtils.toApron(testCase.input.asInstanceOf[BrboExpr], variables) match {
-          case Left(value) => value.toString(variables.map(v => v.identifier).toArray)
-          case Right(value) => value
-        }
-        StringCompare.compareLiteral(actual.toString, testCase.expectedOutput, s"${testCase.name} failed!")
+        val (apronValue, newVariables) = BrboExprUtils.toApron(testCase.input.asInstanceOf[BrboExpr], variables)
+        StringCompare.ignoreWhitespaces(s"$apronValue\n$newVariables", testCase.expectedOutput, s"${testCase.name} failed!")
     })
   }
 }
@@ -59,27 +56,68 @@ object BrboExprUnitTest {
   private val variables = List(x, y, z)
   val toApronTest: List[TestCase] = {
     List[TestCase](
-      TestCase("IdentifierInt", x, "x"),
-      TestCase("IdentifierBool", z, "Singleton(x2 <> 0)"),
-      TestCase("Boolean", Bool(true), "Singleton(1.0 <> 0)"),
-      TestCase("Number", Number(23), "23.0"),
-      TestCase("Addition", Addition(x, Number(3)), "x + 3.0"),
-      TestCase("Addition2", Addition(x, y), "x + y"),
-      TestCase("Subtraction", Subtraction(x, Number(3)), "x - 3.0"),
-      TestCase("Multiplication", Multiplication(x, Number(3)), "x * 3.0"),
-      TestCase("Division", Division(x, Number(3)), "x / 3.0"),
-      TestCase("Negation", Negation(Bool(true)), "Singleton(1.0 = 0)"),
-      TestCase("LessThan", LessThan(x, Number(3)), "Singleton(3.0 - x0 > 0)"),
-      TestCase("LessThanOrEqualTo", LessThanOrEqualTo(x, Number(3)), "Singleton(3.0 - x0 >= 0)"),
-      TestCase("GreaterThan", GreaterThan(x, Number(3)), "Singleton(x0 - 3.0 > 0)"),
-      TestCase("GreaterThanOrEqualTo", GreaterThanOrEqualTo(x, Number(3)), "Singleton(x0 - 3.0 >= 0)"),
-      TestCase("Equal", Equal(x, Number(3)), "Singleton(x0 - 3.0 = 0)"),
-      TestCase("NotEqual", NotEqual(x, Number(3)), "Singleton(x0 - 3.0 <> 0)"),
-      TestCase("And", And(Bool(true), Bool(false)), "Conjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0))"),
-      TestCase("Or", Or(Bool(true), Bool(false)), "Disjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0))"),
+      TestCase("IdentifierInt", x,
+        """ApronExpr(x0)
+          |List()""".stripMargin),
+      TestCase("IdentifierBool", z,
+        """Singleton(x2 <> 0)
+          |List()""".stripMargin),
+      TestCase("Boolean", Bool(true),
+        """Singleton(1.0 <> 0)
+          |List()""".stripMargin),
+      TestCase("Number", Number(23),
+        """ApronExpr(23.0)
+          |List()""".stripMargin),
+      TestCase("Addition", Addition(x, Number(3)),
+        """ApronExpr(x0 + 3.0)
+          |List()""".stripMargin),
+      TestCase("Addition2", Addition(x, y),
+        """ApronExpr(x0 + x1)
+          |List()""".stripMargin),
+      TestCase("Subtraction", Subtraction(x, Number(3)),
+        """ApronExpr(x0 - 3.0)
+          |List()""".stripMargin),
+      TestCase("Multiplication", Multiplication(x, Number(3)),
+        """ApronExpr(x0 * 3.0)
+          |List()""".stripMargin),
+      TestCase("Division", Division(x, Number(3)),
+        """ApronExpr(x0 / 3.0)
+          |List()""".stripMargin),
+      TestCase("Negation", Negation(Bool(true)),
+        """Singleton(1.0 = 0)
+          |List()""".stripMargin),
+      TestCase("LessThan", LessThan(x, Number(3)),
+        """Singleton(3.0 - x0 > 0)
+          |List()""".stripMargin),
+      TestCase("LessThanOrEqualTo", LessThanOrEqualTo(x, Number(3)),
+        """Singleton(3.0 - x0 >= 0)
+          |List()""".stripMargin),
+      TestCase("GreaterThan", GreaterThan(x, Number(3)),
+        """Singleton(x0 - 3.0 > 0)
+          |List()""".stripMargin),
+      TestCase("GreaterThanOrEqualTo", GreaterThanOrEqualTo(x, Number(3)),
+        """Singleton(x0 - 3.0 >= 0)
+          |List()""".stripMargin),
+      TestCase("Equal", Equal(x, Number(3)),
+        """Singleton(x0 - 3.0 = 0)
+          |List()""".stripMargin),
+      TestCase("NotEqual", NotEqual(x, Number(3)),
+        """Singleton(x0 - 3.0 <> 0)
+          |List()""".stripMargin),
+      TestCase("And", And(Bool(true), Bool(false)),
+        """Conjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0))
+          |List()""".stripMargin),
+      TestCase("Or", Or(Bool(true), Bool(false)),
+        """Disjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0))
+          |List()""".stripMargin),
       TestCase("ITEExpr", ITEExpr(Bool(true), Bool(true), Bool(false)),
-        "Conjunction(Disjunction(Singleton(1.0 = 0),Singleton(1.0 <> 0)),Disjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0)))"),
-      TestCase("Imply", Imply(Bool(true), Bool(false)), "Disjunction(Singleton(1.0 = 0),Singleton(1.0 = 0))"),
+        """Conjunction(Disjunction(Singleton(1.0 = 0),Singleton(1.0 <> 0)),Disjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0)))
+          |List()""".stripMargin),
+      TestCase("ITEExpr2", ITEExpr(Bool(true), Number(1), Number(2)),
+        """""".stripMargin), // TODO: Fix this!
+      TestCase("Imply", Imply(Bool(true), Bool(false)),
+        """Disjunction(Singleton(1.0 = 0),Singleton(1.0 = 0))
+          |List()""".stripMargin),
     )
   }
 }

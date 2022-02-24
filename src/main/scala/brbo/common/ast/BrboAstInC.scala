@@ -69,7 +69,7 @@ case class BrboFunctionInC(originalFunction: BrboFunction) {
           ITE(condition, use.assignmentCommand, Skip())
         case FunctionCall(functionCallExpr, _) => FunctionCall(functionCallExpr)
         case LabeledCommand(label, command, _) => LabeledCommand(label, commandToC(command).asInstanceOf[Command])
-        case CallFunction(_, _) => throw new Exception
+        case BeforeFunctionCall(_, _) => throw new Exception
         case Assignment(variable, expression, _) => Assignment(variable, expression)
         case VariableDeclaration(variable, initialValue, _) => VariableDeclaration(variable, initialValue)
       }

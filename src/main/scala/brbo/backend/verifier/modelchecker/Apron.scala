@@ -9,8 +9,18 @@ import org.apache.logging.log4j.LogManager
 object Apron {
   private val logger = LogManager.getLogger(Apron.getClass.getName)
   val BOOLEAN_NEGATIVE = 0
+  val BOOLEAN_POSITIVE = 1
 
-  abstract class Constraint {
+  case class ApronVariable(index: Int, constraint: Option[Constraint])
+
+  // Represent the result of evaluating a BrboExpr into an Apron-compatible representation
+  abstract class ApronRepr
+
+  // Represent an integer-typed value
+  case class ApronExpr(node: Texpr0Node) extends ApronRepr
+
+  // Represent a boolean-typed value
+  abstract class Constraint extends ApronRepr {
     def negate(): Constraint
   }
 

@@ -44,7 +44,7 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
     node.value match {
       case Left(command) =>
         command match {
-          case CallFunction(callee, actualArguments) => // Calling a new function
+          case BeforeFunctionCall(callee, actualArguments) => // Calling a new function
             assert(callee.parameters.length == actualArguments.length)
             // Assume that when calling a function, all actual arguments must have a value
             val (reversedValues: List[AST], newReturnValues) =
