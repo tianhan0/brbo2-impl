@@ -1,10 +1,13 @@
 package brbo.common.ast
 
+import brbo.backend.verifier.modelchecker.AbstractMachine.{LexicalScope, Valuation, Variable}
 import brbo.backend.verifier.modelchecker.Apron
 import brbo.backend.verifier.modelchecker.Apron._
-import brbo.common.{BrboType, RandomString}
+import brbo.common.{BrboType, MyLogger, RandomString}
 
 object BrboExprUtils {
+  private val logger = MyLogger.createLogger(BrboExprUtils.getClass, debugMode = false)
+
   def visit(expr: BrboExpr): Unit = {
     expr match {
       case Identifier(identifier, typ, _) =>
@@ -111,16 +114,18 @@ object BrboExprUtils {
     }
   }
 
-  def toApron(expr: BrboExpr, variables: List[Identifier]): (ApronRepr, List[(Identifier, ApronVariable)]) = {
+  def toApron(expr: BrboExpr, valuation: Valuation, scope: Option[Statement]): (ApronRepr, Valuation) = {
+    val variables: List[Variable] = valuation.variables
     // Integer-typed variables that are created when translating the expression into an Apron-compatible representation
     // Such variable must satisfy the associated constraints
     var temporaryVariables = Map[String, ApronVariable]()
-    val existingNames: List[String] = variables.map(i => i.identifier)
+    val existingNames: List[String] = variables.map(v => v.variable.identifier)
 
     def createNewVariable(): (Identifier, Int) = {
-      val name = RandomString.generate(existingNames ++ temporaryVariables.keySet)
-      val temporaryVariable = Identifier(name, BrboType.INT)
       val index = temporaryVariables.size + variables.size
+      val name = s"v!$index"
+      assert(!existingNames.contains(name))
+      val temporaryVariable = Identifier(name, BrboType.INT)
       // Register the temporary variable s.t. its index can be found when recursively translating expressions
       temporaryVariables = temporaryVariables.updated(name, ApronVariable(index, None))
       (temporaryVariable, index)
@@ -130,7 +135,7 @@ object BrboExprUtils {
       val result: ApronRepr = expr match {
         case Identifier(identifier, typ, _) =>
           val index = {
-            val index = variables.indexWhere(v => v.identifier == identifier && v.typ == typ)
+            val index = variables.indexWhere(v => v.variable.identifier == identifier && v.variable.typ == typ)
             if (index != -1) index
             else {
               temporaryVariables.get(identifier) match {
@@ -274,10 +279,19 @@ object BrboExprUtils {
       result
     }
 
-    val newMap = temporaryVariables
-      .map({ case (name, information) => (Identifier(name, BrboType.INT), information) })
-      .toList
-      .sortWith({case ((_, v1), (_, v2)) => v1.index < v2.index})
-    (toApronHelper(expr), newMap)
+    // Kick off the translation
+    val apronRepr = toApronHelper(expr)
+    val newValuation = temporaryVariables.foldLeft(valuation)({
+      case (acc, (name, ApronVariable(_, constraint))) =>
+        // Register the new variable
+        val valuationWithNewVariable = acc.declareNewVariable(Variable(Identifier(name, BrboType.INT), scope))
+        // Impose constraints on the new variable
+        constraint match {
+          case Some(constraint) => valuationWithNewVariable.imposeConstraint(constraint)
+          case None => valuationWithNewVariable
+        }
+    })
+
+    (apronRepr, newValuation)
   }
 }

@@ -1,7 +1,9 @@
 package brbo.backend.verifier.modelchecker
 
+import apron.Octagon
 import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.backend.verifier.UAutomizerVerifier
+import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.common.BrboType._
 import brbo.common.CommandLineArguments
 import brbo.common.CommandLineArguments._
@@ -20,8 +22,9 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     arguments
   }
 
-  "Operations over Valuation" should "be correct" in {
-    // TODO
+  "Creating new variables in a valuation" should "be correct" in {
+    val valuation = AbstractMachine.createEmptyValuation(new Octagon())
+    // valuation.declareNewVariable()
   }
 }
 

@@ -1,14 +1,15 @@
 package brbo.backend.verifier.modelchecker
 
 import apron._
+import brbo.backend.driver.Driver
 import brbo.backend.verifier._
 import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.modelchecker.AbstractDomainName._
-import brbo.backend.verifier.modelchecker.AbstractMachine.Variable
-import brbo.backend.verifier.modelchecker.Apron.{ApronRepr, ApronVariable, Constraint, Singleton}
+import brbo.backend.verifier.modelchecker.AbstractMachine._
+import brbo.backend.verifier.modelchecker.Apron.{ApronVariable, Constraint, Singleton}
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
-import brbo.common.{BrboType, CommandLineArguments, MyLogger, Z3Solver}
+import brbo.common.{CommandLineArguments, MyLogger, Z3Solver}
 import org.apache.logging.log4j.LogManager
 
 import scala.collection.immutable.Queue
@@ -45,7 +46,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
   private val fakeInitialNode = CFGNode(Right(Bool(b = true)), function = Some(brboProgram.mainFunction))
 
   def verify(boundAssertion: BoundAssertion): VerifierResult = {
-    val initialState = State(fakeInitialNode, Valuation(), numberOfVisits = 1, shouldVerify = true)
+    val initialState = State(fakeInitialNode, createEmptyValuation(manager), numberOfVisits = 1, shouldVerify = true)
     // Every CFGNode corresponds to a location, which is the location right after the node
     // fakeInitialNode corresponds to the program entry, which is right before the first command / expression
     val initialPathState = PathState(Map(initialState.node -> initialState.valuation))
@@ -131,21 +132,8 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     val scope = parentStatements.get(brboAst)
 
     def evalExprHelper(expr: BrboExpr): (ApronVariable, Valuation) = {
-      val (apronRepr, newVariables) = BrboExprUtils.toApron(expr, valuation.variablesNoScope)
-      // Register new variables
-      val valuationWithNewVariables = newVariables.foldLeft(valuation)({
-        case (acc, (name, ApronVariable(index, _))) =>
-          acc.declareNewVariable(Variable(name, scope), index)
-      })
-      // Impose constraints on new variables
-      val valuationWithConstraints = newVariables.foldLeft(valuationWithNewVariables)({
-        case (acc, (_, ApronVariable(_, constraint))) =>
-          constraint match {
-            case Some(constraint) => valuationWithNewVariables.imposeConstraint(constraint)
-            case None => acc
-          }
-      })
-      (apronRepr.asInstanceOf[ApronVariable], valuationWithConstraints)
+      val (apronRepr, newValuation) = BrboExprUtils.toApron(expr, valuation, scope)
+      (apronRepr.asInstanceOf[ApronVariable], newValuation)
     }
 
     brboAst match {
@@ -153,7 +141,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         command match {
           case VariableDeclaration(variable, initialValue, _) =>
             val (apronVariable, newValuation) = evalExprHelper(initialValue)
-            val newValuation2 = newValuation.declareNewVariable(Variable(variable, scope), apronVariable.index)
+            val newValuation2 = newValuation.declareNewVariable(Variable(variable, scope))
             val constraint = Singleton(Apron.mkEq(Apron.mkSub(???, Apron.mkVar(apronVariable.index))))
             newValuation2.imposeConstraint(constraint)
           case Assignment(variable, expression, _) => ???
@@ -174,21 +162,41 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
       case _ => throw new Exception
     }
   }
+}
 
-  case class Valuation(variables: List[Variable] = Nil,
-                       apronState: Abstract0 = new Abstract0(manager, 0, 0)) {
+object AbstractMachine {
+  // private val logger = MyLogger.createLogger(AbstractMachine.getClass, debugMode = false)
+
+  case class State(node: CFGNode, valuation: Valuation, numberOfVisits: Int, shouldVerify: Boolean) {
+    override def toString: String = s"$toStringShort\nValuation: $valuation"
+
+    def toStringShort: String = s"Node: `${node.prettyPrintToCFG}`. Number of visits: `$numberOfVisits`. shouldVerify: `$shouldVerify`."
+  }
+
+  case class PathState(valuations: Map[CFGNode, Valuation])
+
+  case class Valuation(variables: List[Variable], apronState: Abstract0, logger: Option[MyLogger] = None) {
     assert(apronState != null)
+    private val manager = apronState.getCreationManager
     assert(apronState.getDimension(manager).intDim == variables.size)
-    logger.traceOrError(s"Create a new state. isTop: `${apronState.isTop(manager)}`. isBottom: `${apronState.isBottom(manager)}`")
+    traceOrError(logger, s"Create a new state. isTop: `${apronState.isTop(manager)}`. isBottom: `${apronState.isBottom(manager)}`")
+    private val debugMode = logger match {
+      case Some(logger) => logger.debugMode
+      case None => false
+    }
     val variablesNoScope: List[Identifier] = variables.map(v => v.variable)
 
-    def declareNewVariable(variable: Variable, index: Int): Valuation = {
+    def declareNewVariable(variable: Variable): Valuation = {
       val newVariables = variable :: variables
-      assert(index == variables.size)
-      val dimensionChange = new Dimchange(1, 0, Array(index))
+      val dimensionChange = new Dimchange(1, 0, Array(variables.size))
       val newApronState = apronState.addDimensionsCopy(manager, dimensionChange, false)
-      Valuation(newVariables, newApronState)
+      Valuation(newVariables, newApronState, logger)
       // TODO: Test this
+    }
+
+    def forgetVariablesInScope(scope: Statement): Valuation = {
+      // apronState.forgetCopy()
+      ???
     }
 
     def include(other: Valuation): Boolean = other.apronState.isIncluded(manager, apronState)
@@ -196,7 +204,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     def joinCopy(valuation: Valuation): Valuation = {
       val newApronState = apronState.joinCopy(manager, valuation.apronState)
       // TODO: Compare the two sets of variables?
-      Valuation(variables, newApronState)
+      Valuation(variables, newApronState, logger)
     }
 
     // def meetCopy(constraint: Tcons0): Valuation = Valuation(variables, apronState.meetCopy(manager, constraint))
@@ -204,7 +212,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     def assignCopy(variable: String, expression: Texpr0Node): Valuation = {
       val index = getVariableIndex(variable)
       val newState = apronState.assignCopy(manager, index, new Texpr0Intern(expression), null)
-      Valuation(variables, newState)
+      Valuation(variables, newState, logger)
     }
 
     def getVariableIndex(variable: String): Int = {
@@ -212,7 +220,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     }
 
     override def toString: String = {
-      val variablesString = variables.map(v => v.toString).mkString("\n  ")
+      val variablesString = "  " + variables.map(v => v.toString).mkString("\n  ")
       val stateString = apronState.toString(manager, variables.map(v => v.variable.identifier).toArray)
       s"Variables:\n$variablesString\nApronState: $stateString"
     }
@@ -229,30 +237,22 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         val variablesZ3 = variables.map(v => solver.mkDoubleVar(v.variable.identifier))
         solver.mkForall(variablesZ3, solver.mkImplies(solver.mkAnd(state: _*), constraintZ3))
       }
-      solver.checkAssertionPushPop(query, arguments.getDebugMode)
+      solver.checkAssertionPushPop(query, debugMode)
     }
 
     def imposeConstraint(constraint: Constraint): Valuation = {
       val newStates = Apron.imposeConstraint(apronState, constraint)
       if (newStates.size > 1)
-        logger.traceOrError(s"Approximate the disjunction in `$constraint` with a conjunctive domain")
+        traceOrError(logger, s"Approximate the disjunction in `$constraint` with a conjunctive domain")
       val joinedState = newStates.tail.foldLeft(newStates.head)({
         (acc, newState) => acc.joinCopy(manager, newState)
       })
-      Valuation(variables, joinedState)
+      Valuation(variables, joinedState, logger)
     }
   }
 
-  case class State(node: CFGNode, valuation: Valuation, numberOfVisits: Int, shouldVerify: Boolean) {
-    override def toString: String = s"$toStringShort\nValuation: $valuation"
+  case class Variable(variable: Identifier, scope: Option[Statement])
 
-    def toStringShort: String = s"Node: `${node.prettyPrintToCFG}`. Number of visits: `$numberOfVisits`. shouldVerify: `$shouldVerify`."
-  }
-
-  case class PathState(valuations: Map[CFGNode, Valuation])
-}
-
-object AbstractMachine {
   /**
    *
    * @param block        The statement that defines the current scope
@@ -260,5 +260,15 @@ object AbstractMachine {
    */
   case class LexicalScope(block: Option[Statement], brboFunction: BrboFunction)
 
-  case class Variable(variable: Identifier, scope: Option[Statement])
+  def createEmptyValuation(manager: Manager, logger: Option[MyLogger] = None): Valuation = {
+    val state = new Abstract0(manager, 0, 0)
+    Valuation(Nil, state, logger)
+  }
+
+  private def traceOrError(logger: Option[MyLogger], message: String): Unit = {
+    logger match {
+      case Some(logger) => logger.traceOrError(message)
+      case None =>
+    }
+  }
 }
