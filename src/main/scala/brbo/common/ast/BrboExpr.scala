@@ -19,10 +19,10 @@ abstract class BrboExpr(val typ: BrboType) extends BrboAstNode with PrettyPrintT
   }
 }
 
-case class Identifier(identifier: String, override val typ: BrboType, uuid: UUID = UUID.randomUUID()) extends BrboExpr(typ) {
-  override def prettyPrintToC(indent: Int): String = identifier
+case class Identifier(name: String, override val typ: BrboType, uuid: UUID = UUID.randomUUID()) extends BrboExpr(typ) {
+  override def prettyPrintToC(indent: Int): String = name
 
-  def typeNamePairInC(): String = s"${BrboType.toCString(typ)} $identifier"
+  def typeNamePairInC(): String = s"${BrboType.toCString(typ)} $name"
 
   override def prettyPrintToCFG: String = prettyPrintToC()
 
@@ -30,8 +30,8 @@ case class Identifier(identifier: String, override val typ: BrboType, uuid: UUID
 
   override def toZ3AST(solver: Z3Solver): AST = {
     typ match {
-      case INT => solver.mkIntVar(identifier)
-      case BOOL => solver.mkBoolVar(identifier)
+      case INT => solver.mkIntVar(name)
+      case BOOL => solver.mkBoolVar(name)
       case _ => throw new Exception
     }
   }
@@ -40,9 +40,9 @@ case class Identifier(identifier: String, override val typ: BrboType, uuid: UUID
 
   override def getDefs: Set[Identifier] = Set()
 
-  override def uniqueCopyExpr: BrboExpr = Identifier(identifier, typ)
+  override def uniqueCopyExpr: BrboExpr = Identifier(name, typ)
 
-  def sameAs(other: Identifier):  Boolean = identifier == other.identifier && typ == other.typ
+  def sameAs(other: Identifier):  Boolean = name == other.name && typ == other.typ
 }
 
 case class StringLiteral(value: String, uuid: UUID = UUID.randomUUID()) extends BrboExpr(STRING) {

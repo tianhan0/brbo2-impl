@@ -6,7 +6,7 @@ import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.backend.verifier.modelchecker.AbstractMachine.Variable
 import brbo.common.BrboType.INT
 import brbo.common.ast.BrboExprUnitTest._
-import brbo.common.{BrboType, StringCompare}
+import brbo.common.{BrboType, MyLogger, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BrboExprUnitTest extends AnyFlatSpec {
@@ -21,10 +21,11 @@ class BrboExprUnitTest extends AnyFlatSpec {
 
   private val valuation = {
     val manager = new Octagon() // new Polka(false)
-    val valuation = AbstractMachine.createEmptyValuation(manager)
-    valuation.declareNewVariable(Variable(x, None))
-      .declareNewVariable(Variable(y, None))
-      .declareNewVariable(Variable(z, None))
+    val logger = Some(MyLogger.createLogger(classOf[BrboExprUnitTest], debugMode = false))
+    val valuation = AbstractMachine.createEmptyValuation(manager, None, logger)
+    valuation.createUninitializedNewVariable(Variable(x, None))
+      .createUninitializedNewVariable(Variable(y, None))
+      .createUninitializedNewVariable(Variable(z, None))
   }
   "Translating expressions to Apron" should "be correct" in {
     BrboExprUnitTest.toApronTest.foreach({
@@ -205,7 +206,7 @@ object BrboExprUnitTest {
           |  Variable(z,None)
           |  Variable(y,None)
           |  Variable(x,None)
-          |ApronState: {  1x -2.0 >= 0;  -1x +2.0 >= 0 }""".stripMargin), // TODO: Wrong variable name!
+          |ApronState: {  1x3 -2.0 >= 0;  -1x3 +2.0 >= 0 }""".stripMargin),
       TestCase("Imply", Imply(Bool(true), Bool(false)),
         """Disjunction(Singleton(1.0 = 0),Singleton(1.0 = 0))
           |Variables:

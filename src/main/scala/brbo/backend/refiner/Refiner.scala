@@ -34,9 +34,9 @@ class Refiner(arguments: CommandLineArguments) {
             var sum: AST = solver.mkIntVal(0)
             allGroupIds.foreach({
               groupId =>
-                val counter: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Counter).identifier)
-                val sharp: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Sharp).identifier)
-                val resource: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Resource).identifier)
+                val counter: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Counter).name)
+                val sharp: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Sharp).name)
+                val resource: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Resource).name)
                 sum = solver.mkAdd(sum, resource, solver.mkMul(counter, sharp))
             })
             val assertion = solver.mkImplies(

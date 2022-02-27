@@ -1,7 +1,6 @@
 package brbo.backend.verifier.modelchecker
 
 import apron._
-import brbo.backend.driver.Driver
 import brbo.backend.verifier._
 import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.modelchecker.AbstractDomainName._
@@ -17,31 +16,14 @@ import scala.collection.immutable.Queue
 class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments) {
   private val logger: MyLogger = MyLogger(LogManager.getLogger(classOf[AbstractMachine]), arguments.getDebugMode)
   private val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
-  private val parentStatements = (brboProgram.mainFunction :: brboProgram.functions).foldLeft(Map[BrboAstNode, Statement]())({
-    (acc, function) =>
-      acc ++ BrboAstUtils.findParentStatements(function.actualBody)
-  })
+  private val parentStatements: Map[BrboAstNode, Statement] =
+    (brboProgram.mainFunction :: brboProgram.functions).foldLeft(Map[BrboAstNode, Statement]())({
+      (acc, function) => acc ++ BrboAstUtils.findParentStatements(function.actualBody)
+    })
   private val manager = arguments.getAbstractDomain match {
     case OCTAGON => new Octagon
     case POLKA => new Polka(false)
   }
-
-  val state = new Abstract0(manager, 3, 0)
-  val a = new Texpr0DimNode(0)
-  val rStar = new Texpr0DimNode(1)
-  val b = new Texpr0DimNode(2)
-  val initialConstraint = new Tcons0(Tcons0.SUPEQ, new Texpr0Intern(new Texpr0BinNode(Texpr0BinNode.OP_SUB, a, rStar)))
-  val ten = Texpr0Node.fromLinexpr0(new Linexpr0(new Array[Linterm0](0), new DoubleScalar(10)))
-  val initialConstraint2 = new Tcons0(Tcons0.EQ, new Texpr0Intern(new Texpr0BinNode(Texpr0BinNode.OP_SUB, b, ten)))
-  val preState = state.meetCopy(manager, initialConstraint).meetCopy(manager, initialConstraint2)
-  val postState = {
-    val assignment = new Texpr0BinNode(Texpr0BinNode.OP_ADD, a, rStar)
-    preState.assignCopy(manager, 1, new Texpr0Intern(assignment), null)
-  }
-  println(postState.toString(manager))
-  val constraints: Array[Tcons0] = postState.toTcons(manager)
-  constraints.foreach(c => println(c.toString))
-  // apronState.meetCopy(apronManager.getManager, constraint)
 
   private val fakeInitialNode = CFGNode(Right(Bool(b = true)), function = Some(brboProgram.mainFunction))
 
@@ -141,8 +123,8 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         command match {
           case VariableDeclaration(variable, initialValue, _) =>
             val (apronVariable, newValuation) = evalExprHelper(initialValue)
-            val newValuation2 = newValuation.declareNewVariable(Variable(variable, scope))
-            val constraint = Singleton(Apron.mkEq(Apron.mkSub(???, Apron.mkVar(apronVariable.index))))
+            val newValuation2 = newValuation.createNewVariable(Variable(variable, scope))
+            val constraint = Singleton(Apron.mkEqZero(Apron.mkSub(???, Apron.mkVar(apronVariable.index))))
             newValuation2.imposeConstraint(constraint)
           case Assignment(variable, expression, _) => ???
           case _: CFGOnly => valuation
@@ -175,7 +157,19 @@ object AbstractMachine {
 
   case class PathState(valuations: Map[CFGNode, Valuation])
 
-  case class Valuation(variables: List[Variable], apronState: Abstract0, logger: Option[MyLogger] = None) {
+  /**
+   *
+   * @param variables    All variables that can be looked up or re-assigned in the current program state
+   * @param apronState   The abstraction of the current program state
+   * @param allVariables All variables that have been declared in apronState
+   * @param lookupScope  A function to look up the parent scope of a given scope
+   * @param logger       The logger
+   */
+  case class Valuation(variables: List[Variable],
+                       apronState: Abstract0,
+                       allVariables: Set[Variable],
+                       lookupScope: BrboAstNode => Option[Statement],
+                       logger: Option[MyLogger] = None) {
     assert(apronState != null)
     private val manager = apronState.getCreationManager
     assert(apronState.getDimension(manager).intDim == variables.size)
@@ -184,44 +178,89 @@ object AbstractMachine {
       case Some(logger) => logger.debugMode
       case None => false
     }
-    val variablesNoScope: List[Identifier] = variables.map(v => v.variable)
+    val variablesNoScope: List[Identifier] = variables.map(v => v.identifier)
 
-    def declareNewVariable(variable: Variable): Valuation = {
-      val newVariables = variable :: variables
-      val dimensionChange = new Dimchange(1, 0, Array(variables.size))
-      val newApronState = apronState.addDimensionsCopy(manager, dimensionChange, false)
-      Valuation(newVariables, newApronState, logger)
-      // TODO: Test this
+    def indexOfVariableThisScope(variable: Variable): Int =
+      variables.indexWhere(v => v.identifier.sameAs(variable.identifier) && v.scope == variable.scope)
+
+    def indexOfVariableAnyScope(variable: Variable): Int = {
+      val index = indexOfVariableThisScope(variable)
+      if (index != -1) index
+      else {
+        variable.scope match {
+          case Some(parentScope) => indexOfVariableAnyScope(Variable(variable.identifier, lookupScope(parentScope)))
+          case None => -1
+        }
+      }
     }
 
-    def forgetVariablesInScope(scope: Statement): Valuation = {
-      // apronState.forgetCopy()
-      ???
+    // The variable is initialized as 0
+    def createNewVariable(variable: Variable): Valuation = {
+      val index = indexOfVariableThisScope(variable)
+      if (index == -1) {
+        createNewVariableHelper(variable, initialize = true)
+      }
+      else {
+        // Re-creating the variable means initializing to 0
+        assignCopy(variable, Apron.mkIntVal(0))
+      }
     }
+
+    def createUninitializedNewVariable(variable: Variable): Valuation = {
+      val index = indexOfVariableThisScope(variable)
+      if (index == -1) {
+        createNewVariableHelper(variable, initialize = false)
+      }
+      else {
+        throw new Exception
+      }
+    }
+
+    private def createNewVariableHelper(variable: Variable, initialize: Boolean): Valuation = {
+      val index = allVariables.size
+      val dimensionChange = new Dimchange(1, 0, Array(index))
+      val newApronState = apronState.addDimensionsCopy(manager, dimensionChange, initialize)
+      Valuation(variable :: variables, newApronState, allVariables + variable, lookupScope, logger)
+    }
+
+    /*def forgetVariablesInScope(scope: Statement): Valuation = {
+      val withIndex = variables.zipWithIndex
+      val indices = withIndex.filter({
+        case (v, _) => v.scope match {
+              case Some(scope2) => scope2 == scope
+              case None => false
+            }
+      }).map(pair => pair._2).toArray
+      val newState = apronState.forgetCopy(manager, indices, false)
+      val newVariables = withIndex.foldLeft(Nil: List[Variable])({
+        case (acc, (v, index)) =>
+          if (indices.contains(index)) acc
+          else v :: acc
+      }).reverse
+      Valuation(newVariables, newState, logger)
+    }*/
 
     def include(other: Valuation): Boolean = other.apronState.isIncluded(manager, apronState)
 
     def joinCopy(valuation: Valuation): Valuation = {
       val newApronState = apronState.joinCopy(manager, valuation.apronState)
-      // TODO: Compare the two sets of variables?
-      Valuation(variables, newApronState, logger)
+      assert(valuation.variables == variables)
+      assert(valuation.allVariables == allVariables)
+      Valuation(variables, newApronState, allVariables, lookupScope, logger)
     }
 
-    // def meetCopy(constraint: Tcons0): Valuation = Valuation(variables, apronState.meetCopy(manager, constraint))
-
-    def assignCopy(variable: String, expression: Texpr0Node): Valuation = {
-      val index = getVariableIndex(variable)
-      val newState = apronState.assignCopy(manager, index, new Texpr0Intern(expression), null)
-      Valuation(variables, newState, logger)
-    }
-
-    def getVariableIndex(variable: String): Int = {
-      variables.indexWhere({ case Variable(Identifier(identifier, _, _), _) => identifier == variable })
+    def assignCopy(variable: Variable, expression: Texpr0Node): Valuation = {
+      val index = indexOfVariableAnyScope(variable)
+      if (index == -1) this
+      else {
+        val newState = apronState.assignCopy(manager, index, new Texpr0Intern(expression), null)
+        Valuation(variables, newState, allVariables, lookupScope, logger)
+      }
     }
 
     override def toString: String = {
       val variablesString = "  " + variables.map(v => v.toString).mkString("\n  ")
-      val stateString = apronState.toString(manager, variables.map(v => v.variable.identifier).toArray)
+      val stateString = apronState.toString(manager) //, variables.map(v => v.variable.identifier).toArray)
       s"Variables:\n$variablesString\nApronState: $stateString"
     }
 
@@ -234,7 +273,7 @@ object AbstractMachine {
       })
       val constraintZ3 = constraint.toZ3AST(solver)
       val query = {
-        val variablesZ3 = variables.map(v => solver.mkDoubleVar(v.variable.identifier))
+        val variablesZ3 = variables.map(v => solver.mkDoubleVar(v.identifier.name))
         solver.mkForall(variablesZ3, solver.mkImplies(solver.mkAnd(state: _*), constraintZ3))
       }
       solver.checkAssertionPushPop(query, debugMode)
@@ -247,22 +286,20 @@ object AbstractMachine {
       val joinedState = newStates.tail.foldLeft(newStates.head)({
         (acc, newState) => acc.joinCopy(manager, newState)
       })
-      Valuation(variables, joinedState, logger)
+      Valuation(variables, joinedState, allVariables, lookupScope, logger)
     }
   }
 
-  case class Variable(variable: Identifier, scope: Option[Statement])
+  case class Variable(identifier: Identifier, scope: Option[Statement])
 
-  /**
-   *
-   * @param block        The statement that defines the current scope
-   * @param brboFunction The function that defines the statement
-   */
-  case class LexicalScope(block: Option[Statement], brboFunction: BrboFunction)
-
-  def createEmptyValuation(manager: Manager, logger: Option[MyLogger] = None): Valuation = {
+  def createEmptyValuation(manager: Manager,
+                           lookupScope: Option[BrboAstNode => Option[Statement]] = None,
+                           logger: Option[MyLogger] = None): Valuation = {
     val state = new Abstract0(manager, 0, 0)
-    Valuation(Nil, state, logger)
+    lookupScope match {
+      case Some(lookupScope) => Valuation(Nil, state, Set(), lookupScope, logger)
+      case None => Valuation(Nil, state, Set(), _ => None, logger)
+    }
   }
 
   private def traceOrError(logger: Option[MyLogger], message: String): Unit = {

@@ -17,7 +17,7 @@ class Synthesizer(programToSynthesizeFrom: BrboProgram, argument: CommandLineArg
     val allNonGhostVariables = {
       val allVariables = programToSynthesizeFrom.mainFunction.parameters.toSet ++
         BrboAstUtils.collectUseDefVariables(programToSynthesizeFrom.mainFunction.bodyNoInitialization)
-      allVariables.filter(v => !GhostVariableUtils.isGhostVariable(v.identifier))
+      allVariables.filter(v => !GhostVariableUtils.isGhostVariable(v.name))
     }
     val allPredicates = Predicate.generatePredicates(allNonGhostVariables, argument.getRelationalPredicates)
     val filterFalsePredicates = allPredicates.filter({

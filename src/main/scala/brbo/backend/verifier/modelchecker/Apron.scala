@@ -11,6 +11,18 @@ object Apron {
   val BOOLEAN_NEGATIVE = 0
   val BOOLEAN_POSITIVE = 1
 
+  private val negativeInfinity = {
+    val d = new DoubleScalar(0)
+    d.setInfty(-1)
+    mkCst(d)
+  }
+
+  private val positiveInfinity = {
+    val d = new DoubleScalar(0)
+    d.setInfty(1)
+    mkCst(d)
+  }
+
   case class ApronVariable(index: Int, constraint: Option[Constraint])
 
   // Represent the result of evaluating a BrboExpr into an Apron-compatible representation
@@ -60,42 +72,63 @@ object Apron {
   def mkIntVal(value: Int): Texpr0Node = mkCst(value)
   // Texpr0Node.fromLinexpr0(new Linexpr0(new Array[Linterm0](0), new DoubleScalar(value)))
 
-  def makeDoubleVal(value: Double): Texpr0Node = mkCst(value)
+  def mkDoubleVal(value: Double): Texpr0Node = mkCst(value)
+
+  def mkPositiveInfinity: Texpr0Node = positiveInfinity
+
+  def mkNegativeInfinity: Texpr0Node = negativeInfinity
+
+  /*def mkNoConstraint(index: Int): Constraint = {
+    val variable = mkVar(index)
+    val le = mkGeZero(mkSub(mkPositiveInfinity, variable))
+    val ge = mkGeZero(mkSub(variable, mkNegativeInfinity))
+    Conjunction(Singleton(le), Singleton(ge))
+  }*/
 
   def mkBoolVal(value: Boolean): Tcons0 = {
     // Bool-typed value b is translated into constraint 1!=0 or 1==0
-    if (value) mkNe(mkIntVal(1)) // 1!=0
-    else mkEq(mkIntVal(1)) // 1==0
+    if (value) mkNeZero(mkIntVal(1)) // 1!=0
+    else mkEqZero(mkIntVal(1)) // 1==0
   }
 
-  private def mkCst(value: Double): Texpr0Node = {
+  private def mkCst(value: DoubleScalar): Texpr0Node = {
     val node = new Texpr0CstNode()
-    node.cst = new DoubleScalar(value)
+    node.cst = value
     node
   }
+
+  private def mkCst(value: Double): Texpr0Node = mkCst(new DoubleScalar(value))
 
   def mkNegative(node: Texpr0Node): Texpr0Node = new Texpr0UnNode(Texpr0UnNode.OP_NEG, node)
 
   // Texpr0Node and Texpr0Intern can be converted back and forth
-  def mkEq(expression: Texpr0Node): Tcons0 =
-    new Tcons0(Tcons0.EQ, new Texpr0Intern(expression))
+  def mkEqZero(expression: Texpr0Node): Tcons0 = new Tcons0(Tcons0.EQ, new Texpr0Intern(expression))
 
-  def mkGe(expression: Texpr0Node): Tcons0 =
-    new Tcons0(Tcons0.SUPEQ, new Texpr0Intern(expression))
+  def mkGeZero(expression: Texpr0Node): Tcons0 = new Tcons0(Tcons0.SUPEQ, new Texpr0Intern(expression))
 
-  def mkGt(expression: Texpr0Node): Tcons0 =
-    new Tcons0(Tcons0.SUP, new Texpr0Intern(expression))
+  def mkGtZero(expression: Texpr0Node): Tcons0 = new Tcons0(Tcons0.SUP, new Texpr0Intern(expression))
 
-  def mkNe(expression: Texpr0Node): Tcons0 =
-    new Tcons0(Tcons0.DISEQ, new Texpr0Intern(expression))
+  def mkNeZero(expression: Texpr0Node): Tcons0 = new Tcons0(Tcons0.DISEQ, new Texpr0Intern(expression))
+
+  def mkEq(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkEqZero(mkSub(left, right))
+
+  def mkNe(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkNeZero(mkSub(left, right))
+
+  def mkGe(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkGeZero(mkSub(left, right))
+
+  def mkGt(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkGtZero(mkSub(left, right))
+
+  def mkLe(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkGeZero(mkSub(right, left))
+
+  def mkLt(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkGtZero(mkSub(right, left))
 
   def mkNegation(constraint: Tcons0): Tcons0 = {
     constraint.kind match {
-      case Tcons0.EQ => Apron.mkNe(constraint.toTexpr0Node)
-      case Tcons0.SUPEQ => Apron.mkGe(Apron.mkNegative(constraint.toTexpr0Node))
-      case Tcons0.SUP => Apron.mkGt(Apron.mkNegative(constraint.toTexpr0Node))
+      case Tcons0.EQ => Apron.mkNeZero(constraint.toTexpr0Node)
+      case Tcons0.SUPEQ => Apron.mkGeZero(Apron.mkNegative(constraint.toTexpr0Node))
+      case Tcons0.SUP => Apron.mkGtZero(Apron.mkNegative(constraint.toTexpr0Node))
       case Tcons0.EQMOD => throw new Exception
-      case Tcons0.DISEQ => Apron.mkEq(constraint.toTexpr0Node)
+      case Tcons0.DISEQ => Apron.mkEqZero(constraint.toTexpr0Node)
     }
   }
 
@@ -143,8 +176,8 @@ object Apron {
       case node: Texpr0DimNode =>
         val variable = variables(node.dim)
         variable.typ match {
-          case brbo.common.BrboType.INT => solver.mkDoubleVar(variable.identifier)
-          case brbo.common.BrboType.BOOL => solver.mkDoubleVar(variable.identifier) // Apron only accepts numerals
+          case brbo.common.BrboType.INT => solver.mkDoubleVar(variable.name)
+          case brbo.common.BrboType.BOOL => solver.mkDoubleVar(variable.name) // Apron only accepts numerals
           case _ => throw new Exception
         }
       case node: Texpr0UnNode =>

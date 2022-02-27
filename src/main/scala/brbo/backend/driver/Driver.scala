@@ -177,9 +177,9 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
       case ((replacements, ids), command) =>
         command match {
           case Assignment(variable, expression, _) =>
-            if (GhostVariableUtils.isGhostVariable(variable.identifier, GhostVariableTyp.Resource)) {
+            if (GhostVariableUtils.isGhostVariable(variable.name, GhostVariableTyp.Resource)) {
               val errorMessage = s"To successfully extract uses from assignments, the assignment must be in the form of " +
-                s"`${variable.identifier} = ${variable.identifier} + e` for some e, instead of `${command.prettyPrintToC()}`"
+                s"`${variable.name} = ${variable.name} + e` for some e, instead of `${command.prettyPrintToC()}`"
               expression match {
                 case Addition(left, right, _) =>
                   left match {

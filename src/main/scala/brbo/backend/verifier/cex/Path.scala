@@ -32,9 +32,9 @@ case class Path(pathNodes: List[CFGNode]) {
     groupId =>
       val (resource: Identifier, sharp: Identifier, counter: Identifier) = GhostVariableUtils.generateVariables(Some(groupId))
       // Every ghost variable that appears in the path must be initialized by a variable declaration
-      assert(existDeclaration(resource), s"Resource variable `${resource.identifier}` is used but not declared!")
-      assert(existDeclaration(sharp), s"Sharp variable `${sharp.identifier}` is used but not declared!")
-      assert(existDeclaration(counter), s"Counter variable `${counter.identifier}` is used but not declared!")
+      assert(existDeclaration(resource), s"Resource variable `${resource.name}` is used but not declared!")
+      assert(existDeclaration(sharp), s"Sharp variable `${sharp.name}` is used but not declared!")
+      assert(existDeclaration(counter), s"Counter variable `${counter.name}` is used but not declared!")
   })
 
   override def toString: String = {

@@ -12,7 +12,7 @@ object StringCompare {
     result
   }
 
-  def ignoreWhitespaces(actual: String, expected: String, message: String): Boolean = {
+  def ignoreWhitespaces(actual: String, expected: String, message: String = ""): Boolean = {
     val result = actual.replaceAll("(?s)\\s+", " ").trim == expected.replaceAll("(?s)\\s+", " ").trim
     if (!result) {
       val lineSeparator = s"$dashes\n"

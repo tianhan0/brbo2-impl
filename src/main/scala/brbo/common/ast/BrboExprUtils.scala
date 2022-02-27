@@ -1,6 +1,6 @@
 package brbo.common.ast
 
-import brbo.backend.verifier.modelchecker.AbstractMachine.{LexicalScope, Valuation, Variable}
+import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.backend.verifier.modelchecker.Apron
 import brbo.backend.verifier.modelchecker.Apron._
 import brbo.common.{BrboType, MyLogger, RandomString}
@@ -119,10 +119,10 @@ object BrboExprUtils {
     // Integer-typed variables that are created when translating the expression into an Apron-compatible representation
     // Such variable must satisfy the associated constraints
     var temporaryVariables = Map[String, ApronVariable]()
-    val existingNames: List[String] = variables.map(v => v.variable.identifier)
+    val existingNames = valuation.allVariables.map(v => v.identifier.name)
 
     def createNewVariable(): (Identifier, Int) = {
-      val index = temporaryVariables.size + variables.size
+      val index = temporaryVariables.size + valuation.allVariables.size
       val name = s"v!$index"
       assert(!existingNames.contains(name))
       val temporaryVariable = Identifier(name, BrboType.INT)
@@ -133,9 +133,9 @@ object BrboExprUtils {
 
     def toApronHelper(expr: BrboExpr): ApronRepr = {
       val result: ApronRepr = expr match {
-        case Identifier(identifier, typ, _) =>
+        case i@Identifier(identifier, typ, _) =>
           val index = {
-            val index = variables.indexWhere(v => v.variable.identifier == identifier && v.variable.typ == typ)
+            val index = variables.indexWhere(v => v.identifier.sameAs(i))
             if (index != -1) index
             else {
               temporaryVariables.get(identifier) match {
@@ -149,7 +149,7 @@ object BrboExprUtils {
             case brbo.common.BrboType.INT => ApronExpr(variable)
             case brbo.common.BrboType.BOOL =>
               // Bool-typed variable v is translated into constraint v!=0, because we assume v=true iff. v!=0
-              Singleton(Apron.mkNe(variable))
+              Singleton(Apron.mkNeZero(variable))
             case _ => throw new Exception
           }
         case Bool(b, _) => Singleton(Apron.mkBoolVal(b))
@@ -182,32 +182,32 @@ object BrboExprUtils {
           }
         case LessThan(left, right, _) =>
           (toApronHelper(left), toApronHelper(right)) match {
-            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGt(mkSub(right, left)))
+            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGtZero(mkSub(right, left)))
             case _ => throw new Exception
           }
         case LessThanOrEqualTo(left, right, _) =>
           (toApronHelper(left), toApronHelper(right)) match {
-            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGe(mkSub(right, left)))
+            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGeZero(mkSub(right, left)))
             case _ => throw new Exception
           }
         case GreaterThan(left, right, _) =>
           (toApronHelper(left), toApronHelper(right)) match {
-            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGt(mkSub(left, right)))
+            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGtZero(mkSub(left, right)))
             case _ => throw new Exception
           }
         case GreaterThanOrEqualTo(left, right, _) =>
           (toApronHelper(left), toApronHelper(right)) match {
-            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGe(mkSub(left, right)))
+            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGeZero(mkSub(left, right)))
             case _ => throw new Exception
           }
         case Equal(left, right, _) =>
           (toApronHelper(left), toApronHelper(right)) match {
-            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkEq(mkSub(left, right)))
+            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkEqZero(mkSub(left, right)))
             case _ => throw new Exception
           }
         case NotEqual(left, right, _) =>
           (toApronHelper(left), toApronHelper(right)) match {
-            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkNe(mkSub(left, right)))
+            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkNeZero(mkSub(left, right)))
             case _ => throw new Exception
           }
         case And(left, right, _) =>
@@ -233,7 +233,7 @@ object BrboExprUtils {
                 LessThanOrEqualTo(temporaryVariable, upper))) match {
                 case constraint: Constraint =>
                   temporaryVariables =
-                    temporaryVariables.updated(temporaryVariable.identifier, ApronVariable(index, Some(constraint)))
+                    temporaryVariables.updated(temporaryVariable.name, ApronVariable(index, Some(constraint)))
                 case _ => throw new Exception
               }
             case PreDefinedFunctions.NDBOOL =>
@@ -242,7 +242,7 @@ object BrboExprUtils {
                 Equal(temporaryVariable, Number(BOOLEAN_POSITIVE)))) match {
                 case constraint: Constraint =>
                   temporaryVariables =
-                    temporaryVariables.updated(temporaryVariable.identifier, ApronVariable(index, Some(constraint)))
+                    temporaryVariables.updated(temporaryVariable.name, ApronVariable(index, Some(constraint)))
                 case _ => throw new Exception
               }
             case _ => throw new Exception
@@ -255,7 +255,7 @@ object BrboExprUtils {
             case (BrboType.INT, BrboType.INT) =>
               val (temporaryVariable, index) = createNewVariable()
               temporaryVariables =
-                temporaryVariables.updated(temporaryVariable.identifier, ApronVariable(index, None))
+                temporaryVariables.updated(temporaryVariable.name, ApronVariable(index, None))
               val constraint = {
                 val trueCase = toApronHelper(Imply(condition, Equal(temporaryVariable, thenExpr)))
                 val falseCase = toApronHelper(Imply(Negation(condition), Equal(temporaryVariable, elseExpr)))
@@ -265,7 +265,7 @@ object BrboExprUtils {
                 }
               }
               temporaryVariables =
-                temporaryVariables.updated(temporaryVariable.identifier, ApronVariable(index, Some(constraint)))
+                temporaryVariables.updated(temporaryVariable.name, ApronVariable(index, Some(constraint)))
               ApronExpr(Apron.mkVar(index))
             case _ => throw new Exception
           }
@@ -284,7 +284,7 @@ object BrboExprUtils {
     val newValuation = temporaryVariables.foldLeft(valuation)({
       case (acc, (name, ApronVariable(_, constraint))) =>
         // Register the new variable
-        val valuationWithNewVariable = acc.declareNewVariable(Variable(Identifier(name, BrboType.INT), scope))
+        val valuationWithNewVariable = acc.createUninitializedNewVariable(Variable(Identifier(name, BrboType.INT), scope))
         // Impose constraints on the new variable
         constraint match {
           case Some(constraint) => valuationWithNewVariable.imposeConstraint(constraint)

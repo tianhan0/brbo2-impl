@@ -16,8 +16,8 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
 
   val inputs: Valuation = inputVariables.foldLeft(Map[String, (BrboType, Value)]())({
     (acc, parameter) =>
-      val z3AST = Z3Solver.variableToZ3(parameter.identifier, parameter.typ, solver)
-      acc + (parameter.identifier -> (parameter.typ, Value(z3AST)))
+      val z3AST = Z3Solver.variableToZ3(parameter.name, parameter.typ, solver)
+      acc + (parameter.name -> (parameter.typ, Value(z3AST)))
   })
 
   private var freshVariables: Valuation = Map()
@@ -56,7 +56,7 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
             val map =
               callee.parameters.zip(reversedValues.reverse).foldLeft(Map[String, (BrboType, Value)]())({
                 case (acc, (formalArgument, value)) =>
-                  acc + (formalArgument.identifier -> (formalArgument.typ, Value(value)))
+                  acc + (formalArgument.name -> (formalArgument.typ, Value(value)))
               })
             State(map :: state.valuations, state.pathCondition, newReturnValues)
           case Return(value, _) =>
@@ -126,12 +126,12 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
     command match {
       case Left(Assignment(variable, expression, _)) =>
         val (value, newReturnValues) = evaluateExpression(valuation, returnValues, expression)
-        (valuation.updated(variable.identifier, (variable.typ, Value(value.get))), newReturnValues)
+        (valuation.updated(variable.name, (variable.typ, Value(value.get))), newReturnValues)
       case Right(VariableDeclaration(variable, initialValue, _)) =>
         val (value, newReturnValues) = evaluateExpression(valuation, returnValues, initialValue)
         // Check variable name shadowing
-        assert(!valuation.contains(variable.identifier), s"Variable `${variable.identifier}` is defined again by `$command`")
-        (valuation.updated(variable.identifier, (variable.typ, Value(value.get))), newReturnValues)
+        assert(!valuation.contains(variable.name), s"Variable `${variable.name}` is defined again by `$command`")
+        (valuation.updated(variable.name, (variable.typ, Value(value.get))), newReturnValues)
     }
   }
 

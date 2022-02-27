@@ -185,7 +185,7 @@ case class VariableDeclaration(variable: Identifier, initialValue: BrboExpr, uui
         case VOID => throw new Exception
       }
     val indentString = " " * indent
-    s"$indentString${BrboType.toCString(variable.typ)} ${variable.identifier} = $initialValueString;"
+    s"$indentString${BrboType.toCString(variable.typ)} ${variable.name} = $initialValueString;"
   }
 
   override def prettyPrintToCFG: String = prettyPrintToC()
@@ -202,7 +202,7 @@ case class Assignment(variable: Identifier, expression: BrboExpr, uuid: UUID = U
 
   override def prettyPrintToC(indent: Int): String = {
     val indentString = " " * indent
-    s"$indentString${variable.identifier} = ${expression.prettyPrintToCNoOuterBrackets};"
+    s"$indentString${variable.name} = ${expression.prettyPrintToCNoOuterBrackets};"
   }
 
   override def prettyPrintToCFG: String = prettyPrintToC()
@@ -383,7 +383,7 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
   val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
 
   override def prettyPrintToCFG: String = {
-    s"if (${condition.prettyPrintToCNoOuterBrackets}) use ${resourceVariable.identifier} ${update.prettyPrintToCFG}"
+    s"if (${condition.prettyPrintToCNoOuterBrackets}) use ${resourceVariable.name} ${update.prettyPrintToCFG}"
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = update.getFunctionCalls
@@ -395,7 +395,7 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
 
   override def toIR(indent: Int): String = {
     val indentString = " " * indent
-    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) use ${resourceVariable.identifier} ${update.prettyPrintToCFG}"
+    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) use ${resourceVariable.name} ${update.prettyPrintToCFG}"
   }
 
   override def replace(newGroupId: Int): Use = Use(Some(newGroupId), update, condition)
@@ -419,7 +419,7 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID 
   val resetCommand: Assignment = Assignment(resourceVariable, Number(0))
   val counterCommand: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
 
-  override def prettyPrintToCFG: String = s"if (${condition.prettyPrintToCNoOuterBrackets}) reset ${resourceVariable.identifier}"
+  override def prettyPrintToCFG: String = s"if (${condition.prettyPrintToCNoOuterBrackets}) reset ${resourceVariable.name}"
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
@@ -430,7 +430,7 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID 
 
   override def toIR(indent: Int): String = {
     val indentString = " " * indent
-    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) reset ${resourceVariable.identifier}"
+    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) reset ${resourceVariable.name}"
   }
 
   def replace(newGroupId: Int): Reset = Reset(newGroupId, condition)

@@ -394,7 +394,7 @@ object Z3Solver {
     else context.mkAnd(parseSMTLIB2StringToArray(string, context): _*)
   }
 
-  def variableToZ3(identifier: Identifier, solver: Z3Solver): AST = variableToZ3(identifier.identifier, identifier.typ, solver)
+  def variableToZ3(identifier: Identifier, solver: Z3Solver): AST = variableToZ3(identifier.name, identifier.typ, solver)
 
   def variableToZ3(identifier: String, typ: BrboType, solver: Z3Solver): AST = {
     typ match {
