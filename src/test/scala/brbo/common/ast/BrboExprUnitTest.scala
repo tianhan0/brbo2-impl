@@ -40,25 +40,25 @@ object BrboExprUnitTest {
   val prettyPrintToCUnitTest: List[TestCase] =
     List[TestCase](
       TestCase("Identifier", Identifier("z", BrboType.INT), "z"),
-      TestCase("Boolean", Bool(true), "true"),
+      TestCase("Boolean", Bool(b = true), "true"),
       TestCase("Number", Number(23), "23"),
       TestCase("StringLiteral", StringLiteral("helloworld"), "helloworld"),
       TestCase("Addition", Addition(Number(2), Number(3)), "(2 + 3)"),
       TestCase("Subtraction", Subtraction(Number(2), Number(3)), "(2 - 3)"),
       TestCase("Multiplication", Multiplication(Number(2), Number(3)), "(2 * 3)"),
       TestCase("Division", Division(Number(2), Number(3)), "(2 / 3)"),
-      TestCase("Negation", Negation(Bool(true)), "!(true)"),
+      TestCase("Negation", Negation(Bool(b = true)), "!(true)"),
       TestCase("LessThan", LessThan(Number(2), Number(3)), "(2 < 3)"),
       TestCase("LessThanOrEqualTo", LessThanOrEqualTo(Number(2), Number(3)), "(2 <= 3)"),
       TestCase("GreaterThan", GreaterThan(Number(2), Number(3)), "(2 > 3)"),
       TestCase("GreaterThanOrEqualTo", GreaterThanOrEqualTo(Number(2), Number(3)), "(2 >= 3)"),
       TestCase("Equal", Equal(Number(2), Number(3)), "(2 == 3)"),
       TestCase("NotEqual", NotEqual(Number(2), Number(3)), "(2 != 3)"),
-      TestCase("And", And(Bool(true), Bool(false)), "(true && false)"),
-      TestCase("Or", Or(Bool(true), Bool(false)), "(true || false)"),
+      TestCase("And", And(Bool(b = true), Bool(b = false)), "(true && false)"),
+      TestCase("Or", Or(Bool(b = true), Bool(b = false)), "(true || false)"),
       TestCase("FunctionCallExpr", FunctionCallExpr("f", List(Identifier("a", INT), Identifier("b", INT), Identifier("c", INT)), BrboType.INT), "f(a, b, c)"),
-      TestCase("ITEExpr", ITEExpr(Bool(true), Number(0), Number(1)), "true ? 0 : 1"),
-      TestCase("Imply", Imply(Bool(true), Bool(false)), "(!true || false)"),
+      TestCase("ITEExpr", ITEExpr(Bool(b = true), Number(0), Number(1)), "true ? 0 : 1"),
+      TestCase("Imply", Imply(Bool(b = true), Bool(b = false)), "(!true || false)"),
     )
 
   private val x = Identifier("x", BrboType.INT)
@@ -80,7 +80,7 @@ object BrboExprUnitTest {
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
-      TestCase("Boolean", Bool(true),
+      TestCase("Boolean", Bool(b = true),
         """Singleton(1.0 <> 0)
           |Variables:
           |  Variable(x,None)
@@ -129,7 +129,7 @@ object BrboExprUnitTest {
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
-      TestCase("Negation", Negation(Bool(true)),
+      TestCase("Negation", Negation(Bool(b = true)),
         """Singleton(1.0 = 0)
           |Variables:
           |  Variable(x,None)
@@ -178,28 +178,28 @@ object BrboExprUnitTest {
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
-      TestCase("And", And(Bool(true), Bool(false)),
+      TestCase("And", And(Bool(b = true), Bool(b = false)),
         """Conjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0))
           |Variables:
           |  Variable(x,None)
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
-      TestCase("Or", Or(Bool(true), Bool(false)),
+      TestCase("Or", Or(Bool(b = true), Bool(b = false)),
         """Disjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0))
           |Variables:
           |  Variable(x,None)
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
-      TestCase("ITEExpr", ITEExpr(Bool(true), Bool(true), Bool(false)),
+      TestCase("ITEExpr", ITEExpr(Bool(b = true), Bool(b = true), Bool(b = false)),
         """Conjunction(Disjunction(Singleton(1.0 = 0),Singleton(1.0 <> 0)),Disjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0)))
           |Variables:
           |  Variable(x,None)
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
-      TestCase("ITEExpr2", ITEExpr(Bool(true), Number(2), Number(3)),
+      TestCase("ITEExpr2", ITEExpr(Bool(b = true), Number(2), Number(3)),
         """ApronExpr(x3)
           |Variables:
           |  Variable(x,None)
@@ -207,7 +207,7 @@ object BrboExprUnitTest {
           |  Variable(z,None)
           |  Variable(v!3,None)
           |ApronState: {  1x3 -2.0 >= 0;  -1x3 +2.0 >= 0 }""".stripMargin),
-      TestCase("Imply", Imply(Bool(true), Bool(false)),
+      TestCase("Imply", Imply(Bool(b = true), Bool(b = false)),
         """Disjunction(Singleton(1.0 = 0),Singleton(1.0 = 0))
           |Variables:
           |  Variable(x,None)

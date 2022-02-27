@@ -59,6 +59,16 @@ object Apron {
     }
   }
 
+  def createConjunction(list: Iterable[Constraint]): Constraint = {
+    assert(list.nonEmpty)
+    list.foldLeft(list.head)({ (acc, c) => Conjunction(acc, c) })
+  }
+
+  def createDisjunction(list: Iterable[Constraint]): Constraint = {
+    assert(list.nonEmpty)
+    list.foldLeft(list.head)({ (acc, c) => Disjunction(acc, c) })
+  }
+
   def mkAdd(left: Texpr0Node, right: Texpr0Node): Texpr0Node = new Texpr0BinNode(Texpr0BinNode.OP_ADD, left, right)
 
   def mkSub(left: Texpr0Node, right: Texpr0Node): Texpr0Node = new Texpr0BinNode(Texpr0BinNode.OP_SUB, left, right)

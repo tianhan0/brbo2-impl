@@ -74,7 +74,7 @@ object SymbolicExecutionUnitTest {
       val reset = Reset(2, GreaterThan(n, b))
       Path(List(
         CFGNode(Left(VariableDeclaration(use.resourceVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(VariableDeclaration(reset.sharpVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode(Left(VariableDeclaration(reset.starVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
         CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(-1))), Some(mainFunction), CFGNode.DONT_CARE_ID),
         CFGNode(Left(use), Some(mainFunction), CFGNode.DONT_CARE_ID),
         CFGNode(Left(reset), Some(mainFunction), CFGNode.DONT_CARE_ID),

@@ -55,7 +55,7 @@ object SynthesizerUnitTest {
   val synthesizeTests: List[TestCase] = {
     val path = List(
       CFGNode(Left(VariableDeclaration(reset.resourceVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 0
-      CFGNode(Left(VariableDeclaration(reset.sharpVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 1
+      CFGNode(Left(VariableDeclaration(reset.starVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 1
       CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(-1))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 2
       CFGNode(Left(declaration), Some(mainFunction), CFGNode.DONT_CARE_ID), // 3
       CFGNode(Right(condition), Some(mainFunction), CFGNode.DONT_CARE_ID), // 4

@@ -221,8 +221,8 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
     val assertion = {
       val sum: BrboExpr = {
         def summand(id: Int): BrboExpr = {
-          val (r, rSharp, rCounter) = GhostVariableUtils.generateVariables(Some(id))
-          Addition(r, Multiplication(rSharp, rCounter))
+          val (r, rStar, rCounter) = GhostVariableUtils.generateVariables(Some(id))
+          Addition(r, Multiplication(rStar, rCounter))
         }
 
         program.mainFunction.groupIds.map(id => summand(id)).foldLeft(Number(0): BrboExpr)({

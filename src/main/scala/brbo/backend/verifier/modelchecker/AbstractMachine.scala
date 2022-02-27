@@ -8,9 +8,10 @@ import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.backend.verifier.modelchecker.Apron._
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
-import brbo.common.{BrboType, CommandLineArguments, MyLogger, Z3Solver}
+import brbo.common.{CommandLineArguments, MyLogger}
 import org.apache.logging.log4j.LogManager
 
+import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
 class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments) {
@@ -110,43 +111,72 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     }
     ???
   }
+}
 
-  def evalCommand(valuation: Valuation, brboAst: BrboAst): Valuation = {
-    val scope = parentStatements.get(brboAst)
+object AbstractMachine {
+  // private val logger = MyLogger.createLogger(AbstractMachine.getClass, debugMode = false)
 
-    def evalExprHelper(expr: BrboExpr): (ApronVariable, Valuation) = {
-      ???
-    }
-
+  /**
+   *
+   * @param valuation The valuation under which the command will be evaluated
+   * @param brboAst   The command to evaluate
+   * @param scope     The lexical scope of the given command
+   * @return
+   */
+  @tailrec
+  def evalCommand(valuation: Valuation, brboAst: BrboAst, scope: Option[Statement]): Valuation = {
     brboAst match {
       case command: Command =>
         command match {
           case VariableDeclaration(identifier, initialValue, _) =>
-            val (apronRepr, newValuation) = BrboExprUtils.toApron(initialValue, valuation, scope)
-            val variable = Variable(identifier, scope)
-            val newValuation2 = newValuation.createInitializedVariable(variable)
-            apronRepr match {
-              case Apron.ApronExpr(node) => newValuation2.assignCopy(variable, node)
-              case constraint: Constraint =>
-                // TODO: This approximates the initial value, as opposed to exactly representing its truth value,
-                //  because we represent boolean-typed values as constraints
-                val value =
-                  if (newValuation2.satisfy(constraint)) BOOLEAN_POSITIVE
-                  else BOOLEAN_NEGATIVE
-                newValuation2.assignCopy(variable, Apron.mkIntVal(value))
-              case _ => throw new Exception
-            }
-          case Assignment(variable, expression, _) => ???
+            assign(identifier, initialValue, createNewVariable = true, valuation, scope)
+          case Assignment(identifier, expression, _) =>
+            assign(identifier, expression, createNewVariable = false, valuation, scope)
           case _: CFGOnly => valuation
-          case Use(groupId, update, condition, _) => ???
-          case Reset(groupId, condition, _) =>
-            // For r*, interpret as joining the post states of r* = r and r* = r*, instead of r* = r*>=r ? r* : r, because
-            // (1) we only want to learn paths (as root causes), and
-            // (2) this is sound and precise for the bound verification
-            ???
+          case use@Use(_, update, condition, _) =>
+            val updatedValuation = assign(use.resourceVariable, update, createNewVariable = false, valuation, scope)
+            (valuation.satisfy(condition), valuation.satisfy(Negation(condition))) match {
+              case (true, true) =>
+
+                /**
+                 * This situation means the current abstraction is not precise enough to decide
+                 * if the condition is satisfied on the path that leads to this situation.
+                 *
+                 * To ensure soundness, we decide to respect such imprecision as executing both branches
+                 * at the same time, which however may lead to verification failures. For example,
+                 * a single use command may be interpreted as executing two use commands for two groups.
+                 *
+                 * By respecting such imprecision, we can ensure not choosing a candidate program that
+                 * contains a path that leads to this situation.
+                 */
+                valuation.joinCopy(updatedValuation)
+              case (true, false) => updatedValuation
+              case (false, true) => valuation
+              case (false, false) => valuation.toBottom()
+            }
+          case reset@Reset(_, condition, _) =>
+            val updatedCounterVariable = {
+              val updatedResourceVariable = {
+                val updatedStarVariable = {
+                  // For r*, interpret as joining the post states of r* = r and r* = r*, instead of r* = r*>=r ? r* : r, because
+                  // (1) we only want to learn paths (as root causes), and
+                  // (2) this is sound and precise for the bound verification
+                  val v = assign(reset.starVariable, reset.resourceVariable, createNewVariable = false, valuation, scope)
+                  v.joinCopy(valuation)
+                }
+                assign(reset.resourceVariable, Number(0), createNewVariable = false, updatedStarVariable, scope)
+              }
+              assign(reset.counterVariable, Addition(reset.counterVariable, Number(1)), createNewVariable = false, updatedResourceVariable, scope)
+            }
+            (valuation.satisfy(condition), valuation.satisfy(Negation(condition))) match {
+              case (true, true) => valuation.joinCopy(updatedCounterVariable)
+              case (true, false) => updatedCounterVariable
+              case (false, true) => valuation
+              case (false, false) => valuation.toBottom()
+            }
           case Return(_, _) => throw new Exception
           case FunctionCall(_, _) => throw new Exception
-          case LabeledCommand(_, command, _) => evalCommand(valuation, command)
+          case LabeledCommand(_, command, _) => evalCommand(valuation, command, scope)
           case _: CexPathOnly => throw new Exception
           case Skip(_) => valuation
           case _@(Break(_) | Continue(_)) => throw new Exception
@@ -154,10 +184,26 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
       case _ => throw new Exception
     }
   }
-}
 
-object AbstractMachine {
-  // private val logger = MyLogger.createLogger(AbstractMachine.getClass, debugMode = false)
+  private def assign(identifier: Identifier, expr: BrboExpr, createNewVariable: Boolean,
+                     valuation: Valuation, scope: Option[Statement]): Valuation = {
+    val (apronRepr, newValuation) = BrboExprUtils.toApron(expr, valuation, scope)
+    val variable = Variable(identifier, scope)
+    val newValuation2 =
+      if (createNewVariable) newValuation.createInitializedVariable(variable)
+      else newValuation
+    apronRepr match {
+      case Apron.ApronExpr(node) => newValuation2.assignCopy(variable, node)
+      case constraint: Constraint =>
+        // TODO: This approximates the value, as opposed to exactly representing the value,
+        //  because we represent boolean-typed values as constraints
+        val value =
+          if (newValuation2.satisfy(constraint)) BOOLEAN_POSITIVE
+          else BOOLEAN_NEGATIVE
+        newValuation2.assignCopy(variable, Apron.mkIntVal(value))
+      case _ => throw new Exception
+    }
+  }
 
   case class State(node: CFGNode, valuation: Valuation, numberOfVisits: Int, shouldVerify: Boolean) {
     val scope: Option[Statement] = {
@@ -167,7 +213,7 @@ object AbstractMachine {
       }
     }
 
-    def satisfy(brboExpr: BrboExpr): Boolean = valuation.satisfy(brboExpr, scope)
+    def satisfy(brboExpr: BrboExpr): Boolean = valuation.satisfy(brboExpr)
 
     override def toString: String = s"$toStringShort\nValuation: $valuation"
 
@@ -204,7 +250,8 @@ object AbstractMachine {
     def indexOfVariableThisScope(variable: Variable): Int =
       variables.indexWhere(v => v.identifier.sameAs(variable.identifier) && v.scope == variable.scope)
 
-    def indexOfVariableAnyScope(variable: Variable): Int = {
+    @tailrec
+    final def indexOfVariableAnyScope(variable: Variable): Int = {
       val index = indexOfVariableThisScope(variable)
       if (index != -1) index
       else {
@@ -306,8 +353,8 @@ object AbstractMachine {
 
     def satisfy(constraint: Tcons0): Boolean = apronState.satisfy(manager, constraint)
 
-    def satisfy(constraint: BrboExpr, scope: Option[Statement]): Boolean = {
-      val (apronRepr, newValuation) = BrboExprUtils.toApron(constraint, this, scope)
+    def satisfy(constraint: BrboExpr): Boolean = {
+      val (apronRepr, newValuation) = BrboExprUtils.toApron(constraint, valuation = this, scope = None)
       apronRepr match {
         case constraint: Constraint => newValuation.satisfy(constraint)
         case _ => throw new Exception
@@ -336,6 +383,8 @@ object AbstractMachine {
       })
       Valuation(variables, joinedState, allVariables, lookupScope, logger)
     }
+
+    def toBottom(): Valuation = imposeConstraint(Singleton(Apron.mkEqZero(Apron.mkIntVal(1))))
   }
 
   case class Variable(identifier: Identifier, scope: Option[Statement])

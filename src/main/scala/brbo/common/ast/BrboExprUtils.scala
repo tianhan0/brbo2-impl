@@ -3,7 +3,7 @@ package brbo.common.ast
 import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.backend.verifier.modelchecker.Apron
 import brbo.backend.verifier.modelchecker.Apron._
-import brbo.common.{BrboType, MyLogger, RandomString}
+import brbo.common.{BrboType, MyLogger}
 
 object BrboExprUtils {
   private val logger = MyLogger.createLogger(BrboExprUtils.getClass, debugMode = false)
@@ -114,6 +114,13 @@ object BrboExprUtils {
     }
   }
 
+  /**
+   *
+   * @param expr      The expression to be translated to an Apron-compatible representation
+   * @param valuation The valuation under which the translation happens
+   * @param scope     The scope under which temporary variables (that are generated during the translation) are created
+   * @return
+   */
   def toApron(expr: BrboExpr, valuation: Valuation, scope: Option[Statement]): (ApronRepr, Valuation) = {
     // Integer-typed variables that are created when translating the expression into an Apron-compatible representation
     // Such variable must satisfy the associated constraints

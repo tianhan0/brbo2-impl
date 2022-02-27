@@ -406,15 +406,15 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
 }
 
 case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
-  val (resourceVariable: Identifier, sharpVariable: Identifier, counterVariable: Identifier) =
+  val (resourceVariable: Identifier, starVariable: Identifier, counterVariable: Identifier) =
     GhostVariableUtils.generateVariables(Some(groupId))
 
   val maxCommand: Assignment = {
-    val iteExpr = ITEExpr(LessThan(sharpVariable, resourceVariable), resourceVariable, sharpVariable)
-    Assignment(sharpVariable, iteExpr)
+    val iteExpr = ITEExpr(LessThan(starVariable, resourceVariable), resourceVariable, starVariable)
+    Assignment(starVariable, iteExpr)
   }
-  val maxComparison: LessThan = LessThan(sharpVariable, resourceVariable)
-  val maxAssignment: Assignment = Assignment(sharpVariable, resourceVariable)
+  val maxComparison: LessThan = LessThan(starVariable, resourceVariable)
+  val maxAssignment: Assignment = Assignment(starVariable, resourceVariable)
   val maxStatement: ITE = ITE(maxComparison, maxAssignment, Skip())
   val resetCommand: Assignment = Assignment(resourceVariable, Number(0))
   val counterCommand: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
