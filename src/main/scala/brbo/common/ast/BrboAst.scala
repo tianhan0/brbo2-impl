@@ -175,17 +175,17 @@ case class Assume(condition: BrboExpr, uuid: UUID = UUID.randomUUID()) extends C
   override def getFunctionCalls: List[FunctionCallExpr] = condition.getFunctionCalls
 }*/
 
-case class VariableDeclaration(variable: Identifier, initialValue: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
+case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
   override def prettyPrintToC(indent: Int): String = {
     val initialValueString =
-      variable.typ match {
-        case INT => assert(initialValue.typ == INT, s"variable: `$variable` (type: `${variable.typ}`); initialValue: `$initialValue` (type: `${initialValue.typ}`)"); initialValue.prettyPrintToCNoOuterBrackets
+      identifier.typ match {
+        case INT => assert(initialValue.typ == INT, s"variable: `$identifier` (type: `${identifier.typ}`); initialValue: `$initialValue` (type: `${initialValue.typ}`)"); initialValue.prettyPrintToCNoOuterBrackets
         case BOOL => assert(initialValue.typ == BOOL); initialValue.prettyPrintToCNoOuterBrackets
         case STRING => assert(initialValue.typ == STRING); initialValue.prettyPrintToCNoOuterBrackets
         case VOID => throw new Exception
       }
     val indentString = " " * indent
-    s"$indentString${BrboType.toCString(variable.typ)} ${variable.name} = $initialValueString;"
+    s"$indentString${BrboType.toCString(identifier.typ)} ${identifier.name} = $initialValueString;"
   }
 
   override def prettyPrintToCFG: String = prettyPrintToC()
@@ -194,22 +194,22 @@ case class VariableDeclaration(variable: Identifier, initialValue: BrboExpr, uui
 
   override def getUses: Set[Identifier] = initialValue.getUses
 
-  override def getDefs: Set[Identifier] = Set(variable)
+  override def getDefs: Set[Identifier] = Set(identifier)
 }
 
-case class Assignment(variable: Identifier, expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
-  assert(variable.typ == expression.typ)
+case class Assignment(identifier: Identifier, expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
+  assert(identifier.typ == expression.typ)
 
   override def prettyPrintToC(indent: Int): String = {
     val indentString = " " * indent
-    s"$indentString${variable.name} = ${expression.prettyPrintToCNoOuterBrackets};"
+    s"$indentString${identifier.name} = ${expression.prettyPrintToCNoOuterBrackets};"
   }
 
   override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = expression.getFunctionCalls
 
-  override def getUses: Set[Identifier] = expression.getUses + variable
+  override def getUses: Set[Identifier] = expression.getUses + identifier
 
   override def getDefs: Set[Identifier] = expression.getDefs
 }

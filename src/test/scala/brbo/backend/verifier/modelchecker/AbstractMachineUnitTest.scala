@@ -1,6 +1,6 @@
 package brbo.backend.verifier.modelchecker
 
-import apron.Octagon
+import apron.{Octagon, Tcons0}
 import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.backend.verifier.UAutomizerVerifier
 import brbo.backend.verifier.modelchecker.AbstractMachine._
@@ -99,11 +99,13 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
   }
 
   "Imposing constraints on a valuation" should "be correct" in {
-    val v1 = emptyValuation.createUninitializedVariable(Variable(x, None))
+    val xVar = Variable(x, None)
+    val v1 = emptyValuation.createUninitializedVariable(xVar)
+    val xApronVar = v1.apronVariableAnyScope(xVar)
     val v2 = {
-      val ge = Apron.mkGt(Apron.mkVar(0), Apron.mkIntVal(3)) // x>3 <=> x>=4
-      val le = Apron.mkGe(Apron.mkIntVal(10), Apron.mkVar(0))
-      v1.imposeConstraint(Conjunction(Singleton(ge), Singleton(le)))
+      val gt = Apron.mkGt(xApronVar, Apron.mkIntVal(3)) // x>3 <=> x>=4
+      val le = Apron.mkGe(Apron.mkIntVal(10), xApronVar)
+      v1.imposeConstraint(Conjunction(Singleton(gt), Singleton(le)))
     }
     StringCompare.ignoreWhitespaces(v2.toString,
       """Variables:
@@ -160,18 +162,55 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
   }
 
   "Inclusion check between two valuations" should "be correct" in {
-    val v1 = emptyValuation.createInitializedVariable(Variable(x, None))
-    val v2 = v1.imposeConstraint(Singleton(Apron.mkEq(Apron.mkVar(0), Apron.mkIntVal(10))))
-    val v3 = v1.imposeConstraint(Singleton(Apron.mkGe(Apron.mkVar(0), Apron.mkIntVal(0))))
+    val xVar = Variable(x, None)
+    val v1 = emptyValuation.createInitializedVariable(xVar)
+    val xApronVar = v1.apronVariableAnyScope(xVar)
+    val v2 = v1.imposeConstraint(Singleton(Apron.mkEq(xApronVar, Apron.mkIntVal(10))))
+    val v3 = v1.imposeConstraint(Singleton(Apron.mkGe(xApronVar, Apron.mkIntVal(0))))
     StringCompare.compareLiteral(v2.include(v2).toString, "true")
     StringCompare.compareLiteral(v3.include(v2).toString, "true") // x>=0 include x=10
     StringCompare.compareLiteral(v2.include(v3).toString, "false")
   }
 
   "Check the satisfaction of constraints" should "be correct" in {
-    val v1 = emptyValuation.createInitializedVariable(Variable(x, None))
-    val v2 = v1.imposeConstraint(Singleton(Apron.mkEq(Apron.mkVar(0), Apron.mkDoubleVal(10.00001))))
-    StringCompare.compareLiteral(v2.satisfy(GreaterThan(x, Number(10))).toString, "true")
+    // val xFloat = Identifier("x", BrboType.FLOAT)
+    // val xVar = Variable(xFloat, None)
+    val xVar = Variable(x, None)
+    val v1 = emptyValuation.createUninitializedVariable(xVar)
+    val xApronVar = v1.apronVariableAnyScope(xVar)
+    val xValue = 10
+
+    val v2 = v1.imposeConstraint(Singleton(Apron.mkEq(xApronVar, Apron.mkIntVal(xValue))))
+    StringCompare.ignoreWhitespaces(v2.toString, """Variables:
+                                                   |  Variable(x,None)
+                                                   |ApronState: {  1x0 -10.0 >= 0;  -1x0 +10.0 >= 0 }""".stripMargin)
+
+    StringCompare.compareLiteral(v2.satisfy(GreaterThanOrEqualTo(x, Number(10)), None).toString, "true", "Satisfy BrboExpr: true")
+    StringCompare.compareLiteral(v2.satisfy(GreaterThan(x, Number(100)), None).toString, "false", "Satisfy BrboExpr: false")
+
+    val eq: Tcons0 = Apron.mkEq(xApronVar, Apron.mkIntVal(xValue))
+    val gt = Apron.mkGt(xApronVar, Apron.mkIntVal(100))
+    StringCompare.compareLiteral(v2.satisfy(eq).toString, "true", "Satisfy Tcons: Eq")
+    StringCompare.compareLiteral(v2.satisfy(gt).toString, "false", "Satisfy Tcons: Gt")
+
+    StringCompare.compareLiteral(v2.satisfy(Singleton(eq)).toString, "true", "Satisfy Singleton: Eq")
+    StringCompare.compareLiteral(v2.satisfy(Singleton(gt)).toString, "false", "Satisfy Singleton: Gt")
+    StringCompare.compareLiteral(v2.satisfy(Singleton(Apron.mkBoolVal(true))).toString, "true", "Satisfy Singleton: true")
+    StringCompare.compareLiteral(v2.satisfy(Singleton(Apron.mkBoolVal(false))).toString, "false", "Satisfy Singleton: false")
+
+    val conjunction = {
+      val ge = Apron.mkGe(xApronVar, Apron.mkIntVal(10))
+      val lt = Apron.mkLt(xApronVar, Apron.mkDoubleVal(10.5))
+      Conjunction(Singleton(ge), Singleton(lt))
+    }
+    StringCompare.compareLiteral(v2.satisfy(conjunction).toString, "true", "Satisfy Conjunction")
+
+    val disjunction = {
+      val gt = Apron.mkGt(xApronVar, Apron.mkIntVal(100))
+      val lt = Apron.mkLt(xApronVar, Apron.mkIntVal(11))
+      Disjunction(Singleton(gt), Singleton(lt))
+    }
+    StringCompare.compareLiteral(v2.satisfy(disjunction).toString, "true", "Satisfy Disjunction")
   }
 }
 

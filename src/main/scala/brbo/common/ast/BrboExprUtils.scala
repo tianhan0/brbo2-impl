@@ -115,7 +115,6 @@ object BrboExprUtils {
   }
 
   def toApron(expr: BrboExpr, valuation: Valuation, scope: Option[Statement]): (ApronRepr, Valuation) = {
-    val variables: List[Variable] = valuation.variables
     // Integer-typed variables that are created when translating the expression into an Apron-compatible representation
     // Such variable must satisfy the associated constraints
     var temporaryVariables = Map[String, ApronVariable]()
@@ -135,7 +134,7 @@ object BrboExprUtils {
       val result: ApronRepr = expr match {
         case i@Identifier(identifier, typ, _) =>
           val index = {
-            val index = variables.indexWhere(v => v.identifier.sameAs(i))
+            val index = valuation.variables.indexWhere(v => v.identifier.sameAs(i))
             if (index != -1) index
             else {
               temporaryVariables.get(identifier) match {
@@ -146,7 +145,7 @@ object BrboExprUtils {
           }
           val variable = Apron.mkVar(index)
           typ match {
-            case brbo.common.BrboType.INT => ApronExpr(variable)
+            case brbo.common.BrboType.INT | brbo.common.BrboType.FLOAT => ApronExpr(variable)
             case brbo.common.BrboType.BOOL =>
               // Bool-typed variable v is translated into constraint v!=0, because we assume v=true iff. v!=0
               Singleton(Apron.mkNeZero(variable))
@@ -245,7 +244,7 @@ object BrboExprUtils {
                     temporaryVariables.updated(temporaryVariable.name, ApronVariable(index, Some(constraint)))
                 case _ => throw new Exception
               }
-            case _ => throw new Exception
+            case _ => throw new Exception(s"Unknown function `$identifier`")
           }
           ApronExpr(Apron.mkVar(index))
         case ITEExpr(condition, thenExpr, elseExpr, _) =>

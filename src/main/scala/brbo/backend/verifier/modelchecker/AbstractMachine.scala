@@ -5,10 +5,10 @@ import brbo.backend.verifier._
 import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.modelchecker.AbstractDomainName._
 import brbo.backend.verifier.modelchecker.AbstractMachine._
-import brbo.backend.verifier.modelchecker.Apron.{ApronVariable, Constraint, Singleton}
+import brbo.backend.verifier.modelchecker.Apron._
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
-import brbo.common.{CommandLineArguments, MyLogger, Z3Solver}
+import brbo.common.{BrboType, CommandLineArguments, MyLogger, Z3Solver}
 import org.apache.logging.log4j.LogManager
 
 import scala.collection.immutable.Queue
@@ -47,7 +47,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
             logger.traceOrError(s"New state: $newState")
             val refuted =
               if (newState.shouldVerify) {
-                val refuted = !newState.valuation.satisfy(boundAssertion.assertion)
+                val refuted = !newState.satisfy(boundAssertion.assertion)
                 logger.traceOrError(s"New state ${if (refuted) "does not satisfy" else "satisfies"} bound assertion `$boundAssertion`")
                 refuted
               } else false
@@ -106,6 +106,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     val nextNodes: Set[CFGNode] = {
       if (state.node == fakeInitialNode) Set(cfg.entryNode)
       else cfg.findSuccessorNodes(state.node)
+      // Stop if the state becomes bottom
     }
     ???
   }
@@ -114,28 +115,37 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     val scope = parentStatements.get(brboAst)
 
     def evalExprHelper(expr: BrboExpr): (ApronVariable, Valuation) = {
-      val (apronRepr, newValuation) = BrboExprUtils.toApron(expr, valuation, scope)
-      (apronRepr.asInstanceOf[ApronVariable], newValuation)
+      ???
     }
 
     brboAst match {
       case command: Command =>
         command match {
-          case VariableDeclaration(variable, initialValue, _) =>
-            val (apronVariable, newValuation) = evalExprHelper(initialValue)
-            val newValuation2 = newValuation.createInitializedVariable(Variable(variable, scope))
-            val constraint = Singleton(Apron.mkEqZero(Apron.mkSub(???, Apron.mkVar(apronVariable.index))))
-            newValuation2.imposeConstraint(constraint)
+          case VariableDeclaration(identifier, initialValue, _) =>
+            val (apronRepr, newValuation) = BrboExprUtils.toApron(initialValue, valuation, scope)
+            val variable = Variable(identifier, scope)
+            val newValuation2 = newValuation.createInitializedVariable(variable)
+            apronRepr match {
+              case Apron.ApronExpr(node) => newValuation2.assignCopy(variable, node)
+              case constraint: Constraint =>
+                // TODO: This approximates the initial value, as opposed to exactly representing its truth value,
+                //  because we represent boolean-typed values as constraints
+                val value =
+                  if (newValuation2.satisfy(constraint)) BOOLEAN_POSITIVE
+                  else BOOLEAN_NEGATIVE
+                newValuation2.assignCopy(variable, Apron.mkIntVal(value))
+              case _ => throw new Exception
+            }
           case Assignment(variable, expression, _) => ???
           case _: CFGOnly => valuation
-          case Return(value, _) => ???
           case Use(groupId, update, condition, _) => ???
           case Reset(groupId, condition, _) =>
             // For r*, interpret as joining the post states of r* = r and r* = r*, instead of r* = r*>=r ? r* : r, because
             // (1) we only want to learn paths (as root causes), and
             // (2) this is sound and precise for the bound verification
             ???
-          case FunctionCall(functionCallExpr, _) => ???
+          case Return(_, _) => throw new Exception
+          case FunctionCall(_, _) => throw new Exception
           case LabeledCommand(_, command, _) => evalCommand(valuation, command)
           case _: CexPathOnly => throw new Exception
           case Skip(_) => valuation
@@ -150,6 +160,15 @@ object AbstractMachine {
   // private val logger = MyLogger.createLogger(AbstractMachine.getClass, debugMode = false)
 
   case class State(node: CFGNode, valuation: Valuation, numberOfVisits: Int, shouldVerify: Boolean) {
+    val scope: Option[Statement] = {
+      node.value match {
+        case Left(value) => valuation.lookupScope(value)
+        case Right(value) => valuation.lookupScope(value)
+      }
+    }
+
+    def satisfy(brboExpr: BrboExpr): Boolean = valuation.satisfy(brboExpr, scope)
+
     override def toString: String = s"$toStringShort\nValuation: $valuation"
 
     def toStringShort: String = s"Node: `${node.prettyPrintToCFG}`. Number of visits: `$numberOfVisits`. shouldVerify: `$shouldVerify`."
@@ -172,7 +191,9 @@ object AbstractMachine {
                        logger: Option[MyLogger] = None) {
     assert(apronState != null)
     private val manager = apronState.getCreationManager
-    assert(apronState.getDimension(manager).intDim == variables.size)
+    private val numberOfIntNumbers = apronState.getDimension(manager).intDim
+    private val numberOfFloatNumbers = apronState.getDimension(manager).realDim
+    assert(numberOfIntNumbers + numberOfFloatNumbers == variables.size)
     traceOrError(logger, s"Create a new state. isTop: `${apronState.isTop(manager)}`. isBottom: `${apronState.isBottom(manager)}`")
     private val debugMode = logger match {
       case Some(logger) => logger.debugMode
@@ -193,6 +214,10 @@ object AbstractMachine {
         }
       }
     }
+
+    def apronVariableThisScope(variable: Variable): Texpr0Node = Apron.mkVar(indexOfVariableThisScope(variable))
+
+    def apronVariableAnyScope(variable: Variable): Texpr0Node = Apron.mkVar(indexOfVariableAnyScope(variable))
 
     // The variable is initialized as 0
     def createInitializedVariable(variable: Variable): Valuation = {
@@ -218,7 +243,13 @@ object AbstractMachine {
 
     private def createVariableHelper(variable: Variable, initialize: Boolean): Valuation = {
       val index = allVariables.size
-      val dimensionChange = new Dimchange(1, 0, Array(index))
+      val dimensionChange = {
+        variable.identifier.typ match {
+          case brbo.common.BrboType.INT | brbo.common.BrboType.BOOL => new Dimchange(1, 0, Array(index))
+          case brbo.common.BrboType.FLOAT => new Dimchange(0, 1, Array(index))
+          case _ => throw new Exception
+        }
+      }
       val newApronState = apronState.addDimensionsCopy(manager, dimensionChange, initialize)
       Valuation(variables :+ variable, newApronState, allVariables + variable, lookupScope, logger)
     }
@@ -264,10 +295,25 @@ object AbstractMachine {
       s"Variables:\n$variablesString\nApronState: $stateString"
     }
 
+    def satisfy(constraint: Constraint): Boolean = {
+      constraint match {
+        case Apron.Conjunction(left, right) => satisfy(left) && satisfy(right)
+        case Apron.Disjunction(left, right) => satisfy(left) || satisfy(right)
+        case Singleton(constraint) => satisfy(constraint)
+        case _ => throw new Exception
+      }
+    }
+
     def satisfy(constraint: Tcons0): Boolean = apronState.satisfy(manager, constraint)
 
-    def satisfy(constraint: BrboExpr): Boolean = {
-      val solver = new Z3Solver
+    def satisfy(constraint: BrboExpr, scope: Option[Statement]): Boolean = {
+      val (apronRepr, newValuation) = BrboExprUtils.toApron(constraint, this, scope)
+      apronRepr match {
+        case constraint: Constraint => newValuation.satisfy(constraint)
+        case _ => throw new Exception
+      }
+      // Seems to not work correctly if translating to Z3
+      /*val solver = new Z3Solver
       val state = apronState.toTcons(manager).map({
         constraint => Apron.constraintToZ3(constraint, solver, variablesNoScope)
       })
@@ -276,7 +322,9 @@ object AbstractMachine {
         val variablesZ3 = variables.map(v => solver.mkDoubleVar(v.identifier.name))
         solver.mkForall(variablesZ3, solver.mkImplies(solver.mkAnd(state: _*), constraintZ3))
       }
-      solver.checkAssertionPushPop(query, debugMode)
+      logger.get.error(s"query: $query")
+      traceOrError(logger, s"query: $query")
+      solver.checkAssertionPushPop(query, debugMode)*/
     }
 
     def imposeConstraint(constraint: Constraint): Valuation = {
