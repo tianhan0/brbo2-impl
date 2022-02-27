@@ -3,7 +3,7 @@ package brbo.common
 object StringCompare {
   private val dashes = "------------------------------------------"
 
-  def compareLiteral(actual: String, expected: String, message: String): Boolean = {
+  def compareLiteral(actual: String, expected: String, message: String = ""): Boolean = {
     val result = actual == expected
     if (!result) {
       val lineSeparator = s"$dashes\n"

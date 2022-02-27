@@ -123,7 +123,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         command match {
           case VariableDeclaration(variable, initialValue, _) =>
             val (apronVariable, newValuation) = evalExprHelper(initialValue)
-            val newValuation2 = newValuation.createNewVariable(Variable(variable, scope))
+            val newValuation2 = newValuation.createInitializedVariable(Variable(variable, scope))
             val constraint = Singleton(Apron.mkEqZero(Apron.mkSub(???, Apron.mkVar(apronVariable.index))))
             newValuation2.imposeConstraint(constraint)
           case Assignment(variable, expression, _) => ???
@@ -195,10 +195,10 @@ object AbstractMachine {
     }
 
     // The variable is initialized as 0
-    def createNewVariable(variable: Variable): Valuation = {
+    def createInitializedVariable(variable: Variable): Valuation = {
       val index = indexOfVariableThisScope(variable)
       if (index == -1) {
-        createNewVariableHelper(variable, initialize = true)
+        createVariableHelper(variable, initialize = true)
       }
       else {
         // Re-creating the variable means initializing to 0
@@ -206,21 +206,21 @@ object AbstractMachine {
       }
     }
 
-    def createUninitializedNewVariable(variable: Variable): Valuation = {
+    def createUninitializedVariable(variable: Variable): Valuation = {
       val index = indexOfVariableThisScope(variable)
       if (index == -1) {
-        createNewVariableHelper(variable, initialize = false)
+        createVariableHelper(variable, initialize = false)
       }
       else {
         throw new Exception
       }
     }
 
-    private def createNewVariableHelper(variable: Variable, initialize: Boolean): Valuation = {
+    private def createVariableHelper(variable: Variable, initialize: Boolean): Valuation = {
       val index = allVariables.size
       val dimensionChange = new Dimchange(1, 0, Array(index))
       val newApronState = apronState.addDimensionsCopy(manager, dimensionChange, initialize)
-      Valuation(variable :: variables, newApronState, allVariables + variable, lookupScope, logger)
+      Valuation(variables :+ variable, newApronState, allVariables + variable, lookupScope, logger)
     }
 
     /*def forgetVariablesInScope(scope: Statement): Valuation = {

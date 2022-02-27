@@ -284,7 +284,7 @@ object BrboExprUtils {
     val newValuation = temporaryVariables.foldLeft(valuation)({
       case (acc, (name, ApronVariable(_, constraint))) =>
         // Register the new variable
-        val valuationWithNewVariable = acc.createUninitializedNewVariable(Variable(Identifier(name, BrboType.INT), scope))
+        val valuationWithNewVariable = acc.createUninitializedVariable(Variable(Identifier(name, BrboType.INT), scope))
         // Impose constraints on the new variable
         constraint match {
           case Some(constraint) => valuationWithNewVariable.imposeConstraint(constraint)

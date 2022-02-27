@@ -23,9 +23,9 @@ class BrboExprUnitTest extends AnyFlatSpec {
     val manager = new Octagon() // new Polka(false)
     val logger = Some(MyLogger.createLogger(classOf[BrboExprUnitTest], debugMode = false))
     val valuation = AbstractMachine.createEmptyValuation(manager, None, logger)
-    valuation.createUninitializedNewVariable(Variable(x, None))
-      .createUninitializedNewVariable(Variable(y, None))
-      .createUninitializedNewVariable(Variable(z, None))
+    valuation.createUninitializedVariable(Variable(x, None))
+      .createUninitializedVariable(Variable(y, None))
+      .createUninitializedVariable(Variable(z, None))
   }
   "Translating expressions to Apron" should "be correct" in {
     BrboExprUnitTest.toApronTest.foreach({
@@ -67,152 +67,152 @@ object BrboExprUnitTest {
   val toApronTest: List[TestCase] = {
     List[TestCase](
       TestCase("IdentifierInt", x,
-        """ApronExpr(x2)
+        """ApronExpr(x0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("IdentifierBool", z,
-        """Singleton(x0 <> 0)
+        """Singleton(x2 <> 0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Boolean", Bool(true),
         """Singleton(1.0 <> 0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Number", Number(23),
         """ApronExpr(23.0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Addition", Addition(x, Number(3)),
-        """ApronExpr(x2 + 3.0)
+        """ApronExpr(x0 + 3.0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Addition2", Addition(x, y),
-        """ApronExpr(x2 + x1)
+        """ApronExpr(x0 + x1)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Subtraction", Subtraction(x, Number(3)),
-        """ApronExpr(x2 - 3.0)
+        """ApronExpr(x0 - 3.0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Multiplication", Multiplication(x, Number(3)),
-        """ApronExpr(x2 * 3.0)
+        """ApronExpr(x0 * 3.0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Division", Division(x, Number(3)),
-        """ApronExpr(x2 / 3.0)
+        """ApronExpr(x0 / 3.0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Negation", Negation(Bool(true)),
         """Singleton(1.0 = 0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("LessThan", LessThan(x, Number(3)),
-        """Singleton(3.0 - x2 > 0)
+        """Singleton(3.0 - x0 > 0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("LessThanOrEqualTo", LessThanOrEqualTo(x, Number(3)),
-        """Singleton(3.0 - x2 >= 0)
+        """Singleton(3.0 - x0 >= 0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("GreaterThan", GreaterThan(x, Number(3)),
-        """Singleton(x2 - 3.0 > 0)
+        """Singleton(x0 - 3.0 > 0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("GreaterThanOrEqualTo", GreaterThanOrEqualTo(x, Number(3)),
-        """Singleton(x2 - 3.0 >= 0)
+        """Singleton(x0 - 3.0 >= 0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Equal", Equal(x, Number(3)),
-        """Singleton(x2 - 3.0 = 0)
+        """Singleton(x0 - 3.0 = 0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("NotEqual", NotEqual(x, Number(3)),
-        """Singleton(x2 - 3.0 <> 0)
+        """Singleton(x0 - 3.0 <> 0)
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("And", And(Bool(true), Bool(false)),
         """Conjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0))
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Or", Or(Bool(true), Bool(false)),
         """Disjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0))
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("ITEExpr", ITEExpr(Bool(true), Bool(true), Bool(false)),
         """Conjunction(Disjunction(Singleton(1.0 = 0),Singleton(1.0 <> 0)),Disjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0)))
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("ITEExpr2", ITEExpr(Bool(true), Number(2), Number(3)),
         """ApronExpr(x3)
           |Variables:
-          |  Variable(v!3,None)
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
+          |  Variable(v!3,None)
           |ApronState: {  1x3 -2.0 >= 0;  -1x3 +2.0 >= 0 }""".stripMargin),
       TestCase("Imply", Imply(Bool(true), Bool(false)),
         """Disjunction(Singleton(1.0 = 0),Singleton(1.0 = 0))
           |Variables:
-          |  Variable(z,None)
-          |  Variable(y,None)
           |  Variable(x,None)
+          |  Variable(y,None)
+          |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
     )
   }
