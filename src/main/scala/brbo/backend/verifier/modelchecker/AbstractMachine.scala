@@ -124,7 +124,8 @@ object AbstractMachine {
    * @return
    */
   @tailrec
-  def evalCommand(valuation: Valuation, brboAst: BrboAst, scope: Option[Statement]): Valuation = {
+  def evalCommand(valuation: Valuation, brboAst: BrboAst,
+                  scope: Option[Statement], logger: Option[MyLogger] = None): Valuation = {
     brboAst match {
       case command: Command =>
         command match {
@@ -134,7 +135,11 @@ object AbstractMachine {
             assign(identifier, expression, createNewVariable = false, valuation, scope)
           case _: CFGOnly => valuation
           case use@Use(_, update, condition, _) =>
+            traceOrError(logger, s"Evaluating `${use.prettyPrintToCFG}`")
             val updatedValuation = assign(use.resourceVariable, update, createNewVariable = false, valuation, scope)
+            traceOrError(logger, s"Updated valuation: `$updatedValuation`")
+            traceOrError(logger, s"True condition possible? `${valuation.satisfy(condition)}`")
+            traceOrError(logger, s"False condition possible? `${valuation.satisfy(Negation(condition))}`")
             (valuation.satisfy(condition), valuation.satisfy(Negation(condition))) match {
               case (true, true) =>
 
@@ -155,6 +160,7 @@ object AbstractMachine {
               case (false, false) => valuation.toBottom()
             }
           case reset@Reset(_, condition, _) =>
+            traceOrError(logger, s"Evaluating `${reset.prettyPrintToCFG}`")
             val updatedCounterVariable = {
               val updatedResourceVariable = {
                 val updatedStarVariable = {
@@ -162,12 +168,18 @@ object AbstractMachine {
                   // (1) we only want to learn paths (as root causes), and
                   // (2) this is sound and precise for the bound verification
                   val v = assign(reset.starVariable, reset.resourceVariable, createNewVariable = false, valuation, scope)
+                  traceOrError(logger, s"After updating r* (before join): `$v`")
                   v.joinCopy(valuation)
                 }
+                traceOrError(logger, s"After updating r* (after join): `$updatedStarVariable`")
                 assign(reset.resourceVariable, Number(0), createNewVariable = false, updatedStarVariable, scope)
               }
+              traceOrError(logger, s"After updating r: `$updatedResourceVariable`")
               assign(reset.counterVariable, Addition(reset.counterVariable, Number(1)), createNewVariable = false, updatedResourceVariable, scope)
             }
+            traceOrError(logger, s"After updating r#: `$updatedCounterVariable`")
+            traceOrError(logger, s"Condition `${condition.prettyPrintToCFG}` possible to be true? `${valuation.satisfy(condition)}`")
+            traceOrError(logger, s"Condition `${condition.prettyPrintToCFG}` possible to be false? `${valuation.satisfy(Negation(condition))}`")
             (valuation.satisfy(condition), valuation.satisfy(Negation(condition))) match {
               case (true, true) => valuation.joinCopy(updatedCounterVariable)
               case (true, false) => updatedCounterVariable
@@ -351,7 +363,10 @@ object AbstractMachine {
       }
     }
 
-    def satisfy(constraint: Tcons0): Boolean = apronState.satisfy(manager, constraint)
+    def satisfy(constraint: Tcons0): Boolean = {
+      error(logger, s"Check satisfaction for constraint: $constraint")
+      apronState.satisfy(manager, constraint)
+    }
 
     def satisfy(constraint: BrboExpr): Boolean = {
       val (apronRepr, newValuation) = BrboExprUtils.toApron(constraint, valuation = this, scope = None)
@@ -400,6 +415,13 @@ object AbstractMachine {
   }
 
   private def traceOrError(logger: Option[MyLogger], message: String): Unit = {
+    logger match {
+      case Some(logger) => logger.traceOrError(message)
+      case None =>
+    }
+  }
+
+  private def error(logger: Option[MyLogger], message: String): Unit = {
     logger match {
       case Some(logger) => logger.traceOrError(message)
       case None =>

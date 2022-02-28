@@ -4,6 +4,7 @@ import apron._
 import brbo.common.Z3Solver
 import brbo.common.ast.Identifier
 import com.microsoft.z3.AST
+import gmp.Mpz
 import org.apache.logging.log4j.LogManager
 
 object Apron {
@@ -79,8 +80,15 @@ object Apron {
 
   def mkVar(index: Int): Texpr0DimNode = new Texpr0DimNode(index)
 
-  def mkIntVal(value: Int): Texpr0Node = mkCst(value)
-  // Texpr0Node.fromLinexpr0(new Linexpr0(new Array[Linterm0](0), new DoubleScalar(value)))
+  def mkIntVal(value: Int): Texpr0Node = {
+    // Texpr0Node.fromLinexpr0(new Linexpr0(new Array[Linterm0](0), new DoubleScalar(value)))
+    /*val node = new Texpr0CstNode()
+    val s = new MpfrScalar()
+    s.set(value)
+    node.cst = s
+    node*/
+    mkCst(value)
+  }
 
   def mkDoubleVal(value: Double): Texpr0Node = mkCst(value)
 
@@ -96,9 +104,9 @@ object Apron {
   }*/
 
   def mkBoolVal(value: Boolean): Tcons0 = {
-    // Bool-typed value b is translated into constraint 1!=0 or 1==0
-    if (value) mkNeZero(mkIntVal(1)) // 1!=0
-    else mkEqZero(mkIntVal(1)) // 1==0
+    // Bool-typed value b is translated into constraint 1=1 or 1=0
+    if (value) mkEq(mkIntVal(1), mkIntVal(1)) // 1=1
+    else mkEqZero(mkIntVal(1)) // 1=0
   }
 
   private def mkCst(value: DoubleScalar): Texpr0Node = {

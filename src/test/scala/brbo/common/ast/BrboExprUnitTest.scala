@@ -81,7 +81,7 @@ object BrboExprUnitTest {
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Boolean", Bool(b = true),
-        """Singleton(1.0 <> 0)
+        """Singleton(1.0 - 1.0 = 0)
           |Variables:
           |  Variable(x,None)
           |  Variable(y,None)
@@ -130,7 +130,7 @@ object BrboExprUnitTest {
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Negation", Negation(Bool(b = true)),
-        """Singleton(1.0 = 0)
+        """Singleton(1.0 - 1.0 <> 0)
           |Variables:
           |  Variable(x,None)
           |  Variable(y,None)
@@ -179,21 +179,21 @@ object BrboExprUnitTest {
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("And", And(Bool(b = true), Bool(b = false)),
-        """Conjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0))
+        """Conjunction(Singleton(1.0 - 1.0 = 0),Singleton(1.0 = 0))
           |Variables:
           |  Variable(x,None)
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("Or", Or(Bool(b = true), Bool(b = false)),
-        """Disjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0))
+        """Disjunction(Singleton(1.0 - 1.0 = 0),Singleton(1.0 = 0))
           |Variables:
           |  Variable(x,None)
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
       TestCase("ITEExpr", ITEExpr(Bool(b = true), Bool(b = true), Bool(b = false)),
-        """Conjunction(Disjunction(Singleton(1.0 = 0),Singleton(1.0 <> 0)),Disjunction(Singleton(1.0 <> 0),Singleton(1.0 = 0)))
+        """Conjunction(Disjunction(Singleton(1.0 - 1.0 <> 0),Singleton(1.0 - 1.0 = 0)),Disjunction(Singleton(1.0 - 1.0 = 0),Singleton(1.0 = 0)))
           |Variables:
           |  Variable(x,None)
           |  Variable(y,None)
@@ -208,7 +208,7 @@ object BrboExprUnitTest {
           |  Variable(v!3,None)
           |ApronState: {  1x3 -2.0 >= 0;  -1x3 +2.0 >= 0 }""".stripMargin),
       TestCase("Imply", Imply(Bool(b = true), Bool(b = false)),
-        """Disjunction(Singleton(1.0 = 0),Singleton(1.0 = 0))
+        """Disjunction(Singleton(1.0 - 1.0 <> 0),Singleton(1.0 = 0))
           |Variables:
           |  Variable(x,None)
           |  Variable(y,None)
