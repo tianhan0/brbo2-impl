@@ -23,7 +23,8 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     })
   private val manager = arguments.getAbstractDomain match {
     case OCTAGON => new Octagon
-    case POLKA => new Polka(false)
+    case POLKA_STRICT => new Polka(true)
+    case POLKA_NONSTRICT => new Polka(false)
   }
 
   private val fakeInitialNode = CFGNode(Right(Bool(b = true)), function = Some(brboProgram.mainFunction))
@@ -136,10 +137,11 @@ object AbstractMachine {
           case _: CFGOnly => valuation
           case use@Use(_, update, condition, _) =>
             traceOrError(logger, s"Evaluating `${use.prettyPrintToCFG}`")
-            val updatedValuation = assign(use.resourceVariable, update, createNewVariable = false, valuation, scope)
+            val updatedValuation =
+              assign(use.resourceVariable, Addition(use.resourceVariable, update), createNewVariable = false, valuation, scope)
             traceOrError(logger, s"Updated valuation: `$updatedValuation`")
-            traceOrError(logger, s"True condition possible? `${valuation.satisfy(condition)}`")
-            traceOrError(logger, s"False condition possible? `${valuation.satisfy(Negation(condition))}`")
+            traceOrError(logger, s"Condition `${condition.prettyPrintToCFG}` possible to be true? `${valuation.satisfy(condition)}`")
+            traceOrError(logger, s"Condition `${condition.prettyPrintToCFG}` possible to be false? `${valuation.satisfy(Negation(condition))}`")
             (valuation.satisfy(condition), valuation.satisfy(Negation(condition))) match {
               case (true, true) =>
 

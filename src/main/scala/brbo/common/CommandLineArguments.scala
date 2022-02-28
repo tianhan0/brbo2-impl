@@ -3,7 +3,7 @@ package brbo.common
 import brbo.backend.verifier.AmortizationMode._
 import brbo.backend.verifier.UAutomizerVerifier
 import brbo.backend.verifier.modelchecker.AbstractDomainName
-import brbo.backend.verifier.modelchecker.AbstractDomainName.{AbstractDomainName, OCTAGON, POLKA}
+import brbo.backend.verifier.modelchecker.AbstractDomainName.{AbstractDomainName, OCTAGON, POLKA_NONSTRICT, POLKA_STRICT}
 import brbo.common.CommandLineArguments._
 import org.apache.logging.log4j.LogManager
 import org.kohsuke.args4j.{CmdLineException, CmdLineParser, Option}
@@ -57,7 +57,7 @@ class CommandLineArguments {
   private var assertionTag: String = DEFAULT_ASSERTION_TAG
 
   @Option(name = "--abstract-domain", aliases = Array("--dom"), required = false,
-    usage = "The abstract domain to use in the verifier. Choose from: `OCTAGON`, `POLKA` (case-insensitive)")
+    usage = "The abstract domain to use in the verifier. Choose from: `OCTAGON`, `POLKA-STRICT`, `POLKA-NONSTRICT` (case-insensitive)")
   private var abstractDomain: String = DEFAULT_ABSTRACT_DOMAIN
 
   @Option(name = "--max-path-length", aliases = Array("--len"), required = false,
@@ -97,7 +97,8 @@ class CommandLineArguments {
   def getAbstractDomain: AbstractDomainName = {
     abstractDomain.toLowerCase() match {
       case "octagon" => OCTAGON
-      case "polka" => POLKA
+      case "polka-strict" => POLKA_STRICT
+      case "polka-nonstrict" => POLKA_NONSTRICT
     }
   }
 

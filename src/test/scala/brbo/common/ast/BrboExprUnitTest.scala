@@ -20,7 +20,7 @@ class BrboExprUnitTest extends AnyFlatSpec {
   }
 
   private val valuation = {
-    val manager = new Octagon() // new Polka(false)
+    val manager = new Octagon()
     val logger = Some(MyLogger.createLogger(classOf[BrboExprUnitTest], debugMode = false))
     val valuation = AbstractMachine.createEmptyValuation(manager, None, logger)
     valuation.createUninitializedVariable(Variable(x, None))

@@ -134,12 +134,12 @@ object Apron {
 
   def mkGe(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkGeZero(mkSub(left, right))
 
-  @deprecated // NOTE: Do not use this in the Polka domain (due to the unexpectedly wrong behavior). Use mkGe instead.
+  // NOTE: Do not use this with non-strict Polka domain (due to the unexpectedly wrong behavior). Use mkGe instead.
   def mkGt(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkGtZero(mkSub(left, right))
 
   def mkLe(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkGeZero(mkSub(right, left))
 
-  @deprecated // NOTE: Do not use this in the Polka domain (due to the unexpectedly wrong behavior). Use mkLe instead.
+  // NOTE: Do not use this with non-strict Polka domain (due to the unexpectedly wrong behavior). Use mkLe instead.
   def mkLt(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkGtZero(mkSub(right, left))
 
   def mkNegation(constraint: Tcons0): Tcons0 = {
