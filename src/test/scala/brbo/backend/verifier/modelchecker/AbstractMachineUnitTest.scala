@@ -10,24 +10,20 @@ import brbo.common.{BrboType, GhostVariableUtils, MyLogger, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class AbstractMachineUnitTest extends AnyFlatSpec {
-  private val logger = Some(MyLogger.createLogger(classOf[AbstractMachineUnitTest], debugMode = false))
+  private val debugLogger = Some(MyLogger.createLogger(classOf[AbstractMachineUnitTest], debugMode = true))
   private val x = Identifier("x", BrboType.INT)
   private val y = Identifier("y", BrboType.BOOL)
   private val z = Identifier("z", BrboType.INT)
   private val (r, rStar, rCounter) = GhostVariableUtils.generateVariables(Some(1))
   private val a = Identifier("a", BrboType.INT)
   private val b = Identifier("b", BrboType.INT)
-  private def emptyValuationOctagon(logger: Option[MyLogger] = None): Valuation = {
-    logger match {
-      case Some(_) => AbstractMachine.createEmptyValuation(new Octagon(), None, logger)
-      case None => AbstractMachine.createEmptyValuation(new Octagon(), None, this.logger)
-    }
+  private def emptyValuationOctagon(debug: Boolean): Valuation = {
+    if (debug) AbstractMachine.createEmptyValuation(new Octagon(), None, this.debugLogger)
+    else AbstractMachine.createEmptyValuation(new Octagon(), None, None)
   }
-  private def emptyValuationPolka(logger: Option[MyLogger] = None): Valuation = {
-    logger match {
-      case Some(_) => AbstractMachine.createEmptyValuation(new Polka(false), None, logger)
-      case None => AbstractMachine.createEmptyValuation(new Polka(false), None, this.logger)
-    }
+  private def emptyValuationPolka(debug: Boolean): Valuation = {
+    if (debug) AbstractMachine.createEmptyValuation(new Polka(false), None, this.debugLogger)
+    else AbstractMachine.createEmptyValuation(new Polka(false), None, None)
   }
   private val xVar = Variable(x, None)
   private val yVar = Variable(y, None)
@@ -39,7 +35,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
   private val bVar = Variable(b, None)
 
   "Transforming a valuation to bottom" should "be correct" in {
-    val v1 = emptyValuationOctagon().createUninitializedVariable(xVar)
+    val v1 = emptyValuationOctagon(debug = false).createUninitializedVariable(xVar)
     val bottom = v1.toBottom()
     StringCompare.ignoreWhitespaces(bottom.toString,
       """Variables:
@@ -49,7 +45,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
   }
 
   "Creating new variables in a valuation" should "be correct" in {
-    val v1 = emptyValuationOctagon().createUninitializedVariable(xVar)
+    val v1 = emptyValuationOctagon(debug = false).createUninitializedVariable(xVar)
     StringCompare.ignoreWhitespaces(v1.toString,
       """Variables:
         |  Variable(x,None)
@@ -88,7 +84,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
   }
 
   "Assigning to variables in a valuation" should "be correct" in {
-    val v1 = emptyValuationPolka()
+    val v1 = emptyValuationPolka(debug = false)
     val v2 = v1.createInitializedVariable(xVar).createUninitializedVariable(zVar)
     val xApronVar = v2.apronVariableAnyScope(xVar)
     val zApronVar = v2.apronVariableAnyScope(zVar)
@@ -125,7 +121,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
   }
 
   "Joining two valuations" should "be correct" in {
-    val v1 = emptyValuationOctagon().createInitializedVariable(Variable(x, None))
+    val v1 = emptyValuationOctagon(debug = false).createInitializedVariable(Variable(x, None))
     val v2 = v1.assignCopy(xVar, Apron.mkIntVal(50))
     val v3 = v1.assignCopy(xVar, Apron.mkIntVal(100))
     val v4 = v2.joinCopy(v3)
@@ -136,7 +132,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
   }
 
   "Imposing constraints on a valuation" should "be correct" in {
-    val v1 = emptyValuationOctagon().createUninitializedVariable(xVar)
+    val v1 = emptyValuationOctagon(debug = false).createUninitializedVariable(xVar)
     val xApronVar = v1.apronVariableAnyScope(xVar)
     val v2 = {
       val gt = Apron.mkGt(xApronVar, Apron.mkIntVal(3)) // x>3 <=> x>=4
@@ -181,7 +177,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         if (node == s2) scope1
         else None
     }
-    val v1 = AbstractMachine.createEmptyValuation(new Octagon(), Some(lookupScope), logger)
+    val v1 = AbstractMachine.createEmptyValuation(new Octagon(), Some(lookupScope), None)
     val v2 = v1.createInitializedVariable(Variable(x, scope1))
     val v3 = v2.createInitializedVariable(Variable(y, scope1))
     StringCompare.ignoreWhitespaces(v3.indexOfVariableThisScope(Variable(x, scope1)).toString, """0""", "Look up x in Scope 1")
@@ -198,7 +194,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
   }
 
   "Inclusion check between two valuations" should "be correct" in {
-    val v1 = emptyValuationOctagon().createInitializedVariable(xVar)
+    val v1 = emptyValuationOctagon(debug = false).createInitializedVariable(xVar)
     val xApronVar = v1.apronVariableAnyScope(xVar)
     val v2 = v1.imposeConstraint(Singleton(Apron.mkEq(xApronVar, Apron.mkIntVal(10))))
     val v3 = v1.imposeConstraint(Singleton(Apron.mkGe(xApronVar, Apron.mkIntVal(0))))
@@ -210,10 +206,10 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
   "Check the satisfaction of constraints for valuations" should "be correct" in {
     // val xFloat = Identifier("x", BrboType.FLOAT)
     // val xVar = Variable(xFloat, None)
-    val v1Octagon = emptyValuationOctagon().createUninitializedVariable(xVar)
+    val v1Octagon = emptyValuationOctagon(debug = false).createUninitializedVariable(xVar)
     val xApronVarOctagon = v1Octagon.apronVariableAnyScope(xVar)
 
-    val v1Polka = emptyValuationPolka().createUninitializedVariable(xVar)
+    val v1Polka = emptyValuationPolka(debug = false).createUninitializedVariable(xVar)
     val xApronVarPolka = v1Polka.apronVariableAnyScope(xVar)
 
     val xValue = 10
@@ -242,13 +238,21 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
 
     val eqOctagon: Tcons0 = Apron.mkEq(xApronVarOctagon, Apron.mkIntVal(xValue))
     val gtOctagon = Apron.mkGt(xApronVarOctagon, Apron.mkIntVal(100))
+    val ltOctagon = Apron.mkLt(xApronVarOctagon, Apron.mkIntVal(100))
     StringCompare.compareLiteral(v2Octagon.satisfy(eqOctagon).toString, "true", "Satisfy Tcons: Eq (Octagon)")
     StringCompare.compareLiteral(v2Octagon.satisfy(gtOctagon).toString, "false", "Satisfy Tcons: Gt (Octagon)")
+    StringCompare.compareLiteral(v2Octagon.satisfy(ltOctagon).toString, "true", "Satisfy Tcons: Lt (Octagon)")
 
     val eqPolka: Tcons0 = Apron.mkEq(xApronVarPolka, Apron.mkIntVal(xValue))
-    val gtPolka = Apron.mkGt(xApronVarPolka, Apron.mkIntVal(100))
+    val gePolka = Apron.mkGe(xApronVarPolka, Apron.mkIntVal(100))
+    val gtPolka = Apron.mkGt(xApronVarPolka, Apron.mkIntVal(9))
+    val lePolka = Apron.mkLe(xApronVarPolka, Apron.mkIntVal(100))
+    val ltPolka = Apron.mkLt(xApronVarPolka, Apron.mkIntVal(100))
     StringCompare.compareLiteral(v2Polka.satisfy(eqPolka).toString, "true", "Satisfy Tcons: Eq (Polka)")
-    StringCompare.compareLiteral(v2Polka.satisfy(gtPolka).toString, "false", "Satisfy Tcons: Gt (Polka)")
+    StringCompare.compareLiteral(v2Polka.satisfy(gePolka).toString, "false", "Satisfy Tcons: Ge (Polka)")
+    StringCompare.compareLiteral(v2Polka.satisfy(gtPolka).toString, "false", "Satisfy Tcons: Gt (Polka)") // Unexpectedly wrong
+    StringCompare.compareLiteral(v2Polka.satisfy(lePolka).toString, "true", "Satisfy Tcons: Le (Polka)")
+    StringCompare.compareLiteral(v2Polka.satisfy(ltPolka).toString, "false", "Satisfy Tcons: Lt (Polka)") // Unexpectedly wrong
 
     StringCompare.compareLiteral(v2Octagon.satisfy(Singleton(eqOctagon)).toString, "true", "Satisfy Singleton: Eq (Octagon)")
     StringCompare.compareLiteral(v2Octagon.satisfy(Singleton(gtOctagon)).toString, "false", "Satisfy Singleton: Gt (Octagon)")
@@ -267,39 +271,25 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     }
     StringCompare.compareLiteral(v2Octagon.satisfy(conjunctionOctagon).toString, "true", "Satisfy Conjunction (Octagon)")
 
-    val conjunctionPolka = {
-      val ge = Apron.mkGe(xApronVarPolka, Apron.mkIntVal(10))
-      val lt = Apron.mkLt(xApronVarPolka, Apron.mkIntVal(11))
-      Conjunction(Singleton(ge), Singleton(lt))
-    }
-    println(conjunctionPolka)
+    val conjunctionPolka = Conjunction(Singleton(eqPolka), Singleton(lePolka))
     StringCompare.compareLiteral(v2Polka.satisfy(conjunctionPolka).toString, "true", "Satisfy Conjunction (Polka)")
 
-    val disjunctionOctagon = {
-      val gt = Apron.mkGt(xApronVarOctagon, Apron.mkIntVal(100))
-      val lt = Apron.mkLt(xApronVarOctagon, Apron.mkIntVal(11))
-      Disjunction(Singleton(gt), Singleton(lt))
-    }
+    val disjunctionOctagon = Disjunction(Singleton(gtOctagon), Singleton(ltOctagon))
     StringCompare.compareLiteral(v2Octagon.satisfy(disjunctionOctagon).toString, "true", "Satisfy Disjunction (Octagon)")
 
-    val disjunctionPolka = {
-      val gt = Apron.mkGt(xApronVarPolka, Apron.mkIntVal(100))
-      val lt = Apron.mkLt(xApronVarPolka, Apron.mkIntVal(11))
-      Disjunction(Singleton(gt), Singleton(lt))
-    }
-    println(disjunctionPolka)
+    val disjunctionPolka = Disjunction(Singleton(gePolka), Singleton(lePolka))
     StringCompare.compareLiteral(v2Polka.satisfy(disjunctionPolka).toString, "true", "Satisfy Disjunction (Polka)")
   }
 
   "Evaluating commands VariableDeclaration and Assignment" should "be correct" in {
-    val v0Polka = declareInputsAAndB(emptyValuationPolka())
+    val v0Polka = declareInputsAAndB(emptyValuationPolka(debug = false))
     StringCompare.ignoreWhitespaces(v0Polka.toString,
       """Variables:
         |  Variable(a,None)
         |  Variable(b,None)
         |ApronState: {  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, "Initialize inputs (Polka)")
 
-    val v0Octagon = declareInputsAAndB(emptyValuationOctagon())
+    val v0Octagon = declareInputsAAndB(emptyValuationOctagon(debug = false))
     StringCompare.ignoreWhitespaces(v0Octagon.toString,
       """Variables:
         |  Variable(a,None)
@@ -330,7 +320,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
 
     // r* = r* + a
     def rStarAddA(v: Valuation): Valuation = {
-      AbstractMachine.evalCommand(v, Assignment(rStar, Addition(rStar, a)), None, logger)
+      AbstractMachine.evalCommand(v, Assignment(rStar, Addition(rStar, a)), None, debugLogger)
     }
 
     val v2Polka = rStarAddA(v1Polka)
@@ -346,7 +336,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
 
     // r* = r* + b
     def rStarAddB(v: Valuation): Valuation = {
-      AbstractMachine.evalCommand(v, Assignment(rStar, Addition(rStar, b)), None, logger)
+      AbstractMachine.evalCommand(v, Assignment(rStar, Addition(rStar, b)), None, debugLogger)
     }
 
     val v3Polka = rStarAddB(v2Polka)
@@ -386,8 +376,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
 
     // r = r + a; r = r + 5;
     def rAddAAndFive(v: Valuation): Valuation = {
-      val v1 = AbstractMachine.evalCommand(v, Assignment(r, rStar), None, logger)
-      AbstractMachine.evalCommand(v1, Assignment(r, Addition(r, Number(5))), None, logger)
+      val v1 = AbstractMachine.evalCommand(v, Assignment(r, rStar), None, debugLogger)
+      AbstractMachine.evalCommand(v1, Assignment(r, Addition(r, Number(5))), None, debugLogger)
     }
 
     val v5Polka = rAddAAndFive(v2Polka)
@@ -409,10 +399,9 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
   }
 
   "Evaluating commands Use and Reset" should "be correct" in {
-    val logger = Some(MyLogger.createLogger(classOf[AbstractMachineUnitTest], debugMode = true))
     val reset: Reset = Reset(1)
     val use: Use = Use(Some(1), a)
-    val v0 = initializeGhostVariables(declareInputsAAndB(emptyValuationPolka()))
+    val v0 = initializeGhostVariables(declareInputsAAndB(emptyValuationPolka(debug = false)))
     val v1 = {
       // val v1 = AbstractMachine.evalCommand(v0, reset, None, logger)
       // println(s"v1 $v1")

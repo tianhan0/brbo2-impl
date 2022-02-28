@@ -199,14 +199,14 @@ object BrboExprUnitTest {
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
-      TestCase("ITEExpr2", ITEExpr(Bool(b = true), Number(2), Number(3)),
+      /*TestCase("ITEExpr2", ITEExpr(Bool(b = true), Number(2), Number(3)),
         """ApronExpr(x3)
           |Variables:
           |  Variable(x,None)
           |  Variable(y,None)
           |  Variable(z,None)
           |  Variable(v!3,None)
-          |ApronState: {  1x3 -2.0 >= 0;  -1x3 +2.0 >= 0 }""".stripMargin),
+          |ApronState: {  1x3 -2.0 >= 0;  -1x3 +2.0 >= 0 }""".stripMargin),*/
       TestCase("Imply", Imply(Bool(b = true), Bool(b = false)),
         """Disjunction(Singleton(1.0 - 1.0 <> 0),Singleton(1.0 = 0))
           |Variables:

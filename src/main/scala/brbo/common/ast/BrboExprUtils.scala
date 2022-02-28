@@ -258,8 +258,8 @@ object BrboExprUtils {
           (thenExpr.typ, elseExpr.typ) match {
             case (BrboType.BOOL, BrboType.BOOL) =>
               toApronHelper(And(Imply(condition, thenExpr), Imply(Negation(condition), elseExpr)))
-            case (BrboType.INT, BrboType.INT) =>
-              val (temporaryVariable, index) = createNewVariable()
+            case (BrboType.INT, BrboType.INT) => throw new Exception
+              /*val (temporaryVariable, index) = createNewVariable()
               temporaryVariables =
                 temporaryVariables.updated(temporaryVariable.name, ApronVariable(index, None))
               val constraint = {
@@ -272,7 +272,7 @@ object BrboExprUtils {
               }
               temporaryVariables =
                 temporaryVariables.updated(temporaryVariable.name, ApronVariable(index, Some(constraint)))
-              ApronExpr(Apron.mkVar(index))
+              ApronExpr(Apron.mkVar(index))*/
             case _ => throw new Exception
           }
         case Imply(left, right, _) => toApronHelper(Or(Negation(left), right))

@@ -134,10 +134,12 @@ object Apron {
 
   def mkGe(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkGeZero(mkSub(left, right))
 
+  @deprecated // NOTE: Do not use this in the Polka domain (due to the unexpectedly wrong behavior). Use mkGe instead.
   def mkGt(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkGtZero(mkSub(left, right))
 
   def mkLe(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkGeZero(mkSub(right, left))
 
+  @deprecated // NOTE: Do not use this in the Polka domain (due to the unexpectedly wrong behavior). Use mkLe instead.
   def mkLt(left: Texpr0Node, right: Texpr0Node): Tcons0 = mkGtZero(mkSub(right, left))
 
   def mkNegation(constraint: Tcons0): Tcons0 = {
@@ -192,6 +194,8 @@ object Apron {
         assert(!java.lang.Double.isInfinite(upper))
         solver.mkDoubleVal((lower + upper) / 2)
       case node: Texpr0DimNode =>
+        // TODO: This resolution from dimensions to variable names is wrong, because there may exist
+        //  temporary variables that cannot be found in `variables`.
         val variable = variables(node.dim)
         variable.typ match {
           case brbo.common.BrboType.INT => solver.mkDoubleVar(variable.name)

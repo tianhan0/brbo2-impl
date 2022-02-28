@@ -8,7 +8,7 @@ import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.backend.verifier.modelchecker.Apron._
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
-import brbo.common.{CommandLineArguments, MyLogger}
+import brbo.common.{CommandLineArguments, MyLogger, Z3Solver}
 import org.apache.logging.log4j.LogManager
 
 import scala.annotation.tailrec
@@ -304,7 +304,9 @@ object AbstractMachine {
       val index = allVariables.size
       val dimensionChange = {
         variable.identifier.typ match {
-          case brbo.common.BrboType.INT | brbo.common.BrboType.BOOL => new Dimchange(1, 0, Array(index))
+          case brbo.common.BrboType.INT | brbo.common.BrboType.BOOL =>
+            new Dimchange(1, 0, Array(index))
+            // new Dimchange(0, 1, Array(index))
           case brbo.common.BrboType.FLOAT => new Dimchange(0, 1, Array(index))
           case _ => throw new Exception
         }
@@ -381,10 +383,10 @@ object AbstractMachine {
       })
       val constraintZ3 = constraint.toZ3AST(solver)
       val query = {
-        val variablesZ3 = variables.map(v => solver.mkDoubleVar(v.identifier.name))
+        val variablesZ3 = allVariables.map(v => solver.mkDoubleVar(v.identifier.name))
         solver.mkForall(variablesZ3, solver.mkImplies(solver.mkAnd(state: _*), constraintZ3))
       }
-      logger.get.error(s"query: $query")
+      // logger.get.error(s"query: $query")
       traceOrError(logger, s"query: $query")
       solver.checkAssertionPushPop(query, debugMode)*/
     }
