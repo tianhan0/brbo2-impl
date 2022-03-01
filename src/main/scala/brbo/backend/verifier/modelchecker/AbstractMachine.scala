@@ -8,7 +8,7 @@ import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.backend.verifier.modelchecker.Apron._
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
-import brbo.common.{CommandLineArguments, MyLogger, Z3Solver}
+import brbo.common.{CommandLineArguments, MyLogger}
 import org.apache.logging.log4j.LogManager
 
 import scala.annotation.tailrec
@@ -140,27 +140,8 @@ object AbstractMachine {
             val updatedValuation =
               assign(use.resourceVariable, Addition(use.resourceVariable, update), createNewVariable = false, valuation, scope)
             traceOrError(logger, s"Updated valuation: `$updatedValuation`")
-            traceOrError(logger, s"Condition `${condition.prettyPrintToCFG}` possible to be true? `${valuation.satisfy(condition)}`")
-            traceOrError(logger, s"Condition `${condition.prettyPrintToCFG}` possible to be false? `${valuation.satisfy(Negation(condition))}`")
-            (valuation.satisfy(condition), valuation.satisfy(Negation(condition))) match {
-              case (true, true) =>
-
-                /**
-                 * This situation means the current abstraction is not precise enough to decide
-                 * if the condition is satisfied on the path that leads to this situation.
-                 *
-                 * To ensure soundness, we decide to respect such imprecision as executing both branches
-                 * at the same time, which however may lead to verification failures. For example,
-                 * a single use command may be interpreted as executing two use commands for two groups.
-                 *
-                 * By respecting such imprecision, we can ensure not choosing a candidate program that
-                 * contains a path that leads to this situation.
-                 */
-                valuation.joinCopy(updatedValuation)
-              case (true, false) => updatedValuation
-              case (false, true) => valuation
-              case (false, false) => valuation.toBottom()
-            }
+            evalGhostCommandHelper(condition, valuation.satisfy(condition), valuation.satisfy(Negation(condition)),
+              updatedValuation, valuation, logger)
           case reset@Reset(_, condition, _) =>
             traceOrError(logger, s"Evaluating `${reset.prettyPrintToCFG}`")
             val updatedCounterVariable = {
@@ -180,14 +161,8 @@ object AbstractMachine {
               assign(reset.counterVariable, Addition(reset.counterVariable, Number(1)), createNewVariable = false, updatedResourceVariable, scope)
             }
             traceOrError(logger, s"After updating r#: `$updatedCounterVariable`")
-            traceOrError(logger, s"Condition `${condition.prettyPrintToCFG}` possible to be true? `${valuation.satisfy(condition)}`")
-            traceOrError(logger, s"Condition `${condition.prettyPrintToCFG}` possible to be false? `${valuation.satisfy(Negation(condition))}`")
-            (valuation.satisfy(condition), valuation.satisfy(Negation(condition))) match {
-              case (true, true) => valuation.joinCopy(updatedCounterVariable)
-              case (true, false) => updatedCounterVariable
-              case (false, true) => valuation
-              case (false, false) => valuation.toBottom()
-            }
+            evalGhostCommandHelper(condition, valuation.satisfy(condition), valuation.satisfy(Negation(condition)),
+              updatedCounterVariable, valuation, logger)
           case Return(_, _) => throw new Exception
           case FunctionCall(_, _) => throw new Exception
           case LabeledCommand(_, command, _) => evalCommand(valuation, command, scope)
@@ -196,6 +171,30 @@ object AbstractMachine {
           case _@(Break(_) | Continue(_)) => throw new Exception
         }
       case _ => throw new Exception
+    }
+  }
+
+  private def evalGhostCommandHelper(condition: BrboExpr, allThen: Boolean, allElse: Boolean,
+                                     thenValuation: Valuation, elseValuation: Valuation, logger: Option[MyLogger]): Valuation = {
+    traceOrError(logger, s"All states satisfy `${condition.prettyPrintToCFG}`? `$allThen`")
+    traceOrError(logger, s"All states satisfy `${Negation(condition).prettyPrintToCFG}`? `$allElse`")
+    if (allThen) thenValuation
+    else {
+      if (allElse) elseValuation
+      else {
+        /**
+         * This situation means the current abstraction is not precise enough to decide
+         * if the condition is satisfied on the path that leads to this situation.
+         *
+         * To ensure soundness, we decide to respect such imprecision as executing both branches
+         * at the same time, which however may lead to verification failures. For example,
+         * a single use command may be interpreted as executing two use commands for two groups.
+         *
+         * By respecting such imprecision, we can ensure not choosing a candidate program that
+         * contains a path that leads to this situation.
+         */
+        thenValuation.joinCopy(elseValuation)
+      }
     }
   }
 
@@ -308,7 +307,7 @@ object AbstractMachine {
         variable.identifier.typ match {
           case brbo.common.BrboType.INT | brbo.common.BrboType.BOOL =>
             new Dimchange(1, 0, Array(index))
-            // new Dimchange(0, 1, Array(index))
+          // new Dimchange(0, 1, Array(index))
           case brbo.common.BrboType.FLOAT => new Dimchange(0, 1, Array(index))
           case _ => throw new Exception
         }

@@ -416,13 +416,14 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
       val v3 = evalCommand(v2, reset, debug)
       AbstractMachine.evalCommand(v3, use, None)
     }
-    StringCompare.ignoreWhitespaces(v1.toString, """Variables:
-                                                   |  Variable(a,None)
-                                                   |  Variable(b,None)
-                                                   |  Variable(R1,None)
-                                                   |  Variable(S1,None)
-                                                   |  Variable(C1,None)
-                                                   |ApronState: {  -1x0 +1x2 = 0;  1x4 -1 = 0;  1x3 >= 0;  1x1 -1 >= 0;  1x0 -1x3 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$reset; $use; $reset; $use")
+    StringCompare.ignoreWhitespaces(v1.toString,
+      """Variables:
+        |  Variable(a,None)
+        |  Variable(b,None)
+        |  Variable(R1,None)
+        |  Variable(S1,None)
+        |  Variable(C1,None)
+        |ApronState: {  -1x0 +1x2 = 0;  1x4 -1 = 0;  1x3 >= 0;  1x1 -1 >= 0;  1x0 -1x3 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$reset; $use; $reset; $use")
 
     val v2 = {
       val debug = false
@@ -430,13 +431,105 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
       val v2 = evalCommand(v1, use, debug)
       evalCommand(v2, use, debug)
     }
-    StringCompare.ignoreWhitespaces(v2.toString, """Variables:
-                                                   |  Variable(a,None)
-                                                   |  Variable(b,None)
-                                                   |  Variable(R1,None)
-                                                   |  Variable(S1,None)
-                                                   |  Variable(C1,None)
-                                                   |ApronState: {  -2x0 +1x2 = 0;  1x4 = 0;  1x3 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$reset; $use; $use")
+    StringCompare.ignoreWhitespaces(v2.toString,
+      """Variables:
+        |  Variable(a,None)
+        |  Variable(b,None)
+        |  Variable(R1,None)
+        |  Variable(S1,None)
+        |  Variable(C1,None)
+        |ApronState: {  -2x0 +1x2 = 0;  1x4 = 0;  1x3 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$reset; $use; $use")
+
+    val bothPossible = Equal(a, Number(5)) // Because a>0
+    val onlyTrue = GreaterThan(a, Number(-1)) // Because a>0
+    val onlyFalse = LessThanOrEqualTo(a, Number(-1)) // Because a>0
+
+    val resetBoth = Reset(1, bothPossible)
+    val v3 = {
+      val debug = false
+      val v1 = evalCommand(v0, use, debug)
+      evalCommand(v1, resetBoth, debug)
+    }
+    StringCompare.ignoreWhitespaces(v3.toString,
+      """Variables:
+        |  Variable(a,None)
+        |  Variable(b,None)
+        |  Variable(R1,None)
+        |  Variable(S1,None)
+        |  Variable(C1,None)
+        |ApronState: {  -1x4 >= 0;  1x4 +1 >= 0;  1x3 >= 0;  1x2 +1x4 >= 0;  1x1 -1 >= 0;  1x0 -1x2 -1x3 >= 0;  1x0 -1x2 -1x4 -1 >= 0 }""".stripMargin, s"$use; $resetBoth")
+
+    val resetTrue = Reset(1, onlyTrue)
+    val v4 = {
+      val debug = false
+      val v1 = evalCommand(v0, use, debug)
+      evalCommand(v1, resetTrue, debug)
+    }
+    StringCompare.ignoreWhitespaces(v4.toString,
+      """Variables:
+        |  Variable(a,None)
+        |  Variable(b,None)
+        |  Variable(R1,None)
+        |  Variable(S1,None)
+        |  Variable(C1,None)
+        |ApronState: {  1x4 = 0;  1x2 = 0;  1x3 >= 0;  1x1 -1 >= 0;  1x0 -1x3 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$use; $resetTrue")
+
+    val resetFalse = Reset(1, onlyFalse)
+    val v5 = {
+      val debug = false
+      val v1 = evalCommand(v0, use, debug)
+      evalCommand(v1, resetFalse, debug)
+    }
+    StringCompare.ignoreWhitespaces(v5.toString,
+      """Variables:
+        |  Variable(a,None)
+        |  Variable(b,None)
+        |  Variable(R1,None)
+        |  Variable(S1,None)
+        |  Variable(C1,None)
+        |ApronState: {  -1x0 +1x2 = 0;  1x4 +1 = 0;  1x3 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$use; $resetFalse")
+
+    val useBoth = Use(Some(1), a, bothPossible)
+    val v6 = {
+      val debug = false
+      evalCommand(v0, useBoth, debug)
+    }
+    StringCompare.ignoreWhitespaces(v6.toString,
+      """Variables:
+        |  Variable(a,None)
+        |  Variable(b,None)
+        |  Variable(R1,None)
+        |  Variable(S1,None)
+        |  Variable(C1,None)
+        |ApronState: {  1x4 +1 = 0;  1x3 = 0;  1x2 >= 0;  1x1 -1 >= 0;  1x0 -1x2 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$useBoth")
+
+    val useTrue = Use(Some(1), a, onlyTrue)
+    val v7 = {
+      val debug = false
+      evalCommand(v0, useTrue, debug)
+    }
+    StringCompare.ignoreWhitespaces(v7.toString,
+      """Variables:
+        |  Variable(a,None)
+        |  Variable(b,None)
+        |  Variable(R1,None)
+        |  Variable(S1,None)
+        |  Variable(C1,None)
+        |ApronState: {  -1x0 +1x2 = 0;  1x4 +1 = 0;  1x3 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$useTrue")
+
+    val useFalse = Use(Some(1), a, onlyFalse)
+    val v8 = {
+      val debug = false
+      evalCommand(v0, useFalse, debug)
+    }
+    StringCompare.ignoreWhitespaces(v8.toString,
+      """Variables:
+        |  Variable(a,None)
+        |  Variable(b,None)
+        |  Variable(R1,None)
+        |  Variable(S1,None)
+        |  Variable(C1,None)
+        |ApronState: {  1x4 +1 = 0;  1x3 = 0;  1x2 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$useFalse")
   }
 
   // Initialize r, r*, r#
