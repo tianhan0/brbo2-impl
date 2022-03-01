@@ -41,7 +41,7 @@ object ControlFlowGraph {
    * @return
    */
   def toControlFlowGraph(brboProgram: BrboProgram): ControlFlowGraph = {
-    var nodes = new HashMap[Either[Command, BrboExpr], CFGNode]
+    var nodes = new HashMap[CommandOrExpr, CFGNode]
     var cfgs = new HashMap[BrboFunction, InternalGraph]
     val walaGraph = new DelegatingNumberedGraph[CFGNode]()
     val jgraphtGraph = new SimpleDirectedWeightedGraph[CFGNode, DefaultEdge](classOf[DefaultEdge])
@@ -72,7 +72,7 @@ object ControlFlowGraph {
       functionCFG
     }
 
-    def getNode(content: Either[Command, BrboExpr], brboFunction: BrboFunction): CFGNode = {
+    def getNode(content: CommandOrExpr, brboFunction: BrboFunction): CFGNode = {
       def addNode(node: CFGNode): Unit = {
         walaGraph.addNode(node)
         jgraphtGraph.addVertex(node)
@@ -90,7 +90,7 @@ object ControlFlowGraph {
     }
 
     def functionToInternalGraph(brboFunction: BrboFunction): InternalGraph = {
-      val exitNode = getNode(Left(FunctionExit()), brboFunction)
+      val exitNode = getNode(FunctionExit(), brboFunction)
       val internalGraph = astToInternalGraph(brboFunction.actualBody, JumpTarget(None, None, exitNode), brboFunction)
       internalGraph.exits.foreach(exit => if (exit != exitNode) addEdge(exit, exitNode))
       // Any function has exactly one exit node
@@ -100,16 +100,16 @@ object ControlFlowGraph {
     def astToInternalGraph(ast: BrboAst, jumpTarget: JumpTarget, brboFunction: BrboFunction): InternalGraph = {
       def addEdgesFromExitsToEntry(exits: Set[CFGNode], entry: CFGNode): Unit = {
         @tailrec
-        def shouldAddEdge(nodeValue: Either[Command, BrboExpr]): Boolean = {
+        def shouldAddEdge(nodeValue: CommandOrExpr): Boolean = {
           nodeValue match {
-            case Left(command) =>
+            case command: Command =>
               command match {
                 case Return(_, _) | Break(_) | Continue(_) => false
-                case LabeledCommand(_, command2, _) => shouldAddEdge(Left(command2))
+                case LabeledCommand(_, command2, _) => shouldAddEdge(command2)
                 case VariableDeclaration(_, _, _) | Assignment(_, _, _) | Skip(_) | FunctionCall(_, _) => true
                 case _: CFGOnly => true
               }
-            case Right(_) => true
+            case _: BrboExpr => true
           }
         }
 
@@ -118,7 +118,7 @@ object ControlFlowGraph {
 
       ast match {
         case command: Command =>
-          val node = getNode(Left(command), brboFunction)
+          val node = getNode(command, brboFunction)
           addJumpEdges(command)
 
           @tailrec
@@ -153,12 +153,12 @@ object ControlFlowGraph {
                 i = i + 1
               }
               if (internalGraphs.isEmpty) {
-                val emptyNode = getNode(Left(Empty()), brboFunction)
+                val emptyNode = getNode(Empty(), brboFunction)
                 InternalGraph(emptyNode, Set(emptyNode))
               }
               else InternalGraph(internalGraphs.head.root, internalGraphs.last.exits)
             case ITE(condition, thenAst, elseAst, _) =>
-              val conditionNode = getNode(Right(condition), brboFunction)
+              val conditionNode = getNode(condition, brboFunction)
 
               val thenGraph = astToInternalGraph(thenAst, jumpTarget, brboFunction)
               val elseGraph = astToInternalGraph(elseAst, jumpTarget, brboFunction)
@@ -170,8 +170,8 @@ object ControlFlowGraph {
 
               InternalGraph(conditionNode, thenGraph.exits ++ elseGraph.exits)
             case Loop(condition, body, _) =>
-              val conditionNode = getNode(Right(condition), brboFunction)
-              val loopExit = getNode(Left(LoopExit()), brboFunction)
+              val conditionNode = getNode(condition, brboFunction)
+              val loopExit = getNode(LoopExit(), brboFunction)
               val bodyGraph = astToInternalGraph(body, JumpTarget(Some(conditionNode), Some(loopExit), jumpTarget.functionExit), brboFunction)
 
               addEdge(conditionNode, loopExit)
@@ -230,13 +230,13 @@ case class ControlFlowGraph(entryNode: CFGNode,
         map.put("label", DefaultAttribute.createAttribute(node.prettyPrintToCFG))
         val shape: String =
           node.value match {
-            case Left(command) =>
+            case command: Command =>
               command match {
                 case _: CFGOnly => "oval"
                 case _ => "rectangle"
               }
-            case Right(expr) =>
-              assert(expr.typ == BOOL)
+            case brboExpr: BrboExpr =>
+              assert(brboExpr.typ == BOOL)
               "diamond"
           }
         map.put("shape", new DefaultAttribute(shape, AttributeType.IDENTIFIER))

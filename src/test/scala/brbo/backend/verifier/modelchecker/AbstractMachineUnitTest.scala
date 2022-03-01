@@ -322,7 +322,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
 
     // r* = r* + a
     def rStarAddA(v: Valuation): Valuation = {
-      AbstractMachine.evalCommand(v, Assignment(rStar, Addition(rStar, a)), None, debugLogger)
+      AbstractMachine.evalCommandOrExpr(v, Assignment(rStar, Addition(rStar, a)), None, debugLogger)
     }
 
     val v2Polka = rStarAddA(v1Polka)
@@ -338,7 +338,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
 
     // r* = r* + b
     def rStarAddB(v: Valuation): Valuation = {
-      AbstractMachine.evalCommand(v, Assignment(rStar, Addition(rStar, b)), None, debugLogger)
+      AbstractMachine.evalCommandOrExpr(v, Assignment(rStar, Addition(rStar, b)), None, debugLogger)
     }
 
     val v3Polka = rStarAddB(v2Polka)
@@ -378,8 +378,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
 
     // r = r + a; r = r + 5;
     def rAddAAndFive(v: Valuation): Valuation = {
-      val v1 = AbstractMachine.evalCommand(v, Assignment(r, rStar), None, debugLogger)
-      AbstractMachine.evalCommand(v1, Assignment(r, Addition(r, Number(5))), None, debugLogger)
+      val v1 = AbstractMachine.evalCommandOrExpr(v, Assignment(r, rStar), None, debugLogger)
+      AbstractMachine.evalCommandOrExpr(v1, Assignment(r, Addition(r, Number(5))), None, debugLogger)
     }
 
     val v5Polka = rAddAAndFive(v2Polka)
@@ -401,20 +401,15 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
   }
 
   "Evaluating commands Use and Reset" should "be correct" in {
-    def evalCommand(v: Valuation, brboAst: BrboAst, debug: Boolean): Valuation = {
-      if (debug) AbstractMachine.evalCommand(v, brboAst, None, debugLogger)
-      else AbstractMachine.evalCommand(v, brboAst, None)
-    }
-
     val reset: Reset = Reset(1)
     val use: Use = Use(Some(1), a)
     val v0 = initializeGhostVariables(declareInputsAAndB(emptyValuationStrictPolka(debug = false)))
     val v1 = {
       val debug = false
-      val v1 = evalCommand(v0, reset, debug)
-      val v2 = evalCommand(v1, use, debug)
-      val v3 = evalCommand(v2, reset, debug)
-      AbstractMachine.evalCommand(v3, use, None)
+      val v1 = evalCommandOrExpr(v0, reset, debug)
+      val v2 = evalCommandOrExpr(v1, use, debug)
+      val v3 = evalCommandOrExpr(v2, reset, debug)
+      AbstractMachine.evalCommandOrExpr(v3, use, None)
     }
     StringCompare.ignoreWhitespaces(v1.toString,
       """Variables:
@@ -427,9 +422,9 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
 
     val v2 = {
       val debug = false
-      val v1 = evalCommand(v0, reset, debug)
-      val v2 = evalCommand(v1, use, debug)
-      evalCommand(v2, use, debug)
+      val v1 = evalCommandOrExpr(v0, reset, debug)
+      val v2 = evalCommandOrExpr(v1, use, debug)
+      evalCommandOrExpr(v2, use, debug)
     }
     StringCompare.ignoreWhitespaces(v2.toString,
       """Variables:
@@ -447,8 +442,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val resetBoth = Reset(1, bothPossible)
     val v3 = {
       val debug = false
-      val v1 = evalCommand(v0, use, debug)
-      evalCommand(v1, resetBoth, debug)
+      val v1 = evalCommandOrExpr(v0, use, debug)
+      evalCommandOrExpr(v1, resetBoth, debug)
     }
     StringCompare.ignoreWhitespaces(v3.toString,
       """Variables:
@@ -462,8 +457,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val resetTrue = Reset(1, onlyTrue)
     val v4 = {
       val debug = false
-      val v1 = evalCommand(v0, use, debug)
-      evalCommand(v1, resetTrue, debug)
+      val v1 = evalCommandOrExpr(v0, use, debug)
+      evalCommandOrExpr(v1, resetTrue, debug)
     }
     StringCompare.ignoreWhitespaces(v4.toString,
       """Variables:
@@ -477,8 +472,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val resetFalse = Reset(1, onlyFalse)
     val v5 = {
       val debug = false
-      val v1 = evalCommand(v0, use, debug)
-      evalCommand(v1, resetFalse, debug)
+      val v1 = evalCommandOrExpr(v0, use, debug)
+      evalCommandOrExpr(v1, resetFalse, debug)
     }
     StringCompare.ignoreWhitespaces(v5.toString,
       """Variables:
@@ -492,7 +487,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val useBoth = Use(Some(1), a, bothPossible)
     val v6 = {
       val debug = false
-      evalCommand(v0, useBoth, debug)
+      evalCommandOrExpr(v0, useBoth, debug)
     }
     StringCompare.ignoreWhitespaces(v6.toString,
       """Variables:
@@ -506,7 +501,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val useTrue = Use(Some(1), a, onlyTrue)
     val v7 = {
       val debug = false
-      evalCommand(v0, useTrue, debug)
+      evalCommandOrExpr(v0, useTrue, debug)
     }
     StringCompare.ignoreWhitespaces(v7.toString,
       """Variables:
@@ -520,7 +515,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val useFalse = Use(Some(1), a, onlyFalse)
     val v8 = {
       val debug = false
-      evalCommand(v0, useFalse, debug)
+      evalCommandOrExpr(v0, useFalse, debug)
     }
     StringCompare.ignoreWhitespaces(v8.toString,
       """Variables:
@@ -534,17 +529,22 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
 
   // Initialize r, r*, r#
   private def initializeGhostVariables(v: Valuation): Valuation = {
-    val v1 = AbstractMachine.evalCommand(v, VariableDeclaration(r, Number(0)), None)
-    val v2 = AbstractMachine.evalCommand(v1, VariableDeclaration(rStar, Number(0)), None)
-    AbstractMachine.evalCommand(v2, VariableDeclaration(rCounter, Number(-1)), None)
+    val v1 = AbstractMachine.evalCommandOrExpr(v, VariableDeclaration(r, Number(0)), None)
+    val v2 = AbstractMachine.evalCommandOrExpr(v1, VariableDeclaration(rStar, Number(0)), None)
+    AbstractMachine.evalCommandOrExpr(v2, VariableDeclaration(rCounter, Number(-1)), None)
   }
 
   // Declare inputs: a, b
-  def declareInputsAAndB(v: Valuation): Valuation = {
+  private def declareInputsAAndB(v: Valuation): Valuation = {
     val v0 = v.createUninitializedVariable(aVar).createUninitializedVariable(bVar)
     val aApronVar = v0.apronVariableAnyScope(aVar)
     val bApronVar = v0.apronVariableAnyScope(bVar)
     v0.imposeConstraint(Conjunction(Singleton(Apron.mkGtZero(aApronVar)), Singleton(Apron.mkGtZero(bApronVar))))
+  }
+
+  private def evalCommandOrExpr(v: Valuation, commandOrExpr: CommandOrExpr, debug: Boolean): Valuation = {
+    if (debug) AbstractMachine.evalCommandOrExpr(v, commandOrExpr, None, debugLogger)
+    else AbstractMachine.evalCommandOrExpr(v, commandOrExpr, None)
   }
 }
 

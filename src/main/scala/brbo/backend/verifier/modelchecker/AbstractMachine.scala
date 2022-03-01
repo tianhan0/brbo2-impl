@@ -27,10 +27,10 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     case POLKA_NONSTRICT => new Polka(false)
   }
 
-  private val fakeInitialNode = CFGNode(Right(Bool(b = true)), function = Some(brboProgram.mainFunction))
+  private val fakeInitialNode = CFGNode(Bool(b = true), function = Some(brboProgram.mainFunction))
 
   def verify(boundAssertion: BoundAssertion): VerifierResult = {
-    val initialState = State(fakeInitialNode, createEmptyValuation(manager), numberOfVisits = 1, shouldVerify = true)
+    val initialState = State(fakeInitialNode, createEmptyValuation(manager), indexOnPath = 1, shouldVerify = true)
     // Every CFGNode corresponds to a location, which is the location right after the node
     // fakeInitialNode corresponds to the program entry, which is right before the first command / expression
     val initialPathState = PathState(Map(initialState.node -> initialState.valuation))
@@ -69,7 +69,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                       logger.traceOrError(s"The new valuation is not included in the old one")
                       val joinedValuation = newState.valuation.joinCopy(existingValuation)
                       logger.traceOrError(s"Joined valuation: `$joinedValuation`")
-                      if (newState.numberOfVisits <= arguments.getMaxPathLength) (joinedValuation, true)
+                      if (newState.indexOnPath <= arguments.getMaxPathLength) (joinedValuation, true)
                       else {
                         logger.traceOrError(s"Will stop exploring path: `$path`")
                         stoppedEarly = true
@@ -85,7 +85,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
               if (keepExploring) {
                 val newValuations = oldPathState.valuations.updated(newState.node, newValuation)
                 val newPath = newState.node :: path
-                waitlist = waitlist.enqueue((newPath, State(newState.node, newValuation, newState.numberOfVisits, newState.shouldVerify)))
+                waitlist = waitlist.enqueue((newPath, State(newState.node, newValuation, newState.indexOnPath, newState.shouldVerify)))
                 reached = reached + (newPath -> PathState(newValuations))
               }
             }
@@ -110,7 +110,16 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
       else cfg.findSuccessorNodes(state.node)
       // Stop if the state becomes bottom
     }
-    ???
+    nextNodes.map({
+      node =>
+        val scope = parentStatements.get(node.value)
+        val valuation = AbstractMachine.evalCommandOrExpr(state.valuation, node.value, scope, Some(logger))
+        val shouldVerify = node.value match {
+          case _: Use => true // Only need to verify a state after executing a use command
+          case _ => false
+        }
+        State(node, valuation, state.indexOnPath + 1, shouldVerify)
+    })
   }
 }
 
@@ -119,15 +128,15 @@ object AbstractMachine {
 
   /**
    *
-   * @param valuation The valuation under which the command will be evaluated
-   * @param brboAst   The command to evaluate
-   * @param scope     The lexical scope of the given command
+   * @param valuation     The valuation under which the command or the expression will be evaluated
+   * @param commandOrExpr The command or the expression to evaluate
+   * @param scope         The lexical scope of the given command
    * @return
    */
   @tailrec
-  def evalCommand(valuation: Valuation, brboAst: BrboAst,
-                  scope: Option[Statement], logger: Option[MyLogger] = None): Valuation = {
-    brboAst match {
+  def evalCommandOrExpr(valuation: Valuation, commandOrExpr: CommandOrExpr,
+                        scope: Option[Statement], logger: Option[MyLogger] = None): Valuation = {
+    commandOrExpr match {
       case command: Command =>
         command match {
           case VariableDeclaration(identifier, initialValue, _) =>
@@ -165,12 +174,17 @@ object AbstractMachine {
               updatedCounterVariable, valuation, logger)
           case Return(_, _) => throw new Exception
           case FunctionCall(_, _) => throw new Exception
-          case LabeledCommand(_, command, _) => evalCommand(valuation, command, scope)
+          case LabeledCommand(_, command, _) => evalCommandOrExpr(valuation, command, scope)
           case _: CexPathOnly => throw new Exception
           case Skip(_) => valuation
           case _@(Break(_) | Continue(_)) => throw new Exception
         }
-      case _ => throw new Exception
+      case brboExpr: BrboExpr =>
+        val (apronRepr, newValuation) = BrboExprUtils.toApron(brboExpr, valuation, scope)
+        apronRepr match {
+          case constraint: Constraint => newValuation.imposeConstraint(constraint)
+          case _ => throw new Exception
+        }
     }
   }
 
@@ -218,19 +232,14 @@ object AbstractMachine {
     }
   }
 
-  case class State(node: CFGNode, valuation: Valuation, numberOfVisits: Int, shouldVerify: Boolean) {
-    val scope: Option[Statement] = {
-      node.value match {
-        case Left(value) => valuation.lookupScope(value)
-        case Right(value) => valuation.lookupScope(value)
-      }
-    }
+  case class State(node: CFGNode, valuation: Valuation, indexOnPath: Int, shouldVerify: Boolean) {
+    val scope: Option[Statement] = valuation.lookupScope(node.value)
 
     def satisfy(brboExpr: BrboExpr): Boolean = valuation.satisfy(brboExpr)
 
     override def toString: String = s"$toStringShort\nValuation: $valuation"
 
-    def toStringShort: String = s"Node: `${node.prettyPrintToCFG}`. Number of visits: `$numberOfVisits`. shouldVerify: `$shouldVerify`."
+    def toStringShort: String = s"Node: `${node.prettyPrintToCFG}`. Number of visits: `$indexOnPath`. shouldVerify: `$shouldVerify`."
   }
 
   case class PathState(valuations: Map[CFGNode, Valuation])
@@ -367,7 +376,7 @@ object AbstractMachine {
     }
 
     def satisfy(constraint: Tcons0): Boolean = {
-      error(logger, s"Check satisfaction for constraint: $constraint")
+      // error(logger, s"Check satisfaction for constraint: $constraint")
       apronState.satisfy(manager, constraint)
     }
 

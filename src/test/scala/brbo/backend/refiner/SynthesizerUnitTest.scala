@@ -54,24 +54,24 @@ object SynthesizerUnitTest {
 
   val synthesizeTests: List[TestCase] = {
     val path = List(
-      CFGNode(Left(VariableDeclaration(reset.resourceVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 0
-      CFGNode(Left(VariableDeclaration(reset.starVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 1
-      CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(-1))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 2
-      CFGNode(Left(declaration), Some(mainFunction), CFGNode.DONT_CARE_ID), // 3
-      CFGNode(Right(condition), Some(mainFunction), CFGNode.DONT_CARE_ID), // 4
-      CFGNode(Left(reset), Some(mainFunction), CFGNode.DONT_CARE_ID), // 5
-      CFGNode(Left(use), Some(mainFunction), CFGNode.DONT_CARE_ID), // 6
-      CFGNode(Left(increment), Some(mainFunction), CFGNode.DONT_CARE_ID), // 7
-      CFGNode(Right(condition), Some(mainFunction), CFGNode.DONT_CARE_ID), // 8
-      CFGNode(Left(reset), Some(mainFunction), CFGNode.DONT_CARE_ID), // 9
-      CFGNode(Left(use), Some(mainFunction), CFGNode.DONT_CARE_ID), // 10
+      CFGNode((VariableDeclaration(reset.resourceVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 0
+      CFGNode((VariableDeclaration(reset.starVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 1
+      CFGNode((VariableDeclaration(reset.counterVariable, Number(-1))), Some(mainFunction), CFGNode.DONT_CARE_ID), // 2
+      CFGNode((declaration), Some(mainFunction), CFGNode.DONT_CARE_ID), // 3
+      CFGNode((condition), Some(mainFunction), CFGNode.DONT_CARE_ID), // 4
+      CFGNode((reset), Some(mainFunction), CFGNode.DONT_CARE_ID), // 5
+      CFGNode((use), Some(mainFunction), CFGNode.DONT_CARE_ID), // 6
+      CFGNode((increment), Some(mainFunction), CFGNode.DONT_CARE_ID), // 7
+      CFGNode((condition), Some(mainFunction), CFGNode.DONT_CARE_ID), // 8
+      CFGNode((reset), Some(mainFunction), CFGNode.DONT_CARE_ID), // 9
+      CFGNode((use), Some(mainFunction), CFGNode.DONT_CARE_ID), // 10
     )
 
     val splitUsesTest01 = {
-      val reset2 = CFGNode(Left(Reset(2)), Some(mainFunction), CFGNode.DONT_CARE_ID)
-      val use2 = CFGNode(Left(Use(Some(2), use.update, use.condition)), Some(mainFunction), CFGNode.DONT_CARE_ID)
-      val reset3 = CFGNode(Left(Reset(3)), Some(mainFunction), CFGNode.DONT_CARE_ID)
-      val use3 = CFGNode(Left(Use(Some(3), use.update, use.condition)), Some(mainFunction), CFGNode.DONT_CARE_ID)
+      val reset2 = CFGNode((Reset(2)), Some(mainFunction), CFGNode.DONT_CARE_ID)
+      val use2 = CFGNode((Use(Some(2), use.update, use.condition)), Some(mainFunction), CFGNode.DONT_CARE_ID)
+      val reset3 = CFGNode((Reset(3)), Some(mainFunction), CFGNode.DONT_CARE_ID)
+      val use3 = CFGNode((Use(Some(3), use.update, use.condition)), Some(mainFunction), CFGNode.DONT_CARE_ID)
       Map(5 -> ResetNode(reset2, 2), 6 -> UseNode(use2, 2), 9 -> ResetNode(reset3, 3), 10 -> UseNode(use3, 3))
     }
     val groupIdsTest01 = Map(1 -> Set(2, 3))

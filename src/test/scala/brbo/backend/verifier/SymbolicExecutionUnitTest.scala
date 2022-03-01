@@ -42,30 +42,30 @@ object SymbolicExecutionUnitTest {
     val test01 = {
       // This path comes from UAutomizerVerifierUnitTest.scala
       Path(List(
-        CFGNode(Left(VariableDeclaration(i, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(VariableDeclaration(R, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(BeforeFunctionCall(assumeFunction, List(GreaterThan(n, Number(0))))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Right(Negation(Negation(assumeCond))), Some(assumeFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(FunctionExit()), Some(assumeFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(BeforeFunctionCall(ndBoolFunction, Nil)), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(BeforeFunctionCall(ndIntFunction, Nil)), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Return(Some(FunctionCallExpr(PreDefinedFunctions.VERIFIER_NONDET_INT, Nil, INT)))), Some(ndIntFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(BeforeFunctionCall(assumeFunction, List(Or(Equal(x, Number(0)), Equal(x, Number(1)))))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Right(Negation(Negation(assumeCond))), Some(assumeFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(FunctionExit()), Some(assumeFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Return(Some(x))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Right(LessThan(i, n)), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(VariableDeclaration(e, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Right(LessThan(i, Number(1))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Assignment(e, a)), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Assignment(R, Addition(R, e))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Assignment(i, Addition(i, Number(1)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Right(Negation(LessThan(i, Number(1)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(BeforeFunctionCall(assertFunction, List(LessThanOrEqualTo(R, a)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Right(Negation(assertCond)), Some(assertFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(LabeledCommand("ERROR", FunctionCall(FunctionCallExpr(PreDefinedFunctions.VERIFIER_ERROR, Nil, VOID)))), Some(assertFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Return(None)), Some(assertFunction), CFGNode.DONT_CARE_ID)
+        CFGNode((VariableDeclaration(i, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((VariableDeclaration(R, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((BeforeFunctionCall(assumeFunction, List(GreaterThan(n, Number(0))))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Negation(Negation(assumeCond))), Some(assumeFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((FunctionExit()), Some(assumeFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((BeforeFunctionCall(ndBoolFunction, Nil)), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((BeforeFunctionCall(ndIntFunction, Nil)), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Return(Some(FunctionCallExpr(PreDefinedFunctions.VERIFIER_NONDET_INT, Nil, INT)))), Some(ndIntFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((BeforeFunctionCall(assumeFunction, List(Or(Equal(x, Number(0)), Equal(x, Number(1)))))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Negation(Negation(assumeCond))), Some(assumeFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((FunctionExit()), Some(assumeFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Return(Some(x))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((LessThan(i, n)), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((VariableDeclaration(e, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((LessThan(i, Number(1))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Assignment(e, a)), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Assignment(R, Addition(R, e))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Assignment(i, Addition(i, Number(1)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Negation(LessThan(i, Number(1)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((BeforeFunctionCall(assertFunction, List(LessThanOrEqualTo(R, a)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Negation(assertCond)), Some(assertFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((LabeledCommand("ERROR", FunctionCall(FunctionCallExpr(PreDefinedFunctions.VERIFIER_ERROR, Nil, VOID)))), Some(assertFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Return(None)), Some(assertFunction), CFGNode.DONT_CARE_ID)
       ))
     }
 
@@ -73,12 +73,12 @@ object SymbolicExecutionUnitTest {
       val use = Use(Some(2), Number(1), GreaterThan(n, a))
       val reset = Reset(2, GreaterThan(n, b))
       Path(List(
-        CFGNode(Left(VariableDeclaration(use.resourceVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(VariableDeclaration(reset.starVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(-1))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(use), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(reset), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(use), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((VariableDeclaration(use.resourceVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((VariableDeclaration(reset.starVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((VariableDeclaration(reset.counterVariable, Number(-1))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((use), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((reset), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((use), Some(mainFunction), CFGNode.DONT_CARE_ID),
       ))
     }
 

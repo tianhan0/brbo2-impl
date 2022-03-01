@@ -1,9 +1,9 @@
 package brbo.common.ast
 
 case class BrboProgramInC(originalProgram: BrboProgram) {
-  val (program: BrboProgram, map: Map[Either[Command, BrboExpr], GhostCommand]) = programToC
+  val (program: BrboProgram, map: Map[CommandOrExpr, GhostCommand]) = programToC
 
-  private def programToC: (BrboProgram, Map[Either[Command, BrboExpr], GhostCommand]) = {
+  private def programToC: (BrboProgram, Map[CommandOrExpr, GhostCommand]) = {
     val (newMainFunction, mainMap) = {
       val c = BrboFunctionInC(originalProgram.mainFunction)
       (c.function, c.map)
@@ -21,10 +21,10 @@ case class BrboProgramInC(originalProgram: BrboProgram) {
 
 case class BrboFunctionInC(originalFunction: BrboFunction) {
   // Map commands or expressions in the C version that are translated from uses or resets in the original program
-  val (function: BrboFunction, map: Map[Either[Command, BrboExpr], GhostCommand]) = functionToC
+  val (function: BrboFunction, map: Map[CommandOrExpr, GhostCommand]) = functionToC
 
-  private def functionToC: (BrboFunction, Map[Either[Command, BrboExpr], GhostCommand]) = {
-    var map: Map[Either[Command, BrboExpr], GhostCommand] = Map()
+  private def functionToC: (BrboFunction, Map[CommandOrExpr, GhostCommand]) = {
+    var map: Map[CommandOrExpr, GhostCommand] = Map()
 
     def astToC(ast: BrboAst): BrboAst = {
       ast match {
@@ -56,16 +56,16 @@ case class BrboFunctionInC(originalFunction: BrboFunction) {
         case _: CFGOnly => throw new Exception
         case Return(value, _) => Return(value)
         case reset@Reset(_, condition, _) =>
-          map = map + (Right(reset.maxComparison) -> reset)
-          map = map + (Left(reset.maxAssignment) -> reset)
-          map = map + (Left(reset.resetCommand) -> reset)
-          map = map + (Left(reset.counterCommand) -> reset)
-          map = map + (Right(condition) -> reset)
+          map = map + (reset.maxComparison -> reset)
+          map = map + (reset.maxAssignment -> reset)
+          map = map + (reset.resetCommand -> reset)
+          map = map + (reset.counterCommand -> reset)
+          map = map + (condition -> reset)
           val block = Block(List(reset.maxStatement, reset.resetCommand, reset.counterCommand))
           ITE(condition, block, Skip())
         case use@Use(_, _, condition, _) =>
-          map = map + (Left(use.assignmentCommand) -> use)
-          map = map + (Right(condition) -> use)
+          map = map + (use.assignmentCommand -> use)
+          map = map + (condition -> use)
           ITE(condition, use.assignmentCommand, Skip())
         case FunctionCall(functionCallExpr, _) => FunctionCall(functionCallExpr)
         case LabeledCommand(label, command, _) => LabeledCommand(label, commandToC(command).asInstanceOf[Command])

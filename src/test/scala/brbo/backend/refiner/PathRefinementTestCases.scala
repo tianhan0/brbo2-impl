@@ -9,16 +9,16 @@ import brbo.common.cfg.CFGNode
 object PathRefinementTestCases {
   val brboProgram: BrboProgram = BrboProgram("Test program", BrboFunction("Main", VOID, Nil, Block(List(Skip())), Set(0, 1, 2)))
 
-  private val r1Initialization = GhostVariableUtils.declareVariables(1).map(c => CFGNode(Left(c), Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID))
-  private val r2Initialization = GhostVariableUtils.declareVariables(2).map(c => CFGNode(Left(c), Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID))
+  private val r1Initialization = GhostVariableUtils.declareVariables(1).map(c => CFGNode(c, Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID))
+  private val r2Initialization = GhostVariableUtils.declareVariables(2).map(c => CFGNode(c, Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID))
   private val initializations = r1Initialization ::: r2Initialization
   private val update = Number(1)
-  private val assignmentNode = CFGNode(Left(Assignment(Identifier("x", INT), Number(0))), Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID)
-  private val use1 = CFGNode(Left(Use(Some(1), update)), Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID)
-  private val use2 = CFGNode(Left(Use(Some(2), update)), Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID)
+  private val assignmentNode = CFGNode(Assignment(Identifier("x", INT), Number(0)), Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID)
+  private val use1 = CFGNode(Use(Some(1), update), Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID)
+  private val use2 = CFGNode(Use(Some(2), update), Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID)
   // private val use3 = CFGNode(Left(Use(Some(3), update, assignment)), brboProgram.mainFunction, CFGNode.DONT_CARE_ID)
-  private val reset1 = CFGNode(Left(Reset(1)), Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID)
-  private val reset2 = CFGNode(Left(Reset(2)), Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID)
+  private val reset1 = CFGNode(Reset(1), Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID)
+  private val reset2 = CFGNode(Reset(2), Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID)
 
   val test01: Path = Path(r1Initialization ::: List(reset1, reset1, use1)) // A segment with no uses!
   val test02: Path = Path(r1Initialization ::: List(reset1, use1, reset1, use1))

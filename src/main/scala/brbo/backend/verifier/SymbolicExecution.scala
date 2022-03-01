@@ -42,7 +42,7 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
     val valuation: Valuation = state.valuations.head
 
     node.value match {
-      case Left(command) =>
+      case command: Command =>
         command match {
           case BeforeFunctionCall(callee, actualArguments) => // Calling a new function
             assert(callee.parameters.length == actualArguments.length)
@@ -90,7 +90,7 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
             // Pop the environment map
             State(state.valuations.tail, state.pathCondition, state.returnValues)
           case LabeledCommand(_, command2, _) =>
-            evaluate(state, CFGNode(Left(command2), node.function, CFGNode.DONT_CARE_ID))
+            evaluate(state, CFGNode(command2, node.function, CFGNode.DONT_CARE_ID))
           case FunctionCall(functionCallExpr, _) =>
             val (_, newReturnValues) = evaluateExpression(valuation, state.returnValues, functionCallExpr)
             State(state.valuations, state.pathCondition, newReturnValues)
@@ -115,7 +115,7 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
             state
           case _: CFGOnly | Skip(_) => throw new Exception(s"Unexpected command: `$command`")
         }
-      case Right(brboExpr) =>
+      case brboExpr: BrboExpr =>
         val (extraPathCondition, newReturnValues) = evaluateExpression(valuation, state.returnValues, brboExpr)
         State(state.valuations, solver.mkAnd(state.pathCondition, extraPathCondition.get), newReturnValues)
     }

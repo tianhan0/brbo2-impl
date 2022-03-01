@@ -11,7 +11,7 @@ import com.ibm.wala.util.intset.{BimodalMutableIntSet, IntSet}
  * @param function The function that this command or expression belongs to (if any)
  * @param id       A unique (if desired) ID among all commands and expressions in all functions
  */
-case class CFGNode(value: Either[Command, BrboExpr], function: Option[BrboFunction] = None, id: Int = CFGNode.DONT_CARE_ID)
+case class CFGNode(value: CommandOrExpr, function: Option[BrboFunction] = None, id: Int = CFGNode.DONT_CARE_ID)
   extends NodeWithNumber with INodeWithNumberedEdges
     with PrettyPrintToC with PrettyPrintToCFG with GetFunctionCalls {
   private val predNumbers = new BimodalMutableIntSet()
@@ -39,29 +39,29 @@ case class CFGNode(value: Either[Command, BrboExpr], function: Option[BrboFuncti
 
   override def toString: String = {
     value match {
-      case Left(command) => s"($id) ${command.toIR()} [Function `$functionIdentifier`]"
-      case Right(expr) => s"($id) ${expr.prettyPrintToCFG} [Function `$functionIdentifier`]"
+      case expr: BrboExpr => s"($id) ${expr.prettyPrintToCFG} [Function `$functionIdentifier`]"
+      case command: Command => s"($id) ${command.toIR()} [Function `$functionIdentifier`]"
     }
   }
 
   override def prettyPrintToC(indent: Int): String = {
     value match {
-      case Left(command) => s"${command.prettyPrintToC()}"
-      case Right(expr) => s"${expr.prettyPrintToC()}"
+      case command: Command => s"${command.prettyPrintToC()}"
+      case expr: BrboExpr => s"${expr.prettyPrintToC()}"
     }
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = {
     value match {
-      case Left(command) => command.getFunctionCalls
-      case Right(expr) => expr.getFunctionCalls
+      case command: Command => command.getFunctionCalls
+      case expr: BrboExpr => expr.getFunctionCalls
     }
   }
 
   override def prettyPrintToCFG: String = {
     value match {
-      case Left(command) => s"($id) ${command.prettyPrintToCFG}"
-      case Right(expr) => s"($id) ${expr.prettyPrintToCFG}"
+      case command: Command => s"($id) ${command.prettyPrintToCFG}"
+      case expr: BrboExpr => s"($id) ${expr.prettyPrintToCFG}"
     }
   }
 
@@ -73,7 +73,7 @@ case class CFGNode(value: Either[Command, BrboExpr], function: Option[BrboFuncti
     }
 
     value match {
-      case Left(command) =>
+      case command: Command =>
         command match {
           case Use(groupId2, _, _, _) =>
             (groupId2, groupId) match {
@@ -84,7 +84,7 @@ case class CFGNode(value: Either[Command, BrboExpr], function: Option[BrboFuncti
             }
           case _ => false
         }
-      case Right(_) => false
+      case _: BrboExpr => false
     }
   }
 
@@ -96,7 +96,7 @@ case class CFGNode(value: Either[Command, BrboExpr], function: Option[BrboFuncti
     }
 
     value match {
-      case Left(command) =>
+      case command: Command =>
         command match {
           case Reset(groupID2, _, _) =>
             groupId match {
@@ -105,7 +105,7 @@ case class CFGNode(value: Either[Command, BrboExpr], function: Option[BrboFuncti
             }
           case _ => false
         }
-      case Right(_) => false
+      case _: BrboExpr => false
     }
   }
 }

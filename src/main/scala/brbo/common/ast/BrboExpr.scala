@@ -6,7 +6,7 @@ import com.microsoft.z3.AST
 
 import java.util.UUID
 
-abstract class BrboExpr(val typ: BrboType) extends BrboAstNode with PrettyPrintToC with PrettyPrintToCFG
+abstract class BrboExpr(val typ: BrboType) extends CommandOrExpr with PrettyPrintToC with PrettyPrintToCFG
   with GetFunctionCalls with Z3AST with UseDefVariables with UniqueCopy {
   override def prettyPrintToC(indent: Int): String
 

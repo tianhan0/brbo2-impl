@@ -7,14 +7,14 @@ import brbo.common.{GhostVariableUtils, MyLogger, StringFormatUtils}
 
 case class Path(pathNodes: List[CFGNode]) {
   pathNodes.map(pathNode => pathNode.value).foreach({
-    case Left(_) =>
-    case Right(expr) => assert(expr.typ == BOOL)
+    case _: Command =>
+    case brboExpr: BrboExpr => assert(brboExpr.typ == BOOL)
   })
 
   val groupsInPath: Set[Int] = pathNodes.foldLeft(Set[Int]())({
     (acc, node) =>
       node.value match {
-        case Left(command) =>
+        case command: Command =>
           command match {
             case Use(groupId, _, _, _) =>
               groupId match {
@@ -24,7 +24,7 @@ case class Path(pathNodes: List[CFGNode]) {
             case Reset(groupId, _, _) => acc + groupId
             case _ => acc
           }
-        case Right(_) => acc
+        case _: BrboExpr => acc
       }
   })
 
@@ -71,12 +71,12 @@ case class Path(pathNodes: List[CFGNode]) {
     pathNodes.exists({
       node =>
         node.value match {
-          case Left(command) =>
+          case command: Command =>
             command match {
               case VariableDeclaration(variable, _, _) => variable.sameAs(identifier)
               case _ => false
             }
-          case Right(_) => false
+          case _: BrboExpr => false
         }
     })
   }
@@ -95,7 +95,7 @@ object Path {
         while (i < nodes.size) {
           val node = nodes(i)
           node.value match {
-            case Left(command) =>
+            case command: Command =>
               command match {
                 case BeforeFunctionCall(callee, _) =>
                   if (callee.identifier == assertFunction.identifier) {
@@ -103,8 +103,8 @@ object Path {
                     val nextNode = nodes(i)
                     logger.trace(s"nextNode: `$nextNode`")
                     nextNode.value match {
-                      case Left(_) => throw new Exception
-                      case Right(condition) =>
+                      case _: Command => throw new Exception
+                      case condition: BrboExpr =>
                         condition match {
                           case Negation(Negation(cond, _), _) =>
                             assert(cond.prettyPrintToC() == "cond")
@@ -124,7 +124,7 @@ object Path {
                   newNodes = node :: newNodes
                   i = i + 1
               }
-            case Right(_) =>
+            case _: BrboExpr =>
               newNodes = node :: newNodes
               i = i + 1
           }
