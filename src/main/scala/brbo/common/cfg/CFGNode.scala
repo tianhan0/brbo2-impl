@@ -58,12 +58,9 @@ case class CFGNode(value: CommandOrExpr, function: Option[BrboFunction] = None, 
     }
   }
 
-  override def prettyPrintToCFG: String = {
-    value match {
-      case command: Command => s"($id) ${command.prettyPrintToCFG}"
-      case expr: BrboExpr => s"($id) ${expr.prettyPrintToCFG}"
-    }
-  }
+  override def prettyPrintToCFG: String = s"($id) ${value.prettyPrintToCFG}"
+
+  def simplifiedString: String = value.prettyPrintToCFG
 
   // Whether this node is a use command, or a use command for the given group in the given function
   def isUse(groupId: Option[Int], functionName: Option[String]): Boolean = {

@@ -107,7 +107,7 @@ object ControlFlowGraph {
                 case Return(_, _) | Break(_) | Continue(_) =>
                   false // Not add edge only for commands that do not respect the normal control flow
                 case LabeledCommand(_, command2, _) => shouldAddEdge(command2)
-                case VariableDeclaration(_, _, _) | Assignment(_, _, _) | Skip(_) | FunctionCall(_, _) => true
+                case VariableDeclaration(_, _, _) | Assignment(_, _, _) | Skip(_) | FunctionCall(_, _) | Assume(_, _) => true
                 case _: CFGOnly => true
                 case _: GhostCommand => true
               }
@@ -130,6 +130,7 @@ object ControlFlowGraph {
               case Assignment(_, _, _) =>
               case Skip(_) =>
               case FunctionCall(_, _) =>
+              case Assume(_, _) =>
 
               // No edge is added for function calls!
               case Return(_, _) => addEdge(node, jumpTarget.functionExit)

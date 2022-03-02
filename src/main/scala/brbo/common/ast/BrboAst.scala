@@ -71,7 +71,7 @@ case class BrboFunction(identifier: String, returnType: BrboType, parameters: Li
 
 trait BrboAst extends BrboAstNode with PrettyPrintToC with OverrideToString
 
-abstract class Command extends BrboAst with CommandOrExpr with PrettyPrintToCFG with GetFunctionCalls with UseDefVariables {
+abstract class Command extends BrboAst with CommandOrExpr with GetFunctionCalls with UseDefVariables {
   override def toIR(indent: Int): String = prettyPrintToC(indent)
 }
 
@@ -159,7 +159,7 @@ case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, uuid: UU
   override def prettyPrintPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = condition.getFunctionCalls
-}
+}*/
 
 case class Assume(condition: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
   assert(condition.typ == BOOL)
@@ -170,10 +170,14 @@ case class Assume(condition: BrboExpr, uuid: UUID = UUID.randomUUID()) extends C
     s"${indentString}assume($conditionString);"
   }
 
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
+  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = condition.getFunctionCalls
-}*/
+
+  override def getUses: Set[Identifier] = condition.getUses
+
+  override def getDefs: Set[Identifier] = Set()
+}
 
 case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
   override def prettyPrintToC(indent: Int): String = {
