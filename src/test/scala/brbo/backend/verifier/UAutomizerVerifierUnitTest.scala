@@ -14,7 +14,6 @@ class UAutomizerVerifierUnitTest extends AnyFlatSpec {
     TEST_MODE,
     debugMode = false,
     "",
-    skipSanityCheck = false,
     printVerifierInputs = false,
     verifierTimeout = 10,
     printCFG = false,
@@ -65,14 +64,14 @@ object UAutomizerVerifierUnitTest {
       val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionTrue)), Set())
       BrboProgram("test01", function, Nil, PreDefinedFunctions.allFunctionsList)
     }
-    val test01Expected = """VerifierResult(UNKNOWN_RESULT,None)"""
+    val test01Expected = """VerifierResult(UNKNOWN_RESULT,Set())"""
 
     val test02 = {
       val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionFalse)), Set())
       BrboProgram("test02", function, Nil, PreDefinedFunctions.allFunctionsList)
     }
     val test02Expected =
-      """VerifierResult(FALSE_RESULT,Some(Path:
+      """VerifierResult(FALSE_RESULT,Set(Path:
         |  [000] (2) int i = 0; [Function `main`]
         |  [001] (3) int R = 0; [Function `main`]
         |  [002] (-1) Call function `assume` with `(n > 0)` [Function `main`]
@@ -114,7 +113,7 @@ object UAutomizerVerifierUnitTest {
       BrboProgram("test03", function, Nil, PreDefinedFunctions.allFunctionsList)
     }
     val test03Expected =
-      """VerifierResult(FALSE_RESULT,Some(Path:
+      """VerifierResult(FALSE_RESULT,Set(Path:
         |  [000] (2) int C2 = -1; [Function `main`]
         |  [001] (3) int R2 = 0; [Function `main`]
         |  [002] (4) int S2 = 0; [Function `main`]

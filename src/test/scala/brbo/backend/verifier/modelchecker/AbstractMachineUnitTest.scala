@@ -3,7 +3,6 @@ package brbo.backend.verifier.modelchecker
 import apron.{Octagon, Polka, Tcons0}
 import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.backend.verifier.modelchecker.Apron.{Conjunction, Disjunction, Singleton}
-import brbo.common.BrboType._
 import brbo.common.ast._
 import brbo.common.{BrboType, GhostVariableUtils, MyLogger, StringCompare}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -18,13 +17,13 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
   private val b = Identifier("b", BrboType.INT)
 
   private def emptyValuationOctagon(debug: Boolean): Valuation = {
-    if (debug) AbstractMachine.createEmptyValuation(new Octagon(), None, this.debugLogger)
-    else AbstractMachine.createEmptyValuation(new Octagon(), None, None)
+    if (debug) AbstractMachine.createEmptyValuation(new Octagon(), this.debugLogger)
+    else AbstractMachine.createEmptyValuation(new Octagon(), None)
   }
 
   private def emptyValuationStrictPolka(debug: Boolean): Valuation = {
-    if (debug) AbstractMachine.createEmptyValuation(new Polka(true), None, this.debugLogger)
-    else AbstractMachine.createEmptyValuation(new Polka(true), None, None)
+    if (debug) AbstractMachine.createEmptyValuation(new Polka(true), this.debugLogger)
+    else AbstractMachine.createEmptyValuation(new Polka(true), None)
   }
 
   private val xVar = Variable(x, None)
@@ -83,6 +82,42 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  ;
         |}))
         |ApronState: {  1x0 >= 0;  -1x0 >= 0;  -1x0 +1x1 >= 0;  1x0 +1x1 >= 0;  1x1 >= 0;  -1x0 -1x1 >= 0;  1x0 -1x1 >= 0;  -1x1 >= 0 }""".stripMargin, "Variables: x, x (different scope)")
+  }
+
+  "Removing out-of-scope variables from a valuation" should "be correct" in {
+    val scope1 = None
+    val scope2 = Some(Block(Nil))
+    val xVar1 = Variable(x, scope1)
+    val zVar1 = Variable(z, scope1)
+    val xVar2 = Variable(x, scope2)
+    val yVar2 = Variable(y, scope2)
+    val v1 = emptyValuationOctagon(debug = false).createUninitializedVariable(xVar1)
+      .createUninitializedVariable(zVar1).createUninitializedVariable(xVar2)
+    StringCompare.ignoreWhitespaces(v1.removeVariablesInScope(scope2).toString,
+      """Variables:
+        |  Variable(x,None)
+        |  Variable(z,None)
+        |ApronState: <universal>""".stripMargin, "Removing uninitialized variables")
+    val v2 = v1.createUninitializedVariable(yVar2)
+    StringCompare.ignoreWhitespaces(v2.removeVariablesInScope(scope2).toString,
+      """Variables:
+        |  Variable(x,None)
+        |  Variable(z,None)
+        |ApronState: <universal>""".stripMargin, "Removing uninitialized variables")
+
+    val v3 = emptyValuationStrictPolka(debug = false).createInitializedVariable(xVar1)
+      .createInitializedVariable(zVar1).createInitializedVariable(xVar2)
+    StringCompare.ignoreWhitespaces(v3.removeVariablesInScope(scope2).toString,
+      """Variables:
+        |  Variable(x,None)
+        |  Variable(z,None)
+        |ApronState: {  1x2 = 0;  1x1 = 0;  1x0 = 0 }""".stripMargin, "Removing initialized variables")
+    val v4 = v3.createInitializedVariable(xVar2)
+    StringCompare.ignoreWhitespaces(v4.removeVariablesInScope(scope2).toString,
+      """Variables:
+        |  Variable(x,None)
+        |  Variable(z,None)
+        |ApronState: {  1x2 = 0;  1x1 = 0;  1x0 = 0 }""".stripMargin, "Removing initialized variables")
   }
 
   "Assigning to variables in a valuation" should "be correct" in {
@@ -171,15 +206,12 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val s1 = Block(Nil)
     val s2 = Block(Nil)
     val s3 = Block(Nil)
-    val scope1: Option[Statement] = Some(s1)
-    val scope2: Option[Statement] = Some(s2)
-    val scope3: Option[Statement] = Some(s3)
-    val lookupScope = {
-      node: BrboAstNode =>
-        if (node == s2) scope1
-        else None
-    }
-    val v1 = AbstractMachine.createEmptyValuation(new Octagon(), Some(lookupScope), None)
+    val scope1: Scope = Some(s1)
+    val scope2: Scope = Some(s2)
+    val scope3: Scope = Some(s3)
+    val map: Map[BrboAstNode, Statement] = Map(s2.asInstanceOf[BrboAstNode] -> scope1.get)
+    val scopeOperations = new ScopeOperations(map)
+    val v1 = AbstractMachine.createEmptyValuation(new Octagon(), None, scopeOperations)
     val v2 = v1.createInitializedVariable(Variable(x, scope1))
     val v3 = v2.createInitializedVariable(Variable(y, scope1))
     StringCompare.ignoreWhitespaces(v3.indexOfVariableThisScope(Variable(x, scope1)).toString, """0""", "Look up x in Scope 1")
@@ -527,6 +559,23 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |ApronState: {  1x4 +1 = 0;  1x3 = 0;  1x2 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$useFalse")
   }
 
+  "Operations over lexical scopes" should "be correct" in {
+    val scope1: Scope = Some(Block(List(Assignment(x, Number(1)))))
+    val scope2: Scope = Some(Block(List(Assignment(x, Number(2)))))
+    val scope3: Scope = Some(Block(List(Assignment(x, Number(3)))))
+    val map: Map[BrboAstNode, Statement] = Map(scope1.get -> scope2.get, scope2.get -> scope3.get)
+    val scopeOperations = new ScopeOperations(map)
+    StringCompare.compareLiteral(scopeOperations.isSame(scope1, scope1).toString, "true", "isSame: true")
+    StringCompare.compareLiteral(scopeOperations.isSame(scope1, scope2).toString, "false", "isSame: false")
+    StringCompare.compareLiteral(scopeOperations.isSubScope(scope1, scope1).toString, "true", "isSubScope: true 1")
+    StringCompare.compareLiteral(scopeOperations.isSubScope(scope1, scope2).toString, "true", "isSubScope: true 2")
+    StringCompare.compareLiteral(scopeOperations.isSubScope(scope3, TOP_SCOPE).toString, "true", "isSubScope: true 3")
+    StringCompare.compareLiteral(scopeOperations.isSubScope(scope2, scope1).toString, "false", "isSubScope: false")
+    StringCompare.compareLiteral(scopeOperations.isStrictSubScope(scope1, scope2).toString, "true", "isStrictSubScope: true 1")
+    StringCompare.compareLiteral(scopeOperations.isStrictSubScope(scope1, scope3).toString, "true", "isStrictSubScope: true 2")
+    StringCompare.compareLiteral(scopeOperations.isStrictSubScope(scope1, scope1).toString, "false", "isStrictSubScope: false")
+  }
+
   // Initialize r, r*, r#
   private def initializeGhostVariables(v: Valuation): Valuation = {
     val v1 = AbstractMachine.evalCommandOrExpr(v, VariableDeclaration(r, Number(0)), None)
@@ -549,16 +598,4 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
 }
 
 object AbstractMachineUnitTest {
-  private val i: Identifier = Identifier("i", INT)
-  private val n: Identifier = Identifier("n", INT)
-
-  private val reset: Reset = Reset(1)
-  private val use: Use = Use(Some(1), Number(1), GreaterThanOrEqualTo(n, Number(0)))
-  private val declaration = VariableDeclaration(i, Number(0))
-  private val increment = Assignment(i, Addition(i, Number(1)))
-  private val condition = LessThan(i, n)
-  private val loop = Loop(condition, Block(List(reset, use, increment)))
-
-  private val mainFunction: BrboFunction = BrboFunction("main", VOID, List(n), Block(List(declaration, loop)), Set(1))
-  private val program: BrboProgram = BrboProgram("Test program", mainFunction)
 }

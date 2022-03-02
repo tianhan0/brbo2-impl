@@ -17,63 +17,76 @@ import scala.collection.immutable.Queue
 class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments) {
   private val logger: MyLogger = MyLogger(LogManager.getLogger(classOf[AbstractMachine]), arguments.getDebugMode)
   private val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
-  private val parentStatements: Map[BrboAstNode, Statement] =
-    (brboProgram.mainFunction :: brboProgram.functions).foldLeft(Map[BrboAstNode, Statement]())({
-      (acc, function) => acc ++ BrboAstUtils.findParentStatements(function.actualBody)
-    })
+  private val fakeInitialNode = CFGNode(Bool(b = true), function = Some(brboProgram.mainFunction))
   private val manager = arguments.getAbstractDomain match {
     case OCTAGON => new Octagon
     case POLKA_STRICT => new Polka(true)
     case POLKA_NONSTRICT => new Polka(false)
   }
 
-  private val fakeInitialNode = CFGNode(Bool(b = true), function = Some(brboProgram.mainFunction))
+  private val initialValuation = {
+    val parentStatements: Map[BrboAstNode, Statement] =
+      (brboProgram.mainFunction :: brboProgram.functions)
+        .foldLeft(Map[BrboAstNode, Statement](fakeInitialNode.value -> brboProgram.mainFunction.actualBody))({
+        (acc, function) => acc ++ BrboAstUtils.findParentStatements(function.actualBody)
+      })
+    val scopeOperations = new ScopeOperations(parentStatements)
+    val v = createEmptyValuation(manager, Some(logger), scopeOperations)
+    brboProgram.mainFunction.parameters.foldLeft(v)({
+      (acc, v) => acc.createUninitializedVariable(Variable(v, None))
+    })
+  }
 
-  def verify(boundAssertion: BoundAssertion): VerifierResult = {
-    val initialState = State(fakeInitialNode, createEmptyValuation(manager), indexOnPath = 1, shouldVerify = true)
+  def verify(assertion: BrboExpr): VerifierResult = {
+    val initialState = State(fakeInitialNode, initialValuation, indexOnPath = 0, shouldVerify = true)
     // Every CFGNode corresponds to a location, which is the location right after the node
     // fakeInitialNode corresponds to the program entry, which is right before the first command / expression
     val initialPathState = PathState(Map(initialState.node -> initialState.valuation))
     var reached = Map[List[CFGNode], PathState](Nil -> initialPathState)
     var waitlist: Queue[(List[CFGNode], State)] = Queue((Nil, initialState)) // Breadth First Search
     var stoppedEarly = false
-    var counterexamplePath: Option[List[CFGNode]] = None
-    while (waitlist.nonEmpty && counterexamplePath.isEmpty) {
+    var counterexamplePaths: Set[List[CFGNode]] = Set()
+    var refuted = false
+    while (waitlist.nonEmpty && counterexamplePaths.isEmpty) {
       val ((path, state), newWaitlist) = waitlist.dequeue
       waitlist = newWaitlist
-      val oldPathState = reached.getOrElse(path, throw new Exception)
+      val oldPathState: PathState = reached.getOrElse(path, throw new Exception)
+      logger.traceOrError(s"[model check] Dequeued path: `$path`")
+      logger.traceOrError(s"[model check] Dequeued state: `$state`")
       val newStates = step(state)
       newStates.foreach({
         newState =>
-          if (counterexamplePath.isEmpty) {
-            logger.traceOrError(s"New state: $newState")
-            val refuted =
+          logger.traceOrError(s"[model check] New state: $newState")
+          if (!refuted && !newState.valuation.isBottom()) {
+            val refuted2 =
               if (newState.shouldVerify) {
-                val refuted = !newState.satisfy(boundAssertion.assertion)
-                logger.traceOrError(s"New state ${if (refuted) "does not satisfy" else "satisfies"} bound assertion `$boundAssertion`")
+                val refuted = !newState.satisfy(assertion)
+                logger.traceOrError(s"[model check] New state ${if (refuted) "does not satisfy" else "satisfies"} bound assertion `$assertion`")
                 refuted
               } else false
-            if (refuted) {
-              counterexamplePath = Some(path)
+            if (refuted2) {
+              counterexamplePaths = counterexamplePaths + path
+              refuted = true
             }
             else {
               val (newValuation, keepExploring) = {
                 oldPathState.valuations.get(newState.node) match {
                   case Some(existingValuation) =>
-                    logger.traceOrError(s"Old valuation at node `${newState.node.prettyPrintToCFG}`: $existingValuation")
+                    logger.traceOrError(s"[model check] Old valuation at node `${newState.node.prettyPrintToCFG}`: $existingValuation")
                     if (newState.valuation.include(existingValuation)) {
-                      logger.traceOrError(s"The new valuation is included in the old one")
+                      logger.traceOrError(s"[model check] The new valuation is included in the old one")
                       (existingValuation, false)
                     }
                     else {
-                      logger.traceOrError(s"The new valuation is not included in the old one")
+                      logger.traceOrError(s"[model check] The new valuation is not included in the old one")
                       val joinedValuation = newState.valuation.joinCopy(existingValuation)
-                      logger.traceOrError(s"Joined valuation: `$joinedValuation`")
+                      logger.traceOrError(s"[model check] Joined valuation: `$joinedValuation`")
                       if (newState.indexOnPath <= arguments.getMaxPathLength) (joinedValuation, true)
                       else {
-                        logger.traceOrError(s"Will stop exploring path: `$path`")
+                        logger.traceOrError(s"[model check] Will stop exploring path due to reaching the max path length: `$path`")
                         stoppedEarly = true
-                        // TODO: Add this path to the counterexamples, so that it can be avoided in the future
+                        // Add this path to the counterexamples, so that it can be avoided in the future
+                        counterexamplePaths = counterexamplePaths + path
                         (joinedValuation, false)
                       }
                     }
@@ -93,32 +106,51 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
       })
       reached = reached - path
     }
-    counterexamplePath match {
-      case Some(path) =>
-        VerifierResult(VerifierStatus.FALSE_RESULT, Some(Path(path)))
-      case None =>
-        if (stoppedEarly) VerifierResult(VerifierStatus.UNKNOWN_RESULT, None)
-        else VerifierResult(VerifierStatus.TRUE_RESULT, None)
+    val paths = counterexamplePaths.map(p => Path(p))
+    if (refuted) VerifierResult(VerifierStatus.FALSE_RESULT, paths)
+    else {
+      if (stoppedEarly) VerifierResult(VerifierStatus.UNKNOWN_RESULT, paths)
+      else VerifierResult(VerifierStatus.TRUE_RESULT, paths)
     }
   }
 
   def step(state: State): Set[State] = {
-    // If the lexical scope of the next node is none or is different from the scope of the current node, then
-    // forget all variables declared in the scope of the current node
+    logger.traceOrError(s"[step] Current state: `$state`")
     val nextNodes: Set[CFGNode] = {
       if (state.node == fakeInitialNode) Set(cfg.entryNode)
       else cfg.findSuccessorNodes(state.node)
       // Stop if the state becomes bottom
     }
+    val scopeOperations = state.valuation.scopeOperations
+    val currentScope = scopeOperations.getScope(state.node.value)
+    logger.traceOrError(s"[step] Current scope: `$currentScope`")
     nextNodes.map({
-      node =>
-        val scope = parentStatements.get(node.value)
-        val valuation = AbstractMachine.evalCommandOrExpr(state.valuation, node.value, scope, Some(logger))
-        val shouldVerify = node.value match {
+      nextNode =>
+        logger.traceOrError(s"[step] Next node: `${nextNode.prettyPrintToCFG}`")
+        val nextScope = scopeOperations.getScope(nextNode.value)
+        logger.traceOrError(s"[step] Next scope: `$nextScope`")
+        val valuation = {
+          val valuation = AbstractMachine.evalCommandOrExpr(state.valuation, nextNode.value, nextScope, Some(logger))
+          if (scopeOperations.isSubScope(nextScope, currentScope)) {
+            logger.traceOrError(s"[step] Next scope is a non-strict sub-scope of the current scope")
+            valuation
+          }
+          else {
+            if (scopeOperations.isTop(nextScope)) {
+              logger.traceOrError(s"[step] Next scope is a top scope")
+              valuation
+            }
+            else {
+              logger.traceOrError(s"[step] Next scope is not a non-strict sub-scope of the current scope")
+              valuation.removeVariablesInScope(currentScope)
+            }
+          }
+        }
+        val shouldVerify = nextNode.value match {
           case _: Use => true // Only need to verify a state after executing a use command
           case _ => false
         }
-        State(node, valuation, state.indexOnPath + 1, shouldVerify)
+        State(nextNode, valuation, state.indexOnPath + 1, shouldVerify)
     })
   }
 }
@@ -135,7 +167,7 @@ object AbstractMachine {
    */
   @tailrec
   def evalCommandOrExpr(valuation: Valuation, commandOrExpr: CommandOrExpr,
-                        scope: Option[Statement], logger: Option[MyLogger] = None): Valuation = {
+                        scope: Scope, logger: Option[MyLogger] = None): Valuation = {
     commandOrExpr match {
       case command: Command =>
         command match {
@@ -213,7 +245,7 @@ object AbstractMachine {
   }
 
   private def assign(identifier: Identifier, expr: BrboExpr, createNewVariable: Boolean,
-                     valuation: Valuation, scope: Option[Statement]): Valuation = {
+                     valuation: Valuation, scope: Scope): Valuation = {
     val (apronRepr, newValuation) = BrboExprUtils.toApron(expr, valuation, scope)
     val variable = Variable(identifier, scope)
     val newValuation2 =
@@ -233,7 +265,7 @@ object AbstractMachine {
   }
 
   case class State(node: CFGNode, valuation: Valuation, indexOnPath: Int, shouldVerify: Boolean) {
-    val scope: Option[Statement] = valuation.lookupScope(node.value)
+    val scope: Scope = valuation.scopeOperations.getScope(node.value)
 
     def satisfy(brboExpr: BrboExpr): Boolean = valuation.satisfy(brboExpr)
 
@@ -246,23 +278,20 @@ object AbstractMachine {
 
   /**
    *
-   * @param variables    All variables that can be looked up or re-assigned in the current program state
-   * @param apronState   The abstraction of the current program state
-   * @param allVariables All variables that have been declared in apronState
-   * @param lookupScope  A function to look up the parent scope of a given scope
-   * @param logger       The logger
+   * @param variables       All variables that can be looked up or re-assigned in the current program state
+   * @param apronState      The abstraction of the current program state
+   * @param allVariables    All variables that have been declared in apronState
+   * @param scopeOperations Functions to manipulate scopes
+   * @param logger          The logger
    */
   case class Valuation(variables: List[Variable],
                        apronState: Abstract0,
                        allVariables: Set[Variable],
-                       lookupScope: BrboAstNode => Option[Statement],
+                       scopeOperations: ScopeOperations,
                        logger: Option[MyLogger] = None) {
     assert(apronState != null)
     private val manager = apronState.getCreationManager
-    private val numberOfIntNumbers = apronState.getDimension(manager).intDim
-    private val numberOfFloatNumbers = apronState.getDimension(manager).realDim
-    assert(numberOfIntNumbers + numberOfFloatNumbers == variables.size)
-    traceOrError(logger, s"Create a new state. isTop: `${apronState.isTop(manager)}`. isBottom: `${apronState.isBottom(manager)}`")
+    // traceOrError(logger, s"Create a new state. isTop: `${apronState.isTop(manager)}`. isBottom: `${apronState.isBottom(manager)}`")
     private val debugMode = logger match {
       case Some(logger) => logger.debugMode
       case None => false
@@ -278,7 +307,7 @@ object AbstractMachine {
       if (index != -1) index
       else {
         variable.scope match {
-          case Some(parentScope) => indexOfVariableAnyScope(Variable(variable.identifier, lookupScope(parentScope)))
+          case Some(parentScope) => indexOfVariableAnyScope(Variable(variable.identifier, scopeOperations.getScope(parentScope)))
           case None => -1
         }
       }
@@ -306,7 +335,7 @@ object AbstractMachine {
         createVariableHelper(variable, initialize = false)
       }
       else {
-        throw new Exception
+        throw new Exception("When creating uninitialized variables, the names must be fresh")
       }
     }
 
@@ -322,7 +351,7 @@ object AbstractMachine {
         }
       }
       val newApronState = apronState.addDimensionsCopy(manager, dimensionChange, initialize)
-      Valuation(variables :+ variable, newApronState, allVariables + variable, lookupScope, logger)
+      Valuation(variables :+ variable, newApronState, allVariables + variable, scopeOperations, logger)
     }
 
     /*def forgetVariablesInScope(scope: Statement): Valuation = {
@@ -348,7 +377,7 @@ object AbstractMachine {
       val newApronState = apronState.joinCopy(manager, valuation.apronState)
       assert(valuation.variables == variables)
       assert(valuation.allVariables == allVariables)
-      Valuation(variables, newApronState, allVariables, lookupScope, logger)
+      Valuation(variables, newApronState, allVariables, scopeOperations, logger)
     }
 
     def assignCopy(variable: Variable, expression: Texpr0Node): Valuation = {
@@ -356,7 +385,7 @@ object AbstractMachine {
       if (index == -1) this
       else {
         val newState = apronState.assignCopy(manager, index, new Texpr0Intern(expression), null)
-        Valuation(variables, newState, allVariables, lookupScope, logger)
+        Valuation(variables, newState, allVariables, scopeOperations, logger)
       }
     }
 
@@ -408,22 +437,61 @@ object AbstractMachine {
       val joinedState = newStates.tail.foldLeft(newStates.head)({
         (acc, newState) => acc.joinCopy(manager, newState)
       })
-      Valuation(variables, joinedState, allVariables, lookupScope, logger)
+      Valuation(variables, joinedState, allVariables, scopeOperations, logger)
     }
 
     def toBottom(): Valuation = imposeConstraint(Singleton(Apron.mkEqZero(Apron.mkIntVal(1))))
+
+    def isBottom(): Boolean = apronState.isBottom(manager)
+
+    def removeVariablesInScope(scope: Scope): Valuation = {
+      val firstIndex = variables.indexWhere(v => scopeOperations.isSame(v.scope, scope))
+      if (firstIndex == -1) this
+      else {
+        val (toKeep, toRemove) = variables.splitAt(firstIndex)
+        traceOrError(logger, s"Removing variables in scope `$scope` from variables `$variables`")
+        traceOrError(logger, s"toRemove: `$toRemove`")
+        assert(toRemove.forall(v => v.scope == scope))
+        Valuation(toKeep, apronState, allVariables, scopeOperations, logger)
+      }
+    }
   }
 
-  case class Variable(identifier: Identifier, scope: Option[Statement])
+  case class Variable(identifier: Identifier, scope: Scope)
+
+  type Scope = Option[Statement]
+  val TOP_SCOPE: Scope = None
+  val UNKNOWN_SCOPE: Scope = None
+  val DEFAULT_SCOPE_OPERATIONS = new ScopeOperations(Map())
+
+  class ScopeOperations(parentStatements: Map[BrboAstNode, Statement]) {
+    def getScope(node: BrboAstNode): Scope = parentStatements.get(node)
+
+    def isSubScope(child: Scope, parent: Scope): Boolean = isStrictSubScope(child, parent) || isSame(child, parent)
+
+    def isStrictSubScope(child: Scope, parent: Scope): Boolean = {
+      if (isTop(child)) false
+      else {
+        if (isTop(parent)) true
+        else {
+          val childScope = child.get
+          val scopeOfChild = getScope(childScope)
+          if (isSame(scopeOfChild, parent)) true
+          else isSubScope(scopeOfChild, parent)
+        }
+      }
+    }
+
+    def isSame(scope1: Scope, scope2: Scope): Boolean = scope1 == scope2
+
+    def isTop(scope: Scope): Boolean = isSame(scope, TOP_SCOPE)
+  }
 
   def createEmptyValuation(manager: Manager,
-                           lookupScope: Option[BrboAstNode => Option[Statement]] = None,
-                           logger: Option[MyLogger] = None): Valuation = {
+                           logger: Option[MyLogger],
+                           scopeOperations: ScopeOperations = DEFAULT_SCOPE_OPERATIONS): Valuation = {
     val state = new Abstract0(manager, 0, 0)
-    lookupScope match {
-      case Some(lookupScope) => Valuation(Nil, state, Set(), lookupScope, logger)
-      case None => Valuation(Nil, state, Set(), _ => None, logger)
-    }
+    Valuation(Nil, state, Set(), scopeOperations, logger)
   }
 
   private def traceOrError(logger: Option[MyLogger], message: String): Unit = {

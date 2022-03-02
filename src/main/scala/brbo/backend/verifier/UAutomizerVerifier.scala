@@ -38,19 +38,19 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
           val removeFile = s"rm ${violationWitnessFile.toAbsolutePath.toString}"
           removeFile.!!
 
-          VerifierResult(VerifierStatus.FALSE_RESULT, Some(parseCounterexamplePath.extractUseResetFromCRepresentation(pathInC, programInC)))
+          VerifierResult(VerifierStatus.FALSE_RESULT, Set(parseCounterexamplePath.extractUseResetFromCRepresentation(pathInC, programInC)))
         }
         else if (outputTrimmed.endsWith("Result:TRUE")) {
-          VerifierResult(VerifierStatus.TRUE_RESULT, None)
+          VerifierResult(VerifierStatus.TRUE_RESULT, Set())
         }
         else if (outputTrimmed.endsWith("Result:UNKNOWN")) {
-          VerifierResult(VerifierStatus.UNKNOWN_RESULT, None)
+          VerifierResult(VerifierStatus.UNKNOWN_RESULT, Set())
         }
         else {
           logger.error(s"Cannot interpret results from `$toolName`:\n$outputTrimmed")
           throw new Exception
         }
-      case _ => VerifierResult(VerifierStatus.UNKNOWN_RESULT, None)
+      case _ => VerifierResult(VerifierStatus.UNKNOWN_RESULT, Set())
     }
   }
 

@@ -13,6 +13,10 @@ case class MyLogger(logger: Logger, debugMode: Boolean) {
     else logger.info(message)
   }
 
+  def debugIfModeOn(message: String): Unit = {
+    if (debugMode) logger.debug(message)
+  }
+
   def debug(message: String): Unit = logger.debug(message)
 
   def trace(message: String): Unit = logger.trace(message)

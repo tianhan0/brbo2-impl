@@ -85,54 +85,50 @@ case class Path(pathNodes: List[CFGNode]) {
 object Path {
   private val logger = MyLogger.createLogger(Path.getClass, debugMode = false)
 
-  def removeCommandsForUBCheck(path: Option[Path]): Option[Path] = {
-    path match {
-      case Some(actualPath) =>
-        val assertFunction: BrboFunction = PreDefinedFunctions.assert
-        val nodes = actualPath.pathNodes
-        var newNodes: List[CFGNode] = Nil
-        var i = 0
-        while (i < nodes.size) {
-          val node = nodes(i)
-          node.value match {
-            case command: Command =>
-              command match {
-                case BeforeFunctionCall(callee, _) =>
-                  if (callee.identifier == assertFunction.identifier) {
-                    i = i + 1
-                    val nextNode = nodes(i)
-                    logger.trace(s"nextNode: `$nextNode`")
-                    nextNode.value match {
-                      case _: Command => throw new Exception
-                      case condition: BrboExpr =>
-                        condition match {
-                          case Negation(Negation(cond, _), _) =>
-                            assert(cond.prettyPrintToC() == "cond")
-                            i = i + 2 // Directly exit
-                          case Negation(cond, _) =>
-                            assert(cond.prettyPrintToC() == "cond")
-                            i = i + 3 // Reach the error location
-                          case _ => throw new Exception
-                        }
+  def removeCommandsForUBCheck(path: Path): Path = {
+    val assertFunction: BrboFunction = PreDefinedFunctions.assert
+    val nodes = path.pathNodes
+    var newNodes: List[CFGNode] = Nil
+    var i = 0
+    while (i < nodes.size) {
+      val node = nodes(i)
+      node.value match {
+        case command: Command =>
+          command match {
+            case BeforeFunctionCall(callee, _) =>
+              if (callee.identifier == assertFunction.identifier) {
+                i = i + 1
+                val nextNode = nodes(i)
+                logger.trace(s"nextNode: `$nextNode`")
+                nextNode.value match {
+                  case _: Command => throw new Exception
+                  case condition: BrboExpr =>
+                    condition match {
+                      case Negation(Negation(cond, _), _) =>
+                        assert(cond.prettyPrintToC() == "cond")
+                        i = i + 2 // Directly exit
+                      case Negation(cond, _) =>
+                        assert(cond.prettyPrintToC() == "cond")
+                        i = i + 3 // Reach the error location
+                      case _ => throw new Exception
                     }
-                  }
-                  else {
-                    newNodes = node :: newNodes
-                    i = i + 1
-                  }
-                case _ =>
-                  newNodes = node :: newNodes
-                  i = i + 1
+                }
               }
-            case _: BrboExpr =>
+              else {
+                newNodes = node :: newNodes
+                i = i + 1
+              }
+            case _ =>
               newNodes = node :: newNodes
               i = i + 1
           }
-        }
-        logger.trace(s"Old path: $nodes")
-        logger.trace(s"New path: ${newNodes.reverse}")
-        Some(Path(newNodes.reverse))
-      case None => path
+        case _: BrboExpr =>
+          newNodes = node :: newNodes
+          i = i + 1
+      }
     }
+    logger.trace(s"Old path: $nodes")
+    logger.trace(s"New path: ${newNodes.reverse}")
+    Path(newNodes.reverse)
   }
 }

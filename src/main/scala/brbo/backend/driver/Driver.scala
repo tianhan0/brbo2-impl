@@ -58,21 +58,21 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
   def verifySelectivelyAmortize(boundAssertion: BoundAssertion, keepExploringWhenVerifierTimeout: Boolean = false): VerifierStatus = {
     val initialAbstraction = generateInitialAbstraction(afterExtractingUses)
     val result = verify(initialAbstraction, boundAssertion)
-    val counterexamplePath: Option[Path] = result.rawResult match {
+    val counterexamplePaths: Set[Path] = result.rawResult match {
       case TRUE_RESULT =>
         logger.infoOrError(s"Verifier successfully verifies the initial abstraction!")
         return TRUE_RESULT
       case FALSE_RESULT =>
         logger.infoOrError(s"Verifier fails to verify the initial abstraction!")
-        result.counterexamplePath
+        result.counterexamplePaths
       case UNKNOWN_RESULT =>
         logger.infoOrError(s"Verifier returns `$UNKNOWN_RESULT` for the initial abstraction.")
-        None
+        result.counterexamplePaths
     }
 
     // No Self-loops; No Multiple Edges; No Weighted
     val tree = new SimpleDirectedGraph[TreeNode, DefaultEdge](classOf[DefaultEdge])
-    val root = createNode(tree, parent = None, initialAbstraction, counterexamplePath, refinement = None)
+    val root = createNode(tree, parent = None, initialAbstraction, counterexamplePaths, refinement = None)
     val refiner = new Refiner(arguments)
 
     @tailrec
@@ -107,56 +107,58 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
             }
         })
       }
-      // Assume that all assert() in node.program are ub checks, so that we can safely remove all assert() from the cex.
-      Path.removeCommandsForUBCheck(result.counterexamplePath) match {
-        case Some(pathWithoutUBChecks) =>
-          // Refine the current node, possibly once again, based on the same counterexample
-          // When a node is visited for a second (or more) time, then it must be caused by backtracking, which
-          // implies that all nodes in one of its subtree have failed
-          refiner.refine(node.program, pathWithoutUBChecks, boundAssertion, avoidRefinements) match {
-            case (Some(refinedProgram), Some(refinement)) =>
-              val result = verify(refinedProgram, boundAssertion)
-              val exploreRefinedProgram: NodeStatus = result.rawResult match {
-                case TRUE_RESULT | FALSE_RESULT => EXPLORING
-                case UNKNOWN_RESULT => if (keepExploringWhenVerifierTimeout) EXPLORING else SHOULD_NOT_EXPLORE
-              }
-              val newChildNode = createNode(tree, parent = Some(node), refinedProgram, Some(pathWithoutUBChecks), Some(refinement))
-              newChildNode.setNodeStatus(exploreRefinedProgram)
+      if (result.counterexamplePaths.isEmpty) {
+        logger.infoOrError(s"Will backtrack because no counterexample is provided for the current node.")
+        getParentNode(tree, node) match {
+          case Some(parent) => helper(parent)
+          case None =>
+            logger.infoOrError(s"No parent node to backtrack to.")
+            UNKNOWN_RESULT
+        }
+      }
+      else {
+        // Assume that all assert() in node.program are ub checks, so that we can safely remove all assert() from the cex.
+        // TODO: Should make use of all counterexample paths
+        val pathWithoutUBChecks = Path.removeCommandsForUBCheck(result.counterexamplePaths.head)
+        // Refine the current node, possibly once again, based on the same counterexample
+        // When a node is visited for a second (or more) time, then it must be caused by backtracking, which
+        // implies that all nodes in one of its subtree have failed
+        refiner.refine(node.program, pathWithoutUBChecks, boundAssertion, avoidRefinements) match {
+          case (Some(refinedProgram), Some(refinement)) =>
+            val result = verify(refinedProgram, boundAssertion)
+            val exploreRefinedProgram: NodeStatus = result.rawResult match {
+              case TRUE_RESULT | FALSE_RESULT => EXPLORING
+              case UNKNOWN_RESULT => if (keepExploringWhenVerifierTimeout) EXPLORING else SHOULD_NOT_EXPLORE
+            }
+            val newChildNode = createNode(tree, parent = Some(node), refinedProgram, Set(pathWithoutUBChecks), Some(refinement))
+            newChildNode.setNodeStatus(exploreRefinedProgram)
 
-              result.rawResult match {
-                case TRUE_RESULT =>
-                  logger.infoOrError(s"Successfully verified the child of the current node!")
-                  TRUE_RESULT
-                case FALSE_RESULT =>
+            result.rawResult match {
+              case TRUE_RESULT =>
+                logger.infoOrError(s"Successfully verified the child of the current node!")
+                TRUE_RESULT
+              case FALSE_RESULT =>
+                logger.infoOrError(s"Explore child nodes of the child of the current node (which has failed).")
+                helper(newChildNode)
+              case UNKNOWN_RESULT =>
+                if (keepExploringWhenVerifierTimeout) {
                   logger.infoOrError(s"Explore child nodes of the child of the current node (which has failed).")
                   helper(newChildNode)
-                case UNKNOWN_RESULT =>
-                  if (keepExploringWhenVerifierTimeout) {
-                    logger.infoOrError(s"Explore child nodes of the child of the current node (which has failed).")
-                    helper(newChildNode)
-                  }
-                  else {
-                    logger.infoOrError(s"Explore a new child node of the current node (because the verification returns unknown) by re-refining the current node.")
-                    helper(node)
-                  }
-              }
-            case (None, None) =>
-              getParentNode(tree, node) match {
-                case Some(parent) => helper(parent)
-                case None =>
-                  logger.infoOrError(s"No parent node to backtrack to.")
-                  UNKNOWN_RESULT
-              }
-            case _ => throw new Exception
-          }
-        case None =>
-          logger.infoOrError(s"Will backtrack because no counterexample is provided for the current node.")
-          getParentNode(tree, node) match {
-            case Some(parent) => helper(parent)
-            case None =>
-              logger.infoOrError(s"No parent node to backtrack to.")
-              UNKNOWN_RESULT
-          }
+                }
+                else {
+                  logger.infoOrError(s"Explore a new child node of the current node (because the verification returns unknown) by re-refining the current node.")
+                  helper(node)
+                }
+            }
+          case (None, None) =>
+            getParentNode(tree, node) match {
+              case Some(parent) => helper(parent)
+              case None =>
+                logger.infoOrError(s"No parent node to backtrack to.")
+                UNKNOWN_RESULT
+            }
+          case _ => throw new Exception
+        }
       }
     }
 
@@ -277,9 +279,9 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
   }
 
   private def createNode(tree: SimpleDirectedGraph[TreeNode, DefaultEdge], parent: Option[TreeNode],
-                         program: BrboProgram, counterexample: Option[Path], refinement: Option[Refinement]): TreeNode = {
+                         program: BrboProgram, counterexamples: Set[Path], refinement: Option[Refinement]): TreeNode = {
     assert(parent.isEmpty == refinement.isEmpty)
-    val node = TreeNode(program, counterexample, refinement, tree.vertexSet().size())
+    val node = TreeNode(program, counterexamples, refinement, tree.vertexSet().size())
     tree.addVertex(node)
     parent match {
       case Some(value) =>

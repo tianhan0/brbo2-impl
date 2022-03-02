@@ -104,10 +104,12 @@ object ControlFlowGraph {
           nodeValue match {
             case command: Command =>
               command match {
-                case Return(_, _) | Break(_) | Continue(_) => false
+                case Return(_, _) | Break(_) | Continue(_) =>
+                  false // Not add edge only for commands that do not respect the normal control flow
                 case LabeledCommand(_, command2, _) => shouldAddEdge(command2)
                 case VariableDeclaration(_, _, _) | Assignment(_, _, _) | Skip(_) | FunctionCall(_, _) => true
                 case _: CFGOnly => true
+                case _: GhostCommand => true
               }
             case _: BrboExpr => true
           }
@@ -135,6 +137,7 @@ object ControlFlowGraph {
               case Continue(_) => addEdge(node, jumpTarget.immediateLoopCondition.get)
               case LabeledCommand(_, command2, _) => addJumpEdges(command2)
               case _: CFGOnly => throw new Exception(s"`$command` is only used in Control Flow Graphs!")
+              case _: GhostCommand =>
             }
           }
 

@@ -351,12 +351,31 @@ object ControlFlowGraphUnitTest {
                            |  32 -> 31 [ label="0.0" ];
                            |}""".stripMargin
 
+    val test06 = {
+      val i = Identifier("i", INT)
+      val variableDeclaration = VariableDeclaration(i, Number(0))
+      val reset: Reset = Reset(1, LessThanOrEqualTo(i, Number(0)))
+      val use: Use = Use(Some(1), i, GreaterThan(i, Number(5)))
+      val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, reset, use)), Set())
+      BrboProgram("test06", main, Nil, Nil)
+    }
+    val test06Expected = """strict digraph G {
+                           |  1 [ shape=oval label="(1) [Function Exit]" ];
+                           |  2 [ shape=rectangle label="(2) int i = 0;" ];
+                           |  3 [ shape=rectangle label="(3) if (i <= 0) reset R1" ];
+                           |  4 [ shape=rectangle label="(4) if (i > 5) use R1 i" ];
+                           |  2 -> 3 [ label="0.0" ];
+                           |  3 -> 4 [ label="0.0" ];
+                           |  4 -> 1 [ label="0.0" ];
+                           |}""".stripMargin
+
     List[TestCase](
       TestCase("Test `break`", test01, test01Expected),
       TestCase("Test `continue`", test02, test02Expected),
       TestCase("Test `function calls (There must be no edges for function calls)`", test03, test03Expected),
       TestCase("Test `ite`", test04, test04Expected),
       TestCase("Test nested loop", test05, test05Expected),
+      TestCase("Test ghost commands", test06, test06Expected),
     )
   }
 }

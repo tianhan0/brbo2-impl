@@ -57,7 +57,7 @@ class CommandLineArguments {
   private var assertionTag: String = DEFAULT_ASSERTION_TAG
 
   @Option(name = "--abstract-domain", aliases = Array("--dom"), required = false,
-    usage = "The abstract domain to use in the verifier. Choose from: `OCTAGON`, `POLKA-STRICT`, `POLKA-NONSTRICT` (case-insensitive)")
+    usage = "The abstract domain to use in the verifier. Choose from: `OCTAGON`, `POLKA_STRICT`, `POLKA_NONSTRICT` (case-insensitive)")
   private var abstractDomain: String = DEFAULT_ABSTRACT_DOMAIN
 
   @Option(name = "--max-path-length", aliases = Array("--len"), required = false,
@@ -95,11 +95,11 @@ class CommandLineArguments {
   def getAssertionIndex: String = assertionTag
 
   def getAbstractDomain: AbstractDomainName = {
-    abstractDomain.toLowerCase() match {
-      case "octagon" => OCTAGON
-      case "polka-strict" => POLKA_STRICT
-      case "polka-nonstrict" => POLKA_NONSTRICT
-    }
+    val upperCase = abstractDomain.toUpperCase()
+    if (upperCase == OCTAGON.toString) OCTAGON
+    else if (upperCase == POLKA_STRICT.toString) POLKA_STRICT
+    else if (upperCase == POLKA_NONSTRICT.toString) POLKA_NONSTRICT
+    else throw new Exception
   }
 
   def getMaxPathLength: Int = maxPathLength
@@ -107,7 +107,7 @@ class CommandLineArguments {
   private var initialized = false
 
   def initialize(amortizationMode: AmortizationMode, debugMode: Boolean, directoryToAnalyze: String,
-                 skipSanityCheck: Boolean, printVerifierInputs: Boolean, verifierTimeout: Int,
+                 printVerifierInputs: Boolean, verifierTimeout: Int,
                  printCFG: Boolean, generateSynthetic: Int, maxGroups: Int, verifierDirectory: String,
                  relationalPredicates: Boolean, maxIterations: Int, assertionTag: String,
                  abstractDomain: String, maxPathLength: Int): Unit = {
@@ -182,7 +182,7 @@ object CommandLineArguments {
 
   val DEFAULT_ARGUMENTS: CommandLineArguments = {
     val arguments = new CommandLineArguments
-    arguments.initialize(TEST_MODE, debugMode = false, "", skipSanityCheck = false,
+    arguments.initialize(TEST_MODE, debugMode = false, "",
       printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
       generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
@@ -193,7 +193,7 @@ object CommandLineArguments {
 
   val DEBUG_MODE_ARGUMENTS: CommandLineArguments = {
     val arguments = new CommandLineArguments
-    arguments.initialize(TEST_MODE, debugMode = true, "", skipSanityCheck = false,
+    arguments.initialize(TEST_MODE, debugMode = true, "",
       printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
       generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,

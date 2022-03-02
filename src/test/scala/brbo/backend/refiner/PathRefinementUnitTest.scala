@@ -15,7 +15,6 @@ class PathRefinementUnitTest extends AnyFlatSpec {
       TEST_MODE,
       debugMode = false,
       "",
-      skipSanityCheck = false,
       printVerifierInputs = false,
       verifierTimeout = 20,
       printCFG = false,

@@ -22,7 +22,7 @@ class BrboExprUnitTest extends AnyFlatSpec {
   private val valuation = {
     val manager = new Octagon()
     val logger = Some(MyLogger.createLogger(classOf[BrboExprUnitTest], debugMode = false))
-    val valuation = AbstractMachine.createEmptyValuation(manager, None, logger)
+    val valuation = AbstractMachine.createEmptyValuation(manager, logger)
     valuation.createUninitializedVariable(Variable(x, None))
       .createUninitializedVariable(Variable(y, None))
       .createUninitializedVariable(Variable(z, None))
