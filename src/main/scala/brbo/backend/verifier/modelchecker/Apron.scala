@@ -152,31 +152,45 @@ object Apron {
     }
   }
 
-  def constraintToZ3(constraint: Tcons0, solver: Z3Solver, variables: List[Identifier]): AST = {
-    val node = expressionToZ3(constraint.toTexpr0Node, solver, variables)
+  def constraintToZ3(constraint: Tcons0, solver: Z3Solver, variables: List[Identifier], toInt: Boolean): AST = {
+    val node = expressionToZ3(constraint.toTexpr0Node, solver, variables, toInt)
     constraint.kind match {
-      case Tcons0.EQ => solver.mkEq(node, solver.mkDoubleVal(0))
-      case Tcons0.SUPEQ => solver.mkFPGe(node, solver.mkDoubleVal(0))
-      case Tcons0.SUP => solver.mkFPGt(node, solver.mkDoubleVal(0))
+      case Tcons0.EQ =>
+        if (!toInt) solver.mkEq(node, solver.mkDoubleVal(0))
+        else solver.mkEq(node, solver.mkIntVal(0))
+      case Tcons0.SUPEQ =>
+        if (!toInt) solver.mkFPGe(node, solver.mkDoubleVal(0))
+        else solver.mkGe(node, solver.mkIntVal(0))
+      case Tcons0.SUP =>
+        if (!toInt) solver.mkFPGt(node, solver.mkDoubleVal(0))
+        else solver.mkGt(node, solver.mkIntVal(0))
       case Tcons0.EQMOD => throw new Exception
-      case Tcons0.DISEQ => solver.mkNe(node, solver.mkDoubleVal(0))
+      case Tcons0.DISEQ =>
+        if (!toInt) solver.mkNe(node, solver.mkDoubleVal(0))
+        else solver.mkNe(node, solver.mkIntVal(0))
     }
   }
 
-  def expressionToZ3(node: Texpr0Node, solver: Z3Solver, variables: List[Identifier]): AST = {
+  def expressionToZ3(node: Texpr0Node, solver: Z3Solver, variables: List[Identifier], toInt: Boolean): AST = {
     node match {
       case node: Texpr0BinNode =>
         val left = node.lArg
         val right = node.rArg
+        val leftExpr = expressionToZ3(left, solver, variables, toInt)
+        val rightExpr = expressionToZ3(right, solver, variables, toInt)
         node.op match {
           case Texpr0BinNode.OP_ADD =>
-            solver.mkFPAdd(expressionToZ3(left, solver, variables), expressionToZ3(right, solver, variables))
+            if (!toInt) solver.mkFPAdd(leftExpr, rightExpr)
+            else solver.mkAdd(leftExpr, rightExpr)
           case Texpr0BinNode.OP_SUB =>
-            solver.mkFPSub(expressionToZ3(left, solver, variables), expressionToZ3(right, solver, variables))
+            if (!toInt) solver.mkFPSub(leftExpr, rightExpr)
+            else solver.mkSub(leftExpr, rightExpr)
           case Texpr0BinNode.OP_MUL =>
-            solver.mkFPMul(expressionToZ3(left, solver, variables), expressionToZ3(right, solver, variables))
+            if (!toInt) solver.mkFPMul(leftExpr, rightExpr)
+            else solver.mkMul(leftExpr, rightExpr)
           case Texpr0BinNode.OP_DIV =>
-            solver.mkFPDiv(expressionToZ3(left, solver, variables), expressionToZ3(right, solver, variables))
+            if (!toInt) solver.mkFPDiv(leftExpr, rightExpr)
+            else solver.mkDiv(leftExpr, rightExpr)
           case _ => throw new Exception
         }
       case node: Texpr0CstNode =>
@@ -192,19 +206,31 @@ object Apron {
           array.head
         }
         assert(!java.lang.Double.isInfinite(upper))
-        solver.mkDoubleVal((lower + upper) / 2)
+        val average = (lower + upper) / 2
+        if (!toInt) solver.mkDoubleVal(average)
+        else {
+          assert(average == average.toInt, s"Expecting the average between `$lower` and `$upper` to be an integer")
+          solver.mkIntVal(average.toInt)
+        }
       case node: Texpr0DimNode =>
         // TODO: This resolution from dimensions to variable names is wrong, because there may exist
         //  temporary variables that cannot be found in `variables`.
         val variable = variables(node.dim)
         variable.typ match {
-          case brbo.common.BrboType.INT => solver.mkDoubleVar(variable.name)
-          case brbo.common.BrboType.BOOL => solver.mkDoubleVar(variable.name) // Apron only accepts numerals
+          case brbo.common.BrboType.INT =>
+            if (!toInt) solver.mkDoubleVar(variable.name)
+            else solver.mkIntVar(variable.name)
+          case brbo.common.BrboType.BOOL =>
+            if (!toInt) solver.mkDoubleVar(variable.name) // Apron only accepts numerals
+            else solver.mkIntVar(variable.name)
           case _ => throw new Exception
         }
       case node: Texpr0UnNode =>
         node.op match {
-          case Texpr0UnNode.OP_NEG => solver.mkFPSub(solver.mkDoubleVal(0), expressionToZ3(node.getArgument, solver, variables))
+          case Texpr0UnNode.OP_NEG =>
+            val expr = expressionToZ3(node.getArgument, solver, variables, toInt)
+            if (!toInt) solver.mkFPSub(solver.mkDoubleVal(0), expr)
+            else solver.mkSub(solver.mkIntVal(0), expr)
           case _ => throw new Exception
         }
       case _ => throw new Exception

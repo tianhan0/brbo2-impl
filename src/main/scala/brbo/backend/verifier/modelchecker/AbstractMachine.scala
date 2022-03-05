@@ -8,7 +8,8 @@ import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.backend.verifier.modelchecker.Apron._
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
-import brbo.common.{CommandLineArguments, MyLogger}
+import brbo.common.{CommandLineArguments, MyLogger, Z3Solver}
+import com.microsoft.z3.AST
 import org.apache.logging.log4j.LogManager
 
 import scala.annotation.tailrec
@@ -112,7 +113,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     }
     logger.traceOrError(s"Explored `${exploredPaths.size}` paths")
     logger.traceOrError(s"\n${exploredPaths.map(p => p.map(n => n.simplifiedString).reverse).reverse.mkString("  \n")}")
-    val paths = counterexamplePaths.map(p => Path(p))
+    val paths = counterexamplePaths.map(p => Path(p.reverse))
     if (refuted) VerifierResult(VerifierStatus.FALSE_RESULT, paths)
     else {
       if (stoppedEarly) VerifierResult(VerifierStatus.UNKNOWN_RESULT, paths)
@@ -318,13 +319,13 @@ object AbstractMachine {
    *
    * @param variables       All variables that can be looked up or re-assigned in the current program state
    * @param apronState      The abstraction of the current program state
-   * @param allVariables    All variables that have been declared in apronState
+   * @param allVariables    All variables that have been declared in apronState, in the reversed declaration order
    * @param scopeOperations Functions to manipulate scopes
    * @param logger          The logger
    */
   case class Valuation(variables: List[Variable],
                        apronState: Abstract0,
-                       allVariables: Set[Variable],
+                       allVariables: List[Variable],
                        scopeOperations: ScopeOperations,
                        logger: Option[MyLogger] = None) extends ToShortString {
     assert(apronState != null)
@@ -335,6 +336,14 @@ object AbstractMachine {
       case None => false
     }
     val variablesNoScope: List[Identifier] = variables.map(v => v.identifier)
+    val allVariablesReversedNoScope: List[Identifier] = allVariables.map(v => v.identifier).reverse
+    private val solver = new Z3Solver
+    private val stateFloat = apronState.toTcons(manager).map({
+      constraint => Apron.constraintToZ3(constraint, solver, allVariablesReversedNoScope, toInt = false)
+    })
+    private val stateInt = apronState.toTcons(manager).map({
+      constraint => Apron.constraintToZ3(constraint, solver, allVariablesReversedNoScope, toInt = true)
+    })
 
     def indexOfVariableThisScope(variable: Variable): Int =
       variables.indexWhere(v => v.identifier.sameAs(variable.identifier) && v.scope == variable.scope)
@@ -389,7 +398,7 @@ object AbstractMachine {
         }
       }
       val newApronState = apronState.addDimensionsCopy(manager, dimensionChange, initialize)
-      Valuation(variables :+ variable, newApronState, allVariables + variable, scopeOperations, logger)
+      Valuation(variables :+ variable, newApronState, variable :: allVariables, scopeOperations, logger)
     }
 
     /*def forgetVariablesInScope(scope: Statement): Valuation = {
@@ -453,19 +462,35 @@ object AbstractMachine {
         case constraint: Constraint => newValuation.satisfy(constraint)
         case _ => throw new Exception
       }
-      // Seems to not work correctly if translating to Z3
-      /*val solver = new Z3Solver
-      val state = apronState.toTcons(manager).map({
-        constraint => Apron.constraintToZ3(constraint, solver, variablesNoScope)
-      })
+    }
+
+    def satisfyWithZ3(constraint: Constraint, toInt: Boolean): Boolean = {
+      constraint match {
+        case Apron.Conjunction(left, right) => satisfyWithZ3(left, toInt) && satisfyWithZ3(right, toInt)
+        case Apron.Disjunction(left, right) => satisfyWithZ3(left, toInt) || satisfyWithZ3(right, toInt)
+        case Singleton(constraint) => satisfyWithZ3(constraint, toInt)
+        case _ => throw new Exception
+      }
+    }
+
+    def satisfyWithZ3(constraint: Tcons0, toInt: Boolean): Boolean = {
+      val constraintZ3 = Apron.constraintToZ3(constraint, solver, allVariablesReversedNoScope, toInt)
+      satisfyWithZ3(constraintZ3, toInt)
+    }
+
+    def satisfyWithZ3(constraint: BrboExpr, toInt: Boolean): Boolean = {
       val constraintZ3 = constraint.toZ3AST(solver)
+      satisfyWithZ3(constraintZ3, toInt)
+    }
+
+    private def satisfyWithZ3(ast: AST, toInt: Boolean): Boolean = {
       val query = {
         val variablesZ3 = allVariables.map(v => solver.mkDoubleVar(v.identifier.name))
-        solver.mkForall(variablesZ3, solver.mkImplies(solver.mkAnd(state: _*), constraintZ3))
+        solver.mkForall(variablesZ3, solver.mkImplies(solver.mkAnd((if (!toInt) stateFloat else stateInt): _*), ast))
       }
-      // logger.get.error(s"query: $query")
-      traceOrError(logger, s"query: $query")
-      solver.checkAssertionPushPop(query, debugMode)*/
+      // error(logger, s"state: ${stateFloat.mkString("Array(", ", ", ")")}")
+      // error(logger, s"ast: $ast")
+      solver.checkAssertionPushPop(query, debugMode)
     }
 
     def imposeConstraint(constraint: Constraint): Valuation = {
@@ -540,7 +565,7 @@ object AbstractMachine {
                            logger: Option[MyLogger],
                            scopeOperations: ScopeOperations = DEFAULT_SCOPE_OPERATIONS): Valuation = {
     val state = new Abstract0(manager, 0, 0)
-    Valuation(Nil, state, Set(), scopeOperations, logger)
+    Valuation(Nil, state, Nil, scopeOperations, logger)
   }
 
   private def traceOrError(logger: Option[MyLogger], message: String): Unit = {

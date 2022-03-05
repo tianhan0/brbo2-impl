@@ -237,6 +237,27 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     StringCompare.compareLiteral(v2.include(v3).toString, "false")
   }
 
+  "Check the satisfaction of polynomial constraints for valuations" should "be correct" in {
+    val v1Polka = emptyValuationStrictPolka(debug = false)
+      .createUninitializedVariable(xVar).createUninitializedVariable(zVar).createUninitializedVariable(aVar)
+    val xApronVarPolka = v1Polka.apronVariableAnyScope(xVar)
+    val zApronVarPolka = v1Polka.apronVariableAnyScope(zVar)
+    val aApronVarPolka = v1Polka.apronVariableAnyScope(aVar)
+
+    val v2Polka = v1Polka.imposeConstraint(Singleton(Apron.mkEq(xApronVarPolka, zApronVarPolka)))
+      .imposeConstraint(Singleton(Apron.mkGtZero(aApronVarPolka)))
+      .imposeConstraint(Singleton(Apron.mkGtZero(xApronVarPolka)))
+    val multiplication = Apron.mkMul(aApronVarPolka, zApronVarPolka)
+    val constraint = Apron.mkLe(xApronVarPolka, multiplication)
+    StringCompare.ignoreWhitespaces(v2Polka.toString, """Variables:
+                                                        |  Variable(x,None)
+                                                        |  Variable(z,None)
+                                                        |  Variable(a,None)
+                                                        |ApronState: {  -1x0 +1x1 = 0;  1x2 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin)
+    StringCompare.ignoreWhitespaces(v2Polka.satisfy(constraint).toString, "false", "Check with Apron")
+    StringCompare.ignoreWhitespaces(v2Polka.satisfyWithZ3(constraint, toInt = true).toString, "true", "Check with Z3")
+  }
+
   "Check the satisfaction of constraints for valuations" should "be correct" in {
     // val xFloat = Identifier("x", BrboType.FLOAT)
     // val xVar = Variable(xFloat, None)
@@ -574,6 +595,13 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     StringCompare.compareLiteral(scopeOperations.isStrictSubScope(scope1, scope2).toString, "true", "isStrictSubScope: true 1")
     StringCompare.compareLiteral(scopeOperations.isStrictSubScope(scope1, scope3).toString, "true", "isStrictSubScope: true 2")
     StringCompare.compareLiteral(scopeOperations.isStrictSubScope(scope1, scope1).toString, "false", "isStrictSubScope: false")
+  }
+
+  "Indices of variables in Apron states" should "be expected" in {
+    val v1 = emptyValuationStrictPolka(debug = false)
+    val v2 = v1.createUninitializedVariable(xVar).createInitializedVariable(yVar)
+      .createUninitializedVariable(zVar).createInitializedVariable(aVar)
+    StringCompare.ignoreWhitespaces(v2.apronState.toString(), """{  1x3 = 0;  1x1 = 0 }""")
   }
 
   // Initialize r, r*, r#
