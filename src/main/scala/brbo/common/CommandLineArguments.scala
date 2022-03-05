@@ -64,6 +64,10 @@ class CommandLineArguments {
     usage = "The maximum length of a single path that the verifier will explore.")
   private var maxPathLength: Int = DEFAULT_MAX_PATH_LENGTH
 
+  @Option(name = "--use-z3", aliases = Array("--z3"), required = false,
+    usage = "Check the satisfiability of abstract states (represented in Apron) with Z3, instead of using Apron.")
+  private var checkWithZ3: Boolean = false
+
   def getAmortizationMode: AmortizationMode = {
     amortizationMode.toLowerCase() match {
       case "no" => NO_AMORTIZE
@@ -104,13 +108,15 @@ class CommandLineArguments {
 
   def getMaxPathLength: Int = maxPathLength
 
+  def getCheckWithZ3: Boolean = checkWithZ3
+
   private var initialized = false
 
   def initialize(amortizationMode: AmortizationMode, debugMode: Boolean, directoryToAnalyze: String,
                  printVerifierInputs: Boolean, verifierTimeout: Int,
                  printCFG: Boolean, generateSynthetic: Int, maxGroups: Int, verifierDirectory: String,
                  relationalPredicates: Boolean, maxIterations: Int, assertionTag: String,
-                 abstractDomain: String, maxPathLength: Int): Unit = {
+                 abstractDomain: String, maxPathLength: Int, checkWithZ3: Boolean): Unit = {
     if (initialized) throw new Exception(s"Already initialized")
     initialized = true
     this.amortizationMode = amortizationModeToShortString(amortizationMode)
@@ -126,6 +132,7 @@ class CommandLineArguments {
     this.assertionTag = assertionTag
     this.abstractDomain = abstractDomain
     this.maxPathLength = maxPathLength
+    this.checkWithZ3 = checkWithZ3
   }
 
   override def toString: String = {
@@ -142,7 +149,8 @@ class CommandLineArguments {
       s"Max number of refinement iterations: `$maxIterations`",
       s"The index of the assertion to verify: `$assertionTag`",
       s"The abstract domain to use: `$getAbstractDomain`",
-      s"The maximum length of a single path that the verifier will explore: `$maxPathLength`"
+      s"The maximum length of a single path that the verifier will explore: `$maxPathLength`",
+      s"Check the satisfiability of abstract states with Z3? `$checkWithZ3`"
     )
     strings.mkString("\n")
   }
@@ -151,7 +159,8 @@ class CommandLineArguments {
     val amortizationMode = amortizationModeToShortString(getAmortizationMode)
     val timeoutString = if (verifierTimeout < 0) "noTimeout" else s"${verifierTimeout}s"
     val assertionIndexString = s"assert-$assertionTag"
-    s"""$amortizationMode-$timeoutString-$assertionIndexString-$abstractDomain"""
+    val checkWithZ3String = if (checkWithZ3) "z3" else ""
+    s"""$amortizationMode-$timeoutString-$assertionIndexString-$abstractDomain-$checkWithZ3String"""
   }
 }
 
@@ -187,7 +196,7 @@ object CommandLineArguments {
       generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
-      abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH)
+      abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH, checkWithZ3 = false)
     arguments
   }
 
@@ -198,7 +207,7 @@ object CommandLineArguments {
       generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
-      abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH)
+      abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH, checkWithZ3 = false)
     arguments
   }
 }

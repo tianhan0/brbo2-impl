@@ -26,7 +26,8 @@ class DriverUnitTest extends AnyFlatSpec {
     maxIterations = DEFAULT_MAX_ITERATIONS,
     assertionTag = DEFAULT_ASSERTION_TAG,
     abstractDomain = DEFAULT_ABSTRACT_DOMAIN,
-    maxPathLength = DEFAULT_MAX_PATH_LENGTH
+    maxPathLength = DEFAULT_MAX_PATH_LENGTH,
+    checkWithZ3 = false,
   )
 
   "Driver" should "correctly verify with selective amortization" in {

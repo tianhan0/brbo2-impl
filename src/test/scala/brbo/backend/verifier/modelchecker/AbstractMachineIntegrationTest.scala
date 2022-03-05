@@ -26,24 +26,26 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
   private val program: BrboProgram = BrboProgram("Test program", mainFunction)
 
   private val maxIterations = 100
+  private val checkWithZ3 = true
+  private val debugMode = false
   private val octagonArgument: CommandLineArguments = {
     val arguments = new CommandLineArguments
-    arguments.initialize(TEST_MODE, debugMode = true, "",
+    arguments.initialize(TEST_MODE, debugMode, "",
       printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
       generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false, maxIterations, assertionTag = DEFAULT_ASSERTION_TAG,
-      abstractDomain = OCTAGON.toString, maxPathLength = DEFAULT_MAX_PATH_LENGTH)
+      abstractDomain = OCTAGON.toString, maxPathLength = DEFAULT_MAX_PATH_LENGTH, checkWithZ3)
     arguments
   }
   private val polkaArgument: CommandLineArguments = {
     val arguments = new CommandLineArguments
-    arguments.initialize(TEST_MODE, debugMode = false, "",
+    arguments.initialize(TEST_MODE, debugMode, "",
       printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
       generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false, maxIterations, assertionTag = DEFAULT_ASSERTION_TAG,
-      abstractDomain = POLKA_STRICT.toString, maxPathLength = DEFAULT_MAX_PATH_LENGTH)
+      abstractDomain = POLKA_STRICT.toString, maxPathLength = DEFAULT_MAX_PATH_LENGTH, checkWithZ3)
     arguments
   }
 
@@ -51,15 +53,7 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
     val abstractMachine = new AbstractMachine(program, polkaArgument)
     val assertion = LessThanOrEqualTo(reset.resourceVariable, Multiplication(n, a))
     val result = abstractMachine.verify(assertion)
-    StringCompare.ignoreWhitespaces(result.toString, """VerifierResult(FALSE_RESULT,Set(Path:
-                                                       |  [000] (2) int C1 = -1; [Function `main`]
-                                                       |  [001] (3) int R1 = 0; [Function `main`]
-                                                       |  [002] (4) int S1 = 0; [Function `main`]
-                                                       |  [003] (5) assume(a > 0); [Function `main`]
-                                                       |  [004] (6) int i = 0; [Function `main`]
-                                                       |  [005] (7) (i < n) [Function `main`]
-                                                       |  [006] (9) if (true) reset R1 [Function `main`]
-                                                       |  [007] (10) if (n >= 0) use R1 a [Function `main`]))""".stripMargin)
+    StringCompare.ignoreWhitespaces(result.toString, """VerifierResult(TRUE_RESULT,Set())""".stripMargin)
   }
 }
 

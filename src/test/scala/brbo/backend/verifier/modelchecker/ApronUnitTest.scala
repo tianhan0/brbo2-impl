@@ -17,7 +17,7 @@ class ApronUnitTest extends AnyFlatSpec {
     })
   }
 
-  "Translating expressions to Z3 (integer constraints)" should "succeed" in {
+  "Translating expressions to Z3 (integer constraints)" should "be correct" in {
     expressionTestsToInt.foreach({
       test =>
         val solver = new Z3Solver
@@ -35,7 +35,7 @@ class ApronUnitTest extends AnyFlatSpec {
     })
   }
 
-  "Translating constraints to Z3 (integer constraints)" should "succeed" in {
+  "Translating constraints to Z3 (integer constraints)" should "be correct" in {
     constraintTestToInt.foreach({
       test =>
         val solver = new Z3Solver
@@ -49,8 +49,8 @@ object ApronUnitTest {
   private val x = Apron.mkVar(index = 0)
   private val y = Apron.mkVar(index = 1)
   private val number1 = Apron.mkDoubleVal(1)
-  private val number2 = Apron.mkDoubleVal(2.1)
-  private val number3 = Apron.mkDoubleVal(-3.5)
+  private val number2 = Apron.mkDoubleVal(2)
+  private val number3 = Apron.mkDoubleVal(-3)
   private val variables = List(
     Identifier("x", BrboType.INT),
     Identifier("y", BrboType.INT)
@@ -67,22 +67,24 @@ object ApronUnitTest {
       TestCase("TestVarX", x, "x"),
       TestCase("TestVarY", y, "y"),
       TestCase("TestVal1", number1, "1"),
-      TestCase("TestVal2", number2, "(/ 4728779608739021 2251799813685248)"),
-      TestCase("TestVal3", number3, "(/ (- 7) 2)"),
+      TestCase("TestVal2", number2, "2"),
+      TestCase("TestVal3", number3, "(- 3)"),
       TestCase("TestAdd", testAdd, """(fp.add roundNearestTiesToEven
                                      |        x
                                      |        (fp.add roundNearestTiesToEven y (fp #b0 #b01111111111 #x0000000000000)))""".stripMargin),
       TestCase("TestSub", testSub, """(fp.sub roundNearestTiesToEven
                                      |        x
-                                     |        (fp.sub roundNearestTiesToEven y (fp #b0 #b10000000000 #x0cccccccccccd)))""".stripMargin),
+                                     |        (fp.sub roundNearestTiesToEven y (fp #b0 #b10000000000 #x0000000000000)))""".stripMargin),
       TestCase("TestMul", testMul, """(fp.mul roundNearestTiesToEven
                                      |        x
-                                     |        (fp.mul roundNearestTiesToEven y (fp #b1 #b10000000000 #xc000000000000)))""".stripMargin),
+                                     |        (fp.mul roundNearestTiesToEven y (fp #b1 #b10000000000 #x8000000000000)))""".stripMargin),
       TestCase("TestDiv", testDiv, """(fp.div roundNearestTiesToEven
                                      |        x
                                      |        (fp.div roundNearestTiesToEven y (fp #b0 #b01111111111 #x0000000000000)))""".stripMargin),
       TestCase("TestNegative1", testNegative1, "(fp.sub roundNearestTiesToEven (_ +zero 11 53) x)"),
-      TestCase("TestNegative2", testNegative2, "(fp.sub roundNearestTiesToEven\n        (_ +zero 11 53)\n        (fp #b0 #b10000000000 #x0cccccccccccd))"),
+      TestCase("TestNegative2", testNegative2, """(fp.sub roundNearestTiesToEven
+                                                 |        (_ +zero 11 53)
+                                                 |        (fp #b0 #b10000000000 #x0000000000000))""".stripMargin),
     )
   }
 
@@ -120,30 +122,30 @@ object ApronUnitTest {
                                |                        (fp #b0 #b01111111111 #x0000000000000)))
                                |        (_ +zero 11 53))""".stripMargin),
       TestCase("TestGtZero", gtz, """(fp.gt (fp.sub roundNearestTiesToEven
-                               |               x
-                               |               (fp.sub roundNearestTiesToEven
-                               |                       y
-                               |                       (fp #b0 #b10000000000 #x0cccccccccccd)))
-                               |       (_ +zero 11 53))""".stripMargin),
+                                    |               x
+                                    |               (fp.sub roundNearestTiesToEven
+                                    |                       y
+                                    |                       (fp #b0 #b10000000000 #x0000000000000)))
+                                    |       (_ +zero 11 53))""".stripMargin),
       TestCase("TestEqZero", eqz, """(= (fp.mul roundNearestTiesToEven
-                               |           x
-                               |           (fp.mul roundNearestTiesToEven
-                               |                   y
-                               |                   (fp #b1 #b10000000000 #xc000000000000)))
-                               |   (_ +zero 11 53))""".stripMargin),
+                                    |           x
+                                    |           (fp.mul roundNearestTiesToEven
+                                    |                   y
+                                    |                   (fp #b1 #b10000000000 #x8000000000000)))
+                                    |   (_ +zero 11 53))""".stripMargin),
       TestCase("TestNeZero", nez, """(not (= (fp.div roundNearestTiesToEven
                                |                x
                                |                (fp.div roundNearestTiesToEven
                                |                        y
                                |                        (fp #b0 #b01111111111 #x0000000000000)))
                                |        (_ +zero 11 53)))""".stripMargin),
-      TestCase("TestGe", ge, """(fp.geq (fp.sub roundNearestTiesToEven x (fp #b0 #b10000000000 #x0cccccccccccd))
+      TestCase("TestGe", ge, """(fp.geq (fp.sub roundNearestTiesToEven x (fp #b0 #b10000000000 #x0000000000000))
                                |        (_ +zero 11 53))""".stripMargin),
-      TestCase("TestGt", gt, """(fp.gt (fp.sub roundNearestTiesToEven x (fp #b0 #b10000000000 #x0cccccccccccd))
+      TestCase("TestGt", gt, """(fp.gt (fp.sub roundNearestTiesToEven x (fp #b0 #b10000000000 #x0000000000000))
                                |       (_ +zero 11 53))""".stripMargin),
-      TestCase("TestLe", le, """(fp.geq (fp.sub roundNearestTiesToEven (fp #b0 #b10000000000 #x0cccccccccccd) x)
+      TestCase("TestLe", le, """(fp.geq (fp.sub roundNearestTiesToEven (fp #b0 #b10000000000 #x0000000000000) x)
                                |        (_ +zero 11 53))""".stripMargin),
-      TestCase("TestLt", lt, """(fp.gt (fp.sub roundNearestTiesToEven (fp #b0 #b10000000000 #x0cccccccccccd) x)
+      TestCase("TestLt", lt, """(fp.gt (fp.sub roundNearestTiesToEven (fp #b0 #b10000000000 #x0000000000000) x)
                                |       (_ +zero 11 53))""".stripMargin),
     )
   }

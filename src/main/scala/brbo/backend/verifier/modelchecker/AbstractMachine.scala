@@ -64,7 +64,13 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
           if (!refuted && !newState.valuation.isBottom()) {
             val refuted2 =
               if (newState.shouldVerify) {
-                val refuted = !newState.satisfy(assertion)
+                val refuted = {
+                  val verified = {
+                    if (arguments.getCheckWithZ3) newState.satisfyWithZ3(assertion)
+                    else newState.satisfy(assertion)
+                  }
+                  !verified
+                }
                 logger.traceOrError(s"[model check] New state ${if (refuted) "does not satisfy" else "satisfies"} bound assertion `$assertion`")
                 if (refuted)
                   logger.traceOrError(s"[model check] Bound violation state: `${newState.toShortString}`")
@@ -197,9 +203,9 @@ object AbstractMachine {
 
   /**
    *
-   * @param valuation     The valuation under which the command or the expression will be evaluated
-   * @param command The command or the expression to evaluate
-   * @param scope         The lexical scope of the given command
+   * @param valuation The valuation under which the command or the expression will be evaluated
+   * @param command   The command or the expression to evaluate
+   * @param scope     The lexical scope of the given command
    * @return
    */
   @tailrec
@@ -309,6 +315,8 @@ object AbstractMachine {
     val scope: Scope = valuation.scopeOperations.getScope(node.value)
 
     def satisfy(brboExpr: BrboExpr): Boolean = valuation.satisfy(brboExpr)
+
+    def satisfyWithZ3(brboExpr: BrboExpr): Boolean = valuation.satisfyWithZ3(brboExpr, toInt = true)
 
     def toShortString: String = s"Node: `${node.prettyPrintToCFG}`. Number of visits: `$indexOnPath`. shouldVerify: `$shouldVerify`. Valuation: ${valuation.toShortString}"
   }
