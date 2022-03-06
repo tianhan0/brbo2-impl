@@ -52,7 +52,7 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
   "Model checking programs" should "be correct" in {
     val abstractMachine = new AbstractMachine(program, polkaArgument)
     val assertion = LessThanOrEqualTo(reset.resourceVariable, Multiplication(n, a))
-    val result = abstractMachine.verify(assertion)
+    val result = abstractMachine.verify(assertion).result
     StringCompare.ignoreWhitespaces(result.toString, """VerifierResult(TRUE_RESULT,Set())""".stripMargin)
   }
 }

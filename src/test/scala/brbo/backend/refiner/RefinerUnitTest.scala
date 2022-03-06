@@ -2,6 +2,7 @@ package brbo.backend.refiner
 
 import brbo.TestCase
 import brbo.backend.refiner.RefinerUnitTest._
+import brbo.backend.verifier.SymbolicExecution
 import brbo.backend.verifier.cex.Path
 import brbo.common.BrboType.{INT, VOID}
 import brbo.common.ast._
@@ -13,22 +14,24 @@ class RefinerUnitTest extends AnyFlatSpec {
   private val debugMode = false
   private val arguments = if (debugMode) CommandLineArguments.DEBUG_MODE_ARGUMENTS else CommandLineArguments.DEFAULT_ARGUMENTS
 
-  "Refining program 1" should "succeed" in {
+  "Refining program 1 with symbolic execution" should "succeed" in {
     val refiner1 = new Refiner(arguments)
     testCases1.foreach({
       testCase =>
         val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), boundExpression1), tag = "IrrelevantTag")
-        val (newProgram, refinement) = refiner1.refine(program1, testCase.input.asInstanceOf[Path], boundAssertion, Set())
+        val symbolicExecution = new SymbolicExecution(program1.mainFunction.parameters, debugMode = false)
+        val (newProgram, refinement) = refiner1.refine(program1, testCase.input.asInstanceOf[Path], boundAssertion, Set(), symbolicExecution)
         StringCompare.ignoreWhitespaces(s"$refinement\n$newProgram", testCase.expectedOutput, s"Test `${testCase.name}` failed!")
     })
   }
 
-  "Refining program 2" should "succeed" in {
+  "Refining program 2 with symbolic execution" should "succeed" in {
     val refiner2 = new Refiner(arguments)
     testCases2.foreach({
       testCase =>
         val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), boundExpression2), tag = "IrrelevantTag")
-        val (newProgram, refinement) = refiner2.refine(program2, testCase.input.asInstanceOf[Path], boundAssertion, Set())
+        val symbolicExecution = new SymbolicExecution(program1.mainFunction.parameters, debugMode = false)
+        val (newProgram, refinement) = refiner2.refine(program2, testCase.input.asInstanceOf[Path], boundAssertion, Set(), symbolicExecution)
         StringCompare.ignoreWhitespaces(s"$refinement\n$newProgram", testCase.expectedOutput, s"Test `${testCase.name}` failed!")
     })
   }
@@ -114,31 +117,31 @@ object RefinerUnitTest {
     List(
       TestCase("Refine Test 01", path,
         """Some(Path:
-          |  (-1) int C1 = -1; [Function `main`]
-          |  (-1) int R1 = 0; [Function `main`]
-          |  (-1) int S1 = 0; [Function `main`]
-          |  (-1) (n >= 0) [Function `main`]
-          |  (-1) (a >= 0) [Function `main`]
-          |  (-1) (b >= 0) [Function `main`]
-          |  (-1) int i = 0; [Function `main`]
-          |  (-1) (i < n) [Function `main`]
-          |  (-1) (i == 0) [Function `main`]
-          |  (-1) e = a; [Function `main`]
-          |  (-1) if (true) reset R1 [Function `main`]
-          |  (-1) if (true) use R1 e [Function `main`]
-          |  (-1) i = i + 1; [Function `main`]
-          |  (-1) (i < n) [Function `main`]
-          |  (-1) !((i == 0)) [Function `main`]
-          |  (-1) e = b; [Function `main`]
-          |  (-1) if (true) reset R1 [Function `main`]
-          |  (-1) if (true) use R1 e [Function `main`]
+          |  [000] (-1) int C1 = -1; [fun `main`]
+          |  [001] (-1) int R1 = 0; [fun `main`]
+          |  [002] (-1) int S1 = 0; [fun `main`]
+          |  [003] (-1) (n >= 0) [fun `main`]
+          |  [004] (-1) (a >= 0) [fun `main`]
+          |  [005] (-1) (b >= 0) [fun `main`]
+          |  [006] (-1) int i = 0; [fun `main`]
+          |  [007] (-1) (i < n) [fun `main`]
+          |  [008] (-1) (i == 0) [fun `main`]
+          |  [009] (-1) e = a; [fun `main`]
+          |  [010] (-1) if (true) reset R1 [fun `main`]
+          |  [011] (-1) if (true) use R1 e [fun `main`]
+          |  [012] (-1) i = i + 1; [fun `main`]
+          |  [013] (-1) (i < n) [fun `main`]
+          |  [014] (-1) !((i == 0)) [fun `main`]
+          |  [015] (-1) e = b; [fun `main`]
+          |  [016] (-1) if (true) reset R1 [fun `main`]
+          |  [017] (-1) if (true) use R1 e [fun `main`]
           |Splits:
-          |  [010] (-1) if (true) reset R1 [Function `main`] -> if (true) reset R2
-          |  [011] (-1) if (true) use R1 e [Function `main`] -> if (true) use R2 e
-          |  [016] (-1) if (true) reset R1 [Function `main`] -> if (true) reset R3
-          |  [017] (-1) if (true) use R1 e [Function `main`] -> if (true) use R3 e
+          |  [010] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R2
+          |  [011] (-1) if (true) use R1 e [fun `main`] -> if (true) use R2 e
+          |  [016] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R3
+          |  [017] (-1) if (true) use R1 e [fun `main`] -> if (true) use R3 e
           |Removed resets:
-          |  )
+          |  [016]: (-1) if (true) reset R1 [fun `main`])
           |Some(Program name: `Test program`
           |Global assertions to verify: ``
           |void main(int n, int a, int b)
@@ -157,8 +160,8 @@ object RefinerUnitTest {
           |      else
           |        e = b;
           |      {
+          |        if (false) reset R3
           |        if (true) reset R2
-          |        if (true) reset R3
           |      }
           |      {
           |        if (((0 - i) >= 0) && true) use R2 e
@@ -172,7 +175,7 @@ object RefinerUnitTest {
 
   val testCases2: List[TestCase] = {
     val path = Path(
-      mainFunction2.ghostVariableInitializations.map(c => CFGNode((c), Some(mainFunction2), CFGNode.DONT_CARE_ID)) :::
+      mainFunction2.ghostVariableInitializations.map(c => CFGNode(c, Some(mainFunction2), CFGNode.DONT_CARE_ID)) :::
         List(
           CFGNode((GreaterThanOrEqualTo(n, Number(0))), Some(mainFunction2), CFGNode.DONT_CARE_ID),
           CFGNode((declaration2), Some(mainFunction2), CFGNode.DONT_CARE_ID),
@@ -188,28 +191,28 @@ object RefinerUnitTest {
     List(
       TestCase("Refine Test 02", path,
         """Some(Path:
-          |  (-1) int C1 = -1; [Function `main`]
-          |  (-1) int R1 = 0; [Function `main`]
-          |  (-1) int S1 = 0; [Function `main`]
-          |  (-1) (n >= 0) [Function `main`]
-          |  (-1) int k = 0; [Function `main`]
-          |  (-1) if (true) reset R1 [Function `main`]
-          |  (-1) if (true) use R1 1 [Function `main`]
-          |  (-1) k = k + 1; [Function `main`]
-          |  (-1) if (true) reset R1 [Function `main`]
-          |  (-1) if (true) use R1 2 [Function `main`]
-          |  (-1) k = k + 2; [Function `main`]
-          |  (-1) if (true) reset R1 [Function `main`]
-          |  (-1) if (true) use R1 (n - k) [Function `main`]
+          |  [000] (-1) int C1 = -1; [fun `main`]
+          |  [001] (-1) int R1 = 0; [fun `main`]
+          |  [002] (-1) int S1 = 0; [fun `main`]
+          |  [003] (-1) (n >= 0) [fun `main`]
+          |  [004] (-1) int k = 0; [fun `main`]
+          |  [005] (-1) if (true) reset R1 [fun `main`]
+          |  [006] (-1) if (true) use R1 1 [fun `main`]
+          |  [007] (-1) k = k + 1; [fun `main`]
+          |  [008] (-1) if (true) reset R1 [fun `main`]
+          |  [009] (-1) if (true) use R1 2 [fun `main`]
+          |  [010] (-1) k = k + 2; [fun `main`]
+          |  [011] (-1) if (true) reset R1 [fun `main`]
+          |  [012] (-1) if (true) use R1 (n - k) [fun `main`]
           |Splits:
-          |  [005] (-1) if (true) reset R1 [Function `main`] -> if (true) reset R2
-          |  [006] (-1) if (true) use R1 1 [Function `main`] -> if (true) use R2 1
-          |  [008] (-1) if (true) reset R1 [Function `main`] -> if (true) reset R3
-          |  [009] (-1) if (true) use R1 2 [Function `main`] -> if (true) use R3 2
-          |  [011] (-1) if (true) reset R1 [Function `main`] -> if (true) reset R2
-          |  [012] (-1) if (true) use R1 (n - k) [Function `main`] -> if (true) use R2 (n - k)
+          |  [005] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R2
+          |  [006] (-1) if (true) use R1 1 [fun `main`] -> if (true) use R2 1
+          |  [008] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R3
+          |  [009] (-1) if (true) use R1 2 [fun `main`] -> if (true) use R3 2
+          |  [011] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R3
+          |  [012] (-1) if (true) use R1 (n - k) [fun `main`] -> if (true) use R3 (n - k)
           |Removed resets:
-          |  [005]: (-1) if (true) reset R1 [Function `main`])
+          |  [011]: (-1) if (true) reset R1 [fun `main`])
           |Some(Program name: `Test program`
           |Global assertions to verify: ``
           |void main(int n)
@@ -222,7 +225,7 @@ object RefinerUnitTest {
           |    int S3 = 0;
           |    int k = 0;
           |    {
-          |      if (false) reset R2
+          |      if (true) reset R2
           |    }
           |    {
           |      if (true && true) use R2 1
@@ -236,10 +239,10 @@ object RefinerUnitTest {
           |    }
           |    k = k + 2;
           |    {
-          |      if (true) reset R2
+          |      if (false) reset R3
           |    }
           |    {
-          |      if (true && true) use R2 (n - k)
+          |      if (true && true) use R3 (n - k)
           |    }
           |  })""".stripMargin)
     )

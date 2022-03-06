@@ -1,5 +1,7 @@
 package brbo.backend.refiner
 
+import brbo.backend.refiner.Refinement._
+import brbo.backend.verifier.cex.Path
 import brbo.common.ast.{BrboExpr, BrboFunction, Command, Reset, Use}
 import brbo.common.cfg.CFGNode
 import brbo.common.{GhostVariableUtils, MyLogger, StringFormatUtils}
@@ -115,10 +117,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
   }
 
   override def toString: String = {
-    val pathString = {
-      val s = path.map({ node => node.toString }).mkString(separator)
-      s"Path:$separator$s"
-    }
+    val pathString = PrintPath.pathToString(path)
     s"$pathString\n$splitsString\n$removedString"
   }
 
@@ -127,18 +126,18 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
 
 object Refinement {
   private val logger = MyLogger.createLogger(Refinement.getClass, debugMode = true)
-}
 
-abstract class Replace(val newNode: CFGNode, val newGroupId: Int)
+  abstract class Replace(val newNode: CFGNode, val newGroupId: Int)
 
-case class UseNode(newUse: CFGNode, override val newGroupId: Int) extends Replace(newUse, newGroupId) {
-  val use: Use = newUse.value.asInstanceOf[Use]
+  case class UseNode(newUse: CFGNode, override val newGroupId: Int) extends Replace(newUse, newGroupId) {
+    val use: Use = newUse.value.asInstanceOf[Use]
 
-  override def toString: String = use.prettyPrintToCFG
-}
+    override def toString: String = use.prettyPrintToCFG
+  }
 
-case class ResetNode(newReset: CFGNode, override val newGroupId: Int) extends Replace(newReset, newGroupId) {
-  val reset: Reset = newReset.value.asInstanceOf[Reset]
+  case class ResetNode(newReset: CFGNode, override val newGroupId: Int) extends Replace(newReset, newGroupId) {
+    val reset: Reset = newReset.value.asInstanceOf[Reset]
 
-  override def toString: String = reset.prettyPrintToCFG
+    override def toString: String = reset.prettyPrintToCFG
+  }
 }

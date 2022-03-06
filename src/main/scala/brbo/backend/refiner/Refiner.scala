@@ -1,54 +1,62 @@
 package brbo.backend.refiner
 
-import brbo.backend.verifier.SymbolicExecution
+import brbo.backend.verifier.AbstractInterpreter
 import brbo.backend.verifier.cex.Path
-import brbo.common.BrboType.BOOL
-import brbo.common.GhostVariableTyp._
+import brbo.common.GhostVariableTyp.{Counter, Resource, Star}
 import brbo.common.ast.{BoundAssertion, BrboProgram}
-import brbo.common.{CommandLineArguments, GhostVariableUtils, MyLogger}
+import brbo.common._
 import com.microsoft.z3.{AST, Expr}
 
 class Refiner(arguments: CommandLineArguments) {
-  private val logger = MyLogger.createLogger(classOf[Refiner], arguments.getDebugMode)
-  private val pathRefinement = new PathRefinement(arguments)
+  protected val logger: MyLogger = MyLogger.createLogger(classOf[Refiner], arguments.getDebugMode)
+  protected val pathRefinement = new PathRefinement(arguments)
 
-  def refine(programToRefine: BrboProgram, counterexamplePath: Path, boundAssertion: BoundAssertion,
-             refinementsToAvoid: Set[Refinement]): (Option[BrboProgram], Option[Refinement]) = {
-    val symbolicExecution = new SymbolicExecution(programToRefine.mainFunction.parameters, arguments.getDebugMode)
-    val solver = symbolicExecution.solver
-    logger.infoOrError(s"Generating all possible path refinements")
-    val refinementsMap =
-      pathRefinement.refine(counterexamplePath, programToRefine.mainFunction.identifier).foldLeft(Map[Expr, (Refinement, Expr)]())({
-        (acc, refinement) =>
-          // It is expected that, the refined path is empty when there is no refinement (over the original path)
-          if (refinement.noRefinement || refinementsToAvoid.contains(refinement)) acc
-          else {
-            val refinedPath = refinement.refinedPath(programToRefine.mainFunction)
-            logger.traceOrError(s"Symbolically executing refined path:\n`${refinedPath.mkString("\n")}`")
-            val finalState = symbolicExecution.execute(refinedPath)
-            logger.traceOrError(s"Final state:\n`$finalState`")
-            // Get all group IDs and then all ghost variables
-            val allGroupIds: List[Int] =
-              (programToRefine.mainFunction.groupIds -- refinement.groupIds.keys ++ refinement.groupIds.values.flatten).toList.sorted
-            logger.traceOrError(s"All groups considered: `$allGroupIds`")
-            var sum: AST = solver.mkIntVal(0)
-            allGroupIds.foreach({
-              groupId =>
-                val counter: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Counter).name)
-                val star: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Star).name)
-                val resource: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Resource).name)
-                sum = solver.mkAdd(sum, resource, solver.mkMul(counter, star))
-            })
-            val assertion = solver.mkImplies(
-              solver.mkAnd(SymbolicExecution.valuationToAST(finalState.valuations.head, solver), finalState.pathCondition),
-              solver.substitute(boundAssertion.assertion.toZ3AST(solver), solver.mkIntVar(boundAssertion.resourceVariable), sum)
-            )
-            acc + (symbolicExecution.createFreshVariable(BOOL)._2 -> (refinement, assertion))
-          }
-      })
+  def refine(originalProgram: BrboProgram, path: Path, boundAssertion: BoundAssertion,
+             refinementsToAvoid: Set[Refinement], abstractInterpreter: AbstractInterpreter): (Option[BrboProgram], Option[Refinement]) = {
+    val solver = new Z3Solver
+    logger.infoOrError(s"Generate all possible path refinements")
+    var declaredVariables = Set[String]()
+    var refinements = List[(Refinement, Expr)]()
+    pathRefinement.refine(path, originalProgram.mainFunction.identifier).foreach({
+      refinement =>
+        // It is expected that, the refined path is empty when there is no refinement (over the original path)
+        if (refinement.noRefinement || refinementsToAvoid.contains(refinement)) {
+          ;
+        } else {
+          val refinedPath = refinement.refinedPath(originalProgram.mainFunction)
+          logger.traceOrError(s"Validate refined path:\n`${refinedPath.mkString("\n")}`")
+          // Get all group IDs and then all ghost variables
+          val (finalState, newVariables) = abstractInterpreter.interpret(refinedPath, solver)
+          declaredVariables = declaredVariables ++ newVariables
+          val allGroupIds: List[Int] =
+            (originalProgram.mainFunction.groupIds ++ refinement.groupIds.values.flatten).toList.sorted
+          logger.traceOrError(s"All groups considered: `$allGroupIds`")
+          var sum: AST = solver.mkIntVal(0)
+          allGroupIds.foreach({
+            groupId =>
+              val counter: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Counter).name)
+              val star: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Star).name)
+              val resource: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Resource).name)
+              sum = solver.mkAdd(sum, resource, solver.mkMul(counter, star))
+          })
+          val assertion = solver.mkImplies(
+            finalState,
+            solver.substitute(boundAssertion.assertion.toZ3AST(solver), solver.mkIntVar(boundAssertion.resourceVariable), sum)
+          )
+          refinements = (refinement, assertion) :: refinements
+        }
+    })
+    val refinementsMap = refinements.foldLeft(Map[Expr, (Refinement, Expr)]())({
+      (acc, pair) =>
+        val name = s"v!!${declaredVariables.size}" // Variable names seem to affect which path is selected by Z3
+        assert(!declaredVariables.contains(name))
+        declaredVariables = declaredVariables + name
+        val boolVar = solver.mkBoolVar(name)
+        acc + (boolVar -> pair)
+    })
 
-    logger.infoOrError(s"Search for a refinement for path `$counterexamplePath`.")
-    val programSynthesis = new Synthesizer(programToRefine, arguments)
+    logger.infoOrError(s"Search for a refinement for path `$path`.")
+    val programSynthesis = new Synthesizer(originalProgram, arguments)
     // Keep finding new path transformations until either finding a program transformation that can realize it,
     // or there exists no program transformation that can realize any path transformation
     var avoidRefinementInSynthesis: Set[Refinement] = Set()
@@ -64,7 +72,7 @@ class Refiner(arguments: CommandLineArguments) {
               iffConjunction = solver.mkAnd(iffConjunction, solver.mkIff(variableAST, assertion))
             }
         })
-        val inputs = symbolicExecution.inputs.values.map(pair => pair._2.v)
+        val inputs = abstractInterpreter.inputs(solver)
         solver.mkForall(inputs, solver.mkAnd(disjunction, iffConjunction))
       }
       val z3Result = solver.checkAssertionPushPop(query, arguments.getDebugMode)

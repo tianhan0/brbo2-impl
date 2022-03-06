@@ -3,7 +3,7 @@ package brbo.backend.verifier
 import brbo.TestCase
 import brbo.backend.verifier.cex.Path
 import brbo.common.BrboType._
-import brbo.common.StringCompare
+import brbo.common.{StringCompare, Z3Solver}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import org.scalatest.flatspec.AnyFlatSpec
@@ -13,7 +13,8 @@ class SymbolicExecutionUnitTest extends AnyFlatSpec {
     SymbolicExecutionUnitTest.tests.foreach({
       testCase =>
         val symbolicExecution = new SymbolicExecution(SymbolicExecutionUnitTest.program.mainFunction.parameters, debugMode = false)
-        val result = symbolicExecution.execute(testCase.input.asInstanceOf[Path].pathNodes)
+        val solver = new Z3Solver
+        val result = symbolicExecution.execute(testCase.input.asInstanceOf[Path].pathNodes, solver).finalState
         assert(StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"${testCase.name} failed!"))
     })
   }

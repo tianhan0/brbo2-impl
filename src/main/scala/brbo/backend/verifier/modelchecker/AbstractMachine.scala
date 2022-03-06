@@ -15,7 +15,7 @@ import org.apache.logging.log4j.LogManager
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
-class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments) {
+class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments) extends AbstractInterpreter {
   private val logger: MyLogger = MyLogger(LogManager.getLogger(classOf[AbstractMachine]), arguments.getDebugMode)
   private val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
   private val fakeInitialNode = CFGNode(Bool(b = true), function = Some(brboProgram.mainFunction))
@@ -38,7 +38,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     })
   }
 
-  def verify(assertion: BrboExpr): VerifierResult = {
+  def verify(assertion: BrboExpr): Result = {
     val initialState = State(fakeInitialNode, initialValuation, indexOnPath = 0, shouldVerify = true)
     // Every CFGNode corresponds to a location, which is the location right after the node
     // fakeInitialNode corresponds to the program entry, which is right before the first command / expression
@@ -48,7 +48,6 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     var stoppedEarly = false
     var counterexamplePaths: Set[List[CFGNode]] = Set()
     var refuted = false
-    var exploredPaths: List[List[CFGNode]] = List()
     while (waitlist.nonEmpty && counterexamplePaths.isEmpty) {
       val ((path, state), newWaitlist) = waitlist.dequeue
       waitlist = newWaitlist
@@ -60,7 +59,6 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         newState =>
           logger.traceOrError(s"[model check] New state: ${newState.toShortString}")
           val newPath = newState.node :: path
-          exploredPaths = newPath :: exploredPaths
           if (!refuted && !newState.valuation.isBottom) {
             val refuted2 =
               if (newState.shouldVerify) {
@@ -118,14 +116,17 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
       })
       reached = reached - path
     }
-    logger.info(s"Explored `${exploredPaths.size}` paths")
-    logger.traceOrError(s"\n${exploredPaths.map(p => p.map(n => n.simplifiedString).reverse).reverse.mkString("  \n")}")
+    logger.info(s"Explored `${reached.size}` paths")
+    logger.traceOrError(s"\n${reached.keySet.map(p => p.map(n => n.simplifiedString).reverse).mkString("  \n")}")
     val paths = counterexamplePaths.map(p => Path(p.reverse))
-    if (refuted) VerifierResult(VerifierStatus.FALSE_RESULT, paths)
-    else {
-      if (stoppedEarly) VerifierResult(VerifierStatus.UNKNOWN_RESULT, paths)
-      else VerifierResult(VerifierStatus.TRUE_RESULT, paths)
+    val result = {
+      if (refuted) VerifierResult(VerifierStatus.FALSE_RESULT, paths)
+      else {
+        if (stoppedEarly) VerifierResult(VerifierStatus.UNKNOWN_RESULT, paths)
+        else VerifierResult(VerifierStatus.TRUE_RESULT, paths)
+      }
     }
+    Result(result, reached.values.toSet)
   }
 
   def step(state: State): Set[State] = {
@@ -197,6 +198,10 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         State(nextNode, valuation, state.indexOnPath + 1, shouldVerify)
     })
   }
+
+  override def interpret(path: List[CFGNode], solver: Z3Solver): (AST, Set[String]) = ???
+
+  override def inputs(solver: Z3Solver): Set[AST] = ???
 }
 
 object AbstractMachine {
@@ -255,7 +260,7 @@ object AbstractMachine {
       case LabeledCommand(_, command, _) => evalCommand(valuation, command, scope)
       case _: CexPathOnly => throw new Exception
       case Skip(_) => valuation
-      case _@(Break(_) | Continue(_)) => throw new Exception
+      case _@(Break(_) | Continue(_)) => valuation // Ignore these commands because the CFG has processed these jump commands
       case Assume(condition, _) => evalExpr(valuation, condition, scope)
     }
   }
@@ -316,6 +321,8 @@ object AbstractMachine {
     def toShortString: String
   }
 
+  case class Result(result: VerifierResult, finalStates: Set[PathState])
+
   case class State(node: CFGNode, valuation: Valuation, indexOnPath: Int, shouldVerify: Boolean) extends ToShortString {
     val scope: Scope = valuation.scopeOperations.getScope(node.value)
 
@@ -352,12 +359,8 @@ object AbstractMachine {
     val allVariablesNoScope: List[Identifier] = allVariables.map(v => v.identifier)
     val allVariablesSet: Set[Variable] = allVariables.toSet
     private val solver = new Z3Solver
-    private val stateFloat = apronState.toTcons(manager).map({
-      constraint => Apron.constraintToZ3(constraint, solver, allVariablesNoScope, toInt = false)
-    })
-    private val stateInt = apronState.toTcons(manager).map({
-      constraint => Apron.constraintToZ3(constraint, solver, allVariablesNoScope, toInt = true)
-    })
+    private val stateFloat = toZ3Ast(solver, toInt = false)
+    private val stateInt = toZ3Ast(solver, toInt = true)
 
     def indexOfVariableThisScope(variable: Variable): Int =
       liveVariables.indexWhere(v => v.identifier.sameAs(variable.identifier) && v.scope == variable.scope)
@@ -535,7 +538,7 @@ object AbstractMachine {
     private def satisfyWithZ3(ast: AST, toInt: Boolean): Boolean = {
       val query = {
         val variablesZ3 = allVariables.map(v => solver.mkDoubleVar(v.identifier.name))
-        solver.mkForall(variablesZ3, solver.mkImplies(solver.mkAnd((if (!toInt) stateFloat else stateInt): _*), ast))
+        solver.mkForall(variablesZ3, solver.mkImplies(solver.mkAnd(if (!toInt) stateFloat else stateInt), ast))
       }
       // error(logger, s"state: ${stateFloat.mkString("Array(", ", ", ")")}")
       // error(logger, s"ast: $ast")
@@ -570,6 +573,14 @@ object AbstractMachine {
 
     override def toShortString: String = {
       s"Variables: `${liveVariables.map(v => v.toShortString)}`. ApronState: `$apronState`"
+    }
+
+    def toZ3Ast(solver: Z3Solver, toInt: Boolean): AST = {
+      val asts = apronState.toTcons(manager).map({
+        constraint => Apron.constraintToZ3(constraint, solver, allVariablesNoScope, toInt)
+      })
+      if (asts.nonEmpty) solver.mkAnd(asts: _*)
+      else solver.mkTrue()
     }
   }
 

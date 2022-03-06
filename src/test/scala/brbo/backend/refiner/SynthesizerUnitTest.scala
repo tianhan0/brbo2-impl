@@ -1,6 +1,7 @@
 package brbo.backend.refiner
 
 import brbo.TestCase
+import brbo.backend.refiner.Refinement.{ResetNode, UseNode}
 import brbo.backend.refiner.SynthesizerUnitTest.{coverTests, disjointTests, synthesizeTests}
 import brbo.common.BrboType.{INT, VOID}
 import brbo.common.ast._

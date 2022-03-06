@@ -1,5 +1,6 @@
 package brbo.backend.verifier.cex
 
+import brbo.backend.refiner.PrintPath
 import brbo.common.BrboType.BOOL
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
@@ -37,10 +38,7 @@ case class Path(pathNodes: List[CFGNode]) {
       assert(existDeclaration(counter), s"Counter variable `${counter.name}` is used but not declared!")
   })
 
-  override def toString: String = {
-    val nodes = pathNodes.zipWithIndex.map({ case (node, index: Int) => s"  [${StringFormatUtils.integer(index)}] ${node.toString}" }).mkString("\n")
-    s"Path:\n$nodes"
-  }
+  override def toString: String = PrintPath.pathToString(pathNodes)
 
   // Get segments of the given group in the given function
   def getSegments(groupId: Int, functionName: String): List[Segment] = {

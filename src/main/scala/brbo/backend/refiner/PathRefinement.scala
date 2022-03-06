@@ -1,5 +1,6 @@
 package brbo.backend.refiner
 
+import brbo.backend.refiner.Refinement.{ResetNode, UseNode}
 import brbo.backend.verifier.cex.{Path, Segment}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode

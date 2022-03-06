@@ -13,6 +13,7 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
   private val resetCommands = allCommands.filter(command => command.isInstanceOf[Reset])
 
   private val symbolicExecution = new SymbolicExecution(originalProgram.mainFunction.parameters, argument.getDebugMode)
+  private val solver = new Z3Solver
   private val predicates: List[Predicate] = {
     val allNonGhostVariables = {
       val allVariables = originalProgram.mainFunction.parameters.toSet ++
@@ -22,7 +23,6 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     val allPredicates = Predicate.generatePredicates(allNonGhostVariables, argument.getRelationalPredicates)
     val filterFalsePredicates = allPredicates.filter({
       p =>
-        val solver = symbolicExecution.solver
         val isFalse = solver.checkAssertionForallPushPop(solver.mkIff(p.toAst(solver), solver.mkFalse()))
         if (isFalse) logger.traceOrError(s"Predicate `${p.expr.prettyPrintToCFG}` is false!")
         !isFalse
@@ -136,17 +136,16 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     assert(indices.nonEmpty)
     val postConditions = indices.map({
       index =>
-        val state = symbolicExecution.execute(path.slice(0, index))
+        val state = symbolicExecution.execute(path.slice(0, index), solver).finalState
         val valuation = state.valuations.head
-        val valuationAst = SymbolicExecution.valuationToAST(valuation, symbolicExecution.solver)
+        val valuationAst = SymbolicExecution.valuationToAST(valuation, solver)
         val pathConditionAst = state.pathCondition
-        symbolicExecution.solver.mkAnd(valuationAst, pathConditionAst)
+        solver.mkAnd(valuationAst, pathConditionAst)
     }).toSeq
-    symbolicExecution.solver.mkOr(postConditions: _*)
+    solver.mkOr(postConditions: _*)
   }
 
   def computeImpliedPredicates(whatToImplyFrom: AST): List[Predicate] = {
-    val solver = symbolicExecution.solver
     val query = solver.mkIff(whatToImplyFrom, solver.mkFalse())
     val isFalse = solver.checkAssertionForallPushPop(query)
     assert(!isFalse, s"$query")
@@ -164,9 +163,9 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
   def computeCandidatePredicates(predicates: Iterable[Iterable[Predicate]], notConflictWith: BrboExpr): List[List[Predicate]] = {
     val candidatePredicates = MathUtils.crossJoin(predicates).filter({
       predicates =>
-        val isPartitionResult = Synthesizer.isDisjoint(predicates, symbolicExecution.solver)
-        val isCoverResult = Synthesizer.isCover(predicates, symbolicExecution.solver)
-        val notConflictWithResult = Synthesizer.notConflictWith(predicates, notConflictWith, symbolicExecution.solver)
+        val isPartitionResult = Synthesizer.isDisjoint(predicates, solver)
+        val isCoverResult = Synthesizer.isCover(predicates, solver)
+        val notConflictWithResult = Synthesizer.notConflictWith(predicates, notConflictWith, solver)
         // logger.traceOrError(s"Predicates `$predicates` ${if (isPartitionResult) "are" else "are not"} a partition, and ${if (isCoverResult) "are" else "are not"} a cover.")
         isPartitionResult && isCoverResult && notConflictWithResult
     })
