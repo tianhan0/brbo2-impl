@@ -6,7 +6,7 @@ import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.backend.verifier.UAutomizerVerifier
 import brbo.common.CommandLineArguments._
 import brbo.common.ast._
-import brbo.common.{BrboType, CommandLineArguments}
+import brbo.common.{BrboType, CommandLineArguments, StringCompare}
 import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -37,7 +37,7 @@ class DriverUnitTest extends AnyFlatSpec {
         val targetProgram = BasicProcessor.getTargetProgram(className, code)
         val driver = new Driver(arguments, targetProgram.program)
         val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), upperBound), tag = "IrrelevantTag")
-        driver.verifySelectivelyAmortize(boundAssertion)
+        StringCompare.ignoreWhitespaces(driver.verifySelectivelyAmortize(boundAssertion).toString, """TRUE_RESULT""")
     })
   }
 }

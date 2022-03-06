@@ -61,7 +61,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
           logger.traceOrError(s"[model check] New state: ${newState.toShortString}")
           val newPath = newState.node :: path
           exploredPaths = newPath :: exploredPaths
-          if (!refuted && !newState.valuation.isBottom()) {
+          if (!refuted && !newState.valuation.isBottom) {
             val refuted2 =
               if (newState.shouldVerify) {
                 val refuted = {
@@ -72,8 +72,9 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                   !verified
                 }
                 logger.traceOrError(s"[model check] New state ${if (refuted) "does not satisfy" else "satisfies"} bound assertion `$assertion`")
-                if (refuted)
+                if (refuted) {
                   logger.traceOrError(s"[model check] Bound violation state: `${newState.toShortString}`")
+                }
                 refuted
               } else false
             if (refuted2) {
@@ -84,7 +85,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
               val (newValuation, keepExploring) = {
                 oldPathState.valuations.get(newState.node) match {
                   case Some(existingValuation) =>
-                    logger.traceOrError(s"[model check] Old valuation at node `${newState.node.prettyPrintToCFG}`: $existingValuation")
+                    logger.traceOrError(s"[model check] Old valuation at node `${newState.node.prettyPrintToCFG}`: ${existingValuation.toShortString}")
                     if (newState.valuation.include(existingValuation)) {
                       logger.traceOrError(s"[model check] The new valuation is included in the old one")
                       (existingValuation, false)
@@ -92,7 +93,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                     else {
                       logger.traceOrError(s"[model check] The new valuation is not included in the old one")
                       val joinedValuation = newState.valuation.joinCopy(existingValuation)
-                      logger.traceOrError(s"[model check] Joined valuation: `$joinedValuation`")
+                      logger.traceOrError(s"[model check] Joined valuation: `${joinedValuation.toShortString}`")
                       if (newState.indexOnPath <= arguments.getMaxPathLength) (joinedValuation, true)
                       else {
                         logger.traceOrError(s"[model check] Will stop exploring path due to reaching the max path length: `$newPath`")
@@ -117,7 +118,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
       })
       reached = reached - path
     }
-    logger.traceOrError(s"Explored `${exploredPaths.size}` paths")
+    logger.info(s"Explored `${exploredPaths.size}` paths")
     logger.traceOrError(s"\n${exploredPaths.map(p => p.map(n => n.simplifiedString).reverse).reverse.mkString("  \n")}")
     val paths = counterexamplePaths.map(p => Path(p.reverse))
     if (refuted) VerifierResult(VerifierStatus.FALSE_RESULT, paths)
@@ -245,7 +246,11 @@ object AbstractMachine {
         traceOrError(logger, s"After updating r#: `${updatedCounterVariable.toShortString}`")
         evalGhostCommandHelper(condition, valuation.satisfy(condition), valuation.satisfy(Negation(condition)),
           updatedCounterVariable, valuation, logger)
-      case Return(_, _) => throw new Exception
+      case Return(value, _) =>
+        value match {
+          case Some(_) => throw new Exception
+          case None => valuation
+        }
       case FunctionCall(_, _) => throw new Exception
       case LabeledCommand(_, command, _) => evalCommand(valuation, command, scope)
       case _: CexPathOnly => throw new Exception
@@ -325,13 +330,13 @@ object AbstractMachine {
 
   /**
    *
-   * @param variables       All variables that can be looked up or re-assigned in the current program state
+   * @param liveVariables   All variables that can be looked up or re-assigned in the current program state
    * @param apronState      The abstraction of the current program state
-   * @param allVariables    All variables that have been declared in apronState, in the reversed declaration order
+   * @param allVariables    All variables that have been declared in apronState
    * @param scopeOperations Functions to manipulate scopes
    * @param logger          The logger
    */
-  case class Valuation(variables: List[Variable],
+  case class Valuation(liveVariables: List[Variable],
                        apronState: Abstract0,
                        allVariables: List[Variable],
                        scopeOperations: ScopeOperations,
@@ -343,18 +348,19 @@ object AbstractMachine {
       case Some(logger) => logger.debugMode
       case None => false
     }
-    val variablesNoScope: List[Identifier] = variables.map(v => v.identifier)
-    val allVariablesReversedNoScope: List[Identifier] = allVariables.map(v => v.identifier).reverse
+    val variablesNoScope: List[Identifier] = liveVariables.map(v => v.identifier)
+    val allVariablesNoScope: List[Identifier] = allVariables.map(v => v.identifier)
+    val allVariablesSet: Set[Variable] = allVariables.toSet
     private val solver = new Z3Solver
     private val stateFloat = apronState.toTcons(manager).map({
-      constraint => Apron.constraintToZ3(constraint, solver, allVariablesReversedNoScope, toInt = false)
+      constraint => Apron.constraintToZ3(constraint, solver, allVariablesNoScope, toInt = false)
     })
     private val stateInt = apronState.toTcons(manager).map({
-      constraint => Apron.constraintToZ3(constraint, solver, allVariablesReversedNoScope, toInt = true)
+      constraint => Apron.constraintToZ3(constraint, solver, allVariablesNoScope, toInt = true)
     })
 
     def indexOfVariableThisScope(variable: Variable): Int =
-      variables.indexWhere(v => v.identifier.sameAs(variable.identifier) && v.scope == variable.scope)
+      liveVariables.indexWhere(v => v.identifier.sameAs(variable.identifier) && v.scope == variable.scope)
 
     @tailrec
     final def indexOfVariableAnyScope(variable: Variable): Int = {
@@ -406,7 +412,7 @@ object AbstractMachine {
         }
       }
       val newApronState = apronState.addDimensionsCopy(manager, dimensionChange, initialize)
-      Valuation(variables :+ variable, newApronState, variable :: allVariables, scopeOperations, logger)
+      Valuation(liveVariables :+ variable, newApronState, allVariables :+ variable, scopeOperations, logger)
     }
 
     /*def forgetVariablesInScope(scope: Statement): Valuation = {
@@ -426,13 +432,48 @@ object AbstractMachine {
       Valuation(newVariables, newState, logger)
     }*/
 
-    def include(other: Valuation): Boolean = other.apronState.isIncluded(manager, apronState)
+    def include(other: Valuation): Boolean = {
+      try {
+        other.apronState.isIncluded(manager, apronState)
+      }
+      catch {
+        case _: Exception =>
+          // May be caused by declaring new variables along the execution
+          false
+      }
+    }
 
-    def joinCopy(valuation: Valuation): Valuation = {
-      val newApronState = apronState.joinCopy(manager, valuation.apronState)
-      assert(valuation.variables == variables)
-      assert(valuation.allVariables == allVariables)
-      Valuation(variables, newApronState, allVariables, scopeOperations, logger)
+    def joinCopy(other: Valuation): Valuation = {
+      val (v1: Valuation, v2: Valuation) = {
+        if (other.allVariablesSet.subsetOf(allVariablesSet)) {
+          (this, createUninitializedVariables(other, this))
+        }
+        else if (allVariablesSet.subsetOf(other.allVariablesSet)) {
+          (createUninitializedVariables(this, other), other)
+        }
+        else throw new Exception
+      }
+      val newApronState = v1.apronState.joinCopy(manager, v2.apronState)
+      Valuation(v1.liveVariables, newApronState, v1.allVariables, scopeOperations, logger)
+    }
+
+    /**
+     *
+     * @param less The valuation whose declared variables in the Apron state is a subset of the other valuation
+     * @param more The other valuation
+     * @return A valuation that is created from `less` but contains the same variables as `more`
+     */
+    def createUninitializedVariables(less: Valuation, more: Valuation): Valuation = {
+      val v1 = more.allVariables.foldLeft(less)({
+        (acc, v) =>
+          if (less.allVariables.contains(v)) acc
+          else acc.createUninitializedVariable(v)
+      })
+      // The newly created variables in v1 are not necessarily live variables
+      val v2 = Valuation(more.liveVariables, v1.apronState, v1.allVariables, v1.scopeOperations, v1.logger)
+      assert(v1.allVariables == more.allVariables,
+        s"v.allVariables: ${v1.allVariablesNoScope}\nmore.allVariables: ${more.allVariablesNoScope}\nless.allVariables:${less.allVariablesNoScope}")
+      v2
     }
 
     def assignCopy(variable: Variable, expression: Texpr0Node): Valuation = {
@@ -440,12 +481,12 @@ object AbstractMachine {
       if (index == -1) this
       else {
         val newState = apronState.assignCopy(manager, index, new Texpr0Intern(expression), null)
-        Valuation(variables, newState, allVariables, scopeOperations, logger)
+        Valuation(liveVariables, newState, allVariables, scopeOperations, logger)
       }
     }
 
     override def toString: String = {
-      val variablesString = "  " + variables.map(v => v.toString).mkString("\n  ")
+      val variablesString = "  " + liveVariables.map(v => v.toString).mkString("\n  ")
       val stateString = apronState.toString(manager) //, variables.map(v => v.variable.identifier).toArray)
       s"Variables:\n$variablesString\nApronState: $stateString"
     }
@@ -482,7 +523,7 @@ object AbstractMachine {
     }
 
     def satisfyWithZ3(constraint: Tcons0, toInt: Boolean): Boolean = {
-      val constraintZ3 = Apron.constraintToZ3(constraint, solver, allVariablesReversedNoScope, toInt)
+      val constraintZ3 = Apron.constraintToZ3(constraint, solver, allVariablesNoScope, toInt)
       satisfyWithZ3(constraintZ3, toInt)
     }
 
@@ -508,19 +549,19 @@ object AbstractMachine {
       val joinedState = newStates.tail.foldLeft(newStates.head)({
         (acc, newState) => acc.joinCopy(manager, newState)
       })
-      Valuation(variables, joinedState, allVariables, scopeOperations, logger)
+      Valuation(liveVariables, joinedState, allVariables, scopeOperations, logger)
     }
 
-    def toBottom(): Valuation = imposeConstraint(Singleton(Apron.mkEqZero(Apron.mkIntVal(1))))
+    def toBottom: Valuation = imposeConstraint(Singleton(Apron.mkEqZero(Apron.mkIntVal(1))))
 
-    def isBottom(): Boolean = apronState.isBottom(manager)
+    def isBottom: Boolean = apronState.isBottom(manager)
 
     def removeVariablesInScope(scope: Scope): Valuation = {
-      val firstIndex = variables.indexWhere(v => scopeOperations.isSame(v.scope, scope))
+      val firstIndex = liveVariables.indexWhere(v => scopeOperations.isSame(v.scope, scope))
       if (firstIndex == -1) this
       else {
-        val (toKeep, toRemove) = variables.splitAt(firstIndex)
-        traceOrError(logger, s"Removing variables in scope `$scope` from variables `$variables`")
+        val (toKeep, toRemove) = liveVariables.splitAt(firstIndex)
+        traceOrError(logger, s"Removing variables in scope `$scope` from variables `$liveVariables`")
         traceOrError(logger, s"toRemove: `$toRemove`")
         assert(toRemove.forall(v => v.scope == scope))
         Valuation(toKeep, apronState, allVariables, scopeOperations, logger)
@@ -528,7 +569,7 @@ object AbstractMachine {
     }
 
     override def toShortString: String = {
-      s"Variables: `${variables.map(v => v.toShortString)}`. ApronState: `$apronState`"
+      s"Variables: `${liveVariables.map(v => v.toShortString)}`. ApronState: `$apronState`"
     }
   }
 
@@ -585,7 +626,7 @@ object AbstractMachine {
 
   private def error(logger: Option[MyLogger], message: String): Unit = {
     logger match {
-      case Some(logger) => logger.traceOrError(message)
+      case Some(logger) => logger.error(message)
       case None =>
     }
   }

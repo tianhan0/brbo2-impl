@@ -141,12 +141,12 @@ object BrboExprUtils {
       val result: ApronRepr = expr match {
         case i@Identifier(identifier, typ, _) =>
           val index = {
-            val index = valuation.variables.indexWhere(v => v.identifier.sameAs(i))
+            val index = valuation.liveVariables.indexWhere(v => v.identifier.sameAs(i))
             if (index != -1) index
             else {
               temporaryVariables.get(identifier) match {
                 case Some(ApronVariable(index, _)) => index
-                case None => throw new Exception
+                case None => throw new Exception(s"Looking for variable $i in $expr")
               }
             }
           }
@@ -278,8 +278,8 @@ object BrboExprUtils {
         case Imply(left, right, _) => toApronHelper(Or(Negation(left), right))
       }
       result match {
-        case ApronExpr(_) => assert(expr.typ == BrboType.INT)
-        case _: Constraint => assert(expr.typ == BrboType.BOOL)
+        case ApronExpr(_) => assert(expr.typ == BrboType.INT, s"expr: `${expr.prettyPrintToCFG}`")
+        case _: Constraint => assert(expr.typ == BrboType.BOOL, s"expr: `${expr.prettyPrintToCFG}`")
         case _ => throw new Exception
       }
       result

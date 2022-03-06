@@ -213,8 +213,8 @@ object Apron {
           solver.mkIntVal(average.toInt)
         }
       case node: Texpr0DimNode =>
-        // TODO: This resolution from dimensions to variable names is wrong, because there may exist
-        //  temporary variables that cannot be found in `variables`.
+        //  This resolution from dimensions to variable names is correct, because we expect `variables` to
+        //  contain all variables declared in an Apron state, in their declaration order
         val variable = variables(node.dim)
         variable.typ match {
           case brbo.common.BrboType.INT =>

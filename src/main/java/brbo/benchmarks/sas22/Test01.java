@@ -12,7 +12,7 @@ public abstract class Test01 extends Common {
 
     int i = 0;
     while (i < n) {
-      if (ndBool()) {
+      if (ndInt() == 0) {
         R = R + a;
       } else {
         R = R + b;

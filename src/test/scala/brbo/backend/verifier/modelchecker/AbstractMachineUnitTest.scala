@@ -37,7 +37,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
 
   "Transforming a valuation to bottom" should "be correct" in {
     val v1 = emptyValuationOctagon(debug = false).createUninitializedVariable(xVar)
-    val bottom = v1.toBottom()
+    val bottom = v1.toBottom
     StringCompare.ignoreWhitespaces(bottom.toString,
       """Variables:
         |  Variable(x,None)

@@ -113,7 +113,8 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
           case Break(_) | Continue(_) =>
             // It is expected that, when parsing cex. paths, the result contains break or continue commands
             state
-          case _: CFGOnly | Skip(_) => throw new Exception(s"Unexpected command: `$command`")
+          case _: CFGOnly | Skip(_) => state
+          case _ => throw new Exception(s"Unexpected command: `$command`")
         }
       case brboExpr: BrboExpr =>
         val (extraPathCondition, newReturnValues) = evaluateExpression(valuation, state.returnValues, brboExpr)

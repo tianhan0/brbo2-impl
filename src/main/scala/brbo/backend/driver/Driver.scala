@@ -5,6 +5,7 @@ import brbo.backend.driver.NodeStatus._
 import brbo.backend.refiner.{Refinement, Refiner}
 import brbo.backend.verifier.VerifierStatus._
 import brbo.backend.verifier.cex.Path
+import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.backend.verifier.{UAutomizerVerifier, VerifierResult}
 import brbo.common._
 import brbo.common.ast._
@@ -166,9 +167,11 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
   }
 
   private def verify(program: BrboProgram, boundAssertion: BoundAssertion): VerifierResult = {
-    val ubcheckInserted = insertUBCheck(program, boundAssertion)
     logger.infoOrError(s"Verify global assertion `${boundAssertion.assertion.prettyPrintToCNoOuterBrackets}`")
-    val result = uAutomizerVerifier.verify(ubcheckInserted)
+    // val ubcheckInserted = insertUBCheck(program, boundAssertion)
+    // val result = uAutomizerVerifier.verify(ubcheckInserted)
+    val apronVerifier = new AbstractMachine(program, arguments)
+    val result = apronVerifier.verify(boundAssertion.assertion)
     logger.infoOrError(s"Verifier result: `${result.rawResult}`.")
     result
   }
