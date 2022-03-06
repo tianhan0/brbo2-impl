@@ -2,11 +2,11 @@ package brbo.backend.driver
 
 import brbo.BrboMain
 import brbo.backend.driver.NodeStatus._
-import brbo.backend.refiner.{Refiner, Refinement}
+import brbo.backend.refiner.{Refinement, Refiner}
 import brbo.backend.verifier.VerifierStatus._
 import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.modelchecker.AbstractMachine
-import brbo.backend.verifier.{SymbolicExecution, UAutomizerVerifier, VerifierResult}
+import brbo.backend.verifier.{InterpreterKind, SymbolicExecution, UAutomizerVerifier, VerifierResult}
 import brbo.common._
 import brbo.common.ast._
 import org.apache.commons.io.FileUtils
@@ -124,9 +124,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         // Refine the current node, possibly once again, based on the same counterexample
         // When a node is visited for a second (or more) time, then it must be caused by backtracking, which
         // implies that all nodes in one of its subtree have failed
-        // TODO: Use a different abstract interpreter
-        val symbolicExecution = new SymbolicExecution(node.program.mainFunction.parameters, arguments.getDebugMode)
-        refiner.refine(node.program, pathWithoutUBChecks, boundAssertion, avoidRefinements, symbolicExecution) match {
+        refiner.refine(node.program, pathWithoutUBChecks, boundAssertion, avoidRefinements, InterpreterKind.MODEL_CHECK) match {
           case (Some(refinedProgram), Some(refinement)) =>
             val result = verify(refinedProgram, boundAssertion)
             val exploreRefinedProgram: NodeStatus = result.rawResult match {

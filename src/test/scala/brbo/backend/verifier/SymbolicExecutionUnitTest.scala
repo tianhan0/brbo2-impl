@@ -9,13 +9,13 @@ import brbo.common.cfg.CFGNode
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SymbolicExecutionUnitTest extends AnyFlatSpec {
-  "Symbolic execution a path" should "be correct" in {
+  "Symbolically executing a path" should "be correct" in {
     SymbolicExecutionUnitTest.tests.foreach({
       testCase =>
         val symbolicExecution = new SymbolicExecution(SymbolicExecutionUnitTest.program.mainFunction.parameters, debugMode = false)
         val solver = new Z3Solver
         val result = symbolicExecution.execute(testCase.input.asInstanceOf[Path].pathNodes, solver).finalState
-        assert(StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"${testCase.name} failed!"))
+        StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"${testCase.name} failed!")
     })
   }
 }
@@ -92,7 +92,7 @@ object SymbolicExecutionUnitTest {
           |  (e,(INT,Value(a)))
           |  (i,(INT,Value((+ 0 1))))
           |  (n,(INT,Value(n)))
-          |Path condition: (let ((a!1 (not (not (or (= v3 0) (= v3 1))))))
+          |Path condition: (let ((a!1 (not (not (or (= v5 0) (= v5 1))))))
           |  (and true
           |       (not (not (> n 0)))
           |       a!1
@@ -101,7 +101,7 @@ object SymbolicExecutionUnitTest {
           |       (not (< (+ 0 1) 1))
           |       (not (<= (+ 0 a) a))))
           |Return values:
-          |  (ndBool,List(Value(v3)))
+          |  (ndBool,List(Value(v5)))
           |  (ndInt,List())""".stripMargin),
       TestCase("Test Uses and Resets", test02,
         """Valuations:

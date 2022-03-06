@@ -169,7 +169,7 @@ object CommandLineArguments {
   val DEFAULT_TIMEOUT = 20
   val DEFAULT_MAX_ITERATIONS = 1000
   val DEFAULT_ASSERTION_TAG: String = "all"
-  val DEFAULT_ABSTRACT_DOMAIN: String = OCTAGON.toString
+  val DEFAULT_ABSTRACT_DOMAIN: String = POLKA_STRICT.toString
   val DEFAULT_MAX_PATH_LENGTH = 100
 
   private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)

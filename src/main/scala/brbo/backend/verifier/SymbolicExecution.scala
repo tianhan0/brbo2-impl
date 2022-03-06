@@ -9,7 +9,7 @@ import com.microsoft.z3.{AST, BoolExpr, Expr}
 
 import scala.annotation.tailrec
 
-class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) extends AbstractInterpreter {
+class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
   private val logger = MyLogger.createLogger(classOf[SymbolicExecution], debugMode)
 
   def execute(nodes: List[CFGNode], solver: Z3Solver): Result = {
@@ -18,17 +18,22 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) ex
         val z3AST = Z3Solver.variableToZ3(parameter.name, parameter.typ, solver)
         acc + (parameter.name -> (parameter.typ, Value(z3AST)))
     })
-    var freshVariables: Valuation = Map()
+    var declaredVariables: Valuation = inputs
 
     def createFreshVariable(typ: BrboType): (String, Expr) = {
-      val variableName = s"v${inputs.size + freshVariables.size}"
+      val variableName = s"v${declaredVariables.size}"
+      declareVariable(variableName, typ)
+    }
+
+    def declareVariable(name: String, typ: BrboType): (String, Expr) = {
       val z3AST = typ match {
-        case INT => solver.mkIntVar(variableName)
-        case BOOL => solver.mkBoolVar(variableName)
+        case INT => solver.mkIntVar(name)
+        case BOOL => solver.mkBoolVar(name)
         case VOID => throw new Exception
       }
-      freshVariables = freshVariables + (variableName -> (typ, Value(z3AST)))
-      (variableName, z3AST)
+      assert(!declaredVariables.contains(name))
+      declaredVariables = declaredVariables + (name -> (typ, Value(z3AST)))
+      (name, z3AST)
     }
 
     @tailrec
@@ -117,7 +122,7 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) ex
     }
 
     def evaluateAssignment(valuation: Valuation, returnValues: ReturnValues,
-                                   command: Either[Assignment, VariableDeclaration]): (Valuation, ReturnValues) = {
+                           command: Either[Assignment, VariableDeclaration]): (Valuation, ReturnValues) = {
       command match {
         case Left(Assignment(variable, expression, _)) =>
           val (value, newReturnValues) = evaluateExpression(valuation, returnValues, expression)
@@ -126,12 +131,13 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) ex
           val (value, newReturnValues) = evaluateExpression(valuation, returnValues, initialValue)
           // Check variable name shadowing
           assert(!valuation.contains(variable.name), s"Variable `${variable.name}` is defined again by `$command`")
+          declareVariable(variable.name, variable.typ)
           (valuation.updated(variable.name, (variable.typ, Value(value.get))), newReturnValues)
       }
     }
 
     def evaluateExpression(valuation: Valuation, returnValues: ReturnValues,
-                                   brboExpr: BrboExpr): (Option[AST], ReturnValues) = {
+                           brboExpr: BrboExpr): (Option[AST], ReturnValues) = {
       brboExpr match {
         case Equal(left, right, _) =>
           val (leftValue, returnValues1) = evaluateExpression(valuation, returnValues, left)
@@ -211,25 +217,9 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) ex
           (Some(solver.mkITE(conditionValue.get, thenValue.get, elseValue.get)), returnValues2)
       }
     }
-    
+
     val finalState = nodes.foldLeft(State(List(inputs), solver.mkTrue(), Map()))({ (acc, node) => evaluate(acc, node) })
-    Result(finalState, freshVariables.keySet)
-  }
-
-  /**
-   *
-   * @param path   A path
-   * @param solver The solver that is used to represent the final state of the path
-   * @return The final state of the path, and the set of variable names that have been used
-   */
-  override def interpret(path: List[CFGNode], solver: Z3Solver): (AST, Set[String]) = {
-    val Result(finalState, declaredVariables) = execute(path, solver)
-    val finalStateAst = solver.mkAnd(valuationToAST(finalState.valuations.head, solver), finalState.pathCondition)
-    (finalStateAst, declaredVariables)
-  }
-
-  override def inputs(solver: Z3Solver): Set[AST] = {
-    inputVariables.map({ parameter => Z3Solver.variableToZ3(parameter.name, parameter.typ, solver) }).toSet
+    Result(finalState, declaredVariables.keySet)
   }
 }
 

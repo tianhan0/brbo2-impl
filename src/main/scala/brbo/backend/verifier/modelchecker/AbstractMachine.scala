@@ -15,7 +15,7 @@ import org.apache.logging.log4j.LogManager
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
-class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments) extends AbstractInterpreter {
+class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments) {
   private val logger: MyLogger = MyLogger(LogManager.getLogger(classOf[AbstractMachine]), arguments.getDebugMode)
   private val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
   private val fakeInitialNode = CFGNode(Bool(b = true), function = Some(brboProgram.mainFunction))
@@ -46,78 +46,80 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     var reached = Map[List[CFGNode], PathState](Nil -> initialPathState)
     var waitlist: Queue[(List[CFGNode], State)] = Queue((Nil, initialState)) // Breadth First Search
     var stoppedEarly = false
-    var counterexamplePaths: Set[List[CFGNode]] = Set()
+    var counterexamplePaths: Set[List[CFGNode]] = Set() // Paths that lead to either refutation or timeouts
+    var maximalPaths = Map[List[CFGNode], State]() // Paths with a maximal length. That is, they can no longer be .
     var refuted = false
-    while (waitlist.nonEmpty && counterexamplePaths.isEmpty) {
+    while (waitlist.nonEmpty && counterexamplePaths.isEmpty && !refuted) {
       val ((path, state), newWaitlist) = waitlist.dequeue
-      waitlist = newWaitlist
-      val oldPathState: PathState = reached.getOrElse(path, throw new Exception)
       logger.traceOrError(s"[model check] Dequeued path: `$path`")
       logger.traceOrError(s"[model check] Dequeued state: `${state.toShortString}`")
+      waitlist = newWaitlist
+      val oldPathState: PathState = reached.getOrElse(path, throw new Exception)
       val newStates = step(state)
+      if (newStates.isEmpty)
+        maximalPaths = maximalPaths + (path -> state)
       newStates.foreach({
         newState =>
           logger.traceOrError(s"[model check] New state: ${newState.toShortString}")
           val newPath = newState.node :: path
-          if (!refuted && !newState.valuation.isBottom) {
-            val refuted2 =
-              if (newState.shouldVerify) {
-                val refuted = {
-                  val verified = {
-                    if (arguments.getCheckWithZ3) newState.satisfyWithZ3(assertion)
-                    else newState.satisfy(assertion)
+          val (newValuation, keepExploring) = {
+            oldPathState.valuations.get(newState.node) match {
+              case Some(existingValuation) =>
+                logger.traceOrError(s"[model check] Old valuation at node `${newState.node.prettyPrintToCFG}`: ${existingValuation.toShortString}")
+                if (newState.valuation.include(existingValuation)) {
+                  logger.traceOrError(s"[model check] The new valuation is included in the old one")
+                  (existingValuation, false)
+                }
+                else {
+                  logger.traceOrError(s"[model check] The new valuation is not included in the old one")
+                  val joinedValuation = newState.valuation.joinCopy(existingValuation)
+                  logger.traceOrError(s"[model check] Joined valuation: `${joinedValuation.toShortString}`")
+                  if (newState.indexOnPath <= arguments.getMaxPathLength) (joinedValuation, true)
+                  else {
+                    logger.traceOrError(s"[model check] Will stop exploring path due to reaching the max path length: `$newPath`")
+                    stoppedEarly = true
+                    // Add this path to the counterexamples, so that it can be avoided in the future
+                    counterexamplePaths = counterexamplePaths + newPath
+                    (joinedValuation, false)
                   }
-                  !verified
                 }
-                logger.traceOrError(s"[model check] New state ${if (refuted) "does not satisfy" else "satisfies"} bound assertion `$assertion`")
-                if (refuted) {
-                  logger.traceOrError(s"[model check] Bound violation state: `${newState.toShortString}`")
-                }
-                refuted
-              } else false
-            if (refuted2) {
-              counterexamplePaths = counterexamplePaths + newPath
-              refuted = true
+              case None =>
+                logger.traceOrError(s"Old valuation at node `${newState.node.prettyPrintToCFG}` does not exist")
+                (newState.valuation, true)
             }
-            else {
-              val (newValuation, keepExploring) = {
-                oldPathState.valuations.get(newState.node) match {
-                  case Some(existingValuation) =>
-                    logger.traceOrError(s"[model check] Old valuation at node `${newState.node.prettyPrintToCFG}`: ${existingValuation.toShortString}")
-                    if (newState.valuation.include(existingValuation)) {
-                      logger.traceOrError(s"[model check] The new valuation is included in the old one")
-                      (existingValuation, false)
-                    }
-                    else {
-                      logger.traceOrError(s"[model check] The new valuation is not included in the old one")
-                      val joinedValuation = newState.valuation.joinCopy(existingValuation)
-                      logger.traceOrError(s"[model check] Joined valuation: `${joinedValuation.toShortString}`")
-                      if (newState.indexOnPath <= arguments.getMaxPathLength) (joinedValuation, true)
-                      else {
-                        logger.traceOrError(s"[model check] Will stop exploring path due to reaching the max path length: `$newPath`")
-                        stoppedEarly = true
-                        // Add this path to the counterexamples, so that it can be avoided in the future
-                        counterexamplePaths = counterexamplePaths + newPath
-                        (joinedValuation, false)
-                      }
-                    }
-                  case None =>
-                    logger.traceOrError(s"Old valuation at node `${newState.node.prettyPrintToCFG}` does not exist")
-                    (newState.valuation, true)
+          }
+          reached = {
+            val newValuations = oldPathState.valuations.updated(newState.node, newValuation)
+            reached + (newPath -> PathState(newValuations))
+          }
+          if (keepExploring && !newState.valuation.isBottom) {
+            waitlist = waitlist.enqueue((newPath, State(newState.node, newValuation, newState.indexOnPath, newState.shouldVerify)))
+          }
+
+          val isNewStateRefuted =
+            if (newState.shouldVerify) {
+              val refuted = {
+                val verified = {
+                  if (arguments.getCheckWithZ3) newState.satisfyWithZ3(assertion)
+                  else newState.satisfy(assertion)
                 }
+                !verified
               }
-              if (keepExploring) {
-                val newValuations = oldPathState.valuations.updated(newState.node, newValuation)
-                waitlist = waitlist.enqueue((newPath, State(newState.node, newValuation, newState.indexOnPath, newState.shouldVerify)))
-                reached = reached + (newPath -> PathState(newValuations))
+              logger.traceOrError(s"[model check] New state ${if (refuted) "does not satisfy" else "satisfies"} assertion `$assertion`")
+              if (refuted) {
+                logger.infoOrError(s"[model check] Assertion violation state: `${newState.toShortString}`")
               }
-            }
+              refuted
+            } else false
+          if (isNewStateRefuted) {
+            counterexamplePaths = counterexamplePaths + newPath
+            refuted = true
           }
       })
       reached = reached - path
     }
-    logger.info(s"Explored `${reached.size}` paths")
-    logger.traceOrError(s"\n${reached.keySet.map(p => p.map(n => n.simplifiedString).reverse).mkString("  \n")}")
+    logger.infoOrError(s"Explored `${maximalPaths.size}` maximal paths")
+    logger.traceOrError(s"\n${maximalPaths.keySet.map(p => p.map(n => n.simplifiedString).reverse).mkString("  \n")}")
     val paths = counterexamplePaths.map(p => Path(p.reverse))
     val result = {
       if (refuted) VerifierResult(VerifierStatus.FALSE_RESULT, paths)
@@ -126,11 +128,11 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         else VerifierResult(VerifierStatus.TRUE_RESULT, paths)
       }
     }
-    Result(result, reached.values.toSet)
+    Result(result, maximalPaths.values)
   }
 
   def step(state: State): Set[State] = {
-    logger.traceOrError(s"[step] Current state: `${state.toShortString}`")
+    logger.trace(s"[step] Current state: `${state.toShortString}`")
     val scopeOperations = state.valuation.scopeOperations
     val currentScope = scopeOperations.getScope(state.node.value)
     val nextNodes: Set[(CFGNode, State)] = {
@@ -167,12 +169,12 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         }
       }
     }
-    logger.traceOrError(s"[step] Current scope: `$currentScope`")
+    logger.trace(s"[step] Current scope: `$currentScope`")
     nextNodes.map({
       case (nextNode, state) =>
-        logger.traceOrError(s"[step] Next node: `${nextNode.prettyPrintToCFG}`")
+        logger.trace(s"[step] Next node: `${nextNode.prettyPrintToCFG}`")
         val nextScope = scopeOperations.getScope(nextNode.value)
-        logger.traceOrError(s"[step] Next scope: `$nextScope`")
+        logger.trace(s"[step] Next scope: `$nextScope`")
         val valuation = {
           val valuation = {
             nextNode.value match {
@@ -183,11 +185,11 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
           }
           if (scopeOperations.isUnknown(currentScope) || scopeOperations.isUnknown(nextScope)
             || scopeOperations.isSubScope(nextScope, currentScope)) {
-            logger.traceOrError(s"[step] Current or next scope is unknown, or next scope is a (non-strict) sub-scope of the current scope")
+            logger.trace(s"[step] Current or next scope is unknown, or next scope is a (non-strict) sub-scope of the current scope")
             valuation
           }
           else {
-            logger.traceOrError(s"[step] Next scope is not a (non-strict) sub-scope of the current scope")
+            logger.trace(s"[step] Next scope is not a (non-strict) sub-scope of the current scope")
             valuation.removeVariablesInScope(currentScope)
           }
         }
@@ -198,10 +200,6 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         State(nextNode, valuation, state.indexOnPath + 1, shouldVerify)
     })
   }
-
-  override def interpret(path: List[CFGNode], solver: Z3Solver): (AST, Set[String]) = ???
-
-  override def inputs(solver: Z3Solver): Set[AST] = ???
 }
 
 object AbstractMachine {
@@ -321,7 +319,7 @@ object AbstractMachine {
     def toShortString: String
   }
 
-  case class Result(result: VerifierResult, finalStates: Set[PathState])
+  case class Result(result: VerifierResult, finalStates: Iterable[State])
 
   case class State(node: CFGNode, valuation: Valuation, indexOnPath: Int, shouldVerify: Boolean) extends ToShortString {
     val scope: Scope = valuation.scopeOperations.getScope(node.value)
@@ -359,8 +357,8 @@ object AbstractMachine {
     val allVariablesNoScope: List[Identifier] = allVariables.map(v => v.identifier)
     val allVariablesSet: Set[Variable] = allVariables.toSet
     private val solver = new Z3Solver
-    private val stateFloat = toZ3Ast(solver, toInt = false)
-    private val stateInt = toZ3Ast(solver, toInt = true)
+    private val stateFloat = stateToZ3Ast(solver, toInt = false)
+    private val stateInt = stateToZ3Ast(solver, toInt = true)
 
     def indexOfVariableThisScope(variable: Variable): Int =
       liveVariables.indexWhere(v => v.identifier.sameAs(variable.identifier) && v.scope == variable.scope)
@@ -575,7 +573,7 @@ object AbstractMachine {
       s"Variables: `${liveVariables.map(v => v.toShortString)}`. ApronState: `$apronState`"
     }
 
-    def toZ3Ast(solver: Z3Solver, toInt: Boolean): AST = {
+    def stateToZ3Ast(solver: Z3Solver, toInt: Boolean): AST = {
       val asts = apronState.toTcons(manager).map({
         constraint => Apron.constraintToZ3(constraint, solver, allVariablesNoScope, toInt)
       })

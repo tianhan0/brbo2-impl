@@ -1,6 +1,7 @@
 package brbo.backend.refiner
 
 import brbo.backend.verifier.AbstractInterpreter
+import brbo.backend.verifier.InterpreterKind.InterpreterKind
 import brbo.backend.verifier.cex.Path
 import brbo.common.GhostVariableTyp.{Counter, Resource, Star}
 import brbo.common.ast.{BoundAssertion, BrboProgram}
@@ -11,8 +12,10 @@ class Refiner(arguments: CommandLineArguments) {
   protected val logger: MyLogger = MyLogger.createLogger(classOf[Refiner], arguments.getDebugMode)
   protected val pathRefinement = new PathRefinement(arguments)
 
-  def refine(originalProgram: BrboProgram, path: Path, boundAssertion: BoundAssertion,
-             refinementsToAvoid: Set[Refinement], abstractInterpreter: AbstractInterpreter): (Option[BrboProgram], Option[Refinement]) = {
+  def refine(originalProgram: BrboProgram, path: Path,
+             boundAssertion: BoundAssertion, refinementsToAvoid: Set[Refinement],
+             interpreterKind: InterpreterKind): (Option[BrboProgram], Option[Refinement]) = {
+    val inputVariables = originalProgram.mainFunction.parameters
     val solver = new Z3Solver
     logger.infoOrError(s"Generate all possible path refinements")
     var declaredVariables = Set[String]()
@@ -26,7 +29,7 @@ class Refiner(arguments: CommandLineArguments) {
           val refinedPath = refinement.refinedPath(originalProgram.mainFunction)
           logger.traceOrError(s"Validate refined path:\n`${refinedPath.mkString("\n")}`")
           // Get all group IDs and then all ghost variables
-          val (finalState, newVariables) = abstractInterpreter.interpret(refinedPath, solver)
+          val (finalState, newVariables) = AbstractInterpreter.interpretPath(refinedPath, inputVariables, solver, interpreterKind, arguments)
           declaredVariables = declaredVariables ++ newVariables
           val allGroupIds: List[Int] =
             (originalProgram.mainFunction.groupIds ++ refinement.groupIds.values.flatten).toList.sorted
@@ -72,7 +75,7 @@ class Refiner(arguments: CommandLineArguments) {
               iffConjunction = solver.mkAnd(iffConjunction, solver.mkIff(variableAST, assertion))
             }
         })
-        val inputs = abstractInterpreter.inputs(solver)
+        val inputs = AbstractInterpreter.getInputVariables(inputVariables, solver)
         solver.mkForall(inputs, solver.mkAnd(disjunction, iffConjunction))
       }
       val z3Result = solver.checkAssertionPushPop(query, arguments.getDebugMode)
