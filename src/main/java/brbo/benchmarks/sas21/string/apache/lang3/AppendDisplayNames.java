@@ -17,7 +17,7 @@ abstract public class AppendDisplayNames extends Common {
       iterator -= entry;
 
       for (int i = 0; i < entry; i++) {
-        if (ndBool()) {
+        if (ndInt() == 0) {
           sb += 2;
           R = R + 2;
         } else {
@@ -25,7 +25,7 @@ abstract public class AppendDisplayNames extends Common {
           R = R + 1;
         }
       }
-      if (ndBool()) {
+      if (ndInt() == 0) {
         sb++;
         R = R + 1;
       }

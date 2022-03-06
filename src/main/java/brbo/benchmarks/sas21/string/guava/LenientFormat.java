@@ -16,7 +16,7 @@ abstract public class LenientFormat extends Common {
     int i = 0;
     while (i < args) {
       int placeholderStart = 0;
-      if (ndBool()) placeholderStart = -1;
+      if (ndInt() == 0) placeholderStart = -1;
       else placeholderStart = ndInt2(templateStart, template - 1);
       if (placeholderStart == -1) {
         break;

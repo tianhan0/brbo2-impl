@@ -22,7 +22,7 @@ public abstract class Common {
    *
    * @return Non-deterministic boolean
    */
-  public abstract boolean ndBool();
+  // public abstract boolean ndBool();
 
   public abstract void assume(boolean expression);
 

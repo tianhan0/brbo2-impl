@@ -36,7 +36,7 @@ abstract public class GetFormattedExceptionMessage extends Common {
 
       buffer++;
       R = R + 1;
-      if (ndBool()) {
+      if (ndInt() == 0) {
         buffer++;
         R = R + 1;
       }

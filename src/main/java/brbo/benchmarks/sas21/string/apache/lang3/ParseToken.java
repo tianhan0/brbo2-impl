@@ -12,11 +12,11 @@ abstract public class ParseToken extends Common {
     boundAssertion("most", R <= pattern + 1);
     boundAssertion("less", R <= MAX * pattern + MAX);
     int i = ndInt2(0, pattern - 1);
-    if (ndBool()) {
+    if (ndInt() == 0) {
       buf++;
       R = R + 1;
       while (i + 1 < pattern) {
-        if (ndBool()) {
+        if (ndInt() == 0) {
           buf++;
           R = R + 1;
         }
@@ -29,15 +29,15 @@ abstract public class ParseToken extends Common {
       buf++;
       R = R + 1;
       for (; i < pattern; i++) {
-        if (ndBool()) {
-          if (ndBool()) {
+        if (ndInt() == 0) {
+          if (ndInt() == 0) {
             i++;
             buf++;
             R = R + 1;
           }
         }
         else {
-          if (ndBool()) {
+          if (ndInt() == 0) {
             i--;
             break;
           }

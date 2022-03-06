@@ -14,7 +14,7 @@ abstract public class AppendQuotedString extends Common {
     int start = pos;
     int lastHold = start;
     for (int i = pos; i < pattern; i++) {
-      if (ndBool()) {
+      if (ndInt() == 0) {
         pos++;
         appendTo += pos - lastHold;
         R = R + (pos - lastHold);

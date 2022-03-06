@@ -146,7 +146,7 @@ object BrboExprUtils {
             else {
               temporaryVariables.get(identifier) match {
                 case Some(ApronVariable(index, _)) => index
-                case None => throw new Exception(s"Looking for variable $i in $expr")
+                case None => throw new Exception(s"Looking for variable `$i` in `${valuation.variablesNoScope}`")
               }
             }
           }

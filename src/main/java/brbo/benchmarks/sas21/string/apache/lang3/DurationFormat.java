@@ -19,15 +19,15 @@ abstract public class DurationFormat extends Common {
     while (iterator > 0) {
       int entry = ndInt2(1, iterator);
       iterator -= entry;
-      if (ndBool()) {
+      if (ndInt() == 0) {
         buffer += entry;
         R = R + entry;
       } else {
-        if (ndBool()) {
+        if (ndInt() == 0) {
           buffer += years;
           R = R + years;
         } else {
-          if (ndBool()) {
+          if (ndInt() == 0) {
             buffer += months;
             R = R + months;
           }

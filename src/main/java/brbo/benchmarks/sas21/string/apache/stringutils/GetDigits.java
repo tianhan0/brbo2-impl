@@ -12,7 +12,7 @@ abstract public class GetDigits extends Common {
     boundAssertion("less", R <= MAX * str);
     int strDigits = 0;
     for (int i = 0; i < str; i++) {
-      if (ndBool()) {
+      if (ndInt() == 0) {
         strDigits++;
         R = R + 1;
       }

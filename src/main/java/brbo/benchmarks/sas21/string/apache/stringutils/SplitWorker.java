@@ -16,7 +16,7 @@ abstract public class SplitWorker extends Common {
     boolean match = false;
     boolean lastMatch = false;
     while (i < str) {
-      if (ndBool()) {
+      if (ndInt() == 0) {
         if (match || preserveAllTokens) {
           list += i - start;
           R = R + (i - start);

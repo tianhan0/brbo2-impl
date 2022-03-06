@@ -12,7 +12,7 @@ abstract public class DbgPrint extends Common {
     boundAssertion("most", R <= src);
     boundAssertion("less", R <= MAX * src + MAX);
     for (int i = 0; i < src; i++) {
-      if (ndBool()) {
+      if (ndInt() == 0) {
         sb++;
         R = R + 1;
       }

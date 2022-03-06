@@ -14,7 +14,7 @@ abstract public class ReplaceChars extends Common {
     boundAssertion("less", R <= MAX * str + MAX);
     for (int i = 0; i < str; i++) {
       int index = 0;
-      if (ndBool()) {
+      if (ndInt() == 0) {
         index = -1;
       }
       else {

@@ -14,13 +14,13 @@ abstract public class Lexx extends Common {
     int inLiteral = 0;
     for (int i = 0; i < format; i++) {
       if (inLiteral > 0) {
-        if (ndBool()) { // Let this function call be on a separate line. Otherwise parsing counterexamples may fail.
+        if (ndInt() == 0) { // Let this function call be on a separate line. Otherwise parsing counterexamples may fail.
           buffer++;
           R = R + 1;
           continue;
         }
       }
-      if (ndBool()) {
+      if (ndInt() == 0) {
         if (inLiteral > 0) {
           inLiteral = 0;
         }

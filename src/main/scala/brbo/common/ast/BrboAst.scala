@@ -16,7 +16,7 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
   }
 
   override def toIR(indent: Int = 0): String = {
-    val separator  = ", "
+    val separator = ", "
     s"Program name: `$name`\n" +
       s"Global assertions to verify: `${boundAssertions.map(a => a.assertion.toString).mkString(separator)}`\n" +
       s"${(functions :+ mainFunction).map(function => function.toIR(DEFAULT_INDENT_IR)).mkString("\n")}"
@@ -28,15 +28,15 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
 
 /**
  *
- * @param identifier                Function name
- * @param returnType                Return type
- * @param parameters                Function parameters
+ * @param identifier           Function name
+ * @param returnType           Return type
+ * @param parameters           Function parameters
  * @param bodyNoInitialization Function body without initializing ghost variables
- * @param groupIds                  IDs of amortizations groups that *may* be used in this function,
- *                                  so that their ghost variables will be initialized.
- *                                  This set is empty iff. no amortization (i.e., selectively, worst-case, or fully-amortized reasoning)
- *                                  has been applied to the function.
- * @param uuid                      Unique ID
+ * @param groupIds             IDs of amortizations groups that *may* be used in this function,
+ *                             so that their ghost variables will be initialized.
+ *                             This set is empty iff. no amortization (i.e., selectively, worst-case, or fully-amortized reasoning)
+ *                             has been applied to the function.
+ * @param uuid                 Unique ID
  */
 case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier],
                         bodyNoInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())

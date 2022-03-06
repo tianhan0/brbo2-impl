@@ -13,10 +13,10 @@ abstract public class Literal extends Common {
     boundAssertion("less", R <= MAX * pattern + MAX);
     int currentIdx = ndInt2(0, pattern - 1);
     while (currentIdx < pattern) {
-      if (ndBool()) {
+      if (ndInt() == 0) {
         break;
       } else {
-        if (ndBool()) {
+        if (ndInt() == 0) {
           continue;
         }
       }

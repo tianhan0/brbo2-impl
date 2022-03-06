@@ -12,12 +12,12 @@ abstract public class Squeeze extends Common {
     boundAssertion("most", R <= str);
     boundAssertion("less", R <= MAX * str + MAX);
     for (int i = 1; i < str; i++) {
-      if (ndBool()) {
-        if (ndBool()) {
+      if (ndInt() == 0) {
+        if (ndInt() == 0) {
           continue;
         }
-        if (ndBool()) {
-          if (ndBool()) {
+        if (ndInt() == 0) {
+          if (ndInt() == 0) {
             continue;
           }
         }

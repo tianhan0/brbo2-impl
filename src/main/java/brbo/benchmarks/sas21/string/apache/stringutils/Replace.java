@@ -10,7 +10,7 @@ abstract public class Replace extends Common {
     int dummy = 0;
     int start = 0;
     int end = 0;
-    if (ndBool()) {
+    if (ndInt() == 0) {
       end = -1;
     } else {
       end = ndInt2(start, text - 1);
@@ -33,7 +33,7 @@ abstract public class Replace extends Common {
       if (max == 0) {
         break;
       }
-      if (ndBool()) {
+      if (ndInt() == 0) {
         end = -1;
       } else {
         ndInt2(start, text - 1);

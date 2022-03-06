@@ -13,7 +13,7 @@ abstract public class Modify extends Common {
     boundAssertion("less", R <= MAX * str + MAX);
     int i = 0;
     while (i < str) {
-      if (ndBool()) {
+      if (ndInt() == 0) {
         buffer++;
         R = R + 1;
       }

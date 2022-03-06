@@ -17,7 +17,7 @@ abstract public class SubstringsBetween extends Common {
     int start = 0;
     int end = 0;
     while (pos < str - close) {
-      if (ndBool()) {
+      if (ndInt() == 0) {
         start = -1;
       } else {
         start = ndInt2(pos, str - 1);
@@ -26,7 +26,7 @@ abstract public class SubstringsBetween extends Common {
         break;
       }
       start += open;
-      if (ndBool()) {
+      if (ndInt() == 0) {
         end = -1;
       } else {
         end = ndInt2(start, str - 1);

@@ -12,7 +12,7 @@ abstract public class LongToHex extends Common {
     boundAssertion("most", R <= nHexs);
     boundAssertion("less", R <= MAX * nHexs + MAX);
     for (int i = 0;i < nHexs; i++) {
-      if (ndBool()) {
+      if (ndInt() == 0) {
         sb++;
         R = R + 1;
       }
