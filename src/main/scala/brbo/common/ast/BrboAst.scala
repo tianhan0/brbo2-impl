@@ -2,7 +2,7 @@ package brbo.common.ast
 
 import brbo.common.BrboType._
 import brbo.common.GhostVariableTyp._
-import brbo.common.{BrboType, GhostVariableUtils}
+import brbo.common.{BrboType, GhostVariableUtils, SameAs}
 
 import java.util.UUID
 
@@ -40,7 +40,7 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
  */
 case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier],
                         bodyNoInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
-  extends PrettyPrintToC with OverrideToString {
+  extends PrettyPrintToC with OverrideToString with SameAs {
   val ghostVariableInitializations: List[Command] = groupIds.flatMap({
     groupId => GhostVariableUtils.declareVariables(groupId)
   }).toList.sortWith({ case (c1, c2) => c1.toIR() < c2.toIR() })
@@ -67,6 +67,19 @@ case class BrboFunction(identifier: String, returnType: BrboType, parameters: Li
   def replaceBodyWithoutInitialization(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody, groupIds)
 
   def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, bodyNoInitialization, newGroupIds)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case BrboFunction(otherIdentifier, otherReturnType, otherParameters, otherBodyNoInitialization, otherGroupIds, _) =>
+        val sameParameters = {
+          if (otherParameters.length != parameters.length) false
+          else otherParameters.zip(parameters).forall({ case (i1, i2) => i1.sameAs(i2) })
+        }
+        otherIdentifier == identifier && otherReturnType == returnType && sameParameters &&
+          otherBodyNoInitialization.sameAs(bodyNoInitialization) && otherGroupIds == groupIds
+      case _ => false
+    }
+  }
 }
 
 trait BrboAst extends BrboAstNode with PrettyPrintToC with OverrideToString
@@ -86,6 +99,15 @@ case class Block(asts: List[BrboAst], uuid: UUID = UUID.randomUUID()) extends St
   override def toIR(indent: Int): String = {
     val indentString = " " * indent
     s"$indentString{\n${asts.map(t => t.toIR(indent + DEFAULT_INDENT_IR)).mkString("\n")}\n$indentString}"
+  }
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case Block(otherAsts, _) =>
+        if (otherAsts.length != asts.length) false
+        else otherAsts.zip(asts).forall({ case (s1, s2) => s1.sameAs(s2) })
+      case _ => false
+    }
   }
 }
 
@@ -110,6 +132,14 @@ case class Loop(condition: BrboExpr, loopBody: BrboAst, uuid: UUID = UUID.random
     }
     val indentString = " " * indent
     s"${indentString}while ($conditionString)\n$bodyString"
+  }
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case Loop(otherCondition, otherLoopBody, _) =>
+        otherCondition.sameAs(condition) && otherLoopBody.sameAs(loopBody)
+      case _ => false
+    }
   }
 }
 
@@ -145,6 +175,14 @@ case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, uuid: UU
     val indentString = " " * indent
     s"${indentString}if ($conditionString)\n$thenString\n${indentString}else\n$elseString"
   }
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case ITE(otherCondition, otherThenAst, otherElseAst, _) =>
+        otherCondition.sameAs(condition) && otherThenAst.sameAs(thenAst) && otherElseAst.sameAs(elseAst)
+      case _ => false
+    }
+  }
 }
 
 /*case class Assert(condition: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
@@ -177,6 +215,17 @@ case class Assume(condition: BrboExpr, uuid: UUID = UUID.randomUUID()) extends C
   override def getUses: Set[Identifier] = condition.getUses
 
   override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case Assume(otherCondition, _) => condition.sameAs(otherCondition)
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
@@ -199,6 +248,18 @@ case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, u
   override def getUses: Set[Identifier] = initialValue.getUses
 
   override def getDefs: Set[Identifier] = Set(identifier)
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case VariableDeclaration(otherIdentifier, otherInitialValue, _) =>
+            otherIdentifier.sameAs(identifier) && otherInitialValue.sameAs(initialValue)
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 case class Assignment(identifier: Identifier, expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
@@ -216,6 +277,18 @@ case class Assignment(identifier: Identifier, expression: BrboExpr, uuid: UUID =
   override def getUses: Set[Identifier] = expression.getUses + identifier
 
   override def getDefs: Set[Identifier] = expression.getDefs
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case Assignment(otherIdentifier, otherExpression, _) =>
+            otherIdentifier.sameAs(identifier) && otherExpression.sameAs(expression)
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 case class FunctionCall(functionCallExpr: FunctionCallExpr, uuid: UUID = UUID.randomUUID()) extends Command {
@@ -231,6 +304,17 @@ case class FunctionCall(functionCallExpr: FunctionCallExpr, uuid: UUID = UUID.ra
   override def getUses: Set[Identifier] = functionCallExpr.getUses
 
   override def getDefs: Set[Identifier] = functionCallExpr.getDefs
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case FunctionCall(otherFunctionCallExpr, _) => otherFunctionCallExpr.sameAs(functionCallExpr)
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 case class Skip(uuid: UUID = UUID.randomUUID()) extends Command {
@@ -246,6 +330,17 @@ case class Skip(uuid: UUID = UUID.randomUUID()) extends Command {
   override def getUses: Set[Identifier] = Set()
 
   override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case Skip(_) => true
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 case class Return(value: Option[BrboExpr], uuid: UUID = UUID.randomUUID()) extends Command {
@@ -276,6 +371,22 @@ case class Return(value: Option[BrboExpr], uuid: UUID = UUID.randomUUID()) exten
   }
 
   override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case Return(otherValue, _) =>
+            (otherValue, value) match {
+              case (Some(otherValue), Some(value)) => otherValue.sameAs(value)
+              case (None, None) => true
+              case _ => false
+            }
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 case class Break(uuid: UUID = UUID.randomUUID()) extends Command {
@@ -291,6 +402,17 @@ case class Break(uuid: UUID = UUID.randomUUID()) extends Command {
   override def getUses: Set[Identifier] = Set()
 
   override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case Break(_) => true
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 case class Continue(uuid: UUID = UUID.randomUUID()) extends Command {
@@ -306,6 +428,17 @@ case class Continue(uuid: UUID = UUID.randomUUID()) extends Command {
   override def getUses: Set[Identifier] = Set()
 
   override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case Continue(_) => true
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 case class LabeledCommand(label: String, command: Command, uuid: UUID = UUID.randomUUID()) extends Command {
@@ -324,6 +457,18 @@ case class LabeledCommand(label: String, command: Command, uuid: UUID = UUID.ran
   override def getUses: Set[Identifier] = command.getUses
 
   override def getDefs: Set[Identifier] = command.getDefs
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case LabeledCommand(otherLabel, otherCommand, _) =>
+            otherLabel == label && otherCommand.sameAs(command)
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 sealed trait CFGOnly
@@ -338,6 +483,17 @@ case class FunctionExit(uuid: UUID = UUID.randomUUID()) extends Command with CFG
   override def getUses: Set[Identifier] = Set()
 
   override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case FunctionExit(_) => true
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 case class LoopExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
@@ -350,6 +506,17 @@ case class LoopExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly
   override def getUses: Set[Identifier] = Set()
 
   override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case LoopExit(_) => true
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
@@ -362,6 +529,17 @@ case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
   override def getUses: Set[Identifier] = Set()
 
   override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case Empty(_) => true
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 /*case class UndefinedFunction(functionName: String, uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
@@ -407,6 +585,18 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
   override def getUses: Set[Identifier] = update.getUses ++ condition.getUses
 
   override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case Use(otherGroupId, otherUpdate, otherCondition, _) =>
+            otherGroupId == groupId && otherUpdate.sameAs(update) && otherCondition.sameAs(condition)
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
@@ -442,11 +632,23 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID 
   override def getUses: Set[Identifier] = condition.getUses
 
   override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case Reset(otherGroupId, otherCondition, _) =>
+            otherGroupId == groupId && otherCondition.sameAs(condition)
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }
 
 sealed trait CexPathOnly
 
-case class BeforeFunctionCall(callee: BrboFunction, actualArguments: List[BrboExpr]) extends Command with CexPathOnly {
+case class BeforeFunctionCall(callee: BrboFunction, actualArguments: List[BrboExpr], uuid: UUID = UUID.randomUUID()) extends Command with CexPathOnly {
   override def prettyPrintToCFG: String = {
     val argumentsString =
       if (actualArguments.nonEmpty) s" with `${actualArguments.map(a => a.prettyPrintToCFG).mkString(", ")}`"
@@ -463,4 +665,19 @@ case class BeforeFunctionCall(callee: BrboFunction, actualArguments: List[BrboEx
   override def getDefs: Set[Identifier] = throw new Exception
 
   override def toIR(indent: Int): String = prettyPrintToCFG
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case BeforeFunctionCall(otherCallee, otherActualArguments, _) =>
+            val sameArguements =
+              if (otherActualArguments.length != actualArguments.length) false
+              else otherActualArguments.zip(actualArguments).forall({ case (a1, a2) => a1.sameAs(a2) })
+            callee.sameAs(otherCallee) && sameArguements
+          case _ => false
+        }
+      case _ => false
+    }
+  }
 }

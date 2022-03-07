@@ -12,14 +12,15 @@ import com.ibm.wala.util.intset.{BimodalMutableIntSet, IntSet}
  * @param id       A unique (if desired) ID among all commands and expressions in all functions
  */
 case class CFGNode(value: CommandOrExpr, function: Option[BrboFunction] = None, id: Int = CFGNode.DONT_CARE_ID)
-  extends NodeWithNumber with INodeWithNumberedEdges
-    with PrettyPrintToC with PrettyPrintToCFG with GetFunctionCalls {
+  extends NodeWithNumber with INodeWithNumberedEdges with PrettyPrintToC with PrettyPrintToCFG with GetFunctionCalls {
   private val predNumbers = new BimodalMutableIntSet()
   private val succNumbers = new BimodalMutableIntSet()
   val functionIdentifier: String = function match {
     case Some(f) => f.identifier
     case None => CFGNode.FUNCTION_NAME_WHEN_FUNCTION_NOT_EXIST
   }
+
+  def sameValue(other: CFGNode): Boolean = other.value.sameAs(value)
 
   override def getGraphNodeId: Int = id
 

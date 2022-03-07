@@ -4,7 +4,7 @@ import brbo.backend.refiner.PrintPath
 import brbo.common.BrboType.BOOL
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{GhostVariableUtils, MyLogger, StringFormatUtils}
+import brbo.common.{GhostVariableUtils, MyLogger}
 
 case class Path(pathNodes: List[CFGNode]) {
   pathNodes.map(pathNode => pathNode.value).foreach({
@@ -93,7 +93,7 @@ object Path {
       node.value match {
         case command: Command =>
           command match {
-            case BeforeFunctionCall(callee, _) =>
+            case BeforeFunctionCall(callee, _, _) =>
               if (callee.identifier == assertFunction.identifier) {
                 i = i + 1
                 val nextNode = nodes(i)

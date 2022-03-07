@@ -81,9 +81,9 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
           case _ => None
         }
     })
-    logger.infoOrError(s"Old groups: `${originalProgram.mainFunction.groupIds}`")
-    logger.infoOrError(s"New groups from the path refinement: `${refinement.groupIds}`")
-    logger.infoOrError(s"New groups (overall): `$newGroupIds`")
+    logger.trace(s"Old groups: `${originalProgram.mainFunction.groupIds}`")
+    logger.trace(s"New groups from the path refinement: `${refinement.groupIds}`")
+    logger.trace(s"New groups (overall): `$newGroupIds`")
     val newMainFunction = originalProgram.mainFunction
       .replaceBodyWithoutInitialization(newMainBody.asInstanceOf[Statement])
       .replaceGroupIds(newGroupIds)
@@ -136,9 +136,11 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     assert(indices.nonEmpty)
     val postConditions = indices.map({
       index =>
-        // TODO: Need to interpret pre-defined functions
+        // TODO: It is probably fine to use the model checker, because
+        //  - we only use linear constraints to partition the states, and
+        //  - if linear constraints can partition the concrete states, then they may also partition the abstract states
         val (ast, _) =
-          AbstractInterpreter.interpretPath(path.slice(0, index), inputVariables, solver, InterpreterKind.SYMBOLIC_EXECUTION, argument)
+          AbstractInterpreter.interpretPath(path.slice(0, index), inputVariables, solver, InterpreterKind.MODEL_CHECK, argument)
         ast
     }).toSeq
     solver.mkOr(postConditions: _*)

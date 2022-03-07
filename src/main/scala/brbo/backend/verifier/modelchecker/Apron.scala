@@ -209,8 +209,8 @@ object Apron {
         val average = (lower + upper) / 2
         if (!toInt) solver.mkDoubleVal(average)
         else {
-          assert(average == average.toInt, s"Expecting the average between `$lower` and `$upper` to be an integer")
-          solver.mkIntVal(average.toInt)
+          assert(average == average.round, s"Expecting the average between `$lower` and `$upper` to be an integer")
+          solver.mkIntVal(average.round.toInt)
         }
       case node: Texpr0DimNode =>
         //  This resolution from dimensions to variable names is correct, because we expect `variables` to

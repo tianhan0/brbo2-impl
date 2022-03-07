@@ -167,7 +167,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                 Set((n1, falseState), (n2, trueState))
               case _ => throw new Exception
             }
-          case _ => throw new Exception
+          case _ => throw new Exception(s"Current state `${state.node.prettyPrintToCFG}` has the following successor nodes: `$nextNodes`.")
         }
       }
     }

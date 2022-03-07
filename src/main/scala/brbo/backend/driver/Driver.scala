@@ -56,7 +56,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
     ???
   }
 
-  def verifySelectivelyAmortize(boundAssertion: BoundAssertion, keepExploringWhenVerifierTimeout: Boolean = false): VerifierStatus = {
+  def verifySelectivelyAmortize(boundAssertion: BoundAssertion): VerifierStatus = {
     val initialAbstraction = generateInitialAbstraction(afterExtractingUses)
     val result = verify(initialAbstraction, boundAssertion)
     val counterexamplePaths: Set[Path] = result.rawResult match {
@@ -89,7 +89,6 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
             val file = new File(s"${BrboMain.OUTPUT_DIRECTORY}/amortizations/${originalProgram.name}-${StringFormatUtils.integer(index, 3)}.txt")
             FileUtils.writeStringToFile(file, cSourceCode, Charset.forName("UTF-8"))
         })
-
         logger.infoOrError(s"Reached the max number of refinement iterations: `${arguments.getMaxIterations}`. Will stop now.")
         return UNKNOWN_RESULT
       }
@@ -127,11 +126,11 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         refiner.refine(node.program, pathWithoutUBChecks, boundAssertion, avoidRefinements, InterpreterKind.MODEL_CHECK) match {
           case (Some(refinedProgram), Some(refinement)) =>
             val result = verify(refinedProgram, boundAssertion)
+            val newChildNode = createNode(tree, parent = Some(node), refinedProgram, Set(pathWithoutUBChecks), Some(refinement))
             val exploreRefinedProgram: NodeStatus = result.rawResult match {
               case TRUE_RESULT | FALSE_RESULT => EXPLORING
-              case UNKNOWN_RESULT => if (keepExploringWhenVerifierTimeout) EXPLORING else SHOULD_NOT_EXPLORE
+              case UNKNOWN_RESULT => SHOULD_NOT_EXPLORE
             }
-            val newChildNode = createNode(tree, parent = Some(node), refinedProgram, Set(pathWithoutUBChecks), Some(refinement))
             newChildNode.setNodeStatus(exploreRefinedProgram)
 
             result.rawResult match {
@@ -142,14 +141,8 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
                 logger.infoOrError(s"Explore child nodes of the child of the current node (which has failed).")
                 helper(newChildNode)
               case UNKNOWN_RESULT =>
-                if (keepExploringWhenVerifierTimeout) {
-                  logger.infoOrError(s"Explore child nodes of the child of the current node (which has failed).")
-                  helper(newChildNode)
-                }
-                else {
-                  logger.infoOrError(s"Explore a new child node of the current node (because the verification returns unknown) by re-refining the current node.")
-                  helper(node)
-                }
+                logger.infoOrError(s"Explore a new child node of the current node (because the verification returns unknown) by re-refining the current node.")
+                helper(node)
             }
           case (None, None) =>
             getParentNode(tree, node) match {

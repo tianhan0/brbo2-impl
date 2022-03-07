@@ -26,11 +26,11 @@ object AbstractInterpreter {
       case brbo.backend.verifier.InterpreterKind.MODEL_CHECK =>
         val mainFunction = BrboFunction("main", BrboType.VOID, inputVariables, Block(path.map({
           n =>
-            // TODO: Give every node a new ID. Otherwise if a node appears twice
-            //  in the given path, the generated CFG will contain a loop.
+            // Give every node a new ID. Otherwise if a node appears twice
+            // in the given path, the generated CFG will contain a loop.
             n.value match {
               case expr: BrboExpr => Assume(expr)
-              case command: Command => command
+              case command: Command => BrboAstUtils.generateNewId(command)
               case _ => throw new Exception
             }
         })), groupIds = Set())

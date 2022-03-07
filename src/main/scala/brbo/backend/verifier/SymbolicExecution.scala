@@ -43,7 +43,7 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
       node.value match {
         case command: Command =>
           command match {
-            case BeforeFunctionCall(callee, actualArguments) => // Calling a new function
+            case BeforeFunctionCall(callee, actualArguments, _) => // Calling a new function
               assert(callee.parameters.length == actualArguments.length)
               // Assume that when calling a function, all actual arguments must have a value
               val (reversedValues: List[AST], newReturnValues) =
@@ -201,6 +201,8 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
                 case PreDefinedFunctions.VERIFIER_NONDET_INT => (Some(createFreshVariable(INT)._2), returnValues)
                 case PreDefinedFunctions.ABORT => throw new Exception
                 case PreDefinedFunctions.VERIFIER_ERROR => (None, returnValues)
+                case PreDefinedFunctions.NDINT => (Some(createFreshVariable(INT)._2), returnValues)
+                case PreDefinedFunctions.NDINT2 => ???
                 case _ => throw new Exception(s"Unknown function `$identifier`")
               }
           }

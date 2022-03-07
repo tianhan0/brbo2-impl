@@ -75,4 +75,24 @@ object BrboAstUtils {
     }
     currentMap ++ childrenMap
   }
+
+  def generateNewId(command: Command): Command = {
+    command match {
+      case BeforeFunctionCall(callee, actualArguments, _) => BeforeFunctionCall(callee, actualArguments)
+      case VariableDeclaration(identifier, initialValue, _) => VariableDeclaration(identifier, initialValue)
+      case Assignment(identifier, expression, _) => Assignment(identifier, expression)
+      case Use(groupId, update, condition, _) => Use(groupId, update, condition)
+      case Skip(_) => Skip()
+      case Break(_) => Break()
+      case Empty(_) => Empty()
+      case Continue(_) => Continue()
+      case LoopExit(_) => LoopExit()
+      case FunctionExit(_) => FunctionExit()
+      case Return(value, _) => Return(value)
+      case Assume(condition, _) => Assume(condition)
+      case Reset(groupId, condition, _) => Reset(groupId, condition)
+      case FunctionCall(functionCallExpr, _) => FunctionCall(functionCallExpr)
+      case LabeledCommand(label, command, _) => LabeledCommand(label, command)
+    }
+  }
 }

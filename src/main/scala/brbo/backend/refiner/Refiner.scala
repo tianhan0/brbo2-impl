@@ -25,7 +25,7 @@ class Refiner(arguments: CommandLineArguments) {
       allRefinements.foreach({
         refinement =>
           // It is expected that, the refined path is empty when there is no refinement (over the original path)
-          if (refinement.noRefinement || refinementsToAvoid.contains(refinement)) {
+          if (refinement.noRefinement || refinementsToAvoid.exists(r => r.sameAs(refinement))) {
             ;
           } else {
             val refinedPath = refinement.refinedPath(originalProgram.mainFunction)

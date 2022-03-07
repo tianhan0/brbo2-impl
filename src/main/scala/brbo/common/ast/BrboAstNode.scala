@@ -1,3 +1,5 @@
 package brbo.common.ast
 
-abstract class BrboAstNode
+import brbo.common.SameAs
+
+abstract class BrboAstNode extends SameAs

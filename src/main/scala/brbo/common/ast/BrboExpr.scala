@@ -1,7 +1,7 @@
 package brbo.common.ast
 
-import brbo.common.{BrboType, Z3Solver}
 import brbo.common.BrboType.{BOOL, BrboType, INT, STRING}
+import brbo.common.{BrboType, Z3Solver}
 import com.microsoft.z3.AST
 
 import java.util.UUID
@@ -42,7 +42,12 @@ case class Identifier(name: String, override val typ: BrboType, uuid: UUID = UUI
 
   override def uniqueCopyExpr: BrboExpr = Identifier(name, typ)
 
-  def sameAs(other: Identifier):  Boolean = name == other.name && typ == other.typ
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case Identifier(otherName, otherTyp, _) => otherName == name && otherTyp == typ
+      case _ => false
+    }
+  }
 }
 
 case class StringLiteral(value: String, uuid: UUID = UUID.randomUUID()) extends BrboExpr(STRING) {
@@ -59,6 +64,13 @@ case class StringLiteral(value: String, uuid: UUID = UUID.randomUUID()) extends 
   override def getDefs: Set[Identifier] = Set()
 
   override def uniqueCopyExpr: BrboExpr = StringLiteral(value)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case StringLiteral(otherValue, _) => otherValue == value
+      case _ => false
+    }
+  }
 }
 
 case class Bool(b: Boolean, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -75,6 +87,13 @@ case class Bool(b: Boolean, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOO
   override def getDefs: Set[Identifier] = Set()
 
   override def uniqueCopyExpr: BrboExpr = Bool(b)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case Bool(otherB, _) => otherB == b
+      case _ => false
+    }
+  }
 }
 
 case class Number(n: Int, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -91,6 +110,13 @@ case class Number(n: Int, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) 
   override def getDefs: Set[Identifier] = Set()
 
   override def uniqueCopyExpr: BrboExpr = Number(n)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case Number(otherN, _) => otherN == n
+      case _ => false
+    }
+  }
 }
 
 case class Addition(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -110,6 +136,13 @@ case class Addition(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = Addition(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case Addition(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
 
 case class Subtraction(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -129,6 +162,13 @@ case class Subtraction(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.random
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = Subtraction(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case Subtraction(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
 
 case class Multiplication(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -148,6 +188,13 @@ case class Multiplication(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.ran
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = Multiplication(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case Multiplication(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
 
 case class Division(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -167,6 +214,13 @@ case class Division(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = Division(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case Division(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
 
 case class Negation(expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -185,6 +239,13 @@ case class Negation(expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extend
   override def getDefs: Set[Identifier] = expression.getDefs
 
   override def uniqueCopyExpr: BrboExpr = Negation(expression)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case Negation(otherExpression, _) => otherExpression.sameAs(expression)
+      case _ => false
+    }
+  }
 }
 
 case class LessThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -204,6 +265,13 @@ case class LessThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = LessThan(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case LessThan(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
 
 case class LessThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -223,6 +291,13 @@ case class LessThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = LessThanOrEqualTo(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case LessThanOrEqualTo(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
 
 case class GreaterThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -242,6 +317,13 @@ case class GreaterThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.random
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = GreaterThan(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case GreaterThan(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
 
 case class GreaterThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -261,6 +343,13 @@ case class GreaterThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UU
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = GreaterThanOrEqualTo(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case GreaterThanOrEqualTo(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
 
 case class Equal(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -279,6 +368,13 @@ case class Equal(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = Equal(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case Equal(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
 
 case class NotEqual(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -297,6 +393,13 @@ case class NotEqual(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = NotEqual(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case NotEqual(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
 
 case class And(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -316,6 +419,13 @@ case class And(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) 
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = And(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case And(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
 
 case class Or(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -335,6 +445,13 @@ case class Or(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) e
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = Or(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case Or(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
 
 case class FunctionCallExpr(identifier: String, arguments: List[BrboExpr], returnType: BrboType, uuid: UUID = UUID.randomUUID()) extends BrboExpr(returnType) {
@@ -356,6 +473,17 @@ case class FunctionCallExpr(identifier: String, arguments: List[BrboExpr], retur
   override def getDefs: Set[Identifier] = arguments.flatMap(argument => argument.getDefs).toSet
 
   override def uniqueCopyExpr: BrboExpr = FunctionCallExpr(identifier, arguments, returnType)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case FunctionCallExpr(otherIdentifier, otherArguments, otherReturnType, _) =>
+        val sameArguments =
+          if (otherArguments.length != arguments.length) false
+          else otherArguments.zip(arguments).forall({ case (a1, a2) => a1.sameAs(a2) })
+        otherIdentifier == identifier && sameArguments && otherReturnType == returnType
+      case _ => false
+    }
+  }
 }
 
 case class ITEExpr(condition: BrboExpr, thenExpr: BrboExpr, elseExpr: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(thenExpr.typ) {
@@ -375,6 +503,14 @@ case class ITEExpr(condition: BrboExpr, thenExpr: BrboExpr, elseExpr: BrboExpr, 
   override def getDefs: Set[Identifier] = condition.getDefs ++ thenExpr.getDefs ++ elseExpr.getDefs
 
   override def uniqueCopyExpr: BrboExpr = ITEExpr(condition, thenExpr, elseExpr)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case ITEExpr(otherCondition, otherThenExpr, otherElseExpr, _) =>
+        otherCondition.sameAs(condition) && otherThenExpr.sameAs(thenExpr) && otherElseExpr.sameAs(elseExpr)
+      case _ => false
+    }
+  }
 }
 
 case class Imply(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
@@ -394,4 +530,11 @@ case class Imply(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()
   override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
 
   override def uniqueCopyExpr: BrboExpr = Imply(left, right)
+
+  def sameAs(other: Any): Boolean = {
+    other match {
+      case Imply(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
+      case _ => false
+    }
+  }
 }
