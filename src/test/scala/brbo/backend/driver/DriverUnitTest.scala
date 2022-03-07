@@ -19,7 +19,6 @@ class DriverUnitTest extends AnyFlatSpec {
     printVerifierInputs = false,
     verifierTimeout = 20,
     printCFG = false,
-    generateSynthetic = 0,
     maxGroups = DEFAULT_MAX_GROUPS,
     verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
     relationalPredicates = false,

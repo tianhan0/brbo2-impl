@@ -18,7 +18,6 @@ class PathRefinementUnitTest extends AnyFlatSpec {
       printVerifierInputs = false,
       verifierTimeout = 20,
       printCFG = false,
-      generateSynthetic = 0,
       maxGroups = 5,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false,

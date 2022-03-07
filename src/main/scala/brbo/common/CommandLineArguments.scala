@@ -113,7 +113,7 @@ class CommandLineArguments {
 
   def initialize(amortizationMode: AmortizationMode, debugMode: Boolean, directoryToAnalyze: String,
                  printVerifierInputs: Boolean, verifierTimeout: Int,
-                 printCFG: Boolean, generateSynthetic: Int, maxGroups: Int, verifierDirectory: String,
+                 printCFG: Boolean, maxGroups: Int, verifierDirectory: String,
                  relationalPredicates: Boolean, maxIterations: Int, assertionTag: String,
                  abstractDomain: String, maxPathLength: Int, checkWithZ3: Boolean): Unit = {
     if (initialized) throw new Exception(s"Already initialized")
@@ -161,6 +161,14 @@ class CommandLineArguments {
     val checkWithZ3String = if (checkWithZ3) "z3" else ""
     s"""$amortizationMode-$timeoutString-$assertionIndexString-$abstractDomain-$checkWithZ3String"""
   }
+
+  def copyDebugModeOff(): CommandLineArguments = {
+    val arguments = new CommandLineArguments
+    arguments.initialize(getAmortizationMode, debugMode = false, directoryToAnalyze, printVerifierInputs,
+      verifierTimeout, printCFG, maxGroups, verifierDirectory, relationalPredicates, maxIterations,
+      assertionTag, abstractDomain, maxPathLength, checkWithZ3)
+    arguments
+  }
 }
 
 object CommandLineArguments {
@@ -192,7 +200,7 @@ object CommandLineArguments {
     val arguments = new CommandLineArguments
     arguments.initialize(TEST_MODE, debugMode = false, "",
       printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
-      generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
+      maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
       abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH, checkWithZ3 = false)
@@ -203,7 +211,7 @@ object CommandLineArguments {
     val arguments = new CommandLineArguments
     arguments.initialize(TEST_MODE, debugMode = true, "",
       printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
-      generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
+      maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
       abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH, checkWithZ3 = false)

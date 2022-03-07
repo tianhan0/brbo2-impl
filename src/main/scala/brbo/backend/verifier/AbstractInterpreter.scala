@@ -35,7 +35,7 @@ object AbstractInterpreter {
             }
         })), groupIds = Set())
         val brboProgram = BrboProgram("symexec", mainFunction = mainFunction)
-        val abstractMachine = new AbstractMachine(brboProgram, arguments)
+        val abstractMachine = new AbstractMachine(brboProgram, arguments.copyDebugModeOff())
         val AbstractMachine.Result(_, finalStates) = abstractMachine.verify(Bool(b = true), getMaxPathLength = 10000)
         assert(finalStates.size == 1, s"finalStates: ${finalStates.map(s => s.toShortString)}")
         val finalValuation = finalStates.head.valuation

@@ -32,7 +32,7 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
     val arguments = new CommandLineArguments
     arguments.initialize(TEST_MODE, debugMode, "",
       printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
-      generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
+      maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false, maxIterations, assertionTag = DEFAULT_ASSERTION_TAG,
       abstractDomain = OCTAGON.toString, maxPathLength = DEFAULT_MAX_PATH_LENGTH, checkWithZ3)
@@ -42,7 +42,7 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
     val arguments = new CommandLineArguments
     arguments.initialize(TEST_MODE, debugMode, "",
       printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
-      generateSynthetic = 0, maxGroups = DEFAULT_MAX_GROUPS,
+      maxGroups = DEFAULT_MAX_GROUPS,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = false, maxIterations, assertionTag = DEFAULT_ASSERTION_TAG,
       abstractDomain = POLKA_STRICT.toString, maxPathLength = DEFAULT_MAX_PATH_LENGTH, checkWithZ3)
