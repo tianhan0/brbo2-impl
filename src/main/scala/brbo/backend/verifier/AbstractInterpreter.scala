@@ -3,7 +3,7 @@ package brbo.backend.verifier
 import brbo.backend.verifier.InterpreterKind.InterpreterKind
 import brbo.backend.verifier.SymbolicExecution.valuationToAST
 import brbo.backend.verifier.modelchecker.AbstractMachine
-import brbo.common.ast.{Assume, Block, Bool, BrboExpr, BrboFunction, BrboProgram, Command, Identifier}
+import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.{BrboType, CommandLineArguments, Z3Solver}
 import com.microsoft.z3.AST
@@ -26,6 +26,8 @@ object AbstractInterpreter {
       case brbo.backend.verifier.InterpreterKind.MODEL_CHECK =>
         val mainFunction = BrboFunction("main", BrboType.VOID, inputVariables, Block(path.map({
           n =>
+            // TODO: Give every node a new ID. Otherwise if a node appears twice
+            //  in the given path, the generated CFG will contain a loop.
             n.value match {
               case expr: BrboExpr => Assume(expr)
               case command: Command => command
@@ -34,8 +36,8 @@ object AbstractInterpreter {
         })), groupIds = Set())
         val brboProgram = BrboProgram("symexec", mainFunction = mainFunction)
         val abstractMachine = new AbstractMachine(brboProgram, arguments)
-        val AbstractMachine.Result(_, finalStates) = abstractMachine.verify(Bool(b = true))
-        assert(finalStates.size == 1)
+        val AbstractMachine.Result(_, finalStates) = abstractMachine.verify(Bool(b = true), getMaxPathLength = 10000)
+        assert(finalStates.size == 1, s"finalStates: ${finalStates.map(s => s.toShortString)}")
         val finalValuation = finalStates.head.valuation
         val ast = finalValuation.stateToZ3Ast(solver, toInt = true)
         (ast, finalValuation.allVariablesNoScope.map(v => v.name).toSet)

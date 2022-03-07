@@ -137,7 +137,7 @@ object ControlFlowGraph {
               case Break(_) => addEdge(node, jumpTarget.immediateLoopExit.get)
               case Continue(_) => addEdge(node, jumpTarget.immediateLoopCondition.get)
               case LabeledCommand(_, command2, _) => addJumpEdges(command2)
-              case _: CFGOnly => throw new Exception(s"`$command` is only used in Control Flow Graphs!")
+              case _: CFGOnly => // throw new Exception(s"`$command` is only used in Control Flow Graphs!")
               case _: GhostCommand =>
             }
           }

@@ -1,6 +1,6 @@
 package brbo.backend.refiner
 
-import brbo.backend.verifier.SymbolicExecution
+import brbo.backend.verifier.{AbstractInterpreter, InterpreterKind, SymbolicExecution}
 import brbo.common._
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
@@ -12,7 +12,7 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
   private val useCommands = allCommands.filter(command => command.isInstanceOf[Use])
   private val resetCommands = allCommands.filter(command => command.isInstanceOf[Reset])
 
-  private val symbolicExecution = new SymbolicExecution(originalProgram.mainFunction.parameters, argument.getDebugMode)
+  private val inputVariables = originalProgram.mainFunction.parameters
   private val solver = new Z3Solver
   private val predicates: List[Predicate] = {
     val allNonGhostVariables = {
@@ -136,11 +136,10 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     assert(indices.nonEmpty)
     val postConditions = indices.map({
       index =>
-        val state = symbolicExecution.execute(path.slice(0, index), solver).finalState
-        val valuation = state.valuations.head
-        val valuationAst = SymbolicExecution.valuationToAST(valuation, solver)
-        val pathConditionAst = state.pathCondition
-        solver.mkAnd(valuationAst, pathConditionAst)
+        // TODO: Need to interpret pre-defined functions
+        val (ast, _) =
+          AbstractInterpreter.interpretPath(path.slice(0, index), inputVariables, solver, InterpreterKind.SYMBOLIC_EXECUTION, argument)
+        ast
     }).toSeq
     solver.mkOr(postConditions: _*)
   }

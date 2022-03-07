@@ -2,7 +2,6 @@ package brbo.common
 
 import brbo.backend.verifier.AmortizationMode._
 import brbo.backend.verifier.UAutomizerVerifier
-import brbo.backend.verifier.modelchecker.AbstractDomainName
 import brbo.backend.verifier.modelchecker.AbstractDomainName.{AbstractDomainName, OCTAGON, POLKA_NONSTRICT, POLKA_STRICT}
 import brbo.common.CommandLineArguments._
 import org.apache.logging.log4j.LogManager

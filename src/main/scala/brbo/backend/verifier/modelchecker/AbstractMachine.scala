@@ -38,7 +38,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     })
   }
 
-  def verify(assertion: BrboExpr): Result = {
+  def verify(assertion: BrboExpr, getMaxPathLength: Int = arguments.getMaxPathLength): Result = {
     val initialState = State(fakeInitialNode, initialValuation, indexOnPath = 0, shouldVerify = true)
     // Every CFGNode corresponds to a location, which is the location right after the node
     // fakeInitialNode corresponds to the program entry, which is right before the first command / expression
@@ -74,7 +74,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                   logger.traceOrError(s"[model check] The new valuation is not included in the old one")
                   val joinedValuation = newState.valuation.joinCopy(existingValuation)
                   logger.traceOrError(s"[model check] Joined valuation: `${joinedValuation.toShortString}`")
-                  if (newState.indexOnPath <= arguments.getMaxPathLength) (joinedValuation, true)
+                  if (newState.indexOnPath <= getMaxPathLength) (joinedValuation, true)
                   else {
                     logger.traceOrError(s"[model check] Will stop exploring path due to reaching the max path length: `$newPath`")
                     stoppedEarly = true
@@ -84,7 +84,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                   }
                 }
               case None =>
-                logger.traceOrError(s"Old valuation at node `${newState.node.prettyPrintToCFG}` does not exist")
+                logger.trace(s"Old valuation at node `${newState.node.prettyPrintToCFG}` does not exist")
                 (newState.valuation, true)
             }
           }
@@ -94,6 +94,8 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
           }
           if (keepExploring && !newState.valuation.isBottom) {
             waitlist = waitlist.enqueue((newPath, State(newState.node, newValuation, newState.indexOnPath, newState.shouldVerify)))
+          } else {
+            maximalPaths = maximalPaths + (newPath -> newState)
           }
 
           val isNewStateRefuted =
@@ -222,14 +224,14 @@ object AbstractMachine {
         assign(identifier, expression, createNewVariable = false, valuation, scope)
       case _: CFGOnly => valuation
       case use@Use(_, update, condition, _) =>
-        traceOrError(logger, s"Evaluating `${use.prettyPrintToCFG}`")
+        trace(logger, s"Evaluating `${use.prettyPrintToCFG}`")
         val updatedValuation =
           assign(use.resourceVariable, Addition(use.resourceVariable, update), createNewVariable = false, valuation, scope)
-        traceOrError(logger, s"Updated valuation: `${updatedValuation.toShortString}`")
+        trace(logger, s"Updated valuation: `${updatedValuation.toShortString}`")
         evalGhostCommandHelper(condition, valuation.satisfy(condition), valuation.satisfy(Negation(condition)),
           updatedValuation, valuation, logger)
       case reset@Reset(_, condition, _) =>
-        traceOrError(logger, s"Evaluating `${reset.prettyPrintToCFG}`")
+        trace(logger, s"Evaluating `${reset.prettyPrintToCFG}`")
         val updatedCounterVariable = {
           val updatedResourceVariable = {
             val updatedStarVariable = {
@@ -237,16 +239,16 @@ object AbstractMachine {
               // (1) we only want to learn paths (as root causes), and
               // (2) this is sound and precise for the bound verification
               val v = assign(reset.starVariable, reset.resourceVariable, createNewVariable = false, valuation, scope)
-              traceOrError(logger, s"After updating r* (before join): `${v.toShortString}`")
+              trace(logger, s"After updating r* (before join): `${v.toShortString}`")
               v.joinCopy(valuation)
             }
-            traceOrError(logger, s"After updating r* (after join): `${updatedStarVariable.toShortString}`")
+            trace(logger, s"After updating r* (after join): `${updatedStarVariable.toShortString}`")
             assign(reset.resourceVariable, Number(0), createNewVariable = false, updatedStarVariable, scope)
           }
-          traceOrError(logger, s"After updating r: `${updatedResourceVariable.toShortString}`")
+          trace(logger, s"After updating r: `${updatedResourceVariable.toShortString}`")
           assign(reset.counterVariable, Addition(reset.counterVariable, Number(1)), createNewVariable = false, updatedResourceVariable, scope)
         }
-        traceOrError(logger, s"After updating r#: `${updatedCounterVariable.toShortString}`")
+        trace(logger, s"After updating r#: `${updatedCounterVariable.toShortString}`")
         evalGhostCommandHelper(condition, valuation.satisfy(condition), valuation.satisfy(Negation(condition)),
           updatedCounterVariable, valuation, logger)
       case Return(value, _) =>
@@ -273,8 +275,8 @@ object AbstractMachine {
 
   private def evalGhostCommandHelper(condition: BrboExpr, allThen: Boolean, allElse: Boolean,
                                      thenValuation: Valuation, elseValuation: Valuation, logger: Option[MyLogger]): Valuation = {
-    traceOrError(logger, s"All states satisfy `${condition.prettyPrintToCFG}`? `$allThen`")
-    traceOrError(logger, s"All states satisfy `${Negation(condition).prettyPrintToCFG}`? `$allElse`")
+    trace(logger, s"All states satisfy `${condition.prettyPrintToCFG}`? `$allThen`")
+    trace(logger, s"All states satisfy `${Negation(condition).prettyPrintToCFG}`? `$allElse`")
     if (allThen) thenValuation
     else {
       if (allElse) elseValuation
@@ -546,7 +548,7 @@ object AbstractMachine {
     def imposeConstraint(constraint: Constraint): Valuation = {
       val newStates = Apron.imposeConstraint(apronState, constraint)
       if (newStates.size > 1)
-        traceOrError(logger, s"Approximate the disjunction in `$constraint` with a conjunctive domain")
+        trace(logger, s"Approximate the disjunction in `$constraint` with a conjunctive domain")
       val joinedState = newStates.tail.foldLeft(newStates.head)({
         (acc, newState) => acc.joinCopy(manager, newState)
       })
@@ -562,8 +564,8 @@ object AbstractMachine {
       if (firstIndex == -1) this
       else {
         val (toKeep, toRemove) = liveVariables.splitAt(firstIndex)
-        traceOrError(logger, s"Removing variables in scope `$scope` from variables `$liveVariables`")
-        traceOrError(logger, s"toRemove: `$toRemove`")
+        trace(logger, s"Removing variables in scope `$scope` from variables `$liveVariables`")
+        trace(logger, s"toRemove: `$toRemove`")
         assert(toRemove.forall(v => v.scope == scope))
         Valuation(toKeep, apronState, allVariables, scopeOperations, logger)
       }
@@ -629,6 +631,13 @@ object AbstractMachine {
   private def traceOrError(logger: Option[MyLogger], message: String): Unit = {
     logger match {
       case Some(logger) => logger.traceOrError(message)
+      case None =>
+    }
+  }
+
+  private def trace(logger: Option[MyLogger], message: String): Unit = {
+    logger match {
+      case Some(logger) => logger.trace(message)
       case None =>
     }
   }

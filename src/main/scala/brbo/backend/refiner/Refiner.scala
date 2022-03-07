@@ -17,46 +17,49 @@ class Refiner(arguments: CommandLineArguments) {
              interpreterKind: InterpreterKind): (Option[BrboProgram], Option[Refinement]) = {
     val inputVariables = originalProgram.mainFunction.parameters
     val solver = new Z3Solver
-    logger.infoOrError(s"Generate all possible path refinements")
-    var declaredVariables = Set[String]()
-    var refinements = List[(Refinement, Expr)]()
-    pathRefinement.refine(path, originalProgram.mainFunction.identifier).foreach({
-      refinement =>
-        // It is expected that, the refined path is empty when there is no refinement (over the original path)
-        if (refinement.noRefinement || refinementsToAvoid.contains(refinement)) {
-          ;
-        } else {
-          val refinedPath = refinement.refinedPath(originalProgram.mainFunction)
-          logger.traceOrError(s"Validate refined path:\n`${refinedPath.mkString("\n")}`")
-          // Get all group IDs and then all ghost variables
-          val (finalState, newVariables) = AbstractInterpreter.interpretPath(refinedPath, inputVariables, solver, interpreterKind, arguments)
-          declaredVariables = declaredVariables ++ newVariables
-          val allGroupIds: List[Int] =
-            (originalProgram.mainFunction.groupIds ++ refinement.groupIds.values.flatten).toList.sorted
-          logger.traceOrError(s"All groups considered: `$allGroupIds`")
-          var sum: AST = solver.mkIntVal(0)
-          allGroupIds.foreach({
-            groupId =>
-              val counter: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Counter).name)
-              val star: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Star).name)
-              val resource: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Resource).name)
-              sum = solver.mkAdd(sum, resource, solver.mkMul(counter, star))
-          })
-          val assertion = solver.mkImplies(
-            finalState,
-            solver.substitute(boundAssertion.assertion.toZ3AST(solver), solver.mkIntVar(boundAssertion.resourceVariable), sum)
-          )
-          refinements = (refinement, assertion) :: refinements
-        }
-    })
-    val refinementsMap = refinements.foldLeft(Map[Expr, (Refinement, Expr)]())({
-      (acc, pair) =>
-        val name = s"v!!${declaredVariables.size}" // Variable names seem to affect which path is selected by Z3
-        assert(!declaredVariables.contains(name))
-        declaredVariables = declaredVariables + name
-        val boolVar = solver.mkBoolVar(name)
-        acc + (boolVar -> pair)
-    })
+    val allRefinements = pathRefinement.refine(path, originalProgram.mainFunction.identifier)
+    logger.infoOrError(s"Generated `${allRefinements.size}` path refinements")
+    val refinementsMap = {
+      var declaredVariables = Set[String]()
+      var refinements = List[(Refinement, Expr)]()
+      allRefinements.foreach({
+        refinement =>
+          // It is expected that, the refined path is empty when there is no refinement (over the original path)
+          if (refinement.noRefinement || refinementsToAvoid.contains(refinement)) {
+            ;
+          } else {
+            val refinedPath = refinement.refinedPath(originalProgram.mainFunction)
+            logger.traceOrError(s"Validate refined path:\n`${refinedPath.mkString("\n")}`")
+            // Get all group IDs and then all ghost variables
+            val (finalState, newVariables) = AbstractInterpreter.interpretPath(refinedPath, inputVariables, solver, interpreterKind, arguments)
+            declaredVariables = declaredVariables ++ newVariables
+            val allGroupIds: List[Int] =
+              (originalProgram.mainFunction.groupIds ++ refinement.groupIds.values.flatten).toList.sorted
+            logger.traceOrError(s"All groups considered: `$allGroupIds`")
+            var sum: AST = solver.mkIntVal(0)
+            allGroupIds.foreach({
+              groupId =>
+                val counter: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Counter).name)
+                val star: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Star).name)
+                val resource: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Resource).name)
+                sum = solver.mkAdd(sum, resource, solver.mkMul(counter, star))
+            })
+            val assertion = solver.mkImplies(
+              finalState,
+              solver.substitute(boundAssertion.assertion.toZ3AST(solver), solver.mkIntVar(boundAssertion.resourceVariable), sum)
+            )
+            refinements = (refinement, assertion) :: refinements
+          }
+      })
+      refinements.foldLeft(Map[Expr, (Refinement, Expr)]())({
+        (acc, pair) =>
+          val name = s"v!!${declaredVariables.size}" // Variable names seem to affect which path is selected by Z3
+          assert(!declaredVariables.contains(name))
+          declaredVariables = declaredVariables + name
+          val boolVar = solver.mkBoolVar(name)
+          acc + (boolVar -> pair)
+      })
+    }
 
     logger.infoOrError(s"Search for a refinement for path `$path`.")
     val programSynthesis = new Synthesizer(originalProgram, arguments)
