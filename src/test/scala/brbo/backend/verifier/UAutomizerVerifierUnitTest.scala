@@ -3,10 +3,9 @@ package brbo.backend.verifier
 import brbo.TestCase
 import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.common.BrboType.{INT, VOID}
+import brbo.common.CommandLineArguments
 import brbo.common.CommandLineArguments._
 import brbo.common.ast._
-import brbo.common.CommandLineArguments
-import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
 class UAutomizerVerifierUnitTest extends AnyFlatSpec {
@@ -31,10 +30,9 @@ class UAutomizerVerifierUnitTest extends AnyFlatSpec {
   "Parsing counterexample paths" should "be correct" in {
     UAutomizerVerifierUnitTest.testCases.foreach({
       testCase =>
-        // val verifier = new UAutomizerVerifier(CommandLineArguments.DEBUG_MODE_ARGUMENTS)
-        val verifier = new UAutomizerVerifier(arguments)
-        val result = verifier.verify(testCase.input.asInstanceOf[BrboProgram])
-        StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"Test `${testCase.name}` failed")
+      // val verifier = new UAutomizerVerifier(arguments)
+      // val result = verifier.verify(testCase.input.asInstanceOf[BrboProgram])
+      // StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"Test `${testCase.name}` failed")
     })
   }
 }

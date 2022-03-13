@@ -20,6 +20,8 @@ case class CFGNode(value: CommandOrExpr, function: Option[BrboFunction] = None, 
     case None => CFGNode.FUNCTION_NAME_WHEN_FUNCTION_NOT_EXIST
   }
 
+  def replaceCopy(newValue: CommandOrExpr): CFGNode = CFGNode(newValue, function, id)
+
   def sameValue(other: CFGNode): Boolean = other.value.sameAs(value)
 
   override def getGraphNodeId: Int = id

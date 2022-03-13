@@ -16,8 +16,10 @@ public abstract class TemplateEngine extends Common {
     int endTagLocation = 0;
     int stringBuilder = 0;
     while (endTagLocation < text) {
+      startTagLocation = ndInt();
       ndInt3(endTagLocation, startTagLocation, text);
-      ndInt3(startTagLocation + 1, endTagLocation, text);
+      endTagLocation = ndInt();
+      ndInt3(startTagLocation, endTagLocation, text);
       stringBuilder += startTagLocation - linePointer;
       R = R + (startTagLocation - linePointer);
       linePointer = endTagLocation;

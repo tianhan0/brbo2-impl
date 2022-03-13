@@ -88,6 +88,7 @@ object BrboAstUtils {
       case Continue(_) => Continue()
       case LoopExit(_) => LoopExit()
       case FunctionExit(_) => FunctionExit()
+      case BranchingHead(_) => BranchingHead()
       case Return(value, _) => Return(value)
       case Assume(condition, _) => Assume(condition)
       case Reset(groupId, condition, _) => Reset(groupId, condition)

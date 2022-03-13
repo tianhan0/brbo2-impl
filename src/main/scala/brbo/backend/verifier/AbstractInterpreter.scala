@@ -34,9 +34,9 @@ object AbstractInterpreter {
               case _ => throw new Exception
             }
         })), groupIds = Set())
-        val brboProgram = BrboProgram("symexec", mainFunction = mainFunction)
-        val abstractMachine = new AbstractMachine(brboProgram, arguments.copyDebugModeOff())
-        val AbstractMachine.Result(_, finalValuations) = abstractMachine.verify(Bool(b = true), getMaxPathLength = 10000)
+        val brboProgram = BrboProgram("Symbolic Execution", mainFunction = mainFunction)
+        val abstractMachine = new AbstractMachine(brboProgram, arguments)
+        val AbstractMachine.Result(_, finalValuations) = abstractMachine.verify(Bool(b = true), maxPathLength = 10000)
         assert(finalValuations.size == 1, s"finalValuations: ${finalValuations.map(s => s.toShortString)}")
         val finalValuation = finalValuations.head
         val ast = finalValuation.stateToZ3Ast(solver, toInt = true)

@@ -30,44 +30,30 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
     BrboProgram("Test program 1", mainFunction)
   }
 
-  private val program2: BrboProgram = {
+  private val (program2, program3) = {
     val assume = Assume(GreaterThan(t, Number(0)))
     val l = Identifier("l", BrboType.INT)
     val s = Identifier("s", BrboType.INT)
     val e = Identifier("e", BrboType.INT)
-    val loop = {
-      val s1 = Assume(And(LessThanOrEqualTo(e, s), LessThanOrEqualTo(s, t)))
-      val s2 = Assume(And(LessThanOrEqualTo(s, e), LessThanOrEqualTo(e, t)))
-      val reset = Reset(groupId)
-      val use = Use(Some(groupId), Subtraction(s, l))
-      val s3 = Assignment(l, e)
-      Loop(LessThan(e, t), Block(List(s1, s2, reset, use, s3)))
-    }
-    val use = Use(Some(groupId), Subtraction(t, l))
-    val mainFunction = BrboFunction("main", VOID, List(t),
-      Block(List(assume, VariableDeclaration(l, Number(0)), VariableDeclaration(s, Number(0)),
-        VariableDeclaration(e, Number(0)), loop, use)), Set(groupId))
-    BrboProgram("Test program 2", mainFunction)
-  }
-
-  private val program3: BrboProgram = {
-    val assume = Assume(GreaterThan(t, Number(0)))
     val reset = Reset(groupId)
-    val l = Identifier("l", BrboType.INT)
-    val s = Identifier("s", BrboType.INT)
-    val e = Identifier("e", BrboType.INT)
-    val loop = {
-      val s1 = Assume(And(LessThanOrEqualTo(e, s), LessThanOrEqualTo(s, t)))
-      val s2 = Assume(And(LessThanOrEqualTo(s, e), LessThanOrEqualTo(e, t)))
-      val use = Use(Some(groupId), Subtraction(s, l))
-      val s3 = Assignment(l, e)
-      Loop(LessThan(e, t), Block(List(s1, s2, use, s3)))
-    }
-    val use = Use(Some(groupId), Subtraction(t, l))
-    val mainFunction = BrboFunction("main", VOID, List(t),
+    val s1 = Assume(And(LessThanOrEqualTo(e, s), LessThanOrEqualTo(s, t)))
+    val s2 = Assume(And(LessThanOrEqualTo(s, e), LessThanOrEqualTo(e, t)))
+    val use1 = Use(Some(groupId), Subtraction(s, l))
+    val s3 = Assignment(l, e)
+
+    val loop1 = Loop(LessThan(e, t), Block(List(s1, s2, reset, use1, s3)))
+    val use2 = Use(Some(groupId), Subtraction(t, l))
+    val mainFunction1 = BrboFunction("main", VOID, List(t),
+      Block(List(assume, VariableDeclaration(l, Number(0)), VariableDeclaration(s, Number(0)),
+        VariableDeclaration(e, Number(0)), loop1, use2)), Set(groupId))
+    val program1 = BrboProgram("Test program 2", mainFunction1)
+
+    val loop2 = Loop(LessThan(e, t), Block(List(s1, s2, use1, s3)))
+    val mainFunction2 = BrboFunction("main", VOID, List(t),
       Block(List(assume, VariableDeclaration(l, Number(0)), VariableDeclaration(s, Number(0)), reset,
-        VariableDeclaration(e, Number(0)), loop, use)), Set(groupId))
-    BrboProgram("Test program 2", mainFunction)
+        VariableDeclaration(e, Number(0)), loop2, use2)), Set(groupId))
+    val program2 = BrboProgram("Test program 2", mainFunction2)
+    (program1, program2)
   }
 
   private val maxPathLength = 30
@@ -114,30 +100,30 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
         |  [004] (6) int l = 0; [fun `main`]
         |  [005] (7) int s = 0; [fun `main`]
         |  [006] (8) int e = 0; [fun `main`]
-        |  [007] (9) (e < t) [fun `main`]
-        |  [008] (11) assume((e <= s) && (s <= t)); [fun `main`]
-        |  [009] (12) assume((s <= e) && (e <= t)); [fun `main`]
-        |  [010] (13) if (true) reset R1 [fun `main`]
-        |  [011] (14) if (true) use R1 (s - l) [fun `main`]
-        |  [012] (15) l = e; [fun `main`]
-        |  [013] (9) (e < t) [fun `main`]
-        |  [014] (11) assume((e <= s) && (s <= t)); [fun `main`]
-        |  [015] (12) assume((s <= e) && (e <= t)); [fun `main`]
-        |  [016] (13) if (true) reset R1 [fun `main`]
-        |  [017] (14) if (true) use R1 (s - l) [fun `main`]
-        |  [018] (15) l = e; [fun `main`]
-        |  [019] (9) (e < t) [fun `main`]
-        |  [020] (11) assume((e <= s) && (s <= t)); [fun `main`]
-        |  [021] (12) assume((s <= e) && (e <= t)); [fun `main`]
-        |  [022] (13) if (true) reset R1 [fun `main`]
-        |  [023] (14) if (true) use R1 (s - l) [fun `main`]
-        |  [024] (15) l = e; [fun `main`]
-        |  [025] (9) (e < t) [fun `main`]
-        |  [026] (11) assume((e <= s) && (s <= t)); [fun `main`]
-        |  [027] (12) assume((s <= e) && (e <= t)); [fun `main`]
-        |  [028] (13) if (true) reset R1 [fun `main`]
-        |  [029] (14) if (true) use R1 (s - l) [fun `main`]
-        |  [030] (15) l = e; [fun `main`]))""".stripMargin)
+        |  [007] (9) [Branching Head] [fun `main`]
+        |  [008] (10) (e < t) [fun `main`]
+        |  [009] (13) assume((e <= s) && (s <= t)); [fun `main`]
+        |  [010] (14) assume((s <= e) && (e <= t)); [fun `main`]
+        |  [011] (15) if (true) reset R1 [fun `main`]
+        |  [012] (16) if (true) use R1 (s - l) [fun `main`]
+        |  [013] (17) l = e; [fun `main`]
+        |  [014] (10) (e < t) [fun `main`]
+        |  [015] (13) assume((e <= s) && (s <= t)); [fun `main`]
+        |  [016] (14) assume((s <= e) && (e <= t)); [fun `main`]
+        |  [017] (15) if (true) reset R1 [fun `main`]
+        |  [018] (16) if (true) use R1 (s - l) [fun `main`]
+        |  [019] (17) l = e; [fun `main`]
+        |  [020] (10) (e < t) [fun `main`]
+        |  [021] (13) assume((e <= s) && (s <= t)); [fun `main`]
+        |  [022] (14) assume((s <= e) && (e <= t)); [fun `main`]
+        |  [023] (15) if (true) reset R1 [fun `main`]
+        |  [024] (16) if (true) use R1 (s - l) [fun `main`]
+        |  [025] (17) l = e; [fun `main`]
+        |  [026] (10) (e < t) [fun `main`]
+        |  [027] (13) assume((e <= s) && (s <= t)); [fun `main`]
+        |  [028] (14) assume((s <= e) && (e <= t)); [fun `main`]
+        |  [029] (15) if (true) reset R1 [fun `main`]
+        |  [030] (16) if (true) use R1 (s - l) [fun `main`]))""".stripMargin)
   }
 
   "Model checking program 3" should "be correct" in {

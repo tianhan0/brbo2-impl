@@ -520,7 +520,7 @@ case class LoopExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly
 }
 
 case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
-  override def prettyPrintToC(indent: Int): String = "[Empty node]"
+  override def prettyPrintToC(indent: Int): String = "[Empty Node]"
 
   override def prettyPrintToCFG: String = prettyPrintToC()
 
@@ -535,6 +535,29 @@ case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
       case command: Command =>
         command match {
           case Empty(_) => true
+          case _ => false
+        }
+      case _ => false
+    }
+  }
+}
+
+case class BranchingHead(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
+  override def prettyPrintToC(indent: Int): String = "[Branching Head]"
+
+  override def prettyPrintToCFG: String = prettyPrintToC()
+
+  override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case command: Command =>
+        command match {
+          case BranchingHead(_) => true
           case _ => false
         }
       case _ => false

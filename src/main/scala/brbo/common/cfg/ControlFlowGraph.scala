@@ -162,29 +162,39 @@ object ControlFlowGraph {
               }
               else InternalGraph(internalGraphs.head.root, internalGraphs.last.exits)
             case ITE(condition, thenAst, elseAst, _) =>
+              val branchNode = getNode(BranchingHead(), brboFunction)
               val conditionNode = getNode(condition, brboFunction)
+              val negatedConditionNode = getNode(Negation(condition), brboFunction)
 
               val thenGraph = astToInternalGraph(thenAst, jumpTarget, brboFunction)
               val elseGraph = astToInternalGraph(elseAst, jumpTarget, brboFunction)
 
+              addEdge(branchNode, conditionNode)
+              setEdgeWeight(branchNode, conditionNode, trueBranch = true)
+              addEdge(branchNode, negatedConditionNode)
+              setEdgeWeight(branchNode, negatedConditionNode, trueBranch = false)
+
               addEdge(conditionNode, thenGraph.root)
-              setEdgeWeight(conditionNode, thenGraph.root, trueBranch = true)
-              addEdge(conditionNode, elseGraph.root)
-              setEdgeWeight(conditionNode, elseGraph.root, trueBranch = false)
+              addEdge(negatedConditionNode, elseGraph.root)
 
-              InternalGraph(conditionNode, thenGraph.exits ++ elseGraph.exits)
+              InternalGraph(branchNode, thenGraph.exits ++ elseGraph.exits)
             case Loop(condition, body, _) =>
+              val branchNode = getNode(BranchingHead(), brboFunction)
               val conditionNode = getNode(condition, brboFunction)
+              val negatedConditionNode = getNode(Negation(condition), brboFunction)
               val loopExit = getNode(LoopExit(), brboFunction)
-              val bodyGraph = astToInternalGraph(body, JumpTarget(Some(conditionNode), Some(loopExit), jumpTarget.functionExit), brboFunction)
+              val bodyGraph = astToInternalGraph(body, JumpTarget(Some(branchNode), Some(loopExit), jumpTarget.functionExit), brboFunction)
 
-              addEdge(conditionNode, loopExit)
-              setEdgeWeight(conditionNode, loopExit, trueBranch = false)
+              addEdge(branchNode, conditionNode)
+              setEdgeWeight(branchNode, conditionNode, trueBranch = true)
+              addEdge(branchNode, negatedConditionNode)
+              setEdgeWeight(branchNode, negatedConditionNode, trueBranch = false)
+
               addEdge(conditionNode, bodyGraph.root)
-              setEdgeWeight(conditionNode, bodyGraph.root, trueBranch = true)
+              addEdge(negatedConditionNode, loopExit)
               addEdgesFromExitsToEntry(bodyGraph.exits, conditionNode)
 
-              InternalGraph(conditionNode, Set(loopExit))
+              InternalGraph(branchNode, Set(loopExit))
           }
       }
     }

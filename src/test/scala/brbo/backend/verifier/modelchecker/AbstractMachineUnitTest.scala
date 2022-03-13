@@ -222,7 +222,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val v4 = v3.createInitializedVariable(Variable(x, scope2))
     StringCompare.ignoreWhitespaces(v4.indexOfVariableThisScope(Variable(x, scope2)).toString, """2""", "Look up x in Scope 2")
     StringCompare.ignoreWhitespaces(v4.indexOfVariableThisScope(Variable(y, scope2)).toString, """-1""", "Look up y in Scope 2")
-    StringCompare.ignoreWhitespaces(v4.indexOfVariableAnyScope(Variable(y, scope1)).toString, """1""", "Look up y in Scope 1")
+    StringCompare.ignoreWhitespaces(v4.indexOfVariableThisOrParentScope(Variable(y, scope1)).toString, """1""", "Look up y in Scope 1")
 
     val v5 = v4.createInitializedVariable(Variable(x, scope3))
     val v6 = v5.createInitializedVariable(Variable(y, scope3))
@@ -462,6 +462,15 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     StringCompare.compareLiteral(v5Octagon.satisfy(rEqAPlusFive).toString, "true", "When r = a, do r = r + a (Octagon)")
   }
 
+  "Evaluating ndInt() in assignment commands" should "be correct" in {
+    val v0Polka = emptyValuationStrictPolka(debug = false)
+    val v1Polka = v0Polka.createInitializedVariable(xVar)
+    StringCompare.ignoreWhitespaces(v1Polka.toShortString, """ApronState: {  1x = 0 }""")
+    val callNdInt = FunctionCallExpr(PreDefinedFunctions.NDINT, Nil, BrboType.INT)
+    val v2Polka = evalCommand(v1Polka, Assignment(xVar.identifier, callNdInt), debug = false)
+    StringCompare.ignoreWhitespaces(v2Polka.toShortString, """ApronState: <universal>""")
+  }
+
   "Evaluating commands Use and Reset" should "be correct" in {
     val reset: Reset = Reset(1)
     val use: Use = Use(Some(1), a)
@@ -617,7 +626,15 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val v1 = emptyValuationStrictPolka(debug = false)
     val v2 = v1.createUninitializedVariable(xVar).createInitializedVariable(yVar)
       .createUninitializedVariable(zVar).createInitializedVariable(aVar)
-    StringCompare.ignoreWhitespaces(v2.apronState.toString(), """{  1x3 = 0;  1x1 = 0 }""")
+    StringCompare.ignoreWhitespaces(v2.toShortString, """ApronState: {  1a = 0;  1y = 0 }""")
+  }
+
+  "Forgetting the values of variables" should "be correct" in {
+    val v1 = emptyValuationStrictPolka(debug = false)
+    val v2 = v1.createInitializedVariable(xVar).createInitializedVariable(yVar)
+    StringCompare.ignoreWhitespaces(v2.toShortString, """ApronState: {  1y = 0;  1x = 0 }""")
+    val v3 = v2.forgetVariable(xVar).forgetVariable(yVar)
+    StringCompare.ignoreWhitespaces(v3.toShortString, """ApronState: <universal>""")
   }
 
   // Initialize r, r*, r#

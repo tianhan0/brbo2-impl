@@ -87,6 +87,7 @@ class Refiner(arguments: CommandLineArguments) {
         val goodRefinements = refinementsMap.filter({ case (variableAST: AST, _) => model.eval(variableAST, false).toString == "true" })
         if (goodRefinements.isEmpty) {
           logger.infoOrError(s"Cannot find the path refinement, even though Z3 returns `$z3Result`. Model: `$model`.")
+          logger.infoOrError(s"Z3 query: $query")
           return (None, None)
         }
         val refinement = goodRefinements.head._2._1

@@ -5,6 +5,8 @@ import brbo.backend.verifier.modelchecker.Apron
 import brbo.backend.verifier.modelchecker.Apron._
 import brbo.common.{BrboType, MyLogger}
 
+import java.util.UUID
+
 object BrboExprUtils {
   private val logger = MyLogger.createLogger(BrboExprUtils.getClass, debugMode = false)
 
@@ -125,7 +127,7 @@ object BrboExprUtils {
     // Integer-typed variables that are created when translating the expression into an Apron-compatible representation
     // Such variable must satisfy the associated constraints
     var temporaryVariables = Map[String, ApronVariable]()
-    val existingNames = valuation.allVariables.map(v => v.identifier.name)
+    /*val existingNames = valuation.allVariables.map(v => v.identifier.name)
 
     def createNewVariable(): (Identifier, Int) = {
       logger.fatal(s"Creating new variables when translating expression ${expr.prettyPrintToCFG} to Apron. " +
@@ -137,7 +139,7 @@ object BrboExprUtils {
       // Register the temporary variable s.t. its index can be found when recursively translating expressions
       temporaryVariables = temporaryVariables.updated(name, ApronVariable(index, None))
       (temporaryVariable, index)
-    }
+    }*/
 
     def toApronHelper(expr: BrboExpr): ApronRepr = {
       val result: ApronRepr = expr match {
@@ -229,7 +231,7 @@ object BrboExprUtils {
             case _ => throw new Exception
           }
         case FunctionCallExpr(identifier, arguments, _, _) =>
-          val (temporaryVariable, index) = createNewVariable()
+          /*val (temporaryVariable, index) = createNewVariable()
           identifier match {
             case PreDefinedFunctions.NDINT =>
             case PreDefinedFunctions.NDINT2 =>
@@ -253,28 +255,29 @@ object BrboExprUtils {
                     temporaryVariables.updated(temporaryVariable.name, ApronVariable(index, Some(constraint)))
                 case _ => throw new Exception
               }
-            case _ => throw new Exception(s"Unknown function `$identifier`")
-          }
-          ApronExpr(Apron.mkVar(index))
+              case _ => throw new Exception(s"Unknown function `$identifier`")
+            }
+            ApronExpr(Apron.mkVar(index))*/
+          throw new Exception
         case ITEExpr(condition, thenExpr, elseExpr, _) =>
           (thenExpr.typ, elseExpr.typ) match {
             case (BrboType.BOOL, BrboType.BOOL) =>
               toApronHelper(And(Imply(condition, thenExpr), Imply(Negation(condition), elseExpr)))
             case (BrboType.INT, BrboType.INT) => throw new Exception
-              /*val (temporaryVariable, index) = createNewVariable()
-              temporaryVariables =
-                temporaryVariables.updated(temporaryVariable.name, ApronVariable(index, None))
-              val constraint = {
-                val trueCase = toApronHelper(Imply(condition, Equal(temporaryVariable, thenExpr)))
-                val falseCase = toApronHelper(Imply(Negation(condition), Equal(temporaryVariable, elseExpr)))
-                (trueCase, falseCase) match {
-                  case (left: Constraint, right: Constraint) => Conjunction(left, right)
-                  case _ => throw new Exception
-                }
+            /*val (temporaryVariable, index) = createNewVariable()
+            temporaryVariables =
+              temporaryVariables.updated(temporaryVariable.name, ApronVariable(index, None))
+            val constraint = {
+              val trueCase = toApronHelper(Imply(condition, Equal(temporaryVariable, thenExpr)))
+              val falseCase = toApronHelper(Imply(Negation(condition), Equal(temporaryVariable, elseExpr)))
+              (trueCase, falseCase) match {
+                case (left: Constraint, right: Constraint) => Conjunction(left, right)
+                case _ => throw new Exception
               }
-              temporaryVariables =
-                temporaryVariables.updated(temporaryVariable.name, ApronVariable(index, Some(constraint)))
-              ApronExpr(Apron.mkVar(index))*/
+            }
+            temporaryVariables =
+              temporaryVariables.updated(temporaryVariable.name, ApronVariable(index, Some(constraint)))
+            ApronExpr(Apron.mkVar(index))*/
             case _ => throw new Exception
           }
         case Imply(left, right, _) => toApronHelper(Or(Negation(left), right))
@@ -301,5 +304,30 @@ object BrboExprUtils {
     })
 
     (apronRepr, newValuation)
+  }
+
+  def extractUUID(expr: BrboExpr): UUID = {
+    expr match {
+      case Identifier(_, _, uuid) => uuid
+      case Bool(_, uuid) => uuid
+      case Number(_, uuid) => uuid
+      case StringLiteral(_, uuid) => uuid
+      case Addition(_, _, uuid) => uuid
+      case Subtraction(_, _, uuid) => uuid
+      case Multiplication(_, _, uuid) => uuid
+      case Division(_, _, uuid) => uuid
+      case Negation(_, uuid) => uuid
+      case LessThan(_, _, uuid) => uuid
+      case LessThanOrEqualTo(_, _, uuid) => uuid
+      case GreaterThan(_, _, uuid) => uuid
+      case GreaterThanOrEqualTo(_, _, uuid) => uuid
+      case Equal(_, _, uuid) => uuid
+      case NotEqual(_, _, uuid) => uuid
+      case And(_, _, uuid) => uuid
+      case Or(_, _, uuid) => uuid
+      case FunctionCallExpr(_, _, _, uuid) => uuid
+      case ITEExpr(_, _, _, uuid) => uuid
+      case Imply(_, _, uuid) => uuid
+    }
   }
 }
