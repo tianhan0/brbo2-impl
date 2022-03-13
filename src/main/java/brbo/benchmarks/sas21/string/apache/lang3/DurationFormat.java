@@ -17,7 +17,8 @@ abstract public class DurationFormat extends Common {
     );
     int iterator = tokens;
     while (iterator > 0) {
-      int entry = ndInt2(1, iterator);
+      int entry = uninitialized();
+      ndInt3(1, entry, iterator);
       iterator -= entry;
       if (ndInt() == 0) {
         buffer += entry;

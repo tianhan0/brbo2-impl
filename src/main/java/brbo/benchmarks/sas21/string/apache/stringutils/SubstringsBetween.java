@@ -20,7 +20,7 @@ abstract public class SubstringsBetween extends Common {
       if (ndInt() == 0) {
         start = -1;
       } else {
-        start = ndInt2(pos, str - 1);
+        ndInt3(pos, start, str - 1);
       }
       if (start < 0) {
         break;
@@ -29,7 +29,7 @@ abstract public class SubstringsBetween extends Common {
       if (ndInt() == 0) {
         end = -1;
       } else {
-        end = ndInt2(start, str - 1);
+        ndInt3(start, end, str - 1);
       }
       if (end < 0) {
         break;

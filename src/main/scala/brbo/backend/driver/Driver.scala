@@ -228,7 +228,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
           (acc, summand) => Addition(acc, summand)
         })
       }
-      val assertFunction: BrboFunction = PreDefinedFunctions.assert
+      val assertFunction: BrboFunction = PreDefinedFunctions.assertFunction
       val assertion = boundAssertion.replaceResourceVariable(sum)
       FunctionCall(FunctionCallExpr(assertFunction.identifier, List(assertion), assertFunction.returnType))
     }

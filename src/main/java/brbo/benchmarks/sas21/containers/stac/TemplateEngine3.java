@@ -35,8 +35,8 @@ public abstract class TemplateEngine3 extends Common {
       int r = 0;
       int stringBuilder = 0;
       while (r <= text) {
-        l = ndInt2(p, text);
-        r = ndInt2(l, text);
+        ndInt3(p, l, text);
+        ndInt3(l, r, text);
         stringBuilder += l - p;
         R = R + (l - p);
         stringBuilder += rep;

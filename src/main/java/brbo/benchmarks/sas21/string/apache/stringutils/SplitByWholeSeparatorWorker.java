@@ -19,7 +19,7 @@ abstract public class SplitByWholeSeparatorWorker extends Common {
         end = -1;
       }
       else {
-        end = ndInt2(beg, str - 1);
+        ndInt3(beg, end, str - 1);
       }
       if (end > -1) {
         if (end > beg) {

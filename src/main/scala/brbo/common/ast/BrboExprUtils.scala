@@ -128,6 +128,8 @@ object BrboExprUtils {
     val existingNames = valuation.allVariables.map(v => v.identifier.name)
 
     def createNewVariable(): (Identifier, Int) = {
+      logger.fatal(s"Creating new variables when translating expression ${expr.prettyPrintToCFG} to Apron. " +
+        s"New variables will cause existing states to never subsume new states.")
       val index = temporaryVariables.size + valuation.allVariables.size
       val name = s"v!$index"
       assert(!existingNames.contains(name))

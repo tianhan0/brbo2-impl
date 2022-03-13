@@ -51,9 +51,11 @@ object PreDefinedFunctions {
   val NDINT: String = "ndInt"
   val NDBOOL: String = "ndBool"
   val NDINT2: String = "ndInt2"
+  val NDINT3: String = "ndInt3"
+  val UNINITIALIZED: String = "uninitialized"
   val BOUND_ASSERTION: String = "boundAssertion"
 
-  val assert: BrboFunction = {
+  val assertFunction: BrboFunction = {
     val cond = Identifier("cond", BOOL)
     val body = {
       val ite = {
@@ -67,7 +69,7 @@ object PreDefinedFunctions {
     BrboFunction(ASSERT, VOID, List(cond), body, Set())
   }
 
-  val assume: BrboFunction = {
+  val assumeFunction: BrboFunction = {
     val cond = Identifier("cond", BOOL)
     val body = {
       val ite = {
@@ -81,7 +83,7 @@ object PreDefinedFunctions {
     BrboFunction(ASSUME, VOID, List(cond), body, Set())
   }
 
-  val ndInt: BrboFunction = {
+  val ndIntFunction: BrboFunction = {
     val body = {
       val returnCommand = Return(Some(FunctionCallExpr("__VERIFIER_nondet_int", Nil, INT)))
       Block(List(returnCommand))
@@ -89,7 +91,7 @@ object PreDefinedFunctions {
     BrboFunction(NDINT, INT, Nil, body, Set())
   }
 
-  val ndBool: BrboFunction = {
+  val ndBoolFunction: BrboFunction = {
     val body = {
       val x = Identifier("x", INT)
       val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
@@ -99,7 +101,7 @@ object PreDefinedFunctions {
     BrboFunction(NDBOOL, BOOL, Nil, body, Set())
   }
 
-  val ndInt2: BrboFunction = {
+  val ndInt2Function: BrboFunction = {
     val lower = Identifier("lower", INT)
     val upper = Identifier("upper", INT)
     val body = {
@@ -112,13 +114,29 @@ object PreDefinedFunctions {
     BrboFunction(NDINT2, INT, List(lower, upper), body, Set())
   }
 
-  val boundAssertion: BrboFunction = {
+  val ndInt3Function: BrboFunction = {
+    val x = Identifier("x", INT)
+    val lower = Identifier("lower", INT)
+    val upper = Identifier("upper", INT)
+    val body = {
+      val assume = createAssume(And(LessThanOrEqualTo(lower, x), LessThanOrEqualTo(x, upper)))
+      Block(List(assume))
+    }
+    BrboFunction(NDINT3, VOID, List(lower, x, upper), body, Set())
+  }
+
+  val uninitializedFunction: BrboFunction = {
+    BrboFunction(UNINITIALIZED, INT, List(), Block(List()), Set())
+  }
+
+  val boundAssertFunction: BrboFunction = {
     BrboFunction(BOUND_ASSERTION, VOID, List(Identifier("assertion", BOOL)), Block(Nil), Set())
   }
 
-  val allFunctions = Map(ASSERT -> assert, ASSUME -> assume, NDINT -> ndInt,
-    NDBOOL -> ndBool, NDINT2 -> ndInt2, BOUND_ASSERTION -> boundAssertion)
-  val allFunctionsList = List(assert, assume, ndInt, ndBool, ndInt2, boundAssertion)
+  val allFunctions = Map(ASSERT -> assertFunction, ASSUME -> assumeFunction, NDINT -> ndIntFunction,
+    NDBOOL -> ndBoolFunction, NDINT2 -> ndInt2Function, NDINT3 -> ndInt3Function,
+    UNINITIALIZED -> uninitializedFunction, BOUND_ASSERTION -> boundAssertFunction)
+  val allFunctionsList = List(assertFunction, assumeFunction, ndIntFunction, ndBoolFunction, ndInt2Function, ndInt3Function, boundAssertFunction)
 
   def createAssert(expression: BrboExpr): FunctionCall = FunctionCall(FunctionCallExpr(ASSERT, List(expression), BOOL))
 

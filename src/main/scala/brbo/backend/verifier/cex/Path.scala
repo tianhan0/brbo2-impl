@@ -84,7 +84,7 @@ object Path {
   private val logger = MyLogger.createLogger(Path.getClass, debugMode = false)
 
   def removeCommandsForUBCheck(path: Path): Path = {
-    val assertFunction: BrboFunction = PreDefinedFunctions.assert
+    val assertFunction: BrboFunction = PreDefinedFunctions.assertFunction
     val nodes = path.pathNodes
     var newNodes: List[CFGNode] = Nil
     var i = 0

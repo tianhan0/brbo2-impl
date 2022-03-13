@@ -18,7 +18,7 @@ abstract public class ReplaceChars extends Common {
         index = -1;
       }
       else {
-        index = ndInt2(0, searchChars - 1);
+        ndInt3(0, index, searchChars - 1);
       }
       if (index >= 0) {
         modified = true;

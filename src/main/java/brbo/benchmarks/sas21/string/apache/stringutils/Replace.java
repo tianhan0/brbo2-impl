@@ -13,7 +13,7 @@ abstract public class Replace extends Common {
     if (ndInt() == 0) {
       end = -1;
     } else {
-      end = ndInt2(start, text - 1);
+      ndInt3(start, end, text - 1);
     }
     if (end == -1) {
       return;
@@ -36,7 +36,7 @@ abstract public class Replace extends Common {
       if (ndInt() == 0) {
         end = -1;
       } else {
-        ndInt2(start, text - 1);
+        ndInt3(start, end, text - 1);
       }
     }
     buf += text - start;

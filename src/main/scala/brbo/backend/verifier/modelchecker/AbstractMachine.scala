@@ -301,7 +301,16 @@ object AbstractMachine {
           case Some(_) => throw new Exception
           case None => valuation
         }
-      case FunctionCall(_, _) => throw new Exception
+      case FunctionCall(FunctionCallExpr(identifier, arguments, _, _), _) =>
+        identifier match {
+          case PreDefinedFunctions.NDINT3 =>
+            val lower = arguments.head
+            val x = arguments(1)
+            val upper = arguments(2)
+            val condition = And(LessThanOrEqualTo(lower, x), LessThanOrEqualTo(x, upper))
+            evalExpr(valuation, condition, scope)
+          case _ => throw new Exception
+        }
       case LabeledCommand(_, command, _) => evalCommand(valuation, command, scope)
       case _: CexPathOnly => throw new Exception
       case Skip(_) => valuation
@@ -344,21 +353,38 @@ object AbstractMachine {
 
   private def assign(identifier: Identifier, expr: BrboExpr, createNewVariable: Boolean,
                      valuation: Valuation, scope: Scope): Valuation = {
-    val (apronRepr, newValuation) = BrboExprUtils.toApron(expr, valuation, scope)
+    // If x = uninitialized(), then we treat x as an uninitialized variable
+    val declareUninitializedVariable = {
+      expr match {
+        case FunctionCallExpr(identifier, _, _, _) =>
+          identifier match {
+            case PreDefinedFunctions.UNINITIALIZED => true
+            case _ => false
+          }
+        case _ => false
+      }
+    }
     val variable = Variable(identifier, scope)
-    val newValuation2 =
-      if (createNewVariable) newValuation.createInitializedVariable(variable)
-      else newValuation
-    apronRepr match {
-      case Apron.ApronExpr(node) => newValuation2.assignCopy(variable, node)
-      case constraint: Constraint =>
-        // TODO: This approximates the value, as opposed to exactly representing the value,
-        //  because we represent boolean-typed values as constraints
-        val value =
-          if (newValuation2.satisfy(constraint)) BOOLEAN_POSITIVE
-          else BOOLEAN_NEGATIVE
-        newValuation2.assignCopy(variable, Apron.mkIntVal(value))
-      case _ => throw new Exception
+    if (declareUninitializedVariable) {
+      assert(createNewVariable)
+      valuation.createUninitializedVariable(variable)
+    }
+    else {
+      val (apronRepr, newValuation) = BrboExprUtils.toApron(expr, valuation, scope)
+      val newValuation2 =
+        if (createNewVariable) newValuation.createInitializedVariable(variable)
+        else newValuation
+      apronRepr match {
+        case Apron.ApronExpr(node) => newValuation2.assignCopy(variable, node)
+        case constraint: Constraint =>
+          // TODO: This approximates the value, as opposed to exactly representing the value,
+          //  because we represent boolean-typed values as constraints
+          val value =
+            if (newValuation2.satisfy(constraint)) BOOLEAN_POSITIVE
+            else BOOLEAN_NEGATIVE
+          newValuation2.assignCopy(variable, Apron.mkIntVal(value))
+        case _ => throw new Exception
+      }
     }
   }
 

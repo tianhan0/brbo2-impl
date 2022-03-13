@@ -37,9 +37,7 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
     val e = Identifier("e", BrboType.INT)
     val loop = {
       val s1 = Assume(And(LessThanOrEqualTo(e, s), LessThanOrEqualTo(s, t)))
-      // Assignment(s, FunctionCallExpr("ndInt2", List(Addition(e, Number(1)), t), BrboType.INT))
       val s2 = Assume(And(LessThanOrEqualTo(s, e), LessThanOrEqualTo(e, t)))
-      // Assignment(e, FunctionCallExpr("ndInt2", List(Addition(s, Number(1)), t), BrboType.INT))
       val reset = Reset(groupId)
       val use = Use(Some(groupId), Subtraction(s, l))
       val s3 = Assignment(l, e)
