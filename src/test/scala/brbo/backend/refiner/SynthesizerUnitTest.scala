@@ -6,7 +6,8 @@ import brbo.backend.refiner.SynthesizerUnitTest.{coverTests, disjointTests, synt
 import brbo.common.BrboType.{INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{BrboType, CommandLineArguments, StringCompare, Z3Solver}
+import brbo.common.string.StringCompare
+import brbo.common.{BrboType, CommandLineArguments, Z3Solver}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SynthesizerUnitTest extends AnyFlatSpec {

@@ -3,7 +3,8 @@ package brbo.backend.refiner
 import brbo.backend.refiner.Refinement._
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{GhostVariableUtils, MyLogger, SameAs, StringFormatUtils}
+import brbo.common.string.StringFormatUtils
+import brbo.common.{GhostVariableUtils, MyLogger, SameAs}
 
 /**
  *

@@ -110,5 +110,5 @@ case class CFGNode(value: CommandOrExpr, function: Option[BrboFunction] = None, 
 
 object CFGNode {
   val DONT_CARE_ID: Int = -1
-  val FUNCTION_NAME_WHEN_FUNCTION_NOT_EXIST = "NotExist!"
+  val FUNCTION_NAME_WHEN_FUNCTION_NOT_EXIST = "NONE!"
 }

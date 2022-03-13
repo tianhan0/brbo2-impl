@@ -8,6 +8,7 @@ import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.backend.verifier.modelchecker.Apron._
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
+import brbo.common.string.StringFormatUtils
 import brbo.common.{CommandLineArguments, MyLogger, Z3Solver}
 import com.microsoft.z3.AST
 import org.apache.logging.log4j.LogManager
@@ -42,60 +43,76 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     val initialState = State(fakeInitialNode, initialValuation, indexOnPath = 0, shouldVerify = true)
     // Every CFGNode corresponds to a location, which is the location right after the node
     // fakeInitialNode corresponds to the program entry, which is right before the first command / expression
-    val initialPathState = PathState(Map(initialState.node -> initialState.valuation))
-    var reached = Map[List[CFGNode], PathState](Nil -> initialPathState)
+    val initialPathState = StateMap(Map(initialState.node -> initialState.valuation))
+    // We compute a single abstract state for every control location
+    var reached = Map[List[CFGNode], StateMap](Nil -> initialPathState)
     var waitlist: Queue[(List[CFGNode], State)] = Queue((Nil, initialState)) // Breadth First Search
     var stoppedEarly = false
     var counterexamplePaths: Set[List[CFGNode]] = Set() // Paths that lead to either refutation or timeouts
-    var maximalPaths = Map[List[CFGNode], State]() // Paths with a maximal length. That is, they can no longer be .
+    var maximalPaths = Map[List[CFGNode], StateMap]() // Paths with a maximal length. That is, the last state is final.
     var refuted = false
     while (waitlist.nonEmpty && counterexamplePaths.isEmpty && !refuted) {
       val ((path, state), newWaitlist) = waitlist.dequeue
-      logger.traceOrError(s"[model check] Dequeued path: `$path`")
-      logger.traceOrError(s"[model check] Dequeued state: `${state.toShortString}`")
+      logger.trace(s"[model check] Dequeued path: `$path`")
+      logger.trace(s"[model check] Dequeued state: `${state.toShortString}`")
       waitlist = newWaitlist
-      val oldPathState: PathState = reached.getOrElse(path, throw new Exception)
+      val oldStateMap: StateMap = reached.getOrElse(path, throw new Exception)
       val newStates = step(state)
       if (newStates.isEmpty)
-        maximalPaths = maximalPaths + (path -> state)
+        maximalPaths = maximalPaths + (path -> oldStateMap)
       newStates.foreach({
         newState =>
-          logger.traceOrError(s"[model check] New state: ${newState.toShortString}")
+          logger.trace(s"[model check] New state: ${newState.toShortString}")
           val newPath = newState.node :: path
           val (newValuation, keepExploring) = {
-            oldPathState.valuations.get(newState.node) match {
+            oldStateMap.valuations.get(newState.node) match {
               case Some(existingValuation) =>
-                logger.traceOrError(s"[model check] Old valuation at node `${newState.node.prettyPrintToCFG}`: ${existingValuation.toShortString}")
-                if (newState.valuation.include(existingValuation)) {
-                  logger.traceOrError(s"[model check] The new valuation is included in the old one")
+                logger.trace(s"[model check] Old valuation after node `${newState.node.prettyPrintToCFG}`: ${existingValuation.toShortString}")
+                if (existingValuation.include(newState.valuation)) {
+                  logger.trace(s"[model check] The new valuation is included in the old one")
                   (existingValuation, false)
                 }
                 else {
-                  logger.traceOrError(s"[model check] The new valuation is not included in the old one")
-                  val joinedValuation = newState.valuation.joinCopy(existingValuation)
-                  logger.traceOrError(s"[model check] Joined valuation: `${joinedValuation.toShortString}`")
-                  if (newState.indexOnPath <= getMaxPathLength) (joinedValuation, true)
+                  logger.trace(s"[model check] The new valuation is not included in the old one")
+                  logger.traceOrError(s"[model check] Path: ${newPath.reverse.map(n => n.simplifiedString).mkString(", ")}")
+                  logger.traceOrError(s"[model check] Old valuation after node `${newState.node.prettyPrintToCFG}`: ${existingValuation.toShortString}")
+                  logger.traceOrError(s"[model check] New valuation after node `${newState.node.prettyPrintToCFG}`: ${newState.valuation.toShortString}")
+
+                  val occurrences = newPath.count(node => node == newState.node)
+                  val newValuation = {
+                    if (occurrences > 3) {
+                      val widenedValuation = existingValuation.widen(newState.valuation)
+                      logger.traceOrError(s"[model check] Widened valuation: `${widenedValuation.toShortString}`")
+                      widenedValuation
+                    } else {
+                      val joinedValuation = newState.valuation.joinCopy(existingValuation)
+                      logger.traceOrError(s"[model check] Joined valuation: `${joinedValuation.toShortString}`")
+                      joinedValuation
+                    }
+                  }
+                  if (newState.indexOnPath <= getMaxPathLength) (newValuation, true)
                   else {
-                    logger.traceOrError(s"[model check] Will stop exploring path due to reaching the max path length: `$newPath`")
+                    logger.trace(s"[model check] Will stop exploring path due to reaching the max path length: `$newPath`")
                     stoppedEarly = true
                     // Add this path to the counterexamples, so that it can be avoided in the future
                     counterexamplePaths = counterexamplePaths + newPath
-                    (joinedValuation, false)
+                    (newValuation, false)
                   }
                 }
               case None =>
-                logger.trace(s"Old valuation at node `${newState.node.prettyPrintToCFG}` does not exist")
+                logger.trace(s"Old valuation after node `${newState.node.prettyPrintToCFG}` does not exist")
                 (newState.valuation, true)
             }
           }
-          reached = {
-            val newValuations = oldPathState.valuations.updated(newState.node, newValuation)
-            reached + (newPath -> PathState(newValuations))
+          val newStateMap = {
+            val newValuations = oldStateMap.valuations.updated(newState.node, newValuation)
+            StateMap(newValuations)
           }
+          reached = reached + (newPath -> newStateMap)
           if (keepExploring && !newState.valuation.isBottom) {
             waitlist = waitlist.enqueue((newPath, State(newState.node, newValuation, newState.indexOnPath, newState.shouldVerify)))
           } else {
-            maximalPaths = maximalPaths + (newPath -> newState)
+            maximalPaths = maximalPaths + (newPath -> newStateMap)
           }
 
           val isNewStateRefuted =
@@ -107,9 +124,10 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                 }
                 !verified
               }
-              logger.traceOrError(s"[model check] New state ${if (refuted) "does not satisfy" else "satisfies"} assertion `$assertion`")
+              logger.trace(s"[model check] New state ${if (refuted) "does not satisfy" else "satisfies"} assertion `$assertion`")
               if (refuted) {
                 logger.infoOrError(s"[model check] Assertion violation state: `${newState.toShortString}`")
+                logger.error(s"${newValuation.satisfyWithZ3(assertion, toInt = true)}")
               }
               refuted
             } else false
@@ -121,16 +139,30 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
       reached = reached - path
     }
     logger.infoOrError(s"Explored `${maximalPaths.size}` maximal paths")
-    logger.traceOrError(s"\n${maximalPaths.keySet.map(p => p.map(n => n.simplifiedString).reverse).mkString("  \n")}")
-    val paths = counterexamplePaths.map(p => Path(p.reverse))
+    val maximalPathsString = maximalPaths.map({
+      case (path, pathState) =>
+        val pathString = path.reverse.map(n => n.simplifiedString).mkString(", ")
+        val statesString = path.distinct.reverse.map({
+          node: CFGNode =>
+            val nodeString = node.simplifiedString
+            val stateString = pathState.valuations(node).toShortString
+            StringFormatUtils.wrapColumnsFixedWidth(List((nodeString, 25), (stateString, 150)))
+        }).mkString("\n")
+        s"Path: $pathString\nStates:\n$statesString"
+    }).mkString(s"\n${"-" * 150}\n")
+    logger.traceOrError(s"Maximal paths:\n$maximalPathsString")
     val result = {
+      val paths = counterexamplePaths.map(p => Path(p.reverse))
       if (refuted) VerifierResult(VerifierStatus.FALSE_RESULT, paths)
       else {
         if (stoppedEarly) VerifierResult(VerifierStatus.UNKNOWN_RESULT, paths)
         else VerifierResult(VerifierStatus.TRUE_RESULT, paths)
       }
     }
-    Result(result, maximalPaths.values)
+    val finalValuations = maximalPaths.map({
+      case (path, pathState) => pathState.valuations(path.head)
+    })
+    Result(result, finalValuations)
   }
 
   def step(state: State): Set[State] = {
@@ -232,25 +264,38 @@ object AbstractMachine {
           updatedValuation, valuation, logger)
       case reset@Reset(_, condition, _) =>
         trace(logger, s"Evaluating `${reset.prettyPrintToCFG}`")
-        val updatedCounterVariable = {
-          val updatedResourceVariable = {
-            val updatedStarVariable = {
-              // For r*, interpret as joining the post states of r* = r and r* = r*, instead of r* = r*>=r ? r* : r, because
-              // (1) we only want to learn paths (as root causes), and
-              // (2) this is sound and precise for the bound verification
+        val counterUpdated = {
+          val resourceUpdated = {
+            val starUpdated = {
+              /**
+               * For r*, if we can decide whether r* is greater than, or less than or equal to r in the abstract state, then be precise.
+               * Otherwise, we interpret as joining the post states of r* = r and r* = r*, instead of r* = r*>=r ? r* : r, because
+               * (1) we only want to learn paths (as root causes), and
+               * (2) this is sound and precise for the bound verification
+               */
               val v = assign(reset.starVariable, reset.resourceVariable, createNewVariable = false, valuation, scope)
-              trace(logger, s"After updating r* (before join): `${v.toShortString}`")
-              v.joinCopy(valuation)
+              val updateStar = valuation.satisfy(LessThan(reset.starVariable, reset.resourceVariable))
+              val notUpdateStar = valuation.satisfy(GreaterThanOrEqualTo(reset.starVariable, reset.resourceVariable))
+              assert(!(updateStar && notUpdateStar))
+              trace(logger, s"Update r*? `$updateStar`. Not update r*? `$notUpdateStar`. r*=r: ${v.toShortString}")
+              trace(logger, s"r*=r*: ${valuation.toShortString}")
+              if (updateStar) v
+              else if (notUpdateStar) valuation
+              else {
+                trace(logger, s"join: ${v.joinCopy(valuation).toShortString}")
+                v.joinCopy(valuation)
+                v
+              }
             }
-            trace(logger, s"After updating r* (after join): `${updatedStarVariable.toShortString}`")
-            assign(reset.resourceVariable, Number(0), createNewVariable = false, updatedStarVariable, scope)
+            trace(logger, s"After updating r*: `${starUpdated.toShortString}`")
+            assign(reset.resourceVariable, Number(0), createNewVariable = false, starUpdated, scope)
           }
-          trace(logger, s"After updating r: `${updatedResourceVariable.toShortString}`")
-          assign(reset.counterVariable, Addition(reset.counterVariable, Number(1)), createNewVariable = false, updatedResourceVariable, scope)
+          trace(logger, s"After updating r: `${resourceUpdated.toShortString}`")
+          assign(reset.counterVariable, Addition(reset.counterVariable, Number(1)), createNewVariable = false, resourceUpdated, scope)
         }
-        trace(logger, s"After updating r#: `${updatedCounterVariable.toShortString}`")
+        trace(logger, s"After updating r#: `${counterUpdated.toShortString}`")
         evalGhostCommandHelper(condition, valuation.satisfy(condition), valuation.satisfy(Negation(condition)),
-          updatedCounterVariable, valuation, logger)
+          counterUpdated, valuation, logger)
       case Return(value, _) =>
         value match {
           case Some(_) => throw new Exception
@@ -321,7 +366,7 @@ object AbstractMachine {
     def toShortString: String
   }
 
-  case class Result(result: VerifierResult, finalStates: Iterable[State])
+  case class Result(result: VerifierResult, finalStates: Iterable[Valuation])
 
   case class State(node: CFGNode, valuation: Valuation, indexOnPath: Int, shouldVerify: Boolean) extends ToShortString {
     val scope: Scope = valuation.scopeOperations.getScope(node.value)
@@ -333,7 +378,11 @@ object AbstractMachine {
     def toShortString: String = s"Node: `${node.prettyPrintToCFG}`. Number of visits: `$indexOnPath`. shouldVerify: `$shouldVerify`. Valuation: ${valuation.toShortString}"
   }
 
-  case class PathState(valuations: Map[CFGNode, Valuation])
+  /**
+   *
+   * @param valuations A mapping from control locations to abstract states at the associated locations
+   */
+  case class StateMap(valuations: Map[CFGNode, Valuation])
 
   /**
    *
@@ -357,6 +406,10 @@ object AbstractMachine {
     }
     val variablesNoScope: List[Identifier] = liveVariables.map(v => v.identifier)
     val allVariablesNoScope: List[Identifier] = allVariables.map(v => v.identifier)
+    private val allVariablesNames: Array[String] = allVariablesNoScope.zipWithIndex
+      .map({ case (identifier, index) => s"${identifier.name}(${StringFormatUtils.integer(index, 2)})"}).toArray
+    private val allVariablesShortNames: Array[String] = allVariablesNoScope.zipWithIndex
+      .map({ case (identifier, _) => s"${identifier.name}"}).toArray
     val allVariablesSet: Set[Variable] = allVariables.toSet
     private val solver = new Z3Solver
     private val stateFloat = stateToZ3Ast(solver, toInt = false)
@@ -447,17 +500,25 @@ object AbstractMachine {
     }
 
     def joinCopy(other: Valuation): Valuation = {
-      val (v1: Valuation, v2: Valuation) = {
-        if (other.allVariablesSet.subsetOf(allVariablesSet)) {
-          (this, createUninitializedVariables(other, this))
-        }
-        else if (allVariablesSet.subsetOf(other.allVariablesSet)) {
-          (createUninitializedVariables(this, other), other)
-        }
-        else throw new Exception
-      }
+      val (v1: Valuation, v2: Valuation) = equalizeVariables(other)
       val newApronState = v1.apronState.joinCopy(manager, v2.apronState)
       Valuation(v1.liveVariables, newApronState, v1.allVariables, scopeOperations, logger)
+    }
+
+    def widen(other: Valuation): Valuation = {
+      val (v1: Valuation, v2: Valuation) = equalizeVariables(other)
+      val newApronState = v1.apronState.widening(manager, v2.apronState)
+      Valuation(v1.liveVariables, newApronState, v1.allVariables, scopeOperations, logger)
+    }
+
+    private def equalizeVariables(other: Valuation): (Valuation, Valuation) = {
+      if (other.allVariablesSet.subsetOf(allVariablesSet)) {
+        (this, createUninitializedVariables(other, this))
+      }
+      else if (allVariablesSet.subsetOf(other.allVariablesSet)) {
+        (createUninitializedVariables(this, other), other)
+      }
+      else throw new Exception
     }
 
     /**
@@ -466,7 +527,7 @@ object AbstractMachine {
      * @param more The other valuation
      * @return A valuation that is created from `less` but contains the same variables as `more`
      */
-    def createUninitializedVariables(less: Valuation, more: Valuation): Valuation = {
+    private def createUninitializedVariables(less: Valuation, more: Valuation): Valuation = {
       val v1 = more.allVariables.foldLeft(less)({
         (acc, v) =>
           if (less.allVariables.contains(v)) acc
@@ -486,12 +547,6 @@ object AbstractMachine {
         val newState = apronState.assignCopy(manager, index, new Texpr0Intern(expression), null)
         Valuation(liveVariables, newState, allVariables, scopeOperations, logger)
       }
-    }
-
-    override def toString: String = {
-      val variablesString = "  " + liveVariables.map(v => v.toString).mkString("\n  ")
-      val stateString = apronState.toString(manager) //, variables.map(v => v.variable.identifier).toArray)
-      s"Variables:\n$variablesString\nApronState: $stateString"
     }
 
     def satisfy(constraint: Constraint): Boolean = {
@@ -571,8 +626,17 @@ object AbstractMachine {
       }
     }
 
+    override def toString: String = {
+      val variablesString = "  " + liveVariables.map(v => v.toString).mkString("\n  ")
+      val stateString = apronState.toString(manager, allVariablesNames)
+      s"Variables:\n$variablesString\nApronState: $stateString"
+    }
+
     override def toShortString: String = {
-      s"Variables: `${liveVariables.map(v => v.toShortString)}`. ApronState: `$apronState`"
+      // val variablesString = liveVariables.map(v => v.toShortString)
+      val stateString = apronState.toString(manager, allVariablesShortNames)
+      // String.format("Variables: %-30s ApronState: %-50s", variablesString, stateString)
+      s"ApronState: $stateString"
     }
 
     def stateToZ3Ast(solver: Z3Solver, toInt: Boolean): AST = {

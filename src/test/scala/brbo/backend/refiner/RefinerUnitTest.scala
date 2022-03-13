@@ -5,7 +5,8 @@ import brbo.backend.verifier.cex.Path
 import brbo.common.BrboType.{INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{BrboType, CommandLineArguments, StringCompare}
+import brbo.common.string.StringCompare
+import brbo.common.{BrboType, CommandLineArguments}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class RefinerUnitTest extends AnyFlatSpec {

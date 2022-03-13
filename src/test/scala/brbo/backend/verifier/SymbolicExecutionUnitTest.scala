@@ -3,9 +3,10 @@ package brbo.backend.verifier
 import brbo.TestCase
 import brbo.backend.verifier.cex.Path
 import brbo.common.BrboType._
-import brbo.common.{StringCompare, Z3Solver}
+import brbo.common.Z3Solver
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
+import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SymbolicExecutionUnitTest extends AnyFlatSpec {

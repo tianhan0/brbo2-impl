@@ -1,4 +1,4 @@
-package brbo.common
+package brbo.common.string
 
 object StringCompare {
   private val dashes = "------------------------------------------"

@@ -1,9 +1,9 @@
 package brbo.common.cfg
 
 import brbo.TestCase
-import brbo.common.StringCompare
 import brbo.common.BrboType.{INT, VOID}
 import brbo.common.ast._
+import brbo.common.string.StringCompare
 import org.apache.logging.log4j.{LogManager, Logger}
 import org.scalatest.flatspec.AnyFlatSpec
 

@@ -2,7 +2,8 @@ package brbo.common.ast
 
 import brbo.TestCase
 import brbo.common.BrboType.INT
-import brbo.common.{BrboType, StringCompare}
+import brbo.common.BrboType
+import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BrboAstUnitTest extends AnyFlatSpec {

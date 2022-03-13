@@ -1,6 +1,7 @@
 package brbo.common
 
 import brbo.TestCase
+import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
 class MathUtilsUnitTest extends AnyFlatSpec {

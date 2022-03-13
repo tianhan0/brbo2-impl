@@ -1,4 +1,4 @@
-package brbo.common
+package brbo.common.string
 
 import org.apache.commons.lang3.RandomStringUtils
 

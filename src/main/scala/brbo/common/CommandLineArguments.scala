@@ -73,7 +73,7 @@ class CommandLineArguments {
       case "full" => FULL_AMORTIZE
       case "selective" => SELECTIVE_AMORTIZE
       case "all" => ALL_AMORTIZE
-      case "unknown" => TEST_MODE
+      case "test" => TEST_MODE
     }
   }
 
@@ -177,7 +177,7 @@ object CommandLineArguments {
   val DEFAULT_MAX_ITERATIONS = 1000
   val DEFAULT_ASSERTION_TAG: String = "all"
   val DEFAULT_ABSTRACT_DOMAIN: String = POLKA_STRICT.toString
-  val DEFAULT_MAX_PATH_LENGTH = 100
+  val DEFAULT_MAX_PATH_LENGTH = 30
 
   private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)
 

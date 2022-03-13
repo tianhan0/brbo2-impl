@@ -6,7 +6,8 @@ import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.backend.verifier.modelchecker.AbstractMachine.Variable
 import brbo.common.BrboType.INT
 import brbo.common.ast.BrboExprUnitTest._
-import brbo.common.{BrboType, MyLogger, StringCompare}
+import brbo.common.string.StringCompare
+import brbo.common.{BrboType, MyLogger}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BrboExprUnitTest extends AnyFlatSpec {

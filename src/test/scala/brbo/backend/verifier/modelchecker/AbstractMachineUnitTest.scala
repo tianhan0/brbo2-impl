@@ -4,7 +4,8 @@ import apron.{Octagon, Polka, Tcons0}
 import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.backend.verifier.modelchecker.Apron.{Conjunction, Disjunction, Singleton}
 import brbo.common.ast._
-import brbo.common.{BrboType, GhostVariableUtils, MyLogger, StringCompare}
+import brbo.common.string.StringCompare
+import brbo.common.{BrboType, GhostVariableUtils, MyLogger}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class AbstractMachineUnitTest extends AnyFlatSpec {
@@ -55,7 +56,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(v2.toString,
       """Variables:
         |  Variable(x,None)
-        |ApronState: {  1x0 >= 0;  -1x0 >= 0 }""".stripMargin, "Variables: x (same scope)")
+        |ApronState: {  1x(00) >= 0;  -1x(00) >= 0 }""".stripMargin, "Variables: x (same scope)")
     val v3 = {
       try {
         v2.createUninitializedVariable(xVar)
@@ -73,7 +74,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
       """Variables:
         |  Variable(x,None)
         |  Variable(y,None)
-        |ApronState: {  1x0 >= 0;  -1x0 >= 0;  -1x0 +1x1 >= 0;  1x0 +1x1 >= 0;  1x1 >= 0;  -1x0 -1x1 >= 0;  1x0 -1x1 >= 0;  -1x1 >= 0 }""".stripMargin, "Variables: x (same scope), y")
+        |ApronState: {  1x(00) >= 0;  -1x(00) >= 0;  -1x(00) +1y(01) >= 0;  1x(00) +1y(01) >= 0;  1y(01) >= 0;  -1x(00) -1y(01) >= 0;  1x(00) -1y(01) >= 0;  -1y(01) >= 0 }""".stripMargin,
+      "Variables: x (same scope), y")
     val v5 = v2.createInitializedVariable(Variable(x, Some(Block(List(Skip())))))
     StringCompare.ignoreWhitespaces(v5.toString,
       """Variables:
@@ -81,7 +83,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(x,Some({
         |  ;
         |}))
-        |ApronState: {  1x0 >= 0;  -1x0 >= 0;  -1x0 +1x1 >= 0;  1x0 +1x1 >= 0;  1x1 >= 0;  -1x0 -1x1 >= 0;  1x0 -1x1 >= 0;  -1x1 >= 0 }""".stripMargin, "Variables: x, x (different scope)")
+        |ApronState: {  1x(00) >= 0;  -1x(00) >= 0;  -1x(00) +1x(01) >= 0;  1x(00) +1x(01) >= 0;  1x(01) >= 0;  -1x(00) -1x(01) >= 0;  1x(00) -1x(01) >= 0;  -1x(01) >= 0 }""".stripMargin,
+      "Variables: x, x (different scope)")
   }
 
   "Removing out-of-scope variables from a valuation" should "be correct" in {
@@ -111,13 +114,13 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
       """Variables:
         |  Variable(x,None)
         |  Variable(z,None)
-        |ApronState: {  1x2 = 0;  1x1 = 0;  1x0 = 0 }""".stripMargin, "Removing initialized variables")
+        |ApronState: {  1x(02) = 0;  1z(01) = 0;  1x(00) = 0 }""".stripMargin, "Removing initialized variables")
     val v4 = v3.createInitializedVariable(xVar2)
     StringCompare.ignoreWhitespaces(v4.removeVariablesInScope(scope2).toString,
       """Variables:
         |  Variable(x,None)
         |  Variable(z,None)
-        |ApronState: {  1x2 = 0;  1x1 = 0;  1x0 = 0 }""".stripMargin, "Removing initialized variables")
+        |ApronState: {  1x(02) = 0;  1z(01) = 0;  1x(00) = 0 }""".stripMargin, "Removing initialized variables")
   }
 
   "Assigning to variables in a valuation" should "be correct" in {
@@ -130,31 +133,31 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
       """Variables:
         |  Variable(x,None)
         |  Variable(z,None)
-        |ApronState: {  1x0 -10 = 0 }""".stripMargin, "x = 10")
+        |ApronState: {  1x(00) -10 = 0 }""".stripMargin, "x = 10")
     val v4 = v3.assignCopy(xVar, Apron.mkIntVal(11))
     StringCompare.ignoreWhitespaces(v4.toString,
       """Variables:
         |  Variable(x,None)
         |  Variable(z,None)
-        |ApronState: {  1x0 -11 = 0 }""".stripMargin, "x = 11")
+        |ApronState: {  1x(00) -11 = 0 }""".stripMargin, "x = 11")
     val v5 = v4.assignCopy(yVar, Apron.mkIntVal(12))
     StringCompare.ignoreWhitespaces(v5.toString,
       """Variables:
         |  Variable(x,None)
         |  Variable(z,None)
-        |ApronState: {  1x0 -11 = 0 }""".stripMargin, "x = 11 (no y)")
+        |ApronState: {  1x(00) -11 = 0 }""".stripMargin, "x = 11 (no y)")
     val v6 = v5.assignCopy(xVar, Apron.mkAdd(xApronVar, xApronVar))
     StringCompare.ignoreWhitespaces(v6.toString,
       """Variables:
         |  Variable(x,None)
         |  Variable(z,None)
-        |ApronState: {  1x0 -22 = 0 }""".stripMargin, "When x = 11, do x := x + x")
+        |ApronState: {  1x(00) -22 = 0 }""".stripMargin, "When x = 11, do x := x + x")
     val v7 = v6.assignCopy(xVar, Apron.mkAdd(zApronVar, zApronVar))
     StringCompare.ignoreWhitespaces(v7.toString,
       """Variables:
         |  Variable(x,None)
         |  Variable(z,None)
-        |ApronState: {  -1x0 +2x1 = 0 }""".stripMargin, "When x = 11, do x := z + z")
+        |ApronState: {  -1x(00) +2z(01) = 0 }""".stripMargin, "When x = 11, do x := z + z")
   }
 
   "Joining two valuations" should "be correct" in {
@@ -165,7 +168,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(v4.toString,
       """Variables:
         |  Variable(x,None)
-        |ApronState: {  1x0 -50.0 >= 0;  -1x0 +100.0 >= 0 }""".stripMargin)
+        |ApronState: {  1x(00) -50.0 >= 0;  -1x(00) +100.0 >= 0 }""".stripMargin)
   }
 
   "Imposing constraints on a valuation" should "be correct" in {
@@ -179,7 +182,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(v2.toString,
       """Variables:
         |  Variable(x,None)
-        |ApronState: {  1x0 -4.0 >= 0;  -1x0 +10.0 >= 0 }""".stripMargin, "Conjunction")
+        |ApronState: {  1x(00) -4.0 >= 0;  -1x(00) +10.0 >= 0 }""".stripMargin, "Conjunction")
     val v3 = {
       val eq1 = Apron.mkEq(xApronVar, Apron.mkIntVal(100))
       val eq2 = Apron.mkEq(Apron.mkIntVal(50), xApronVar)
@@ -188,7 +191,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(v3.toString,
       """Variables:
         |  Variable(x,None)
-        |ApronState: {  1x0 -50.0 >= 0;  -1x0 +100.0 >= 0 }""".stripMargin, "Disjunction")
+        |ApronState: {  1x(00) -50.0 >= 0;  -1x(00) +100.0 >= 0 }""".stripMargin, "Disjunction")
   }
 
   "Finding indices of variables from a valuation" should "be correct" in {
@@ -249,11 +252,12 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
       .imposeConstraint(Singleton(Apron.mkGtZero(xApronVarPolka)))
     val multiplication = Apron.mkMul(aApronVarPolka, zApronVarPolka)
     val constraint = Apron.mkLe(xApronVarPolka, multiplication)
-    StringCompare.ignoreWhitespaces(v2Polka.toString, """Variables:
-                                                        |  Variable(x,None)
-                                                        |  Variable(z,None)
-                                                        |  Variable(a,None)
-                                                        |ApronState: {  -1x0 +1x1 = 0;  1x2 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin)
+    StringCompare.ignoreWhitespaces(v2Polka.toString,
+      """Variables:
+        |  Variable(x,None)
+        |  Variable(z,None)
+        |  Variable(a,None)
+        |ApronState: {  -1x(00) +1z(01) = 0;  1a(02) -1 >= 0;  1x(00) -1 >= 0 }""".stripMargin)
     StringCompare.ignoreWhitespaces(v2Polka.satisfy(constraint).toString, "false", "Check with Apron")
     StringCompare.ignoreWhitespaces(v2Polka.satisfyWithZ3(constraint, toInt = true).toString, "true", "Check with Z3")
   }
@@ -273,13 +277,13 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(v2Octagon.toString,
       """Variables:
         |  Variable(x,None)
-        |ApronState: {  1x0 -10.0 >= 0;  -1x0 +10.0 >= 0 }""".stripMargin)
+        |ApronState: {  1x(00) -10.0 >= 0;  -1x(00) +10.0 >= 0 }""".stripMargin)
 
     val v2Polka = v1Polka.imposeConstraint(Singleton(Apron.mkEq(xApronVarPolka, Apron.mkIntVal(xValue))))
     StringCompare.ignoreWhitespaces(v2Polka.toString,
       """Variables:
         |  Variable(x,None)
-        |ApronState: {  1x0 -10 = 0 }""".stripMargin)
+        |ApronState: {  1x(00) -10 = 0 }""".stripMargin)
 
     StringCompare.compareLiteral(v2Octagon.satisfy(GreaterThanOrEqualTo(x, Number(10))).toString, "true", "Satisfy BrboExpr: x>=10 (Octagon)")
     StringCompare.compareLiteral(v2Octagon.satisfy(GreaterThan(x, Number(100))).toString, "false", "Satisfy BrboExpr: x>100 (Octagon)")
@@ -342,14 +346,14 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
       """Variables:
         |  Variable(a,None)
         |  Variable(b,None)
-        |ApronState: {  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, "Initialize inputs (Polka)")
+        |ApronState: {  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin, "Initialize inputs (Polka)")
 
     val v0Octagon = declareInputsAAndB(emptyValuationOctagon(debug = false))
     StringCompare.ignoreWhitespaces(v0Octagon.toString,
       """Variables:
         |  Variable(a,None)
         |  Variable(b,None)
-        |ApronState: {  1x0 -1.0 >= 0;  1x0 +1x1 -2.0 >= 0;  1x1 -1.0 >= 0 }""".stripMargin, "Initialize inputs (Octagon)")
+        |ApronState: {  1a(00) -1.0 >= 0;  1a(00) +1b(01) -2.0 >= 0;  1b(01) -1.0 >= 0 }""".stripMargin, "Initialize inputs (Octagon)")
 
     val v1Polka = initializeGhostVariables(v0Polka)
     StringCompare.ignoreWhitespaces(v1Polka.toString,
@@ -359,7 +363,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  1x4 +1 = 0;  1x3 = 0;  1x2 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, "Initialize ghost variables (Polka)")
+        |ApronState: {  1C1(04) +1 = 0;  1S1(03) = 0;  1R1(02) = 0;  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin,
+      "Initialize ghost variables (Polka)")
 
     val v1Octagon = initializeGhostVariables(v0Octagon)
     val initialization = {
@@ -386,7 +391,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  -1x0 +1x3 = 0;  1x4 +1 = 0;  1x2 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, "When r* = 0, do r* = r* + a (Polka)")
+        |ApronState: {  -1a(00) +1S1(03) = 0;  1C1(04) +1 = 0;  1R1(02) = 0;  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin,
+      "When r* = 0, do r* = r* + a (Polka)")
     val v2Octagon = rStarAddA(v1Octagon)
 
     // r* = r* + b
@@ -402,7 +408,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  -1x0 -1x1 +1x3 = 0;  1x4 +1 = 0;  1x2 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, "When r* = a, do r* = r* + b (Polka)")
+        |ApronState: {  -1a(00) -1b(01) +1S1(03) = 0;  1C1(04) +1 = 0;  1R1(02) = 0;  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin,
+      "When r* = a, do r* = r* + b (Polka)")
     val v3Octagon = rStarAddB(v2Octagon)
     val rStarEqB = {
       val rStarApron = v3Octagon.apronVariableAnyScope(rStarVar)
@@ -420,7 +427,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  -2x0 +1x3 = 0;  1x4 +1 = 0;  1x2 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, "When r* = a, do r* = r* + a (Polka)")
+        |ApronState: {  -2a(00) +1S1(03) = 0;  1C1(04) +1 = 0;  1R1(02) = 0;  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin,
+      "When r* = a, do r* = r* + a (Polka)")
     val v4Octagon = rStarAddA(v2Octagon)
     val rStarEqTwoA = {
       val rStarApron = v3Octagon.apronVariableAnyScope(rStarVar)
@@ -443,7 +451,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  -1x0 +1x3 = 0;  -1x0 +1x2 -5 = 0;  1x4 +1 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, "When r = a, do r = r + 5 (Polka)")
+        |ApronState: {  -1a(00) +1S1(03) = 0;  -1a(00) +1R1(02) -5 = 0;  1C1(04) +1 = 0;  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin,
+      "When r = a, do r = r + 5 (Polka)")
     val v5Octagon = rAddAAndFive(v2Octagon)
     val rEqAPlusFive = {
       val rApron = v3Octagon.apronVariableAnyScope(rVar)
@@ -458,7 +467,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val use: Use = Use(Some(1), a)
     val v0 = initializeGhostVariables(declareInputsAAndB(emptyValuationStrictPolka(debug = false)))
     val v1 = {
-      val debug = false
+      val debug = true
       val v1 = evalCommand(v0, reset, debug)
       val v2 = evalCommand(v1, use, debug)
       val v3 = evalCommand(v2, reset, debug)
@@ -471,7 +480,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  -1x0 +1x2 = 0;  1x4 -1 = 0;  1x3 >= 0;  1x1 -1 >= 0;  1x0 -1x3 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$reset; $use; $reset; $use")
+        |ApronState: {  -1a(00) +1S1(03) = 0;  -1a(00) +1R1(02) = 0;  1C1(04) -1 = 0;  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin,
+      s"$reset; $use; $reset; $use")
 
     val v2 = {
       val debug = false
@@ -486,7 +496,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  -2x0 +1x2 = 0;  1x4 = 0;  1x3 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$reset; $use; $use")
+        |ApronState: {  -2a(00) +1R1(02) = 0;  1C1(04) = 0;  1S1(03) = 0;  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin,
+      s"$reset; $use; $use")
 
     val bothPossible = Equal(a, Number(5)) // Because a>0
     val onlyTrue = GreaterThan(a, Number(-1)) // Because a>0
@@ -505,7 +516,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  -1x4 >= 0;  1x4 +1 >= 0;  1x3 >= 0;  1x2 +1x4 >= 0;  1x1 -1 >= 0;  1x0 -1x2 -1x3 >= 0;  1x0 -1x2 -1x4 -1 >= 0 }""".stripMargin, s"$use; $resetBoth")
+        |ApronState: {  -1a(00) +1R1(02) +1S1(03) = 0;  -1C1(04) >= 0;  1C1(04) +1 >= 0;  1R1(02) +1C1(04) >= 0;  1b(01) -1 >= 0;  1a(00) -1R1(02) -1C1(04) -1 >= 0 }""".stripMargin,
+      s"$use; $resetBoth")
 
     val resetTrue = Reset(1, onlyTrue)
     val v4 = {
@@ -520,7 +532,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  1x4 = 0;  1x2 = 0;  1x3 >= 0;  1x1 -1 >= 0;  1x0 -1x3 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$use; $resetTrue")
+        |ApronState: {  -1a(00) +1S1(03) = 0;  1C1(04) = 0;  1R1(02) = 0;  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin,
+      s"$use; $resetTrue")
 
     val resetFalse = Reset(1, onlyFalse)
     val v5 = {
@@ -535,7 +548,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  -1x0 +1x2 = 0;  1x4 +1 = 0;  1x3 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$use; $resetFalse")
+        |ApronState: {  -1a(00) +1R1(02) = 0;  1C1(04) +1 = 0;  1S1(03) = 0;  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin,
+      s"$use; $resetFalse")
 
     val useBoth = Use(Some(1), a, bothPossible)
     val v6 = {
@@ -549,7 +563,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  1x4 +1 = 0;  1x3 = 0;  1x2 >= 0;  1x1 -1 >= 0;  1x0 -1x2 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$useBoth")
+        |ApronState: {  1C1(04) +1 = 0;  1S1(03) = 0;  1R1(02) >= 0;  1b(01) -1 >= 0;  1a(00) -1R1(02) >= 0;  1a(00) -1 >= 0 }""".stripMargin,
+      s"$useBoth")
 
     val useTrue = Use(Some(1), a, onlyTrue)
     val v7 = {
@@ -563,7 +578,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  -1x0 +1x2 = 0;  1x4 +1 = 0;  1x3 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$useTrue")
+        |ApronState: {  -1a(00) +1R1(02) = 0;  1C1(04) +1 = 0;  1S1(03) = 0;  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin,
+      s"$useTrue")
 
     val useFalse = Use(Some(1), a, onlyFalse)
     val v8 = {
@@ -577,7 +593,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(R1,None)
         |  Variable(S1,None)
         |  Variable(C1,None)
-        |ApronState: {  1x4 +1 = 0;  1x3 = 0;  1x2 = 0;  1x1 -1 >= 0;  1x0 -1 >= 0 }""".stripMargin, s"$useFalse")
+        |ApronState: {  1C1(04) +1 = 0;  1S1(03) = 0;  1R1(02) = 0;  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin, s"$useFalse")
   }
 
   "Operations over lexical scopes" should "be correct" in {

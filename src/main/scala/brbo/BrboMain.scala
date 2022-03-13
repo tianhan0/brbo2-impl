@@ -3,7 +3,8 @@ package brbo
 import brbo.backend.driver.Driver
 import brbo.common.CommandLineArguments.DEFAULT_ASSERTION_TAG
 import brbo.common.cfg.ControlFlowGraph
-import brbo.common.{CommandLineArguments, MyLogger, StringFormatUtils}
+import brbo.common.string.StringFormatUtils
+import brbo.common.{CommandLineArguments, MyLogger}
 import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.apache.commons.io.{FileUtils, FilenameUtils}
 

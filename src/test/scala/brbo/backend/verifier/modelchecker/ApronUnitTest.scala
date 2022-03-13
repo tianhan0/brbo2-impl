@@ -4,7 +4,8 @@ import apron._
 import brbo.TestCase
 import brbo.backend.verifier.modelchecker.ApronUnitTest._
 import brbo.common.ast.Identifier
-import brbo.common.{BrboType, StringCompare, Z3Solver}
+import brbo.common.string.StringCompare
+import brbo.common.{BrboType, Z3Solver}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ApronUnitTest extends AnyFlatSpec {

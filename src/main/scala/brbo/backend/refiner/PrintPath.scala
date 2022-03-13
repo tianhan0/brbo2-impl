@@ -1,7 +1,7 @@
 package brbo.backend.refiner
 
-import brbo.common.StringFormatUtils
 import brbo.common.cfg.CFGNode
+import brbo.common.string.StringFormatUtils
 
 object PrintPath {
   def pathToString(path: List[CFGNode]): String = {

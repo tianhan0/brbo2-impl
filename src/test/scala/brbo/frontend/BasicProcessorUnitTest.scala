@@ -1,7 +1,7 @@
 package brbo.frontend
 
 import brbo.TestCase
-import brbo.common.StringCompare
+import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BasicProcessorUnitTest extends AnyFlatSpec {

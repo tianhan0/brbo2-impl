@@ -9,6 +9,7 @@ import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.backend.verifier.{InterpreterKind, SymbolicExecution, UAutomizerVerifier, VerifierResult}
 import brbo.common._
 import brbo.common.ast._
+import brbo.common.string.StringFormatUtils
 import org.apache.commons.io.FileUtils
 import org.jgrapht.graph.{DefaultEdge, SimpleDirectedGraph}
 

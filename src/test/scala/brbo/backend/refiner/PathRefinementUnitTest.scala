@@ -5,7 +5,8 @@ import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.backend.verifier.UAutomizerVerifier
 import brbo.backend.verifier.cex.Path
 import brbo.common.CommandLineArguments._
-import brbo.common.{CommandLineArguments, StringCompare}
+import brbo.common.CommandLineArguments
+import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
 class PathRefinementUnitTest extends AnyFlatSpec {
