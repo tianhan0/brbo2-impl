@@ -11,7 +11,7 @@ abstract public class ParseToken extends Common {
     int R = 0;
     boundAssertion("most", R <= pattern + 1);
     boundAssertion("less", R <= MAX * pattern + MAX);
-    int i = uninitialized();
+    int i = ndInt();
     ndInt3(0, i, pattern - 1);
     if (ndInt() == 0) {
       buf++;

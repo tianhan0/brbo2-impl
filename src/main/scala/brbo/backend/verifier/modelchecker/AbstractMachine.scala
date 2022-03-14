@@ -25,8 +25,8 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     case POLKA_STRICT => new Polka(true)
     case POLKA_NONSTRICT => new Polka(false)
   }
-  private val debugJoinWiden: Boolean = false
-  private val debugBottom: Boolean = true
+  private val debugJoinWiden: Boolean = false // TODO: Probably need to turn on this for debugging
+  private val debugBottom: Boolean = false
 
   private val initialValuation = {
     val parentStatements: Map[BrboAstNode, Statement] =
@@ -42,6 +42,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
   }
 
   def verify(assertion: BrboExpr, maxPathLength: Int = arguments.getMaxPathLength): Result = {
+    logger.infoOrError(s"Verify assertion `${assertion.prettyPrintToCFG}` (Max path length: `$maxPathLength`)")
     val initialState = State(fakeInitialNode, initialValuation, indexOnPath = 0, shouldVerify = true)
     // Every CFGNode corresponds to a location, which is the location right after the node
     // fakeInitialNode corresponds to the program entry, which is right before the first command / expression
@@ -66,13 +67,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         newState =>
           logger.trace(s"[model check] New state: ${newState.toShortString}")
           val nextNode = newState.node
-          val newPath = {
-            val currentPath = path /*match {
-              case Nil => Nil
-              case ::(_, tail) => currentNode :: tail
-            }*/
-            nextNode :: currentPath
-          }
+          val newPath = nextNode :: path
           if (newState.valuation.isBottom) {
             if (debugBottom) {
               // logger.traceOrError(s"[model check] Current node: $currentNode")
@@ -97,7 +92,9 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
 
                   val occurrences = newPath.count(node => node == nextNode)
                   val newValuation = {
-                    if (occurrences > 3) {
+                    // TODO: This number affects the precision
+                    // TODO: Parameterize this
+                    if (occurrences >= 3) {
                       val widenedValuation = existingValuation.widen(newState.valuation)
                       if (debugJoinWiden)
                         logger.traceOrError(s"[model check] Widened valuation: `${widenedValuation.toShortString}`")
@@ -138,6 +135,10 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
             if (newState.shouldVerify) {
               val refuted = {
                 val verified = {
+                  /*val positiveInputs = brboProgram.mainFunction.parameters.map(i => GreaterThan(i, Number(0))).foldLeft(Bool(b = true): BrboExpr)({
+                    (acc, gt) => And(acc, gt)
+                  })
+                  val imply = Imply(positiveInputs, assertion)*/
                   if (arguments.getCheckWithZ3) newState.satisfyWithZ3(assertion)
                   else newState.satisfy(assertion)
                 }
@@ -146,12 +147,12 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
               logger.trace(s"[model check] New state ${if (refuted) "does not satisfy" else "satisfies"} assertion `$assertion`")
               if (refuted) {
                 logger.infoOrError(s"[model check] Assertion violation state: `${newState.toShortString}`")
-                logger.error(s"${newValuation.satisfyWithZ3(assertion, toInt = true)}")
               }
               refuted
             } else false
           if (isNewStateRefuted) {
             counterexamplePaths = counterexamplePaths + newPath
+            maximalPaths = maximalPaths + (newPath -> newStateMap)
             refuted = true
           }
       })
@@ -343,7 +344,7 @@ object AbstractMachine {
 
   private def assign(identifier: Identifier, expr: BrboExpr, createNewVariable: Boolean,
                      valuation: Valuation, scopeOfNewVariable: Scope): Valuation = {
-    // If x = uninitialized() or x = ndInt(), then we treat x as being unconstrained
+    // If x = ndInt(), then we treat x as being unconstrained
     val unconstrainVariable = {
       expr match {
         case FunctionCallExpr(identifier, _, _, _) =>
@@ -410,14 +411,14 @@ object AbstractMachine {
    */
   case class StateMap(valuations: Map[CFGNode, Valuation]) {
     def printStatesOnPath(path: List[CFGNode]): String = {
-      val pathString = path.map(n => n.simplifiedString).mkString(", ")
+      val pathString = path.map(n => s"  ${n.simplifiedString}").mkString("\n")
       val statesString = path.distinct.map({
         node: CFGNode =>
           val nodeString = node.simplifiedString
           val stateString = valuations(node).toShortString
-          StringFormatUtils.wrapColumnsFixedWidth(List((nodeString, 25), (stateString, 150)))
+          StringFormatUtils.wrapColumnsFixedWidth(List((nodeString, 35), (stateString, 150)))
       }).mkString("\n")
-      s"Path: $pathString\nStates:\n$statesString"
+      s"Path (${path.length}):\n$pathString\nStates (${valuations.size}):\n$statesString"
     }
   }
 
@@ -433,7 +434,7 @@ object AbstractMachine {
                        apronState: Abstract0,
                        allVariables: List[Variable],
                        scopeOperations: ScopeOperations,
-                       logger: Option[MyLogger] = None) extends ToShortString {
+                       logger: Option[MyLogger] = None) extends ToShortString { // TODO: Let this logger be non-optional
     assert(apronState != null)
     private val manager = apronState.getCreationManager
     // traceOrError(logger, s"Create a new state. isTop: `${apronState.isTop(manager)}`. isBottom: `${apronState.isBottom(manager)}`")
@@ -449,6 +450,7 @@ object AbstractMachine {
       .map({ case (identifier, _) => s"${identifier.name}" }).toArray
     val allVariablesSet: Set[Variable] = allVariables.toSet
     private val solver = new Z3Solver
+    allVariables.foreach(v => solver.mkIntVar(v.identifier.name))
     private val stateFloat = stateToZ3Ast(solver, toInt = false)
     private val stateInt = stateToZ3Ast(solver, toInt = true)
 
@@ -628,13 +630,15 @@ object AbstractMachine {
     }
 
     private def satisfyWithZ3(ast: AST, toInt: Boolean): Boolean = {
-      val query = {
-        val variablesZ3 = allVariables.map(v => solver.mkDoubleVar(v.identifier.name))
-        solver.mkForall(variablesZ3, solver.mkImplies(solver.mkAnd(if (!toInt) stateFloat else stateInt), ast))
-      }
-      // error(logger, s"state: ${stateFloat.mkString("Array(", ", ", ")")}")
-      // error(logger, s"ast: $ast")
-      solver.checkAssertionPushPop(query, debugMode)
+      val imply = solver.mkImplies(solver.mkAnd(if (!toInt) stateFloat else stateInt), ast)
+      /*val query = {
+        val variablesZ3 = allVariables.map(v => solver.mkIntVar(v.identifier.name))
+        solver.mkForall(variablesZ3, imply)
+      }*/
+      // TODO: Why does the integration test fail???
+      error(logger, s"imply: $imply")
+      solver.checkAssertionForallPushPop(imply, debugMode)
+      // solver.checkAssertionPushPop(query, debugMode)
     }
 
     def imposeConstraint(constraint: Constraint): Valuation = {

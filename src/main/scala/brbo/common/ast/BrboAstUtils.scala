@@ -1,5 +1,7 @@
 package brbo.common.ast
 
+import java.util.UUID
+
 object BrboAstUtils {
   def collectCommands(brboAst: BrboAst): Set[Command] = {
     brboAst match {
@@ -94,6 +96,27 @@ object BrboAstUtils {
       case Reset(groupId, condition, _) => Reset(groupId, condition)
       case FunctionCall(functionCallExpr, _) => FunctionCall(functionCallExpr)
       case LabeledCommand(label, command, _) => LabeledCommand(label, command)
+    }
+  }
+
+  def extractUUID(command: Command): UUID = {
+    command match {
+      case BeforeFunctionCall(_, _, uuid) => uuid
+      case VariableDeclaration(_, _, uuid) => uuid
+      case Assignment(_, _, uuid) => uuid
+      case Use(_, _, _, uuid) => uuid
+      case Skip(uuid) => uuid
+      case Break(uuid) => uuid
+      case Empty(uuid) => uuid
+      case Continue(uuid) => uuid
+      case LoopExit(uuid) => uuid
+      case FunctionExit(uuid) => uuid
+      case BranchingHead(uuid) => uuid
+      case Return(_, uuid) => uuid
+      case Assume(_, uuid) => uuid
+      case Reset(_, _, uuid) => uuid
+      case FunctionCall(_, uuid) => uuid
+      case LabeledCommand(_, _, uuid) => uuid
     }
   }
 }

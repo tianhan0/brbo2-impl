@@ -24,7 +24,7 @@ abstract public class AppendRecursiveTypes extends Common {
       }
     }
 
-    int d = uninitialized();
+    int d = ndInt();
     ndInt3(0, d, recursiveTypeIndexes);
     int argumentsFiltered = argumentTypes - d;
 

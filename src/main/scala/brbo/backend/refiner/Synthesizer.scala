@@ -149,7 +149,7 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
   def computeImpliedPredicates(whatToImplyFrom: AST): List[Predicate] = {
     val query = solver.mkIff(whatToImplyFrom, solver.mkFalse())
     val isFalse = solver.checkAssertionForallPushPop(query)
-    assert(!isFalse, s"$query")
+    assert(!isFalse, s"Anything can be implied from this query (whose truth value is false): $query")
     // Return false (instead of all predicates) when whatToImplyFrom is false
     // if (isFalse) return List(Predicate(Bool(b = false)))
     val result = predicates.filter({

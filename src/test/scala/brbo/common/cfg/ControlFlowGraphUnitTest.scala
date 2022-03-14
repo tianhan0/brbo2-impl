@@ -19,6 +19,18 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
         StringCompare.ignoreWhitespaces(dotRepresentation, testCase.expectedOutput, s"${testCase.name} failed!")
     })
   }
+
+  "Equality tests between CFG Nodes" should "be correct" in {
+    val empty1 = Empty()
+    val empty2 = Empty()
+    val node1 = CFGNode(empty1, None)
+    val node2 = CFGNode(empty1, None)
+    val node3 = CFGNode(empty2, None)
+    val set1 = List(node1, node2).distinct
+    val set2 = List(node2, node3).distinct
+    StringCompare.ignoreWhitespaces(set1.toString(), """List((-1) [Empty Node] [fun `NONE!`])""")
+    StringCompare.ignoreWhitespaces(set2.toString(), """List((-1) [Empty Node] [fun `NONE!`], (-1) [Empty Node] [fun `NONE!`])""")
+  }
 }
 
 object ControlFlowGraphUnitTest {
@@ -33,21 +45,21 @@ object ControlFlowGraphUnitTest {
     val test01Expected = """strict digraph G {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
                            |  2 [ shape=rectangle label="(2) int i = 0;" ];
-                           |  3 [ shape=oval label="(3) [Branching Head]" ];
+                           |  3 [ shape=oval label="(3) [Branch Head]" ];
                            |  4 [ shape=diamond label="(4) (i < 10)" ];
                            |  5 [ shape=diamond label="(5) !((i < 10))" ];
                            |  6 [ shape=oval label="(6) [Loop Exit]" ];
                            |  7 [ shape=rectangle label="(7) i = i + 1;" ];
                            |  8 [ shape=rectangle label="(8) break;" ];
                            |  9 [ shape=oval label="(9) [Function Exit]" ];
-                           |  10 [ shape=oval label="(10) [Branching Head]" ];
+                           |  10 [ shape=oval label="(10) [Branch Head]" ];
                            |  11 [ shape=diamond label="(11) !(cond)" ];
                            |  12 [ shape=diamond label="(12) !(!(cond))" ];
                            |  13 [ shape=rectangle label="(13) ERROR: __VERIFIER_error();" ];
                            |  14 [ shape=rectangle label="(14) ;" ];
                            |  15 [ shape=rectangle label="(15) return;" ];
                            |  16 [ shape=oval label="(16) [Function Exit]" ];
-                           |  17 [ shape=oval label="(17) [Branching Head]" ];
+                           |  17 [ shape=oval label="(17) [Branch Head]" ];
                            |  18 [ shape=diamond label="(18) !(cond)" ];
                            |  19 [ shape=diamond label="(19) !(!(cond))" ];
                            |  20 [ shape=rectangle label="(20) abort();" ];
@@ -56,7 +68,7 @@ object ControlFlowGraphUnitTest {
                            |  23 [ shape=rectangle label="(23) return __VERIFIER_nondet_int();" ];
                            |  24 [ shape=oval label="(24) [Function Exit]" ];
                            |  25 [ shape=rectangle label="(25) int x = ndInt();" ];
-                           |  26 [ shape=oval label="(26) [Branching Head]" ];
+                           |  26 [ shape=oval label="(26) [Branch Head]" ];
                            |  27 [ shape=diamond label="(27) (x > 0)" ];
                            |  28 [ shape=diamond label="(28) !((x > 0))" ];
                            |  29 [ shape=rectangle label="(29) return true;" ];
@@ -115,7 +127,7 @@ object ControlFlowGraphUnitTest {
     val test02Expected = """strict digraph G {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
                            |  2 [ shape=rectangle label="(2) int i = 0;" ];
-                           |  3 [ shape=oval label="(3) [Branching Head]" ];
+                           |  3 [ shape=oval label="(3) [Branch Head]" ];
                            |  4 [ shape=diamond label="(4) (i < 10)" ];
                            |  5 [ shape=diamond label="(5) !((i < 10))" ];
                            |  6 [ shape=oval label="(6) [Loop Exit]" ];
@@ -159,7 +171,7 @@ object ControlFlowGraphUnitTest {
     val test04Expected = """strict digraph G {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
                            |  2 [ shape=rectangle label="(2) int i = 0;" ];
-                           |  3 [ shape=oval label="(3) [Branching Head]" ];
+                           |  3 [ shape=oval label="(3) [Branch Head]" ];
                            |  4 [ shape=diamond label="(4) (i < 5)" ];
                            |  5 [ shape=diamond label="(5) !((i < 5))" ];
                            |  6 [ shape=rectangle label="(6) i = 1;" ];
@@ -192,15 +204,15 @@ object ControlFlowGraphUnitTest {
     val test05Expected = """strict digraph G {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
                            |  2 [ shape=rectangle label="(2) int i = 0;" ];
-                           |  3 [ shape=oval label="(3) [Branching Head]" ];
+                           |  3 [ shape=oval label="(3) [Branch Head]" ];
                            |  4 [ shape=diamond label="(4) (i < 5)" ];
                            |  5 [ shape=diamond label="(5) !((i < 5))" ];
                            |  6 [ shape=oval label="(6) [Loop Exit]" ];
-                           |  7 [ shape=oval label="(7) [Branching Head]" ];
+                           |  7 [ shape=oval label="(7) [Branch Head]" ];
                            |  8 [ shape=diamond label="(8) (i < 7)" ];
                            |  9 [ shape=diamond label="(9) !((i < 7))" ];
                            |  10 [ shape=oval label="(10) [Loop Exit]" ];
-                           |  11 [ shape=oval label="(11) [Branching Head]" ];
+                           |  11 [ shape=oval label="(11) [Branch Head]" ];
                            |  12 [ shape=diamond label="(12) (i < 10)" ];
                            |  13 [ shape=diamond label="(13) !((i < 10))" ];
                            |  14 [ shape=rectangle label="(14) break;" ];

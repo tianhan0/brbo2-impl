@@ -44,7 +44,4 @@ public abstract class Common {
   public abstract void reach(int x, int... args);
 
   public abstract void boundAssertion(String index, boolean assertion);
-
-  // This method is used as a workaround, when we want to declare uninitialized variables, which is however disallowed by javac
-  public abstract int uninitialized();
 }

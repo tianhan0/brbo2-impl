@@ -11,12 +11,12 @@ import brbo.common.{GhostVariableUtils, MyLogger, SameAs}
  * @param path         A path that this refinement applies to.
  * @param splitUses    A map from indices of the path to the replacements for the nodes at the indices.
  *                     The replacement is either a use command or a reset command for a new group.
- * @param removeResets Remove the resets at these indices from the path after splitting uses.
+ * @param removeResets Remove the resets at these indices from the path **after** splitting uses.
  * @param groupIds     A map from old group IDs to new group IDs in the refined path.
  */
 case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeResets: Set[Int],
                       groupIds: Map[Int, Set[Int]]) extends SameAs {
-  def noRefinement: Boolean = splitUses.isEmpty && groupIds.isEmpty
+  def noRefinement: Boolean = splitUses.isEmpty && removeResets.isEmpty && groupIds.isEmpty
 
   private val splitUsesList = replaceMapToList(splitUses)
 

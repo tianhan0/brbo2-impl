@@ -13,7 +13,7 @@ abstract public class AppendDisplayNames extends Common {
     boundAssertion("less", R <= MAX * sorted + MAX);
     int iterator = sorted;
     while (iterator > 0) {
-      int entry = uninitialized();
+      int entry = ndInt();
       ndInt3(1, entry, iterator);
       iterator -= entry;
 

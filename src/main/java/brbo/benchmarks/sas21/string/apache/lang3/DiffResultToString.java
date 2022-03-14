@@ -14,14 +14,14 @@ abstract public class DiffResultToString extends Common {
     boundAssertion("less", R <= MAX * diff+ MAX);
     int iterator = diff;
     while (iterator > 0) {
-      int entry = uninitialized();
+      int entry = ndInt();
       ndInt3(1, entry, iterator);
       iterator -= entry;
-      int fieldName = uninitialized();
+      int fieldName = ndInt();
       ndInt3(1, fieldName, entry);
-      int left = uninitialized();
+      int left = ndInt();
       ndInt3(1, left, entry - fieldName);
-      int right = uninitialized();
+      int right = ndInt();
       ndInt3(1, right, entry - fieldName - left);
       lhsBuilder += fieldName + left;
       R = R + (fieldName + left);

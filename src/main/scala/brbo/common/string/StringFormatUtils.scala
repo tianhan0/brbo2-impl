@@ -14,6 +14,7 @@ object StringFormatUtils {
    */
   def wrapColumnsFixedWidth(columns: List[(String, Int)]): String = {
     var maxLines = 0
+    val indentLength = 2
     val lines: List[Array[String]] = columns.map({
       case (column, wrapLength) =>
         val lines = WordUtils.wrap(column, wrapLength, "\n", false).split("\n")
@@ -26,10 +27,11 @@ object StringFormatUtils {
           columnIndex =>
             val wrapLength = columns(columnIndex)._2
             val columnAsLines = lines(columnIndex)
+            val indent = if (lineIndex == 0) "" else " " * indentLength
             val columnAtThisLine =
               if (lineIndex >= columnAsLines.length) ""
               else columnAsLines(lineIndex)
-            (columnAtThisLine, wrapLength)
+            (indent + columnAtThisLine, wrapLength)
         })
         // Left aligned
         val format = columnsAtThisLine.map(pair => s"%-${pair._2}s").mkString(" ")

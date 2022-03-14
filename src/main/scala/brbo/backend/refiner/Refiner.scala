@@ -19,21 +19,25 @@ class Refiner(arguments: CommandLineArguments) {
     val solver = new Z3Solver
     val allRefinements = pathRefinement.refine(path, originalProgram.mainFunction.identifier)
     logger.infoOrError(s"Generated `${allRefinements.size}` path refinements")
+    refinementsToAvoid.foreach(r => logger.traceOrError(s"Avoid refinement: ${r.toStringNoPath}"))
     val refinementsMap = {
       var declaredVariables = Set[String]()
       var refinements = List[(Refinement, Expr)]()
       allRefinements.foreach({
         refinement =>
+          logger.traceOrError(s"Validate refinement: ${refinement.toStringNoPath}")
           // It is expected that, the refined path is empty when there is no refinement (over the original path)
           if (refinement.noRefinement || refinementsToAvoid.exists(r => r.sameAs(refinement))) {
             ;
           } else {
             val refinedPath = refinement.refinedPath(originalProgram.mainFunction)
             logger.traceOrError(s"Validate refined path:\n`${refinedPath.mkString("\n")}`")
-            // Get all group IDs and then all ghost variables
+            // TODO: Not directly using the verification result from the model checker, because the model checker
+            //  is only used for computing reachable states. But this can be optimized by using the model checker for verification
+            // TODO: Parallelize the checking of every refinement
             val (finalState, newVariables) = AbstractInterpreter.interpretPath(refinedPath, inputVariables, solver, interpreterKind, arguments)
             declaredVariables = declaredVariables ++ newVariables
-            val allGroupIds: List[Int] =
+            val allGroupIds: List[Int] = // Get all group IDs and then all ghost variables
               (originalProgram.mainFunction.groupIds ++ refinement.groupIds.values.flatten).toList.sorted
             logger.traceOrError(s"All groups considered: `$allGroupIds`")
             var sum: AST = solver.mkIntVal(0)

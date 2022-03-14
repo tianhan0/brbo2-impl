@@ -1,6 +1,6 @@
 package brbo.common
 
 object GhostVariableTyp extends Enumeration {
-  type GhostVariable = Value
+  type GhostVariableTyp = Value
   val Resource, Star, Counter = Value
 }

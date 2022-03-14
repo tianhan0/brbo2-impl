@@ -44,6 +44,9 @@ case class BrboFunction(identifier: String, returnType: BrboType, parameters: Li
   val ghostVariableInitializations: List[Command] = groupIds.flatMap({
     groupId => GhostVariableUtils.declareVariables(groupId)
   }).toList.sortWith({ case (c1, c2) => c1.toIR() < c2.toIR() })
+  val approximatedResourceUsage: BrboExpr = groupIds.toList.sorted.foldLeft(Number(0): BrboExpr)({
+    (acc, groupId) => Addition(acc, GhostVariableUtils.generateSum(Some(groupId)))
+  })
 
   // Declare and initialize ghost variables in the function
   val actualBody: Statement = bodyNoInitialization match {
@@ -543,7 +546,7 @@ case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
 }
 
 case class BranchingHead(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
-  override def prettyPrintToC(indent: Int): String = "[Branching Head]"
+  override def prettyPrintToC(indent: Int): String = "[Branch Head]"
 
   override def prettyPrintToCFG: String = prettyPrintToC()
 

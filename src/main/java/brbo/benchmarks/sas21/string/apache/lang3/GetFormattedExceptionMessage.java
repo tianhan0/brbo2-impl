@@ -18,11 +18,11 @@ abstract public class GetFormattedExceptionMessage extends Common {
     int i = 0;
     int iterator = contextValues;
     while (iterator > 0) {
-      int entry = uninitialized();
+      int entry = ndInt();
       ndInt3(1, entry, iterator);
-      int key = uninitialized();
+      int key = ndInt();
       ndInt3(1, key, entry);
-      int value = uninitialized();
+      int value = ndInt();
       ndInt3(1, value, entry - key);
       iterator -= entry;
 

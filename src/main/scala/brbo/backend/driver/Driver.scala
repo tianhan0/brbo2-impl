@@ -161,11 +161,12 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
   }
 
   private def verify(program: BrboProgram, boundAssertion: BoundAssertion): VerifierResult = {
-    logger.infoOrError(s"Verify global assertion `${boundAssertion.assertion.prettyPrintToCNoOuterBrackets}`")
+    val assertion = boundAssertion.replaceResourceVariable(program.mainFunction.approximatedResourceUsage)
+    logger.infoOrError(s"Verify global assertion `${assertion.prettyPrintToCNoOuterBrackets}`")
     // val ubcheckInserted = insertUBCheck(program, boundAssertion)
     // val result = uAutomizerVerifier.verify(ubcheckInserted)
     val modelChecker = new AbstractMachine(program, arguments)
-    val result = modelChecker.verify(boundAssertion.assertion).result
+    val result = modelChecker.verify(assertion).result
     logger.infoOrError(s"Verifier result: `$result`.")
     result
   }
@@ -218,16 +219,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
 
   private def insertUBCheck(program: BrboProgram, boundAssertion: BoundAssertion): BrboProgram = {
     val assertion = {
-      val sum: BrboExpr = {
-        def summand(id: Int): BrboExpr = {
-          val (r, rStar, rCounter) = GhostVariableUtils.generateVariables(Some(id))
-          Addition(r, Multiplication(rStar, rCounter))
-        }
-
-        program.mainFunction.groupIds.map(id => summand(id)).foldLeft(Number(0): BrboExpr)({
-          (acc, summand) => Addition(acc, summand)
-        })
-      }
+      val sum: BrboExpr = program.mainFunction.approximatedResourceUsage
       val assertFunction: BrboFunction = PreDefinedFunctions.assertFunction
       val assertion = boundAssertion.replaceResourceVariable(sum)
       FunctionCall(FunctionCallExpr(assertFunction.identifier, List(assertion), assertFunction.returnType))

@@ -11,7 +11,7 @@ abstract public class Literal extends Common {
     int R = 0;
     boundAssertion("most", R <= pattern);
     boundAssertion("less", R <= MAX * pattern + MAX);
-    int currentIdx = uninitialized();
+    int currentIdx = ndInt();
     ndInt3(0, currentIdx, pattern - 1);
     while (currentIdx < pattern) {
       if (ndInt() == 0) {

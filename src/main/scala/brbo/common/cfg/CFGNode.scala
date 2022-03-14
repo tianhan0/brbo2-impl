@@ -22,6 +22,8 @@ case class CFGNode(value: CommandOrExpr, function: Option[BrboFunction] = None, 
 
   def replaceCopy(newValue: CommandOrExpr): CFGNode = CFGNode(newValue, function, id)
 
+  def printWithUUID(): String = s"${prettyPrintToC()} ${CommandOrExpr.extractUUID(value)}"
+
   def sameValue(other: CFGNode): Boolean = other.value.sameAs(value)
 
   override def getGraphNodeId: Int = id
