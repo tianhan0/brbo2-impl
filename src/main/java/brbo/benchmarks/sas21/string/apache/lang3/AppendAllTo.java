@@ -26,3 +26,5 @@ abstract public class AppendAllTo extends Common {
     }
   }
 }
+// We must remove all resets at line 25 from the initial amortization.
+// The removal may require an infinite number of refinement steps, if each step removes a single reset.

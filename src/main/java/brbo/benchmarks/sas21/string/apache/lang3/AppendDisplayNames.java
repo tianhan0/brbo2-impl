@@ -32,3 +32,6 @@ abstract public class AppendDisplayNames extends Common {
     }
   }
 }
+
+// The initial amortization suffices.
+// The verification is easier if we additionally provide counter axioms, which provides relational invariants for the counters at line 22, 25, 30.

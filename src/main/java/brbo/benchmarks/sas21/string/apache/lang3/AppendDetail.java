@@ -9,7 +9,7 @@ abstract public class AppendDetail extends Common {
     }
     int buffer = 0;
     int R = 0;
-    mostPreciseBound(R <= 1 + array);
+    mostPreciseBound(R <= 2 * array - 1);
     lessPreciseBound(R <= MAX + MAX * array);
     for (int i = 0; i < array; i++) {
       if (i > 0) {
@@ -21,3 +21,5 @@ abstract public class AppendDetail extends Common {
     }
   }
 }
+// The initial amortization suffices.
+// The success relies on if it is possible to infer precise invariants for the counter at line 17.
