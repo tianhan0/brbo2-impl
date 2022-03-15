@@ -9,15 +9,16 @@ abstract public class AppendDisplayNames extends Common {
     }
     int sb = 0;
     int R = 0;
-    mostPreciseBound(R <= sorted + 2 * sorted);
-    lessPreciseBound(R <= MAX * sorted + MAX);
+    boundAssertion("most", R <= sorted + 2 * sorted);
+    boundAssertion("less", R <= MAX * sorted + MAX);
     int iterator = sorted;
     while (iterator > 0) {
-      int entry = ndInt2(1, iterator);
+      int entry = ndInt();
+      ndInt3(1, entry, iterator);
       iterator -= entry;
 
       for (int i = 0; i < entry; i++) {
-        if (ndBool()) {
+        if (ndInt() == 0) {
           sb += 2;
           R = R + 2;
         } else {
@@ -25,7 +26,7 @@ abstract public class AppendDisplayNames extends Common {
           R = R + 1;
         }
       }
-      if (ndBool()) {
+      if (ndInt() == 0) {
         sb++;
         R = R + 1;
       }

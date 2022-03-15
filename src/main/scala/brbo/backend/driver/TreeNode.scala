@@ -7,11 +7,11 @@ import brbo.common.ast.BrboProgram
 
 /**
  *
- * @param program        A (refined) program
- * @param counterexample The counterexample path generated from this program, if exists
- * @param refinement     The refinement that leads to this program (when synthesized with its parent program)
+ * @param program         A (refined) program
+ * @param counterexamples The counterexample paths generated from this program
+ * @param refinement      The refinement that leads to this program (when synthesized with its parent program)
  */
-case class TreeNode(program: BrboProgram, counterexample: Option[Path], refinement: Option[Refinement], id: Int) {
+case class TreeNode(program: BrboProgram, counterexamples: Set[Path], refinement: Option[Refinement], id: Int) {
   private var nodeStatus: Option[NodeStatus] = None
 
   def setNodeStatus(status: NodeStatus): Unit = {

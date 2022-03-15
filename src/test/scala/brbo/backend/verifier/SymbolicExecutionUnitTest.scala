@@ -3,18 +3,20 @@ package brbo.backend.verifier
 import brbo.TestCase
 import brbo.backend.verifier.cex.Path
 import brbo.common.BrboType._
-import brbo.common.StringCompare
+import brbo.common.Z3Solver
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
+import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SymbolicExecutionUnitTest extends AnyFlatSpec {
-  "Symbolic execution a path" should "be correct" in {
+  "Symbolically executing a path" should "be correct" in {
     SymbolicExecutionUnitTest.tests.foreach({
       testCase =>
         val symbolicExecution = new SymbolicExecution(SymbolicExecutionUnitTest.program.mainFunction.parameters, debugMode = false)
-        val result = symbolicExecution.execute(testCase.input.asInstanceOf[Path].pathNodes)
-        assert(StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"${testCase.name} failed!"))
+        val solver = new Z3Solver
+        val result = symbolicExecution.execute(testCase.input.asInstanceOf[Path].pathNodes, solver).finalState
+        StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"${testCase.name} failed!")
     })
   }
 }
@@ -29,11 +31,11 @@ object SymbolicExecutionUnitTest {
   val e: Identifier = Identifier("e", INT)
 
   val mainFunction: BrboFunction = BrboFunction("main", VOID, List(n, a, b), Block(Nil), Set(2))
-  val assumeFunction: BrboFunction = PreDefinedFunctions.assume
-  val ndBoolFunction: BrboFunction = PreDefinedFunctions.ndBool
-  val ndIntFunction: BrboFunction = PreDefinedFunctions.ndInt
-  val assertFunction: BrboFunction = PreDefinedFunctions.assert
-  val program: BrboProgram = BrboProgram("Test program", mainFunction, None, None, List(assumeFunction, ndBoolFunction, ndIntFunction))
+  val assumeFunction: BrboFunction = PreDefinedFunctions.assumeFunction
+  val ndBoolFunction: BrboFunction = PreDefinedFunctions.ndBoolFunction
+  val ndIntFunction: BrboFunction = PreDefinedFunctions.ndIntFunction
+  val assertFunction: BrboFunction = PreDefinedFunctions.assertFunction
+  val program: BrboProgram = BrboProgram("Test program", mainFunction, Nil, List(assumeFunction, ndBoolFunction, ndIntFunction))
 
   val assumeCond: BrboExpr = assumeFunction.parameters.head
   val assertCond: BrboExpr = assertFunction.parameters.head
@@ -42,30 +44,30 @@ object SymbolicExecutionUnitTest {
     val test01 = {
       // This path comes from UAutomizerVerifierUnitTest.scala
       Path(List(
-        CFGNode(Left(VariableDeclaration(i, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(VariableDeclaration(R, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(CallFunction(assumeFunction, List(GreaterThan(n, Number(0))))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Right(Negative(Negative(assumeCond))), Some(assumeFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(FunctionExit()), Some(assumeFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(CallFunction(ndBoolFunction, Nil)), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(CallFunction(ndIntFunction, Nil)), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Return(Some(FunctionCallExpr(PreDefinedFunctions.VERIFIER_NONDET_INT, Nil, INT)))), Some(ndIntFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(CallFunction(assumeFunction, List(Or(Equal(x, Number(0)), Equal(x, Number(1)))))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Right(Negative(Negative(assumeCond))), Some(assumeFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(FunctionExit()), Some(assumeFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Return(Some(x))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Right(LessThan(i, n)), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(VariableDeclaration(e, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Right(LessThan(i, Number(1))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Assignment(e, a)), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Assignment(R, Addition(R, e))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Assignment(i, Addition(i, Number(1)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Right(Negative(LessThan(i, Number(1)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(CallFunction(assertFunction, List(LessThanOrEqualTo(R, a)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Right(Negative(assertCond)), Some(assertFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(LabeledCommand("ERROR", FunctionCall(FunctionCallExpr(PreDefinedFunctions.VERIFIER_ERROR, Nil, VOID)))), Some(assertFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(Return(None)), Some(assertFunction), CFGNode.DONT_CARE_ID)
+        CFGNode((VariableDeclaration(i, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((VariableDeclaration(R, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((BeforeFunctionCall(assumeFunction, List(GreaterThan(n, Number(0))))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Negation(Negation(assumeCond))), Some(assumeFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((FunctionExit()), Some(assumeFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((BeforeFunctionCall(ndBoolFunction, Nil)), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((BeforeFunctionCall(ndIntFunction, Nil)), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Return(Some(FunctionCallExpr(PreDefinedFunctions.VERIFIER_NONDET_INT, Nil, INT)))), Some(ndIntFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((BeforeFunctionCall(assumeFunction, List(Or(Equal(x, Number(0)), Equal(x, Number(1)))))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Negation(Negation(assumeCond))), Some(assumeFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((FunctionExit()), Some(assumeFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Return(Some(x))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((LessThan(i, n)), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((VariableDeclaration(e, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((LessThan(i, Number(1))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Assignment(e, a)), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Assignment(R, Addition(R, e))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Assignment(i, Addition(i, Number(1)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Negation(LessThan(i, Number(1)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((BeforeFunctionCall(assertFunction, List(LessThanOrEqualTo(R, a)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Negation(assertCond)), Some(assertFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((LabeledCommand("ERROR", FunctionCall(FunctionCallExpr(PreDefinedFunctions.VERIFIER_ERROR, Nil, VOID)))), Some(assertFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Return(None)), Some(assertFunction), CFGNode.DONT_CARE_ID)
       ))
     }
 
@@ -73,12 +75,12 @@ object SymbolicExecutionUnitTest {
       val use = Use(Some(2), Number(1), GreaterThan(n, a))
       val reset = Reset(2, GreaterThan(n, b))
       Path(List(
-        CFGNode(Left(VariableDeclaration(use.resourceVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(VariableDeclaration(reset.sharpVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(VariableDeclaration(reset.counterVariable, Number(-1))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(use), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(reset), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode(Left(use), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((VariableDeclaration(use.resourceVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((VariableDeclaration(reset.starVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((VariableDeclaration(reset.counterVariable, Number(-1))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((use), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((reset), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((use), Some(mainFunction), CFGNode.DONT_CARE_ID),
       ))
     }
 
@@ -91,7 +93,7 @@ object SymbolicExecutionUnitTest {
           |  (e,(INT,Value(a)))
           |  (i,(INT,Value((+ 0 1))))
           |  (n,(INT,Value(n)))
-          |Path condition: (let ((a!1 (not (not (or (= v3 0) (= v3 1))))))
+          |Path condition: (let ((a!1 (not (not (or (= v5 0) (= v5 1))))))
           |  (and true
           |       (not (not (> n 0)))
           |       a!1
@@ -100,7 +102,7 @@ object SymbolicExecutionUnitTest {
           |       (not (< (+ 0 1) 1))
           |       (not (<= (+ 0 a) a))))
           |Return values:
-          |  (ndBool,List(Value(v3)))
+          |  (ndBool,List(Value(v5)))
           |  (ndInt,List())""".stripMargin),
       TestCase("Test Uses and Resets", test02,
         """Valuations:

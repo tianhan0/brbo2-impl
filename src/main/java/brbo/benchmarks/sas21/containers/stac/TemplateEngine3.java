@@ -9,8 +9,8 @@ public abstract class TemplateEngine3 extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= ts * (text + tags * rep + sep));
-    lessPreciseBound(R <= MAX * text * ts +
+    boundAssertion("most", R <= ts * (text + tags * rep + sep));
+    boundAssertion("less", R <= MAX * text * ts +
         MAX * text * sep +
         MAX * text * tags +
         MAX * text * rep +
@@ -35,8 +35,8 @@ public abstract class TemplateEngine3 extends Common {
       int r = 0;
       int stringBuilder = 0;
       while (r <= text) {
-        l = ndInt2(p, text);
-        r = ndInt2(l, text);
+        ndInt3(p, l, text);
+        ndInt3(l, r, text);
         stringBuilder += l - p;
         R = R + (l - p);
         stringBuilder += rep;

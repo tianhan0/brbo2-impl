@@ -8,8 +8,8 @@ abstract public class JoinWith extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= n * separator + n);
-    lessPreciseBound(R <= MAX * n * n +
+    boundAssertion("most", R <= n * separator + n);
+    boundAssertion("less", R <= MAX * n * n +
         MAX * n * separator +
         MAX * separator * separator +
         MAX * n + MAX * separator +

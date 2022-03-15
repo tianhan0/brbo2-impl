@@ -9,8 +9,8 @@ public abstract class TemplateEngine2 extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= text * templateds + separator * templateds);
-    lessPreciseBound(R <= MAX * text * templateds +
+    boundAssertion("most", R <= text * templateds + separator * templateds);
+    boundAssertion("less", R <= MAX * text * templateds +
         MAX * separator * templateds +
         MAX * separator * text +
         MAX * text * text +
@@ -28,8 +28,8 @@ public abstract class TemplateEngine2 extends Common {
       int endTagLocation = 0;
       int stringBuilder = 0;
       while (endTagLocation <= text) {
-        startTagLocation = ndInt2(endTagLocation + 1, text);
-        endTagLocation = ndInt2(startTagLocation + 1, text);
+        ndInt3(endTagLocation, startTagLocation, text);
+        ndInt3(startTagLocation + 1, endTagLocation, text);
         stringBuilder += startTagLocation - linePointer;
         R = R + (startTagLocation - linePointer);
         linePointer = endTagLocation;

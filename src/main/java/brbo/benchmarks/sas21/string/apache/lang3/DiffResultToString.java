@@ -10,15 +10,19 @@ abstract public class DiffResultToString extends Common {
     int lhsBuilder = 0;
     int rhsBuilder = 0;
     int R = 0;
-    mostPreciseBound(R <= diff);
-    lessPreciseBound(R <= MAX * diff+ MAX);
+    boundAssertion("most", R <= diff);
+    boundAssertion("less", R <= MAX * diff+ MAX);
     int iterator = diff;
     while (iterator > 0) {
-      int entry = ndInt2(1, iterator);
+      int entry = ndInt();
+      ndInt3(1, entry, iterator);
       iterator -= entry;
-      int fieldName = ndInt2(1, entry);
-      int left = ndInt2(1, entry - fieldName);
-      int right = ndInt2(1, entry - fieldName - left);
+      int fieldName = ndInt();
+      ndInt3(1, fieldName, entry);
+      int left = ndInt();
+      ndInt3(1, left, entry - fieldName);
+      int right = ndInt();
+      ndInt3(1, right, entry - fieldName - left);
       lhsBuilder += fieldName + left;
       R = R + (fieldName + left);
       rhsBuilder += fieldName + right;

@@ -1,20 +1,21 @@
 package brbo.backend.verifier.cex
 
+import brbo.backend.refiner.PrintPath
 import brbo.common.BrboType.BOOL
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{GhostVariableUtils, MyLogger, StringFormatUtils}
+import brbo.common.{GhostVariableUtils, MyLogger}
 
 case class Path(pathNodes: List[CFGNode]) {
   pathNodes.map(pathNode => pathNode.value).foreach({
-    case Left(_) =>
-    case Right(expr) => assert(expr.typ == BOOL)
+    case _: Command =>
+    case brboExpr: BrboExpr => assert(brboExpr.typ == BOOL)
   })
 
   val groupsInPath: Set[Int] = pathNodes.foldLeft(Set[Int]())({
     (acc, node) =>
       node.value match {
-        case Left(command) =>
+        case command: Command =>
           command match {
             case Use(groupId, _, _, _) =>
               groupId match {
@@ -24,23 +25,20 @@ case class Path(pathNodes: List[CFGNode]) {
             case Reset(groupId, _, _) => acc + groupId
             case _ => acc
           }
-        case Right(_) => acc
+        case _: BrboExpr => acc
       }
   })
 
   groupsInPath.foreach({
     groupId =>
-      val (resource: Identifier, sharp: Identifier, counter: Identifier) = GhostVariableUtils.generateVariables(Some(groupId))
+      val (resource: Identifier, star: Identifier, counter: Identifier) = GhostVariableUtils.generateVariables(Some(groupId))
       // Every ghost variable that appears in the path must be initialized by a variable declaration
-      assert(existDeclaration(resource), s"Resource variable `${resource.identifier}` is used but not declared!")
-      assert(existDeclaration(sharp), s"Sharp variable `${sharp.identifier}` is used but not declared!")
-      assert(existDeclaration(counter), s"Counter variable `${counter.identifier}` is used but not declared!")
+      assert(existDeclaration(resource), s"Resource variable `${resource.name}` is used but not declared!")
+      assert(existDeclaration(star), s"Star variable `${star.name}` is used but not declared!")
+      assert(existDeclaration(counter), s"Counter variable `${counter.name}` is used but not declared!")
   })
 
-  override def toString: String = {
-    val nodes = pathNodes.zipWithIndex.map({ case (node, index: Int) => s"  [${StringFormatUtils.integer(index)}] ${node.toString}" }).mkString("\n")
-    s"Path:\n$nodes"
-  }
+  override def toString: String = PrintPath.pathToString(pathNodes)
 
   // Get segments of the given group in the given function
   def getSegments(groupId: Int, functionName: String): List[Segment] = {
@@ -71,12 +69,12 @@ case class Path(pathNodes: List[CFGNode]) {
     pathNodes.exists({
       node =>
         node.value match {
-          case Left(command) =>
+          case command: Command =>
             command match {
               case VariableDeclaration(variable, _, _) => variable.sameAs(identifier)
               case _ => false
             }
-          case Right(_) => false
+          case _: BrboExpr => false
         }
     })
   }
@@ -85,56 +83,50 @@ case class Path(pathNodes: List[CFGNode]) {
 object Path {
   private val logger = MyLogger.createLogger(Path.getClass, debugMode = false)
 
-  def removeCommandsForUBCheck(path: Option[Path]): Option[Path] = {
-    path match {
-      case Some(actualPath) =>
-        val assertFunction: BrboFunction = PreDefinedFunctions.assert
-        val nodes = actualPath.pathNodes
-        var newNodes: List[CFGNode] = Nil
-        var i = 0
-        while (i < nodes.size) {
-          val node = nodes(i)
-          node.value match {
-            case Left(command) =>
-              command match {
-                case CallFunction(callee, _) =>
-                  if (callee.identifier == assertFunction.identifier) {
-                    i = i + 1
-                    val nextNode = nodes(i)
-                    logger.trace(s"nextNode: `$nextNode`")
-                    nextNode.value match {
-                      case Left(_) => throw new Exception
-                      case Right(condition) =>
-                        condition match {
-                          case Negative(Negative(cond, _), _) =>
-                            assert(cond.prettyPrintToC() == "cond")
-                            i = i + 2 // Directly exit
-                          case Negative(cond, _) =>
-                            assert(cond.prettyPrintToC() == "cond")
-                            i = i + 3 // Reach the error location
-                          case _ => throw new Exception
-                        }
+  def removeCommandsForUBCheck(path: Path): Path = {
+    val assertFunction: BrboFunction = PreDefinedFunctions.assertFunction
+    val nodes = path.pathNodes
+    var newNodes: List[CFGNode] = Nil
+    var i = 0
+    while (i < nodes.size) {
+      val node = nodes(i)
+      node.value match {
+        case command: Command =>
+          command match {
+            case BeforeFunctionCall(callee, _, _) =>
+              if (callee.identifier == assertFunction.identifier) {
+                i = i + 1
+                val nextNode = nodes(i)
+                logger.trace(s"nextNode: `$nextNode`")
+                nextNode.value match {
+                  case _: Command => throw new Exception
+                  case condition: BrboExpr =>
+                    condition match {
+                      case Negation(Negation(cond, _), _) =>
+                        assert(cond.prettyPrintToC() == "cond")
+                        i = i + 2 // Directly exit
+                      case Negation(cond, _) =>
+                        assert(cond.prettyPrintToC() == "cond")
+                        i = i + 3 // Reach the error location
+                      case _ => throw new Exception
                     }
-                  }
-                  else {
-                    newNodes = node :: newNodes
-                    i = i + 1
-                  }
-                case _ =>
-                  newNodes = node :: newNodes
-                  i = i + 1
+                }
               }
-            case Right(_) =>
+              else {
+                newNodes = node :: newNodes
+                i = i + 1
+              }
+            case _ =>
               newNodes = node :: newNodes
               i = i + 1
           }
-        }
-        logger.trace(s"Old path: $nodes")
-        logger.trace(s"New path: ${newNodes.reverse}")
-        Some(Path(newNodes.reverse))
-      case None => path
+        case _: BrboExpr =>
+          newNodes = node :: newNodes
+          i = i + 1
+      }
     }
+    logger.trace(s"Old path: $nodes")
+    logger.trace(s"New path: ${newNodes.reverse}")
+    Path(newNodes.reverse)
   }
 }
-
-case class Segment(path: Path, begin: Int, end: Int)

@@ -16,26 +16,34 @@ object Predicate {
   def generatePredicates(variables: Set[Identifier], relationalPredicates: Boolean): List[Predicate] = {
     val intervalPredicates: Set[Predicate] = variables.flatMap({
       v =>
-        val expressions = Set(v, Subtraction(Number(0), v))
-        expressions.flatMap({
-          expression =>
-            CONSTANTS.flatMap({
-              constant =>
-                val ge = Predicate(GreaterThanOrEqualTo(expression, constant))
-                val gt = Predicate(GreaterThan(expression, constant))
-                List(ge, gt)
+        v.typ match {
+          case brbo.common.BrboType.INT =>
+            val expressions = Set(v, Subtraction(Number(0), v))
+            expressions.flatMap({
+              expression =>
+                CONSTANTS.flatMap({
+                  constant =>
+                    val ge = Predicate(GreaterThanOrEqualTo(expression, constant))
+                    val gt = Predicate(GreaterThan(expression, constant))
+                    List(ge, gt)
+                })
             })
-        })
+          case _ => Set[Predicate]()
+        }
     })
     val octagonPredicates: List[Predicate] = MathUtils.choose2(variables).flatMap({
       case (v1, v2) =>
-        val expressions = Set(Addition(v1, v2), Subtraction(v1, v2), Subtraction(v2, v1), Subtraction(Subtraction(Number(0), v1), v2))
-        expressions.flatMap({
-          expression =>
-            CONSTANTS.map(constant =>
-              Predicate(LessThanOrEqualTo(expression, constant))
-            )
-        })
+        (v1.typ, v2.typ) match {
+          case (brbo.common.BrboType.INT, brbo.common.BrboType.INT) =>
+            val expressions = Set(Addition(v1, v2), Subtraction(v1, v2), Subtraction(v2, v1), Subtraction(Subtraction(Number(0), v1), v2))
+            expressions.flatMap({
+              expression =>
+                CONSTANTS.map(constant =>
+                  Predicate(LessThanOrEqualTo(expression, constant))
+                )
+            })
+          case _ => Set[Predicate]()
+        }
     })
     val result = {
       if (relationalPredicates) intervalPredicates ++ octagonPredicates

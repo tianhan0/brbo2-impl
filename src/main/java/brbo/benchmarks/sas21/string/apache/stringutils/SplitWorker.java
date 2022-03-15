@@ -8,15 +8,15 @@ abstract public class SplitWorker extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= str);
-    lessPreciseBound(R <= MAX * str + MAX);
+    boundAssertion("most", R <= str);
+    boundAssertion("less", R <= MAX * str + MAX);
     int list = 0;
     int i = 0;
     int start = 0;
     boolean match = false;
     boolean lastMatch = false;
     while (i < str) {
-      if (ndBool()) {
+      if (ndInt() == 0) {
         if (match || preserveAllTokens) {
           list += i - start;
           R = R + (i - start);

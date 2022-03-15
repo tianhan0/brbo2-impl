@@ -9,8 +9,8 @@ abstract public class GetFormattedExceptionMessage extends Common {
     }
     int buffer = 0;
     int R = 0;
-    mostPreciseBound(R <= 3 + 6 * contextValues);
-    lessPreciseBound(R <= MAX + MAX * contextValues + MAX * baseMessage);
+    boundAssertion("most", R <= 3 + 6 * contextValues);
+    boundAssertion("less", R <= MAX + MAX * contextValues + MAX * baseMessage);
     buffer++;
     R  = R + 1;
     buffer++;
@@ -18,9 +18,12 @@ abstract public class GetFormattedExceptionMessage extends Common {
     int i = 0;
     int iterator = contextValues;
     while (iterator > 0) {
-      int entry = ndInt2(1, iterator);
-      int key = ndInt2(1, entry);
-      int value = ndInt2(1, entry - key);
+      int entry = ndInt();
+      ndInt3(1, entry, iterator);
+      int key = ndInt();
+      ndInt3(1, key, entry);
+      int value = ndInt();
+      ndInt3(1, value, entry - key);
       iterator -= entry;
 
       buffer++;
@@ -36,7 +39,7 @@ abstract public class GetFormattedExceptionMessage extends Common {
 
       buffer++;
       R = R + 1;
-      if (ndBool()) {
+      if (ndInt() == 0) {
         buffer++;
         R = R + 1;
       }

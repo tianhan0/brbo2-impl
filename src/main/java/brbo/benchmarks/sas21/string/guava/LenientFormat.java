@@ -10,14 +10,14 @@ abstract public class LenientFormat extends Common {
     }
     int builder = 0;
     int R = 0;
-    mostPreciseBound(R <= template + args + 2 + 2 * args);
-    lessPreciseBound(R <= MAX * template + MAX * args + MAX);
+    boundAssertion("most", R <= template + args + 2 + 2 * args);
+    boundAssertion("less", R <= MAX * template + MAX * args + MAX);
     int templateStart = 0;
     int i = 0;
     while (i < args) {
       int placeholderStart = 0;
-      if (ndBool()) placeholderStart = -1;
-      else placeholderStart = ndInt2(templateStart, template - 1);
+      if (ndInt() == 0) placeholderStart = -1;
+      else ndInt3(templateStart, placeholderStart, template - 1);
       if (placeholderStart == -1) {
         break;
       }

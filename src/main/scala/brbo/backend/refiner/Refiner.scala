@@ -1,52 +1,72 @@
 package brbo.backend.refiner
 
-import brbo.backend.verifier.SymbolicExecution
+import brbo.backend.verifier.AbstractInterpreter
+import brbo.backend.verifier.InterpreterKind.InterpreterKind
 import brbo.backend.verifier.cex.Path
-import brbo.common.BrboType.BOOL
-import brbo.common.GhostVariableTyp._
-import brbo.common.ast.{BrboExpr, BrboProgram}
-import brbo.common.{CommandLineArguments, GhostVariableUtils, MyLogger}
+import brbo.common.GhostVariableTyp.{Counter, Resource, Star}
+import brbo.common.ast.{BoundAssertion, BrboProgram}
+import brbo.common._
 import com.microsoft.z3.{AST, Expr}
 
 class Refiner(arguments: CommandLineArguments) {
-  private val logger = MyLogger.createLogger(classOf[Refiner], arguments.getDebugMode)
-  private val pathRefinement = new PathRefinement(arguments)
+  protected val logger: MyLogger = MyLogger.createLogger(classOf[Refiner], arguments.getDebugMode)
+  protected val pathRefinement = new PathRefinement(arguments)
 
-  def refine(programToRefine: BrboProgram, counterexamplePath: Path, boundAssertion: BrboExpr,
-             avoidRefinementsInCegar: Set[Refinement]): (Option[BrboProgram], Option[Refinement]) = {
-    val symbolicExecution = new SymbolicExecution(programToRefine.mainFunction.parameters, arguments.getDebugMode)
-    val solver = symbolicExecution.solver
-    logger.infoOrError(s"Generating all possible path refinements")
-    val refinementsMap = pathRefinement.refine(counterexamplePath, programToRefine.mainFunction.identifier).foldLeft(Map[Expr, (Refinement, Expr)]())({
-      (acc, refinement) =>
-        // It is expected that, the refined path is empty when there is no refinement (over the original path)
-        if (refinement.noRefinement || avoidRefinementsInCegar.contains(refinement)) acc
-        else {
-          val refinedPath = refinement.refinedPath(programToRefine.mainFunction)
-          logger.traceOrError(s"Symbolically executing refined path:\n`${refinedPath.mkString("\n")}`")
-          val finalState = symbolicExecution.execute(refinedPath)
-          logger.traceOrError(s"Final state:\n`$finalState`")
-          // Get all group IDs and then all ghost variables
-          val allGroupIds: List[Int] = (programToRefine.mainFunction.groupIds -- refinement.groupIds.keys ++ refinement.groupIds.values.flatten).toList.sorted
-          logger.traceOrError(s"All groups considered: `$allGroupIds`")
-          var sum: AST = solver.mkIntVal(0)
-          allGroupIds.foreach({
-            groupId =>
-              val counter: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Counter).identifier)
-              val sharp: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Sharp).identifier)
-              val resource: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Resource).identifier)
-              sum = solver.mkAdd(sum, resource, solver.mkMul(counter, sharp))
-          })
-          val assertion = solver.mkImplies(
-            solver.mkAnd(SymbolicExecution.valuationToAST(finalState.valuations.head, solver), finalState.pathCondition),
-            solver.mkLe(sum, boundAssertion.toZ3AST(solver))
-          )
-          acc + (symbolicExecution.createFreshVariable(BOOL)._2 -> (refinement, assertion))
-        }
-    })
+  def refine(originalProgram: BrboProgram, path: Path,
+             boundAssertion: BoundAssertion, refinementsToAvoid: Set[Refinement],
+             interpreterKind: InterpreterKind): (Option[BrboProgram], Option[Refinement]) = {
+    val inputVariables = originalProgram.mainFunction.parameters
+    val solver = new Z3Solver
+    val allRefinements = pathRefinement.refine(path, originalProgram.mainFunction.identifier)
+    logger.infoOrError(s"Generated `${allRefinements.size}` path refinements")
+    refinementsToAvoid.foreach(r => logger.traceOrError(s"Avoid refinement: ${r.toStringNoPath}"))
+    val refinementsMap = {
+      var declaredVariables = Set[String]()
+      var refinements = List[(Refinement, Expr)]()
+      allRefinements.foreach({
+        refinement =>
+          logger.traceOrError(s"Validate refinement: ${refinement.toStringNoPath}")
+          // It is expected that, the refined path is empty when there is no refinement (over the original path)
+          if (refinement.noRefinement || refinementsToAvoid.exists(r => r.sameAs(refinement))) {
+            ;
+          } else {
+            val refinedPath = refinement.refinedPath(originalProgram.mainFunction)
+            logger.traceOrError(s"Validate refined path:\n`${refinedPath.mkString("\n")}`")
+            // TODO: Not directly using the verification result from the model checker, because the model checker
+            //  is only used for computing reachable states. But this can be optimized by using the model checker for verification
+            // TODO: Parallelize the checking of every refinement
+            val (finalState, newVariables) = AbstractInterpreter.interpretPath(refinedPath, inputVariables, solver, interpreterKind, arguments)
+            declaredVariables = declaredVariables ++ newVariables
+            val allGroupIds: List[Int] = // Get all group IDs and then all ghost variables
+              (originalProgram.mainFunction.groupIds ++ refinement.groupIds.values.flatten).toList.sorted
+            logger.traceOrError(s"All groups considered: `$allGroupIds`")
+            var sum: AST = solver.mkIntVal(0)
+            allGroupIds.foreach({
+              groupId =>
+                val counter: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Counter).name)
+                val star: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Star).name)
+                val resource: AST = solver.mkIntVar(GhostVariableUtils.generateVariable(Some(groupId), Resource).name)
+                sum = solver.mkAdd(sum, resource, solver.mkMul(counter, star))
+            })
+            val assertion = solver.mkImplies(
+              finalState,
+              solver.substitute(boundAssertion.assertion.toZ3AST(solver), solver.mkIntVar(boundAssertion.resourceVariable), sum)
+            )
+            refinements = (refinement, assertion) :: refinements
+          }
+      })
+      refinements.foldLeft(Map[Expr, (Refinement, Expr)]())({
+        (acc, pair) =>
+          val name = s"v!!${declaredVariables.size}" // Variable names seem to affect which path is selected by Z3
+          assert(!declaredVariables.contains(name))
+          declaredVariables = declaredVariables + name
+          val boolVar = solver.mkBoolVar(name)
+          acc + (boolVar -> pair)
+      })
+    }
 
-    logger.infoOrError(s"Search for a successful refinement for path `$counterexamplePath`.")
-    val programSynthesis = new Synthesizer(programToRefine, arguments.getRelationalPredicates, arguments)
+    logger.infoOrError(s"Search for a refinement for path `$path`.")
+    val programSynthesis = new Synthesizer(originalProgram, arguments)
     // Keep finding new path transformations until either finding a program transformation that can realize it,
     // or there exists no program transformation that can realize any path transformation
     var avoidRefinementInSynthesis: Set[Refinement] = Set()
@@ -62,13 +82,18 @@ class Refiner(arguments: CommandLineArguments) {
               iffConjunction = solver.mkAnd(iffConjunction, solver.mkIff(variableAST, assertion))
             }
         })
-        val inputs = symbolicExecution.inputs.values.map(pair => pair._2.v)
+        val inputs = AbstractInterpreter.getInputVariables(inputVariables, solver)
         solver.mkForall(inputs, solver.mkAnd(disjunction, iffConjunction))
       }
       val z3Result = solver.checkAssertionPushPop(query, arguments.getDebugMode)
       if (z3Result) {
         val model = solver.getModel
         val goodRefinements = refinementsMap.filter({ case (variableAST: AST, _) => model.eval(variableAST, false).toString == "true" })
+        if (goodRefinements.isEmpty) {
+          logger.infoOrError(s"Cannot find the path refinement, even though Z3 returns `$z3Result`. Model: `$model`.")
+          logger.infoOrError(s"Z3 query: $query")
+          return (None, None)
+        }
         val refinement = goodRefinements.head._2._1
         try {
           val newProgram = programSynthesis.synthesize(refinement)

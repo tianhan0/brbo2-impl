@@ -9,8 +9,8 @@ abstract public class Join extends Common {
     }
     int noOfItems = endIndex - startIndex;
     int R = 0;
-    mostPreciseBound(R <= 1 + 2 * (endIndex - startIndex));
-    lessPreciseBound(R <= MAX + MAX * endIndex + MAX * startIndex + MAX * array);
+    boundAssertion("most", R <= 1 + 2 * (endIndex - startIndex));
+    boundAssertion("less", R <= MAX + MAX * endIndex + MAX * startIndex + MAX * array);
     int buf = 0;
     buf++;
     R = R + 1;

@@ -18,8 +18,7 @@ case class TargetProgram(fullQualifiedClassName: String,
                          sourceCode: String) {
   private val logger = MyLogger.createLogger(classOf[TargetProgram], debugMode = false)
 
-  private var mostPreciseAssertion: Option[BrboExpr] = None
-  private var lessPreciseAssertion: Option[BrboExpr] = None
+  private var boundAssertions: List[BoundAssertion] = Nil
 
   val className: String = {
     // We expect input method's class name to be a fully qualified class name (e.g., `x.y.z.OutputHandler`)
@@ -46,7 +45,7 @@ case class TargetProgram(fullQualifiedClassName: String,
       case Right(statement) => statement
     }
     val mainFunction = BrboFunction(mainMethod.methodName, mainMethod.returnType, mainMethod.inputVariables.values.toList, body, Set())
-    BrboProgram(s"$fullQualifiedClassName.${mainMethod.methodName}", mainFunction, mostPreciseAssertion, lessPreciseAssertion, PreDefinedFunctions.allFunctionsList)
+    BrboProgram(s"$fullQualifiedClassName.${mainMethod.methodName}", mainFunction, boundAssertions, PreDefinedFunctions.allFunctionsList)
   }
 
   class ConvertToAST(allVariables: Map[String, Identifier], allMethods: Set[TargetMethod]) {
@@ -206,6 +205,7 @@ case class TargetProgram(fullQualifiedClassName: String,
           tree.getKind match {
             case Kind.INT_LITERAL => Left(Number(tree.getValue.asInstanceOf[Int]))
             case Kind.BOOLEAN_LITERAL => Left(Bool(tree.getValue.asInstanceOf[Boolean]))
+            case Kind.STRING_LITERAL => Left(StringLiteral(tree.getValue.asInstanceOf[String]))
             case _ => throw new Exception(s"Unsupported literal `$tree`")
           }
         case tree: MethodInvocationTree =>
@@ -230,13 +230,9 @@ case class TargetProgram(fullQualifiedClassName: String,
               }
           }).toList
           functionName match {
-            case PreDefinedFunctions.MOST_PRECISE_BOUND =>
-              assert(mostPreciseAssertion.isEmpty, s"We allow at most 1 call to function `${PreDefinedFunctions.MOST_PRECISE_BOUND}`")
-              extractBound(arguments.head, mostPrecise = true)
-              Right(Skip())
-            case PreDefinedFunctions.LESS_PRECISE_BOUND =>
-              assert(lessPreciseAssertion.isEmpty, s"We allow at most 1 call to function `${PreDefinedFunctions.LESS_PRECISE_BOUND}`")
-              extractBound(arguments.head, mostPrecise = false)
+            case PreDefinedFunctions.BOUND_ASSERTION =>
+              logger.trace(s"Extract bound assertion `${arguments.head}`")
+              boundAssertions = BoundAssertion.parse(arguments.head, arguments(1)) :: boundAssertions
               Right(Skip())
             case _ => Left(FunctionCallExpr(functionName, arguments, returnType))
           }
@@ -249,7 +245,7 @@ case class TargetProgram(fullQualifiedClassName: String,
           tree.getKind match {
             case Kind.UNARY_MINUS => Left(Subtraction(Number(0), value))
             case Kind.UNARY_PLUS => toAST(tree.getExpression)
-            case Kind.LOGICAL_COMPLEMENT => Left(Negative(value))
+            case Kind.LOGICAL_COMPLEMENT => Left(Negation(value))
             case Kind.POSTFIX_INCREMENT | Kind.PREFIX_INCREMENT | Kind.POSTFIX_DECREMENT | Kind.PREFIX_DECREMENT =>
               val identifier = value.asInstanceOf[Identifier]
               val rhs = tree.getKind match {
@@ -266,22 +262,6 @@ case class TargetProgram(fullQualifiedClassName: String,
       }
     }
   }
-
-  private def extractBound(boundAssertion: BrboExpr, mostPrecise: Boolean): Unit = {
-    val errorMessage = "Require specifying bounds in the form of R<=e for some R, e"
-    boundAssertion match {
-      case LessThanOrEqualTo(left, right, _) =>
-        left match {
-          case identifier: Identifier =>
-            assert(GhostVariableUtils.isGhostVariable(identifier.identifier, GhostVariableTyp.Resource))
-            if (mostPrecise) mostPreciseAssertion = Some(right)
-            else lessPreciseAssertion = Some(right)
-          case _ => throw new Exception(s"$errorMessage: `$boundAssertion`")
-        }
-      case _ => throw new Exception(s"$errorMessage: `$boundAssertion`")
-    }
-  }
-
 }
 
 object TargetProgram {

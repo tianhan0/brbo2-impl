@@ -9,15 +9,15 @@ abstract public class Squeeze extends Common {
     }
     int buffer = 0;
     int R = 0;
-    mostPreciseBound(R <= str);
-    lessPreciseBound(R <= MAX * str + MAX);
+    boundAssertion("most", R <= str);
+    boundAssertion("less", R <= MAX * str + MAX);
     for (int i = 1; i < str; i++) {
-      if (ndBool()) {
-        if (ndBool()) {
+      if (ndInt() == 0) {
+        if (ndInt() == 0) {
           continue;
         }
-        if (ndBool()) {
-          if (ndBool()) {
+        if (ndInt() == 0) {
+          if (ndInt() == 0) {
             continue;
           }
         }

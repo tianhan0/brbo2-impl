@@ -1,5 +1,6 @@
 package brbo.backend.refiner
 
+import brbo.backend.refiner.Refinement.{ResetNode, UseNode}
 import brbo.backend.verifier.cex.{Path, Segment}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
@@ -28,7 +29,7 @@ class PathRefinement(arguments: CommandLineArguments) {
           if (head.functionIdentifier != targetFunctionName)
             return helper(numberToKeep, currentRefine, currentIndex + 1, tail)
           head.value match {
-            case Left(command) =>
+            case command: Command =>
               command match {
                 case Reset(_, _, _) =>
                   val newRefine = currentRefine.removeReset(currentIndex)
@@ -39,7 +40,7 @@ class PathRefinement(arguments: CommandLineArguments) {
                   }
                 case _ => helper(numberToKeep, currentRefine, currentIndex + 1, tail)
               }
-            case Right(_) => helper(numberToKeep, currentRefine, currentIndex + 1, tail)
+            case _: BrboExpr => helper(numberToKeep, currentRefine, currentIndex + 1, tail)
           }
       }
     }
@@ -61,13 +62,13 @@ class PathRefinement(arguments: CommandLineArguments) {
       path.pathNodes.foreach({
         node =>
           node.value match {
-            case Left(command) =>
+            case command: Command =>
               command match {
                 case Use(groupID, _, _, _) => groupIds = groupIds + groupID.get
                 case Reset(groupID, _, _) => groupIds = groupIds + groupID
                 case _ =>
               }
-            case Right(_) =>
+            case _: BrboExpr =>
           }
       })
       groupIds.toList.sorted
@@ -116,11 +117,11 @@ class PathRefinement(arguments: CommandLineArguments) {
                     assert(!acc2.contains(pathIndex))
                     // Do not transform commands in functions other than the target function
                     if (node.isReset(Some(toSplitGroupId), Some(targetFunctionName))) {
-                      val newReset = CFGNode(Left(node.value.left.get.asInstanceOf[Reset].replace(newGroupId)), None, CFGNode.DONT_CARE_ID)
+                      val newReset = CFGNode(node.value.asInstanceOf[Reset].replace(newGroupId), None, CFGNode.DONT_CARE_ID)
                       acc2 + (pathIndex -> ResetNode(newReset, newGroupId))
                     }
                     else if (node.isUse(Some(toSplitGroupId), Some(targetFunctionName))) {
-                      val newUse = CFGNode(Left(node.value.left.get.asInstanceOf[Use].replace(newGroupId)), None, CFGNode.DONT_CARE_ID)
+                      val newUse = CFGNode(node.value.asInstanceOf[Use].replace(newGroupId), None, CFGNode.DONT_CARE_ID)
                       acc2 + (pathIndex -> UseNode(newUse, newGroupId))
                     }
                     else acc2

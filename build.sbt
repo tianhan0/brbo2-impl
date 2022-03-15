@@ -33,17 +33,22 @@ unmanagedJars in Compile ~= {
 }
 // https://stackoverflow.com/questions/12409847/how-to-add-tools-jar-as-a-dynamic-dependency-in-sbt-is-it-possible/12508163
 
-val nativeLibraryPath = {
-  val currentDirectory = System.getProperty("user.dir")
-  s"$currentDirectory/lib/z3"
-}
-
 // To avoid "javaOptions will be ignored, fork is set to false": https://github.com/sbt/sbt/issues/3832
 fork in(Test, test) := true
 fork in(Test, testOnly) := true
 
-javaOptions in Test += s"-Djava.library.path=$nativeLibraryPath"
-javaOptions in Runtime += s"-Djava.library.path=$nativeLibraryPath"
-
 // To avoid errors when running `sbt test`: https://stackoverflow.com/a/45173411
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-P1")
+
+envVars in Test := Map("LD_LIBRARY_PATH" -> {
+  val currentDirectory = System.getProperty("user.dir")
+  val fileSeparator = java.io.File.separator
+  val z3Libraries = s"$currentDirectory${fileSeparator}lib${fileSeparator}z3"
+  val apronLibraries = s"$currentDirectory${fileSeparator}lib${fileSeparator}apron"
+
+  val nativeLibraryPath = List(z3Libraries, apronLibraries).mkString(java.io.File.pathSeparator)
+  nativeLibraryPath
+})
+
+// javaOptions in Test += s"-Djava.library.path=$nativeLibraryPath"
+// javaOptions in Runtime += s"-Djava.library.path=$nativeLibraryPath"

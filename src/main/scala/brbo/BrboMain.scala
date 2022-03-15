@@ -1,8 +1,10 @@
 package brbo
 
 import brbo.backend.driver.Driver
+import brbo.common.CommandLineArguments.DEFAULT_ASSERTION_TAG
 import brbo.common.cfg.ControlFlowGraph
-import brbo.common.{CommandLineArguments, MyLogger, StringFormatUtils}
+import brbo.common.string.StringFormatUtils
+import brbo.common.{CommandLineArguments, MyLogger}
 import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.apache.commons.io.{FileUtils, FilenameUtils}
 
@@ -72,7 +74,7 @@ object BrboMain {
         val progress: Double = fileIndex.toDouble / totalFiles * 100
         logger.info(s"Verify `$fileIndex`-th input file. Progress: ${StringFormatUtils.float(progress, 2)}%")
         analyze(logger, sourceFile.getAbsolutePath, sourceFileContents, arguments)
-        // TODO: Store results into csv files
+      // TODO: Store results into csv files
     })
   }
 
@@ -100,21 +102,22 @@ object BrboMain {
         ControlFlowGraph.toControlFlowGraph(targetProgram.program).printPDF()
       }
       val driver = new Driver(arguments, targetProgram.program)
-      // TODO: Analyze based on the specified mode in the arguments
-      targetProgram.program.mostPreciseAssertion match {
-        case Some(bound) =>
-          logger.info(s"Verify the most precise bound via selective amortization")
-          driver.verifySelectivelyAmortize(bound)
-        case None =>
-          logger.info(s"Most precise bound does not exist!")
+      val assertionsToVerify = {
+        arguments.getAssertionIndex match {
+          case DEFAULT_ASSERTION_TAG =>
+            logger.info(s"Verify every assertion in every file")
+            targetProgram.program.boundAssertions
+          case assertionTag =>
+            logger.info(s"Verify the assertion associated with tag `$assertionTag` in every file")
+            targetProgram.program.boundAssertions.filter(a => a.tag == assertionTag)
+        }
       }
-      targetProgram.program.lessPreciseAssertion match {
-        case Some(bound) =>
-          logger.info(s"Verify the less precise bound via selective amortization")
-          driver.verifySelectivelyAmortize(bound)
-        case None =>
-          logger.info(s"Less precise bound does not exist!")
-      }
+      assertionsToVerify.zipWithIndex.foreach({
+        case (assertion, index) =>
+          val progress: Double = (index + 1) / assertionsToVerify.size * 100
+          logger.info(s"Verify assertion(s) with tag `${assertion.tag}` in every file [${index + 1}/${assertionsToVerify.size}]. Progress: ${StringFormatUtils.float(progress, 2)}%")
+          driver.verify(assertion)
+      })
     }
     else {
       logger.info(s"Skipping bound checking for file `$sourceFilePath`")

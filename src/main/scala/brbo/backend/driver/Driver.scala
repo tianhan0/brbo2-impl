@@ -3,11 +3,13 @@ package brbo.backend.driver
 import brbo.BrboMain
 import brbo.backend.driver.NodeStatus._
 import brbo.backend.refiner.{Refinement, Refiner}
-import brbo.backend.verifier.VerifierRawResult._
+import brbo.backend.verifier.VerifierStatus._
 import brbo.backend.verifier.cex.Path
-import brbo.backend.verifier.{UAutomizerVerifier, VerifierResult}
+import brbo.backend.verifier.modelchecker.AbstractMachine
+import brbo.backend.verifier.{InterpreterKind, SymbolicExecution, UAutomizerVerifier, VerifierResult}
 import brbo.common._
 import brbo.common.ast._
+import brbo.common.string.StringFormatUtils
 import org.apache.commons.io.FileUtils
 import org.jgrapht.graph.{DefaultEdge, SimpleDirectedGraph}
 
@@ -23,37 +25,62 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
 
   private val initialAbstractionGroupId = 0
 
-  def verifyFullyAmortize(upperBound: BrboExpr): VerifierResult = {
+  def verify(boundAssertion: BoundAssertion): Unit = {
+    arguments.getAmortizationMode match {
+      case brbo.backend.verifier.AmortizationMode.NO_AMORTIZE =>
+        logger.info("Mode: Worst-case reasoning [1/1]")
+        verifyWorstCase(boundAssertion)
+      case brbo.backend.verifier.AmortizationMode.FULL_AMORTIZE =>
+        logger.info("Mode: Fully-amortized reasoning [1/1]")
+        verifyFullyAmortize(boundAssertion)
+      case brbo.backend.verifier.AmortizationMode.SELECTIVE_AMORTIZE =>
+        logger.info("Mode: Selectively-amortized reasoning [1/1]")
+        verifySelectivelyAmortize(boundAssertion)
+      case brbo.backend.verifier.AmortizationMode.ALL_AMORTIZE =>
+        logger.info("Mode: Worst-case reasoning [1/3]")
+        verifyWorstCase(boundAssertion)
+        logger.info("Mode: Fully-amortized reasoning [2/3]")
+        verifyFullyAmortize(boundAssertion)
+        logger.info("Mode: Selectively-amortized reasoning [3/3]")
+        verifySelectivelyAmortize(boundAssertion)
+      case brbo.backend.verifier.AmortizationMode.TEST_MODE =>
+        logger.info("Unknown mode. Exiting.")
+        sys.exit(-1)
+    }
+  }
+
+  def verifyFullyAmortize(boundAssertion: BoundAssertion): VerifierResult = {
     ???
   }
 
-  def verifyWorstCase(upperBound: BrboExpr): VerifierResult = {
+  def verifyWorstCase(boundAssertion: BoundAssertion): VerifierResult = {
     ???
   }
 
-  def verifySelectivelyAmortize(upperBound: BrboExpr, keepExploringWhenVerifierTimeout: Boolean = false): VerifierRawResult = {
+  def verifySelectivelyAmortize(boundAssertion: BoundAssertion): VerifierStatus = {
     val initialAbstraction = generateInitialAbstraction(afterExtractingUses)
-    val result = verify(initialAbstraction, upperBound)
-    val counterexamplePath: Option[Path] = result.rawResult match {
+    val result = verify(initialAbstraction, boundAssertion)
+    val counterexamplePaths: Set[Path] = result.rawResult match {
       case TRUE_RESULT =>
         logger.infoOrError(s"Verifier successfully verifies the initial abstraction!")
         return TRUE_RESULT
       case FALSE_RESULT =>
         logger.infoOrError(s"Verifier fails to verify the initial abstraction!")
-        result.counterexamplePath
+        result.counterexamplePaths
       case UNKNOWN_RESULT =>
         logger.infoOrError(s"Verifier returns `$UNKNOWN_RESULT` for the initial abstraction.")
-        None
+        result.counterexamplePaths
     }
 
-    // No Self-loops; No Multiple edges; No Weighted
+    // No Self-loops; No Multiple Edges; No Weighted
     val tree = new SimpleDirectedGraph[TreeNode, DefaultEdge](classOf[DefaultEdge])
-    val root = createNode(tree, parent = None, initialAbstraction, counterexamplePath, refinement = None)
+    val root = createNode(tree, parent = None, initialAbstraction, counterexamplePaths, refinement = None)
     val refiner = new Refiner(arguments)
 
     @tailrec
-    def helper(node: TreeNode): VerifierRawResult = {
-      logger.infoOrError(s"We have explored `${tree.vertexSet().size()}` programs. We will stop at `${arguments.getMaxIterations + 1}`.")
+    def helper(node: TreeNode): VerifierStatus = {
+      logger.infoOrError(s"Explored `${tree.vertexSet().size()}` variations of the input program. " +
+        s"Will stop at `${arguments.getMaxIterations + 1}`.")
       if (tree.vertexSet().size() > arguments.getMaxIterations) {
         logger.infoOrError(s"Output all unknown amortizations to `${BrboMain.OUTPUT_DIRECTORY}/amortizations/`")
         tree.vertexSet().asScala.zipWithIndex.foreach({
@@ -63,7 +90,6 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
             val file = new File(s"${BrboMain.OUTPUT_DIRECTORY}/amortizations/${originalProgram.name}-${StringFormatUtils.integer(index, 3)}.txt")
             FileUtils.writeStringToFile(file, cSourceCode, Charset.forName("UTF-8"))
         })
-
         logger.infoOrError(s"Reached the max number of refinement iterations: `${arguments.getMaxIterations}`. Will stop now.")
         return UNKNOWN_RESULT
       }
@@ -82,67 +108,66 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
             }
         })
       }
-      // Assume that all assert() in node.program are ub checks, so that we can safely remove all assert() from the cex.
-      Path.removeCommandsForUBCheck(result.counterexamplePath) match {
-        case Some(pathWithoutUBChecks) =>
-          // Refine the current node, possibly once again, based on the same counterexample
-          // When a node is visited for a second (or more) time, then it must be caused by backtracking, which
-          // implies that all nodes in one of its subtree have failed
-          refiner.refine(node.program, pathWithoutUBChecks, upperBound, avoidRefinements) match {
-            case (Some(refinedProgram), Some(refinement)) =>
-              val result = verify(refinedProgram, upperBound)
-              val exploreRefinedProgram: NodeStatus = result.rawResult match {
-                case TRUE_RESULT | FALSE_RESULT => EXPLORING
-                case UNKNOWN_RESULT => if (keepExploringWhenVerifierTimeout) EXPLORING else SHOULD_NOT_EXPLORE
-              }
-              val newChildNode = createNode(tree, parent = Some(node), refinedProgram, Some(pathWithoutUBChecks), Some(refinement))
-              newChildNode.setNodeStatus(exploreRefinedProgram)
+      if (result.counterexamplePaths.isEmpty) {
+        logger.infoOrError(s"Will backtrack because no counterexample is provided for the current node.")
+        getParentNode(tree, node) match {
+          case Some(parent) => helper(parent)
+          case None =>
+            logger.infoOrError(s"No parent node to backtrack to.")
+            UNKNOWN_RESULT
+        }
+      }
+      else {
+        // Assume that all assert() in node.program are ub checks, so that we can safely remove all assert() from the cex.
+        // TODO: Should make use of all counterexample paths
+        val pathWithoutUBChecks = Path.removeCommandsForUBCheck(result.counterexamplePaths.head)
+        // Refine the current node, possibly once again, based on the same counterexample
+        // When a node is visited for a second (or more) time, then it must be caused by backtracking, which
+        // implies that all nodes in one of its subtree have failed
+        refiner.refine(node.program, pathWithoutUBChecks, boundAssertion, avoidRefinements, InterpreterKind.MODEL_CHECK) match {
+          case (Some(refinedProgram), Some(refinement)) =>
+            val result = verify(refinedProgram, boundAssertion)
+            val newChildNode = createNode(tree, parent = Some(node), refinedProgram, Set(pathWithoutUBChecks), Some(refinement))
+            val exploreRefinedProgram: NodeStatus = result.rawResult match {
+              case TRUE_RESULT | FALSE_RESULT => EXPLORING
+              case UNKNOWN_RESULT => SHOULD_NOT_EXPLORE
+            }
+            newChildNode.setNodeStatus(exploreRefinedProgram)
 
-              result.rawResult match {
-                case TRUE_RESULT =>
-                  logger.infoOrError(s"Successfully verified the child of the current node!")
-                  TRUE_RESULT
-                case FALSE_RESULT =>
-                  logger.infoOrError(s"Explore child nodes of the child of the current node (which has failed).")
-                  helper(newChildNode)
-                case UNKNOWN_RESULT =>
-                  if (keepExploringWhenVerifierTimeout) {
-                    logger.infoOrError(s"Explore child nodes of the child of the current node (which has failed).")
-                    helper(newChildNode)
-                  }
-                  else {
-                    logger.infoOrError(s"Explore a new child node of the current node (because the verification returns unknown) by re-refining the current node.")
-                    helper(node)
-                  }
-              }
-            case (None, None) =>
-              getParentNode(tree, node) match {
-                case Some(parent) => helper(parent)
-                case None =>
-                  logger.infoOrError(s"No parent node to backtrack to.")
-                  UNKNOWN_RESULT
-              }
-            case _ => throw new Exception
-          }
-        case None =>
-          logger.infoOrError(s"Will backtrack because no counterexample is provided for the current node.")
-          getParentNode(tree, node) match {
-            case Some(parent) => helper(parent)
-            case None =>
-              logger.infoOrError(s"No parent node to backtrack to.")
-              UNKNOWN_RESULT
-          }
+            result.rawResult match {
+              case TRUE_RESULT =>
+                logger.infoOrError(s"Successfully verified the child of the current node!")
+                TRUE_RESULT
+              case FALSE_RESULT =>
+                logger.infoOrError(s"Explore child nodes of the child of the current node (which has failed).")
+                helper(newChildNode)
+              case UNKNOWN_RESULT =>
+                logger.infoOrError(s"Explore a new child node of the current node (because the verification returns unknown) by re-refining the current node.")
+                helper(node)
+            }
+          case (None, None) =>
+            getParentNode(tree, node) match {
+              case Some(parent) => helper(parent)
+              case None =>
+                logger.infoOrError(s"No parent node to backtrack to.")
+                UNKNOWN_RESULT
+            }
+          case _ => throw new Exception
+        }
       }
     }
 
     helper(root)
   }
 
-  private def verify(program: BrboProgram, upperBound: BrboExpr): VerifierResult = {
-    val ubcheckInserted = insertUBCheck(program, upperBound)
-    logger.infoOrError(s"Verify with upper bound `${upperBound.prettyPrintToCNoOuterBrackets}`")
-    val result = uAutomizerVerifier.verify(ubcheckInserted)
-    logger.infoOrError(s"Verifier result: `${result.rawResult}`.")
+  private def verify(program: BrboProgram, boundAssertion: BoundAssertion): VerifierResult = {
+    val assertion = boundAssertion.replaceResourceVariable(program.mainFunction.approximatedResourceUsage)
+    logger.infoOrError(s"Verify global assertion `${assertion.prettyPrintToCNoOuterBrackets}`")
+    // val ubcheckInserted = insertUBCheck(program, boundAssertion)
+    // val result = uAutomizerVerifier.verify(ubcheckInserted)
+    val modelChecker = new AbstractMachine(program, arguments)
+    val result = modelChecker.verify(assertion).result
+    logger.infoOrError(s"Verifier result: `$result`.")
     result
   }
 
@@ -152,9 +177,9 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
       case ((replacements, ids), command) =>
         command match {
           case Assignment(variable, expression, _) =>
-            if (GhostVariableUtils.isGhostVariable(variable.identifier, GhostVariableTyp.Resource)) {
+            if (GhostVariableUtils.isGhostVariable(variable.name, GhostVariableTyp.Resource)) {
               val errorMessage = s"To successfully extract uses from assignments, the assignment must be in the form of " +
-                s"`${variable.identifier} = ${variable.identifier} + e` for some e, instead of `${command.prettyPrintToC()}`"
+                s"`${variable.name} = ${variable.name} + e` for some e, instead of `${command.prettyPrintToC()}`"
               expression match {
                 case Addition(left, right, _) =>
                   left match {
@@ -186,29 +211,20 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         }
     })
     val newBody = replacements.foldLeft(program.mainFunction.bodyNoInitialization: BrboAst)({
-      case (acc, (oldCommand, newCommand)) => BrboAstUtils.replace(acc, oldCommand, newCommand)
+      case (acc, (oldCommand, newCommand)) => BrboAstUtils.replaceAst(acc, oldCommand, newCommand)
     })
     val newMainFunction = program.mainFunction.replaceBodyWithoutInitialization(newBody.asInstanceOf[Statement])
     program.replaceMainFunction(newMainFunction)
   }
 
-  private def insertUBCheck(program: BrboProgram, upperBound: BrboExpr): BrboProgram = {
-    logger.infoOrError(s"Insert ub check `${upperBound.prettyPrintToCNoOuterBrackets}`")
+  private def insertUBCheck(program: BrboProgram, boundAssertion: BoundAssertion): BrboProgram = {
     val assertion = {
-      val sum: BrboExpr = {
-        def summand(id: Int): BrboExpr = {
-          val (r, rSharp, rCounter) = GhostVariableUtils.generateVariables(Some(id))
-          Addition(r, Multiplication(rSharp, rCounter))
-        }
-
-        program.mainFunction.groupIds.map(id => summand(id)).foldLeft(Number(0): BrboExpr)({
-          (acc, summand) => Addition(acc, summand)
-        })
-      }
-      val assertFunction: BrboFunction = PreDefinedFunctions.assert
-      FunctionCall(FunctionCallExpr(assertFunction.identifier, List(LessThanOrEqualTo(sum, upperBound)), assertFunction.returnType))
+      val sum: BrboExpr = program.mainFunction.approximatedResourceUsage
+      val assertFunction: BrboFunction = PreDefinedFunctions.assertFunction
+      val assertion = boundAssertion.replaceResourceVariable(sum)
+      FunctionCall(FunctionCallExpr(assertFunction.identifier, List(assertion), assertFunction.returnType))
     }
-    logger.traceOrError(s"ub check assertion: `${assertion.prettyPrintToC()}`")
+    logger.infoOrError(s"Insert ub check assertion: `${assertion.prettyPrintToC()}`")
 
     def generateNewUse(use: Use): List[Command] = {
       // Use the same uuid so that, we can succeed in using commands from the program without UB checks to match against
@@ -242,7 +258,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         }
     })
     val newBody = replacements.foldLeft(program.mainFunction.bodyNoInitialization: BrboAst)({
-      case (acc, (oldCode, newCode)) => BrboAstUtils.replace(acc, oldCode, newCode)
+      case (acc, (oldCode, newCode)) => BrboAstUtils.replaceAst(acc, oldCode, newCode)
     })
     val newMainFunction = {
       val f = program.mainFunction
@@ -252,9 +268,9 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
   }
 
   private def createNode(tree: SimpleDirectedGraph[TreeNode, DefaultEdge], parent: Option[TreeNode],
-                         program: BrboProgram, counterexample: Option[Path], refinement: Option[Refinement]): TreeNode = {
+                         program: BrboProgram, counterexamples: Set[Path], refinement: Option[Refinement]): TreeNode = {
     assert(parent.isEmpty == refinement.isEmpty)
-    val node = TreeNode(program, counterexample, refinement, tree.vertexSet().size())
+    val node = TreeNode(program, counterexamples, refinement, tree.vertexSet().size())
     tree.addVertex(node)
     parent match {
       case Some(value) =>

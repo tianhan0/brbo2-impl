@@ -1,28 +1,28 @@
 package brbo.backend.refiner
 
-import brbo.backend.verifier.SymbolicExecution
+import brbo.backend.verifier.{AbstractInterpreter, InterpreterKind, SymbolicExecution}
 import brbo.common._
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import com.microsoft.z3.AST
 
-class Synthesizer(programToSynthesizeFrom: BrboProgram, relationalPredicates: Boolean, argument: CommandLineArguments) {
+class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) {
   private val logger = MyLogger.createLogger(classOf[Synthesizer], argument.getDebugMode)
-  private val allCommands = BrboAstUtils.collectCommands(programToSynthesizeFrom.mainFunction.actualBody)
+  private val allCommands = BrboAstUtils.collectCommands(originalProgram.mainFunction.actualBody)
   private val useCommands = allCommands.filter(command => command.isInstanceOf[Use])
   private val resetCommands = allCommands.filter(command => command.isInstanceOf[Reset])
 
-  private val symbolicExecution = new SymbolicExecution(programToSynthesizeFrom.mainFunction.parameters, argument.getDebugMode)
+  private val inputVariables = originalProgram.mainFunction.parameters
+  private val solver = new Z3Solver
   private val predicates: List[Predicate] = {
     val allNonGhostVariables = {
-      val allVariables = programToSynthesizeFrom.mainFunction.parameters.toSet ++
-        BrboAstUtils.collectUseDefVariables(programToSynthesizeFrom.mainFunction.bodyNoInitialization)
-      allVariables.filter(v => !GhostVariableUtils.isGhostVariable(v.identifier))
+      val allVariables = originalProgram.mainFunction.parameters.toSet ++
+        BrboAstUtils.collectUseDefVariables(originalProgram.mainFunction.bodyNoInitialization)
+      allVariables.filter(v => !GhostVariableUtils.isGhostVariable(v.name))
     }
-    val allPredicates = Predicate.generatePredicates(allNonGhostVariables, relationalPredicates)
+    val allPredicates = Predicate.generatePredicates(allNonGhostVariables, argument.getRelationalPredicates)
     val filterFalsePredicates = allPredicates.filter({
       p =>
-        val solver = symbolicExecution.solver
         val isFalse = solver.checkAssertionForallPushPop(solver.mkIff(p.toAst(solver), solver.mkFalse()))
         if (isFalse) logger.traceOrError(s"Predicate `${p.expr.prettyPrintToCFG}` is false!")
         !isFalse
@@ -66,21 +66,28 @@ class Synthesizer(programToSynthesizeFrom: BrboProgram, relationalPredicates: Bo
         acc + (reset -> newResets)
     })
 
-    val newMainBody = (useReplacements ++ resetReplacements).foldLeft(programToSynthesizeFrom.mainFunction.bodyNoInitialization: BrboAst)({
+    val newMainBody = (useReplacements ++ resetReplacements).foldLeft(originalProgram.mainFunction.bodyNoInitialization: BrboAst)({
       case (acc, (command, newCommands)) =>
         val commandsInList = newCommands.toList.sortWith({ case (c1, c2) => c1.prettyPrintToC() < c2.prettyPrintToC() })
-        BrboAstUtils.replace(acc, command, Block(commandsInList))
+        BrboAstUtils.replaceAst(acc, command, Block(commandsInList))
     })
-    logger.infoOrError(s"[Synthesis successful] New main function body:\n`$newMainBody`")
+    logger.infoOrError(s"Successful: New main function body:\n`$newMainBody`")
 
-    val newGroupIds: Set[Int] = programToSynthesizeFrom.mainFunction.groupIds -- refinement.groupIds.keySet ++ refinement.groupIds.values.flatten
-    logger.traceOrError(s"oldGroups: `${programToSynthesizeFrom.mainFunction.groupIds}`; splitGroups: `${refinement.groupIds.keySet}`; newGroups: `${refinement.groupIds.values.flatten}`")
-    logger.infoOrError(s"[Synthesis successful] New groups: `$newGroupIds`")
-    val newMainFunction =
-      programToSynthesizeFrom.mainFunction
-        .replaceBodyWithoutInitialization(newMainBody.asInstanceOf[Statement])
-        .replaceGroupIds(newGroupIds)
-    programToSynthesizeFrom.replaceMainFunction(newMainFunction)
+    val newGroupIds: Set[Int] = BrboAstUtils.collectCommands(newMainBody).flatMap({
+      command =>
+        command match {
+          case Reset(groupId, _, _) => Some(groupId)
+          case Use(groupId, _, _, _) => groupId
+          case _ => None
+        }
+    })
+    logger.trace(s"Old groups: `${originalProgram.mainFunction.groupIds}`")
+    logger.trace(s"New groups from the path refinement: `${refinement.groupIds}`")
+    logger.trace(s"New groups (overall): `$newGroupIds`")
+    val newMainFunction = originalProgram.mainFunction
+      .replaceBodyWithoutInitialization(newMainBody.asInstanceOf[Statement])
+      .replaceGroupIds(newGroupIds)
+    originalProgram.replaceMainFunction(newMainFunction)
   }
 
   def computeNewUses(path: List[CFGNode], oldUse: Use, indexMap: Map[Int, Set[Int]]): Set[Command] = {
@@ -129,22 +136,20 @@ class Synthesizer(programToSynthesizeFrom: BrboProgram, relationalPredicates: Bo
     assert(indices.nonEmpty)
     val postConditions = indices.map({
       index =>
-        val state = symbolicExecution.execute(path.slice(0, index))
-        val valuation = state.valuations.head
-        val valuationAst = SymbolicExecution.valuationToAST(valuation, symbolicExecution.solver)
-        val pathConditionAst = state.pathCondition
-        symbolicExecution.solver.mkAnd(valuationAst, pathConditionAst)
+        // TODO: It is probably fine to use the model checker, because
+        //  - we only use linear constraints to partition the states, and
+        //  - if linear constraints can partition the concrete states, then they may also partition the abstract states
+        val (ast, _) =
+          AbstractInterpreter.interpretPath(path.slice(0, index), inputVariables, solver, InterpreterKind.MODEL_CHECK, argument)
+        ast
     }).toSeq
-    symbolicExecution.solver.mkOr(postConditions: _*)
+    solver.mkOr(postConditions: _*)
   }
 
   def computeImpliedPredicates(whatToImplyFrom: AST): List[Predicate] = {
-    val solver = symbolicExecution.solver
-    val isFalse = {
-      val query = solver.mkIff(whatToImplyFrom, solver.mkFalse())
-      solver.checkAssertionForallPushPop(query)
-    }
-    assert(!isFalse)
+    val query = solver.mkIff(whatToImplyFrom, solver.mkFalse())
+    val isFalse = solver.checkAssertionForallPushPop(query)
+    assert(!isFalse, s"Anything can be implied from this query (whose truth value is false): $query")
     // Return false (instead of all predicates) when whatToImplyFrom is false
     // if (isFalse) return List(Predicate(Bool(b = false)))
     val result = predicates.filter({
@@ -159,9 +164,9 @@ class Synthesizer(programToSynthesizeFrom: BrboProgram, relationalPredicates: Bo
   def computeCandidatePredicates(predicates: Iterable[Iterable[Predicate]], notConflictWith: BrboExpr): List[List[Predicate]] = {
     val candidatePredicates = MathUtils.crossJoin(predicates).filter({
       predicates =>
-        val isPartitionResult = Synthesizer.isDisjoint(predicates, symbolicExecution.solver)
-        val isCoverResult = Synthesizer.isCover(predicates, symbolicExecution.solver)
-        val notConflictWithResult = Synthesizer.notConflictWith(predicates, notConflictWith, symbolicExecution.solver)
+        val isPartitionResult = Synthesizer.isDisjoint(predicates, solver)
+        val isCoverResult = Synthesizer.isCover(predicates, solver)
+        val notConflictWithResult = Synthesizer.notConflictWith(predicates, notConflictWith, solver)
         // logger.traceOrError(s"Predicates `$predicates` ${if (isPartitionResult) "are" else "are not"} a partition, and ${if (isCoverResult) "are" else "are not"} a cover.")
         isPartitionResult && isCoverResult && notConflictWithResult
     })

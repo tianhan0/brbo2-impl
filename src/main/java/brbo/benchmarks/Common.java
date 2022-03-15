@@ -16,13 +16,22 @@ public abstract class Common {
    * @param upper
    * @return Return a non-deterministic integer in [lower, upper]
    */
-  public abstract int ndInt2(int lower, int upper);
+  // public abstract int ndInt2(int lower, int upper);
+
+  /**
+   *
+   * @param lower
+   * @param x
+   * @param upper
+   * @return Assume x is in the range of [lower, upper]
+   */
+  public abstract void ndInt3(int lower, int x, int upper);
 
   /**
    *
    * @return Non-deterministic boolean
    */
-  public abstract boolean ndBool();
+  // public abstract boolean ndBool();
 
   public abstract void assume(boolean expression);
 
@@ -34,7 +43,5 @@ public abstract class Common {
    */
   public abstract void reach(int x, int... args);
 
-  public abstract void mostPreciseBound(boolean assertion);
-
-  public abstract void lessPreciseBound(boolean assertion);
+  public abstract void boundAssertion(String index, boolean assertion);
 }

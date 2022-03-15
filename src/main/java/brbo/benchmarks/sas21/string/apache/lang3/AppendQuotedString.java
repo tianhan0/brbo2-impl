@@ -9,12 +9,12 @@ abstract public class AppendQuotedString extends Common {
     }
     int appendTo = 0;
     int R = 0;
-    mostPreciseBound(R <= pattern);
-    lessPreciseBound(R <= MAX * pattern + MAX * pos + MAX);
+    boundAssertion("most", R <= pattern);
+    boundAssertion("less", R <= MAX * pattern + MAX * pos + MAX);
     int start = pos;
     int lastHold = start;
     for (int i = pos; i < pattern; i++) {
-      if (ndBool()) {
+      if (ndInt() == 0) {
         pos++;
         appendTo += pos - lastHold;
         R = R + (pos - lastHold);

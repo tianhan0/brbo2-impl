@@ -8,8 +8,8 @@ abstract public class SplitWorker2 extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= str);
-    lessPreciseBound(R <= MAX * str + MAX);
+    boundAssertion("most", R <= str);
+    boundAssertion("less", R <= MAX * str + MAX);
     int list = 0;
     int sizePlus1 = 1;
     int i = 0;
@@ -18,7 +18,7 @@ abstract public class SplitWorker2 extends Common {
     boolean lastMatch = false;
     if (separatorChars == 0) {
       while (i < str) {
-        if (ndBool()) {
+        if (ndInt() == 0) {
           if (match || preserveAllTokens) {
             lastMatch = true;
             if (sizePlus1 == max) {
@@ -41,7 +41,7 @@ abstract public class SplitWorker2 extends Common {
     } else {
       if (separatorChars == 1) {
         while (i < str) {
-          if (ndBool()) {
+          if (ndInt() == 0) {
             if (match || preserveAllTokens) {
               lastMatch = true;
               if (sizePlus1 == max) {
@@ -63,7 +63,7 @@ abstract public class SplitWorker2 extends Common {
         }
       } else {
         while (i < str) {
-          if (ndBool()) {
+          if (ndInt() == 0) {
             if (match || preserveAllTokens) {
               lastMatch = true;
               if (sizePlus1 == max) {

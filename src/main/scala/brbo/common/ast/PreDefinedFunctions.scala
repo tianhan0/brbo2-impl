@@ -51,14 +51,15 @@ object PreDefinedFunctions {
   val NDINT: String = "ndInt"
   val NDBOOL: String = "ndBool"
   val NDINT2: String = "ndInt2"
-  val MOST_PRECISE_BOUND: String = "mostPreciseBound"
-  val LESS_PRECISE_BOUND: String = "lessPreciseBound"
+  val NDINT3: String = "ndInt3"
+  val UNINITIALIZED: String = "uninitialized"
+  val BOUND_ASSERTION: String = "boundAssertion"
 
-  val assert: BrboFunction = {
+  val assertFunction: BrboFunction = {
     val cond = Identifier("cond", BOOL)
     val body = {
       val ite = {
-        val condition = Negative(cond)
+        val condition = Negation(cond)
         val thenStatement = LabeledCommand("ERROR", FunctionCall(FunctionCallExpr("__VERIFIER_error", Nil, VOID)))
         val elseStatement = Skip()
         ITE(condition, thenStatement, elseStatement)
@@ -68,11 +69,11 @@ object PreDefinedFunctions {
     BrboFunction(ASSERT, VOID, List(cond), body, Set())
   }
 
-  val assume: BrboFunction = {
+  val assumeFunction: BrboFunction = {
     val cond = Identifier("cond", BOOL)
     val body = {
       val ite = {
-        val condition = Negative(cond)
+        val condition = Negation(cond)
         val thenStatement = FunctionCall(FunctionCallExpr("abort", Nil, VOID))
         val elseStatement = Skip()
         ITE(condition, thenStatement, elseStatement)
@@ -82,7 +83,7 @@ object PreDefinedFunctions {
     BrboFunction(ASSUME, VOID, List(cond), body, Set())
   }
 
-  val ndInt: BrboFunction = {
+  val ndIntFunction: BrboFunction = {
     val body = {
       val returnCommand = Return(Some(FunctionCallExpr("__VERIFIER_nondet_int", Nil, INT)))
       Block(List(returnCommand))
@@ -90,7 +91,7 @@ object PreDefinedFunctions {
     BrboFunction(NDINT, INT, Nil, body, Set())
   }
 
-  val ndBool: BrboFunction = {
+  val ndBoolFunction: BrboFunction = {
     val body = {
       val x = Identifier("x", INT)
       val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
@@ -100,7 +101,7 @@ object PreDefinedFunctions {
     BrboFunction(NDBOOL, BOOL, Nil, body, Set())
   }
 
-  val ndInt2: BrboFunction = {
+  val ndInt2Function: BrboFunction = {
     val lower = Identifier("lower", INT)
     val upper = Identifier("upper", INT)
     val body = {
@@ -113,17 +114,29 @@ object PreDefinedFunctions {
     BrboFunction(NDINT2, INT, List(lower, upper), body, Set())
   }
 
-  val mostPreciseBound: BrboFunction = {
-    BrboFunction(MOST_PRECISE_BOUND, VOID, List(Identifier("assertion", BOOL)), Block(Nil), Set())
+  val ndInt3Function: BrboFunction = {
+    val x = Identifier("x", INT)
+    val lower = Identifier("lower", INT)
+    val upper = Identifier("upper", INT)
+    val body = {
+      val assume = createAssume(And(LessThanOrEqualTo(lower, x), LessThanOrEqualTo(x, upper)))
+      Block(List(assume))
+    }
+    BrboFunction(NDINT3, VOID, List(lower, x, upper), body, Set())
   }
 
-  val lessPreciseBound: BrboFunction = {
-    BrboFunction(LESS_PRECISE_BOUND, VOID, List(Identifier("assertion", BOOL)), Block(Nil), Set())
+  val uninitializedFunction: BrboFunction = {
+    BrboFunction(UNINITIALIZED, INT, List(), Block(List()), Set())
   }
 
-  val allFunctions = Map(ASSERT -> assert, ASSUME -> assume, NDINT -> ndInt, NDBOOL -> ndBool, NDINT2 -> ndInt2,
-    MOST_PRECISE_BOUND -> mostPreciseBound, LESS_PRECISE_BOUND -> lessPreciseBound)
-  val allFunctionsList = List(assert, assume, ndInt, ndBool, ndInt2, mostPreciseBound, lessPreciseBound)
+  val boundAssertFunction: BrboFunction = {
+    BrboFunction(BOUND_ASSERTION, VOID, List(Identifier("assertion", BOOL)), Block(Nil), Set())
+  }
+
+  val allFunctions = Map(ASSERT -> assertFunction, ASSUME -> assumeFunction, NDINT -> ndIntFunction,
+    NDBOOL -> ndBoolFunction, NDINT2 -> ndInt2Function, NDINT3 -> ndInt3Function,
+    UNINITIALIZED -> uninitializedFunction, BOUND_ASSERTION -> boundAssertFunction)
+  val allFunctionsList = List(assertFunction, assumeFunction, ndIntFunction, ndBoolFunction, ndInt2Function, ndInt3Function, boundAssertFunction)
 
   def createAssert(expression: BrboExpr): FunctionCall = FunctionCall(FunctionCallExpr(ASSERT, List(expression), BOOL))
 

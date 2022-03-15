@@ -9,14 +9,14 @@ abstract public class GetCanonicalName extends Common {
     }
     int className_ = className;
     int dim = 0;
-    while (ndBool() && className_ > 0) {
+    while (ndInt() == 0 && className_ > 0) {
       dim++;
       className_--;
     }
     int canonicalClassNameBuffer = 0;
     int R = 0;
-    mostPreciseBound(R <= className);
-    lessPreciseBound(R <= MAX * className + MAX);
+    boundAssertion("most", R <= className);
+    boundAssertion("less", R <= MAX * className + MAX);
     if (dim < 1) {
       return;
     }

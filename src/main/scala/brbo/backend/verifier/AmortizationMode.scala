@@ -2,15 +2,15 @@ package brbo.backend.verifier
 
 object AmortizationMode extends Enumeration {
   type AmortizationMode = Value
-  val NO_AMORTIZE, FULL_AMORTIZE, SELECTIVE_AMORTIZE, ALL_AMORTIZE, UNKNOWN_MODE = Value
+  val NO_AMORTIZE, FULL_AMORTIZE, SELECTIVE_AMORTIZE, ALL_AMORTIZE, TEST_MODE = Value
 
   def amortizationModeToShortString(amortizationMode: AmortizationMode): String = {
     amortizationMode match {
-      case NO_AMORTIZE => "noAmortize"
-      case FULL_AMORTIZE => "fullAmortize"
-      case SELECTIVE_AMORTIZE => "selectiveAmortize"
-      case ALL_AMORTIZE => "allAmortize"
-      case UNKNOWN_MODE => "unknown"
+      case NO_AMORTIZE => "noAmt"
+      case FULL_AMORTIZE => "fullAmt"
+      case SELECTIVE_AMORTIZE => "selAmt"
+      case ALL_AMORTIZE => "allAmt"
+      case TEST_MODE => "test"
     }
   }
 }

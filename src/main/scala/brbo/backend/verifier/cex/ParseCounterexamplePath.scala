@@ -60,11 +60,11 @@ class ParseCounterexamplePath(debugMode: Boolean) {
   // Map updates to ghost variables into use or reset commands.
   // Assume the input program contains no use or reset commands.
   def extractUseResetFromCRepresentation(path: Path, programInC: BrboProgramInC): Path = {
-    def extractUseReset(key: Either[Command, BrboExpr], node: CFGNode): CFGNode = {
+    def extractUseReset(key: CommandOrExpr, node: CFGNode): CFGNode = {
       programInC.map.get(key) match {
         case Some(value) =>
           logger.traceOrError(s"Translate `$key` (in C representation) to `${value.asInstanceOf[Command].prettyPrintToCFG}`")
-          CFGNode(Left(value.asInstanceOf[Command]), node.function, CFGNode.DONT_CARE_ID)
+          CFGNode(value.asInstanceOf[Command], node.function, CFGNode.DONT_CARE_ID)
         case None => node
       }
     }
@@ -72,12 +72,12 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     val newNodes: List[CFGNode] = path.pathNodes.map({
       node =>
         node.value match {
-          case Left(_) => extractUseReset(node.value, node)
-          case Right(brboExpr) =>
+          case _: Command => extractUseReset(node.value, node)
+          case brboExpr: BrboExpr =>
             brboExpr match {
-              case Negative(notNegated, _) =>
+              case Negation(notNegated, _) =>
                 // Properly extract a use / reset when its conditionals are negated
-                extractUseReset(Right(notNegated), node)
+                extractUseReset(notNegated, node)
               case _ => extractUseReset(node.value, node)
             }
         }
@@ -110,7 +110,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
 
     val subStateWhenMatchSucceed = {
       val functionWhenMatchSucceed = BrboFunction("!!!", VOID, Nil, Block(List(Skip())), Set())
-      val nodeWhenMatchSucceed = CFGNode(Left(Skip()))
+      val nodeWhenMatchSucceed = CFGNode(Skip())
       SubState(nodeWhenMatchSucceed, processFunctionCalls = true, functionWhenMatchSucceed)
     }
 
@@ -135,7 +135,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
 
       // Early return for commands that cannot be matched (since they don't appear in UAutomizer's outputs)
       currentNode.value match {
-        case Left(command) =>
+        case command: Command =>
           command match {
             case FunctionExit(_) | Return(None, _) =>
               logger.traceOrError(s"Pop from the call stack")
@@ -154,14 +154,14 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                     case Nil => true
                     case ::(head, _) =>
                       head.value match {
-                        case Left(command2) =>
+                        case command2: Command =>
                           command2 match {
                             case Return(_, _) =>
                               assert(command.isInstanceOf[FunctionExit])
                               false // Avoid duplicate function returns
                             case _ => true
                           }
-                        case Right(_) => true
+                        case _: BrboExpr => true
                       }
                   }
                 val matchedNodes = if (appendCurrentNode) currentNode :: state.matchedNodes else state.matchedNodes
@@ -178,7 +178,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               }
             case _ =>
           }
-        case Right(_) =>
+        case _: BrboExpr =>
       }
 
       val newState: State = {
@@ -208,12 +208,12 @@ class ParseCounterexamplePath(debugMode: Boolean) {
             val (returnTarget, processFunctionCalls) = {
               val skipCurrentNodeWhenReturn: Boolean = {
                 currentNode.value match {
-                  case Left(command) =>
+                  case command: Command =>
                     command match {
                       case FunctionCall(_, _) => true // Skip function calls whose return values are not assigned to any variable
                       case _ => false
                     }
-                  case Right(_) => false
+                  case _: BrboExpr => false
                 }
               }
               if (skipCurrentNodeWhenReturn) {
@@ -229,7 +229,8 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               State(
                 SubState(functionEntry, processFunctionCalls = true, function),
                 SubState(returnTarget, processFunctionCalls, currentFunction) :: state.callStack,
-                CFGNode(Left(CallFunction(function, actualArguments)), Some(currentFunction), CFGNode.DONT_CARE_ID) :: newState.matchedNodes, // Insert a special command, signaling function calls
+                // Insert a special command, indicating the immediate next commands are from the called function
+                CFGNode(BeforeFunctionCall(function, actualArguments), Some(currentFunction), CFGNode.DONT_CARE_ID) :: newState.matchedNodes,
                 newState.remainingPath,
                 newState.shouldContinue
               )
@@ -257,15 +258,15 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               logger.traceOrError(s"Current AST node `$currentNode` ${if (result.matched) "indeed matches" else "does not match"} current path node `$head`")
               if (!result.matched) {
                 currentNode.value match {
-                  case Left(command) =>
+                  case command: Command =>
                     command match {
-                      case c@(Continue(_) | Break(_)) =>
+                      case _@(Continue(_) | Break(_)) =>
                         logger.traceOrError(s"Decide to match control flow AST node `$currentNode` with no path node.")
                         logger.traceOrError(s"Will re-match current path node `$head`.")
                         (MatchResult(matched = true, matchedExpression = false, matchedTrueBranch = false), true)
                       case _ => throw new Exception
                     }
-                  case Right(_) =>
+                  case _: BrboExpr =>
                     // Decide to match anyway, since constant bool expressions never show up in a path
                     // This will always match the true branch, because otherwise this node will appear in the trace (and thus we won't end up here)
                     logger.traceOrError(s"Decide to match conditional AST node `$currentNode` with no path node.")
@@ -306,10 +307,10 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               if (!matchResult.matchedExpression) currentNode // Match a command
               else {
                 currentNode.value match {
-                  case Left(_) => throw new Exception
-                  case Right(brboExpr) =>
+                  case _: Command => throw new Exception
+                  case brboExpr: BrboExpr =>
                     if (matchResult.matchedTrueBranch) currentNode // Match the true branch
-                    else CFGNode(Right(Negative(brboExpr)), currentNode.function, currentNode.id) // Match the false branch
+                    else CFGNode(Negation(brboExpr), currentNode.function, currentNode.id) // Match the false branch
                 }
               }
             }
@@ -340,11 +341,11 @@ class ParseCounterexamplePath(debugMode: Boolean) {
       if (pathNode.startsWith("[") && pathNode.endsWith("]")) pathNode.substring(1, pathNode.length - 1)
       else pathNode
     node.value match {
-      case Left(command) =>
+      case command: Command =>
         val expected = expectedUAutomizerString(command)
         logger.traceOrError(s"Expected UAutomizer string: `$expected` (`${command.getClass}`)")
         MatchResult(expected == exactString, matchedExpression = false, matchedTrueBranch = false)
-      case Right(brboExpr) =>
+      case brboExpr: BrboExpr =>
         val expected = brboExpr.prettyPrintToCNoOuterBrackets
         val negated = s"!($expected)"
         logger.traceOrError(s"Expected UAutomizer string: `$expected`. Negated: `$negated`. Exact string: `$exactString`.")

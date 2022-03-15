@@ -9,8 +9,8 @@ abstract public class Spacer extends Common {
     }
     int sb = 0;
     int R = 0;
-    mostPreciseBound(R <= spaces);
-    lessPreciseBound(R <= MAX* spaces + MAX);
+    boundAssertion("most", R <= spaces);
+    boundAssertion("less", R <= MAX* spaces + MAX);
     for (int i = 0; i < spaces; i++) {
       sb++;
       R = R + 1;

@@ -1,7 +1,7 @@
 package brbo.common
 
 import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
-import brbo.common.ast.Identifier
+import brbo.common.ast.{Identifier, Z3AST}
 import com.microsoft.z3._
 import org.apache.logging.log4j.LogManager
 
@@ -22,6 +22,7 @@ class Z3Solver {
 
   private val context: Context = Z3Solver.createContext
   private val solver: Solver = Z3Solver.createSolverUnderContext(context)
+  private val roundingMode = context.mkFPRoundNearestTiesToEven
 
   private def checkSAT(debugMode: Boolean): Boolean = this.synchronized {
     Z3Solver.solverCheck(solver, debugMode)
@@ -75,20 +76,40 @@ class Z3Solver {
     context.mkGt(left.asInstanceOf[ArithExpr], right.asInstanceOf[ArithExpr])
   }
 
+  def mkFPGt(left: AST, right: AST): BoolExpr = this.synchronized {
+    context.mkFPGt(left.asInstanceOf[FPExpr], right.asInstanceOf[FPExpr])
+  }
+
   def mkLt(left: AST, right: AST): BoolExpr = this.synchronized {
     context.mkLt(left.asInstanceOf[ArithExpr], right.asInstanceOf[ArithExpr])
+  }
+
+  def mkFPLt(left: AST, right: AST): BoolExpr = this.synchronized {
+    context.mkFPLt(left.asInstanceOf[FPExpr], right.asInstanceOf[FPExpr])
   }
 
   def mkGe(left: AST, right: AST): BoolExpr = this.synchronized {
     context.mkGe(left.asInstanceOf[ArithExpr], right.asInstanceOf[ArithExpr])
   }
 
+  def mkFPGe(left: AST, right: AST): BoolExpr = this.synchronized {
+    context.mkFPGEq(left.asInstanceOf[FPExpr], right.asInstanceOf[FPExpr])
+  }
+
   def mkLe(left: AST, right: AST): BoolExpr = this.synchronized {
     context.mkLe(left.asInstanceOf[ArithExpr], right.asInstanceOf[ArithExpr])
   }
 
+  def mkFPLe(left: AST, right: AST): BoolExpr = this.synchronized {
+    context.mkFPLEq(left.asInstanceOf[FPExpr], right.asInstanceOf[FPExpr])
+  }
+
   def mkAdd(left: AST, right: AST): ArithExpr = this.synchronized {
     context.mkAdd(left.asInstanceOf[ArithExpr], right.asInstanceOf[ArithExpr])
+  }
+
+  def mkFPAdd(left: AST, right: AST): FPExpr = this.synchronized {
+    context.mkFPAdd(roundingMode, left.asInstanceOf[FPExpr], right.asInstanceOf[FPExpr])
   }
 
   def mkAdd(astSequence: AST*): ArithExpr = this.synchronized {
@@ -100,12 +121,24 @@ class Z3Solver {
     context.mkSub(left.asInstanceOf[ArithExpr], right.asInstanceOf[ArithExpr])
   }
 
+  def mkFPSub(left: AST, right: AST): FPExpr = this.synchronized {
+    context.mkFPSub(roundingMode, left.asInstanceOf[FPExpr], right.asInstanceOf[FPExpr])
+  }
+
   def mkMul(left: AST, right: AST): ArithExpr = this.synchronized {
     context.mkMul(left.asInstanceOf[ArithExpr], right.asInstanceOf[ArithExpr])
   }
 
+  def mkFPMul(left: AST, right: AST): FPExpr = this.synchronized {
+    context.mkFPMul(roundingMode, left.asInstanceOf[FPExpr], right.asInstanceOf[FPExpr])
+  }
+
   def mkDiv(left: AST, right: AST): ArithExpr = this.synchronized {
     context.mkDiv(left.asInstanceOf[ArithExpr], right.asInstanceOf[ArithExpr])
+  }
+
+  def mkFPDiv(left: AST, right: AST): FPExpr = this.synchronized {
+    context.mkFPDiv(roundingMode, left.asInstanceOf[FPExpr], right.asInstanceOf[FPExpr])
   }
 
   def mkMod(left: AST, right: AST): IntExpr = this.synchronized {
@@ -153,12 +186,20 @@ class Z3Solver {
     context.mkBool(b)
   }
 
+  def mkDoubleVal(d: Double): FPNum = this.synchronized {
+    context.mkFPNumeral(d, context.mkFPSortDouble())
+  }
+
   def mkIntVar(s: String): IntExpr = this.synchronized {
     context.mkIntConst(s)
   }
 
   def mkBoolVar(s: String): BoolExpr = this.synchronized {
     context.mkBoolConst(s)
+  }
+
+  def mkDoubleVar(s: String): Expr = this.synchronized {
+    context.mkConst(s, context.mkFPSortDouble())
   }
 
   def mkExists(boundConstants: Iterable[AST], body: AST): Quantifier = this.synchronized {
@@ -215,6 +256,10 @@ class Z3Solver {
 
   def getModel: Model = this.synchronized {
     solver.getModel
+  }
+
+  def substitute(body: AST, from: AST, to: AST): Expr = {
+    body.asInstanceOf[Expr].substitute(from.asInstanceOf[Expr], to.asInstanceOf[Expr])
   }
 }
 
@@ -349,7 +394,7 @@ object Z3Solver {
     else context.mkAnd(parseSMTLIB2StringToArray(string, context): _*)
   }
 
-  def variableToZ3(identifier: Identifier, solver: Z3Solver): AST = variableToZ3(identifier.identifier, identifier.typ, solver)
+  def variableToZ3(identifier: Identifier, solver: Z3Solver): AST = variableToZ3(identifier.name, identifier.typ, solver)
 
   def variableToZ3(identifier: String, typ: BrboType, solver: Z3Solver): AST = {
     typ match {

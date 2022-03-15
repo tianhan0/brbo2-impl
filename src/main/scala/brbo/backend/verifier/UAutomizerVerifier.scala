@@ -5,22 +5,18 @@ import brbo.common.ast.{BrboProgram, BrboProgramInC}
 import brbo.common.{CommandLineArguments, FileUtils}
 import org.apache.commons.io.IOUtils
 
-import java.io.{BufferedReader, InputStreamReader, PrintWriter}
+import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.TimeUnit
-import java.util.stream.Collectors
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.{Duration, SECONDS}
-import scala.concurrent.{Await, Future, TimeoutException, blocking}
-import scala.sys.process._
 import scala.collection.JavaConverters._
+import scala.concurrent.duration.{Duration, SECONDS}
+import scala.sys.process._
 
 class UAutomizerVerifier(override val arguments: CommandLineArguments) extends Verifier {
   override val toolName = "UAutomizer"
-  override val toolDirectory: String = arguments.getModelCheckerDirectory
+  override val toolDirectory: String = arguments.getVerifierDirectory
 
-  private val TIMEOUT = arguments.getModelCheckerTimeout // Unit: Seconds
   private val PROPERTY_FILE = s"$toolDirectory/unreach-call.prp"
   private val EXECUTABLE_FILE = s"./Ultimate.py"
   private val FULL_OUTPUT = "--full-output"
@@ -29,7 +25,8 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
     val programInC = BrboProgramInC(program)
 
     val cSourceCode = programInC.program.prettyPrintToC()
-    logger.traceOrError(s"Input to UAutomizer:\n$cSourceCode")
+    if (arguments.getPrintVerifierInputs) logger.info(s"Input to UAutomizer:\n$cSourceCode")
+    else logger.traceOrError(s"Input to UAutomizer:\n$cSourceCode")
     runAndGetStdOutput(cSourceCode) match {
       case (Some(output), violationWitnessFile) =>
         val outputTrimmed = output.replaceAll("\\s", "")
@@ -41,19 +38,19 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
           val removeFile = s"rm ${violationWitnessFile.toAbsolutePath.toString}"
           removeFile.!!
 
-          VerifierResult(VerifierRawResult.FALSE_RESULT, Some(parseCounterexamplePath.extractUseResetFromCRepresentation(pathInC, programInC)))
+          VerifierResult(VerifierStatus.FALSE_RESULT, Set(parseCounterexamplePath.extractUseResetFromCRepresentation(pathInC, programInC)))
         }
         else if (outputTrimmed.endsWith("Result:TRUE")) {
-          VerifierResult(VerifierRawResult.TRUE_RESULT, None)
+          VerifierResult(VerifierStatus.TRUE_RESULT, Set())
         }
         else if (outputTrimmed.endsWith("Result:UNKNOWN")) {
-          VerifierResult(VerifierRawResult.UNKNOWN_RESULT, None)
+          VerifierResult(VerifierStatus.UNKNOWN_RESULT, Set())
         }
         else {
           logger.error(s"Cannot interpret results from `$toolName`:\n$outputTrimmed")
           throw new Exception
         }
-      case _ => VerifierResult(VerifierRawResult.UNKNOWN_RESULT, None)
+      case _ => VerifierResult(VerifierStatus.UNKNOWN_RESULT, Set())
     }
   }
 
@@ -80,14 +77,15 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
         .directory(new java.io.File(toolDirectory))
         .redirectErrorStream(true)
       val process: java.lang.Process = processBuilder.start()
-      logger.traceOrError(s"Run `$toolName` via command `$command`")
+      if (arguments.getPrintVerifierInputs) logger.info(s"Run `$toolName` via command `$command`")
+      else logger.traceOrError(s"Run `$toolName` via command `$command`")
 
       val actualTimeout = {
         if (TIMEOUT >= 0) Duration(TIMEOUT, SECONDS)
         else Duration.Inf
       }
       val result: Int = {
-        if(!process.waitFor(actualTimeout.toSeconds, TimeUnit.SECONDS)) {
+        if (!process.waitFor(actualTimeout.toSeconds, TimeUnit.SECONDS)) {
           logger.fatal(s"`$toolName` timed out after `$actualTimeout`!")
           process.descendants().forEach({
             handle =>
