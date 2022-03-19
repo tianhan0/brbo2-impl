@@ -94,7 +94,7 @@ class RefinerUnitTest extends AnyFlatSpec {
   private val path2 = Path(
     mainFunction2.ghostVariableInitializations.map(c => CFGNode(c, Some(mainFunction2), CFGNode.DONT_CARE_ID)) :::
       List(
-        CFGNode((GreaterThanOrEqualTo(n, Number(0))), Some(mainFunction2), CFGNode.DONT_CARE_ID),
+        CFGNode((GreaterThanOrEqualTo(n, Number(3))), Some(mainFunction2), CFGNode.DONT_CARE_ID), // TODO: This assumption is not in the program!
         CFGNode((declaration2), Some(mainFunction2), CFGNode.DONT_CARE_ID),
         CFGNode((reset2), Some(mainFunction2), CFGNode.DONT_CARE_ID),
         CFGNode((use2), Some(mainFunction2), CFGNode.DONT_CARE_ID),
@@ -108,68 +108,8 @@ class RefinerUnitTest extends AnyFlatSpec {
 
   "Refining program 1" should "succeed" in {
     val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), boundExpression1), tag = "IrrelevantTag")
-    val (newProgram, refinement) = refiner.refine(program1, path1, boundAssertion, Set(), InterpreterKind.SYMBOLIC_EXECUTION)
-    StringCompare.ignoreWhitespaces(s"$refinement\n$newProgram",
-      """Some(Path:
-        |  [000] (-1) int C1 = -1; [fun `main`]
-        |  [001] (-1) int R1 = 0; [fun `main`]
-        |  [002] (-1) int S1 = 0; [fun `main`]
-        |  [003] (-1) (n >= 0) [fun `main`]
-        |  [004] (-1) (a >= 0) [fun `main`]
-        |  [005] (-1) (b >= 0) [fun `main`]
-        |  [006] (-1) int i = 0; [fun `main`]
-        |  [007] (-1) int e = 0; [fun `main`]
-        |  [008] (-1) (i < n) [fun `main`]
-        |  [009] (-1) (i == 0) [fun `main`]
-        |  [010] (-1) e = a; [fun `main`]
-        |  [011] (-1) if (true) reset R1 [fun `main`]
-        |  [012] (-1) if (true) use R1 e [fun `main`]
-        |  [013] (-1) i = i + 1; [fun `main`]
-        |  [014] (-1) (i < n) [fun `main`]
-        |  [015] (-1) !((i == 0)) [fun `main`]
-        |  [016] (-1) e = b; [fun `main`]
-        |  [017] (-1) if (true) reset R1 [fun `main`]
-        |  [018] (-1) if (true) use R1 e [fun `main`]
-        |Splits:
-        |  [011] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R2
-        |  [012] (-1) if (true) use R1 e [fun `main`] -> if (true) use R2 e
-        |  [017] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R3
-        |  [018] (-1) if (true) use R1 e [fun `main`] -> if (true) use R3 e
-        |Removed resets:
-        |  [011]: (-1) if (true) reset R1 [fun `main`]
-        |  [017]: (-1) if (true) reset R1 [fun `main`])
-        |Some(Program name: `Test program`
-        |Global assertions to verify: ``
-        |void main(int n, int a, int b)
-        |  {
-        |    int C2 = -1;
-        |    int C3 = -1;
-        |    int R2 = 0;
-        |    int R3 = 0;
-        |    int S2 = 0;
-        |    int S3 = 0;
-        |    int i = 0;
-        |    int e = 0;
-        |    while (i < n)
-        |    {
-        |      if (i == 0)
-        |        e = a;
-        |      else
-        |        e = b;
-        |      {
-        |        if (false) reset R2
-        |        if (false) reset R3
-        |      }
-        |      {
-        |        if (((0 - i) >= 0) && true) use R2 e
-        |        if ((i > 0) && true) use R3 e
-        |      }
-        |      i = i + 1;
-        |    }
-        |  })
-        |""".stripMargin, s"Symbolic execution is incorrect\nPath: $path1\nProgram: ${program1.mainFunction}")
 
-    val (newProgram2, refinement2) = refiner.refine(program1, path1, boundAssertion, Set(), InterpreterKind.MODEL_CHECK)
+    val (newProgram2, refinement2) = refiner.refine(program1, path1, boundAssertion, Set())
     StringCompare.ignoreWhitespaces(s"$refinement2\n$newProgram2",
       """Some(Path:
         |  [000] (-1) int C1 = -1; [fun `main`]
@@ -192,23 +132,16 @@ class RefinerUnitTest extends AnyFlatSpec {
         |  [017] (-1) if (true) reset R1 [fun `main`]
         |  [018] (-1) if (true) use R1 e [fun `main`]
         |Splits:
-        |  [011] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R2
-        |  [012] (-1) if (true) use R1 e [fun `main`] -> if (true) use R2 e
-        |  [017] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R3
-        |  [018] (-1) if (true) use R1 e [fun `main`] -> if (true) use R3 e
+        |
         |Removed resets:
-        |  [011]: (-1) if (true) reset R1 [fun `main`]
-        |  [017]: (-1) if (true) reset R1 [fun `main`])
+        |  [011]: (-1) if (true) reset R1 [fun `main`])
         |Some(Program name: `Test program`
         |Global assertions to verify: ``
         |void main(int n, int a, int b)
         |  {
-        |    int C2 = -1;
-        |    int C3 = -1;
-        |    int R2 = 0;
-        |    int R3 = 0;
-        |    int S2 = 0;
-        |    int S3 = 0;
+        |    int C1 = -1;
+        |    int R1 = 0;
+        |    int S1 = 0;
         |    int i = 0;
         |    int e = 0;
         |    while (i < n)
@@ -218,12 +151,10 @@ class RefinerUnitTest extends AnyFlatSpec {
         |      else
         |        e = b;
         |      {
-        |        if (false) reset R2
-        |        if (false) reset R3
+        |        if (true && (i > 0)) reset R1
         |      }
         |      {
-        |        if (((0 - i) >= 0) && true) use R2 e
-        |        if ((i > 0) && true) use R3 e
+        |        if (true) use R1 e
         |      }
         |      i = i + 1;
         |    }
@@ -231,74 +162,15 @@ class RefinerUnitTest extends AnyFlatSpec {
         |""".stripMargin, s"Model checking is incorrect\nPath: $path1\nProgram: ${program1.mainFunction}")
   }
 
-  "Refining program 2 with symbolic execution" should "succeed" in {
+  "Refining program 2" should "succeed" in {
     val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), boundExpression2), tag = "IrrelevantTag")
-    val (newProgram, refinement) = refiner.refine(program2, path2, boundAssertion, Set(), InterpreterKind.SYMBOLIC_EXECUTION)
-    StringCompare.ignoreWhitespaces(s"$refinement\n$newProgram",
-      """Some(Path:
-        |  [000] (-1) int C1 = -1; [fun `main`]
-        |  [001] (-1) int R1 = 0; [fun `main`]
-        |  [002] (-1) int S1 = 0; [fun `main`]
-        |  [003] (-1) (n >= 0) [fun `main`]
-        |  [004] (-1) int k = 0; [fun `main`]
-        |  [005] (-1) if (true) reset R1 [fun `main`]
-        |  [006] (-1) if (true) use R1 1 [fun `main`]
-        |  [007] (-1) k = k + 1; [fun `main`]
-        |  [008] (-1) if (true) reset R1 [fun `main`]
-        |  [009] (-1) if (true) use R1 2 [fun `main`]
-        |  [010] (-1) k = k + 2; [fun `main`]
-        |  [011] (-1) if (true) reset R1 [fun `main`]
-        |  [012] (-1) if (true) use R1 (n - k) [fun `main`]
-        |Splits:
-        |  [005] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R2
-        |  [006] (-1) if (true) use R1 1 [fun `main`] -> if (true) use R2 1
-        |  [008] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R3
-        |  [009] (-1) if (true) use R1 2 [fun `main`] -> if (true) use R3 2
-        |  [011] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R3
-        |  [012] (-1) if (true) use R1 (n - k) [fun `main`] -> if (true) use R3 (n - k)
-        |Removed resets:
-        |  [005]: (-1) if (true) reset R1 [fun `main`]
-        |  [008]: (-1) if (true) reset R1 [fun `main`]
-        |  [011]: (-1) if (true) reset R1 [fun `main`])
-        |Some(Program name: `Test program`
-        |Global assertions to verify: ``
-        |void main(int n)
-        |  {
-        |    int C2 = -1;
-        |    int C3 = -1;
-        |    int R2 = 0;
-        |    int R3 = 0;
-        |    int S2 = 0;
-        |    int S3 = 0;
-        |    int k = 0;
-        |    {
-        |      if (false) reset R2
-        |    }
-        |    {
-        |      if (true && true) use R2 1
-        |    }
-        |    k = k + 1;
-        |    {
-        |      if (false) reset R3
-        |    }
-        |    {
-        |      if (true && true) use R3 2
-        |    }
-        |    k = k + 2;
-        |    {
-        |      if (false) reset R3
-        |    }
-        |    {
-        |      if (true && true) use R3 (n - k)
-        |    }
-        |  })""".stripMargin, s"Symbolic execution is incorrect\nPath: $path2\nProgram: ${program2.mainFunction}")
-    val (newProgram2, refinement2) = refiner.refine(program2, path2, boundAssertion, Set(), InterpreterKind.MODEL_CHECK)
+    val (newProgram2, refinement2) = refiner.refine(program2, path2, boundAssertion, Set())
     StringCompare.ignoreWhitespaces(s"$refinement2\n$newProgram2",
       """Some(Path:
         |  [000] (-1) int C1 = -1; [fun `main`]
         |  [001] (-1) int R1 = 0; [fun `main`]
         |  [002] (-1) int S1 = 0; [fun `main`]
-        |  [003] (-1) (n >= 0) [fun `main`]
+        |  [003] (-1) (n >= 3) [fun `main`]
         |  [004] (-1) int k = 0; [fun `main`]
         |  [005] (-1) if (true) reset R1 [fun `main`]
         |  [006] (-1) if (true) use R1 1 [fun `main`]
@@ -309,48 +181,39 @@ class RefinerUnitTest extends AnyFlatSpec {
         |  [011] (-1) if (true) reset R1 [fun `main`]
         |  [012] (-1) if (true) use R1 (n - k) [fun `main`]
         |Splits:
-        |  [005] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R2
-        |  [006] (-1) if (true) use R1 1 [fun `main`] -> if (true) use R2 1
-        |  [008] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R3
-        |  [009] (-1) if (true) use R1 2 [fun `main`] -> if (true) use R3 2
-        |  [011] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R3
-        |  [012] (-1) if (true) use R1 (n - k) [fun `main`] -> if (true) use R3 (n - k)
+        |
         |Removed resets:
-        |  [005]: (-1) if (true) reset R1 [fun `main`]
-        |  [008]: (-1) if (true) reset R1 [fun `main`]
-        |  [011]: (-1) if (true) reset R1 [fun `main`])
+        |  [005]: (-1) if (true) reset R1 [fun `main`])
         |Some(Program name: `Test program`
         |Global assertions to verify: ``
         |void main(int n)
         |  {
-        |    int C2 = -1;
-        |    int C3 = -1;
-        |    int R2 = 0;
-        |    int R3 = 0;
-        |    int S2 = 0;
-        |    int S3 = 0;
+        |    int C1 = -1;
+        |    int R1 = 0;
+        |    int S1 = 0;
         |    int k = 0;
         |    {
-        |      if (false) reset R2
+        |      if (false) reset R1
         |    }
         |    {
-        |      if (true && true) use R2 1
+        |      if (true) use R1 1
         |    }
         |    k = k + 1;
         |    {
-        |      if (false) reset R3
+        |      if (true) reset R1
         |    }
         |    {
-        |      if (true && true) use R3 2
+        |      if (true) use R1 2
         |    }
         |    k = k + 2;
         |    {
-        |      if (false) reset R3
+        |      if (true) reset R1
         |    }
         |    {
-        |      if (true && true) use R3 (n - k)
+        |      if (true) use R1 (n - k)
         |    }
         |  })
+        |
         |""".stripMargin, s"Model checking is incorrect\nPath: $path2\nProgram: ${program2.mainFunction}")
 
   }

@@ -5,7 +5,7 @@ import brbo.common.{BrboType, GhostVariableTyp, GhostVariableUtils}
 /**
  *
  * @param resourceVariable The resource variable used in the assertion
- * @param assertion
+ * @param assertion        The assertion about the resource variable
  */
 case class BoundAssertion(resourceVariable: String, assertion: BrboExpr, tag: String) {
   def replaceResourceVariable(into: BrboExpr): BrboExpr = {

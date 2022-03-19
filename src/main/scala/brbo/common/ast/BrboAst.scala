@@ -44,9 +44,7 @@ case class BrboFunction(identifier: String, returnType: BrboType, parameters: Li
   val ghostVariableInitializations: List[Command] = groupIds.flatMap({
     groupId => GhostVariableUtils.declareVariables(groupId)
   }).toList.sortWith({ case (c1, c2) => c1.toIR() < c2.toIR() })
-  val approximatedResourceUsage: BrboExpr = groupIds.toList.sorted.foldLeft(Number(0): BrboExpr)({
-    (acc, groupId) => Addition(acc, GhostVariableUtils.generateSum(Some(groupId)))
-  })
+  val approximatedResourceUsage: BrboExpr = GhostVariableUtils.approximatedResourceUsage(groupIds)
 
   // Declare and initialize ghost variables in the function
   val actualBody: Statement = bodyNoInitialization match {

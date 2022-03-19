@@ -75,6 +75,10 @@ class CommandLineArguments {
     usage = "The number of visits to a same location before widening all abstracts at this location.")
   private var widenThreshold: Int = DEFAULT_WIDEN_THRESHOLD
 
+  @Option(name = "--threads", required = false,
+    usage = "The number of threads to use when finding path refinements.")
+  private var numberOfThreads: Int = DEFAULT_NUMBER_OF_THREADS
+
   def getAmortizationMode: AmortizationMode = {
     amortizationMode.toLowerCase() match {
       case "no" => NO_AMORTIZE
@@ -121,6 +125,8 @@ class CommandLineArguments {
 
   def getWidenThreshold: Int = widenThreshold
 
+  def getThreads: Int = numberOfThreads
+
   private var initialized = false
 
   def initialize(amortizationMode: AmortizationMode, debugMode: Boolean, directoryToAnalyze: String,
@@ -128,7 +134,7 @@ class CommandLineArguments {
                  printCFG: Boolean, maxGroups: Int, verifierDirectory: String,
                  relationalPredicates: Boolean, maxIterations: Int, assertionTag: String,
                  abstractDomain: String, maxPathLength: Int, checkWithZ3: Boolean, assumePositiveInputs: Boolean,
-                 widenThreshold: Int): Unit = {
+                 widenThreshold: Int, numberOfThreads: Int): Unit = {
     if (initialized) throw new Exception(s"Already initialized")
     initialized = true
     this.amortizationMode = amortizationModeToShortString(amortizationMode)
@@ -147,6 +153,7 @@ class CommandLineArguments {
     this.checkWithZ3 = checkWithZ3
     this.assumePositiveInputs = assumePositiveInputs
     this.widenThreshold = widenThreshold
+    this.numberOfThreads = numberOfThreads
   }
 
   override def toString: String = {
@@ -167,6 +174,7 @@ class CommandLineArguments {
       s"Check the satisfiability of abstract states with Z3? `$checkWithZ3`",
       s"Assume all inputs are positive? `$assumePositiveInputs`",
       s"Widen threshold: `$widenThreshold`",
+      s"Number of threads: `$numberOfThreads`",
     )
     strings.mkString("\n")
   }
@@ -179,13 +187,14 @@ class CommandLineArguments {
     s"""$amortizationMode-$timeoutString-$assertionIndexString-$abstractDomain-$checkWithZ3String"""
   }
 
-  /*def copyDebugModeOff(): CommandLineArguments = {
+  def copyNoWidening(): CommandLineArguments = {
     val arguments = new CommandLineArguments
-    arguments.initialize(getAmortizationMode, debugMode = false, directoryToAnalyze, printVerifierInputs,
+    arguments.initialize(getAmortizationMode, debugMode, directoryToAnalyze, printVerifierInputs,
       verifierTimeout, printCFG, maxGroups, verifierDirectory, relationalPredicates, maxIterations,
-      assertionTag, abstractDomain, maxPathLength, checkWithZ3, assumePositiveInputs)
+      assertionTag, abstractDomain, maxPathLength, checkWithZ3, assumePositiveInputs, widenThreshold = Int.MaxValue,
+      numberOfThreads)
     arguments
-  }*/
+  }
 }
 
 object CommandLineArguments {
@@ -204,6 +213,7 @@ object CommandLineArguments {
   val DEFAULT_MAX_PATH_LENGTH = 30
   val DEFAULT_VERIFIER_TIME_OUT = 60 // Unit: Second
   val DEFAULT_WIDEN_THRESHOLD = 4
+  val DEFAULT_NUMBER_OF_THREADS: Int = -1
 
   private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)
 
@@ -227,7 +237,8 @@ object CommandLineArguments {
       maxGroups = DEFAULT_MAX_GROUPS, verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = DEFAULT_RELATIONAL_PREDICATES, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
       abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH,
-      checkWithZ3 = DEFAULT_CHECK_WITH_Z3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS, widenThreshold = DEFAULT_WIDEN_THRESHOLD)
+      checkWithZ3 = DEFAULT_CHECK_WITH_Z3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS, widenThreshold = DEFAULT_WIDEN_THRESHOLD,
+      numberOfThreads = DEFAULT_NUMBER_OF_THREADS)
     arguments
   }
 
@@ -238,7 +249,8 @@ object CommandLineArguments {
       maxGroups = DEFAULT_MAX_GROUPS, verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = DEFAULT_RELATIONAL_PREDICATES, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
       abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH,
-      checkWithZ3 = DEFAULT_CHECK_WITH_Z3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS, widenThreshold = DEFAULT_WIDEN_THRESHOLD)
+      checkWithZ3 = DEFAULT_CHECK_WITH_Z3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS, widenThreshold = DEFAULT_WIDEN_THRESHOLD,
+      numberOfThreads = DEFAULT_NUMBER_OF_THREADS)
     arguments
   }
 }

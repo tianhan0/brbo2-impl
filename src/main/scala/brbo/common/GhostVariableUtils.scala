@@ -14,6 +14,10 @@ object GhostVariableUtils {
   private val starVariablePattern = (starVariablePrefix + """\d*""").r
   private val counterVariablePattern = (counterVariablePrefix + """\d*""").r
 
+  def approximatedResourceUsage(groupIds: Set[Int]): BrboExpr = groupIds.toList.sorted.foldLeft(Number(0): BrboExpr)({
+    (acc, groupId) => Addition(acc, generateSum(Some(groupId)))
+  })
+
   def generateVariable(groupId: Option[Int], typ: GhostVariableTyp): Identifier = {
     groupId match {
       case Some(i) => Identifier(GhostVariableUtils.generateName(i.toString, typ), INT)

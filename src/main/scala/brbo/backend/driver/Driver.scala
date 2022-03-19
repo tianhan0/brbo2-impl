@@ -124,7 +124,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         // Refine the current node, possibly once again, based on the same counterexample
         // When a node is visited for a second (or more) time, then it must be caused by backtracking, which
         // implies that all nodes in one of its subtree have failed
-        refiner.refine(node.program, pathWithoutUBChecks, boundAssertion, avoidRefinements, InterpreterKind.MODEL_CHECK) match {
+        refiner.refine(node.program, pathWithoutUBChecks, boundAssertion, avoidRefinements) match {
           case (Some(refinedProgram), Some(refinement)) =>
             val result = verify(refinedProgram, boundAssertion)
             val newChildNode = createNode(tree, parent = Some(node), refinedProgram, Set(pathWithoutUBChecks), Some(refinement))

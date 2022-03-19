@@ -59,8 +59,8 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     var refuted = false
     while (waitlist.nonEmpty && counterexamplePaths.isEmpty && !refuted) {
       val ((path, state), newWaitlist) = waitlist.dequeue
-      logger.trace(s"[model check] Dequeued path: `$path`")
-      logger.trace(s"[model check] Dequeued state: `${state.toShortString}`")
+      logger.trace(s"Dequeued path: `$path`")
+      logger.trace(s"Dequeued state: `${state.toShortString}`")
       waitlist = newWaitlist
       val oldStateMap: StateMap = reached.getOrElse(path, throw new Exception)
       val newStates = step(state)
@@ -68,29 +68,29 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         maximalPaths = maximalPaths + (path -> oldStateMap)
       newStates.foreach({
         newState =>
-          logger.trace(s"[model check] New state: ${newState.toShortString}")
+          logger.trace(s"New state: ${newState.toShortString}")
           val nextNode = newState.node
           val newPath = nextNode :: path
           if (newState.valuation.isBottom) {
             if (debugBottom) {
-              // logger.traceOrError(s"[model check] Current node: $currentNode")
-              logger.traceOrError(s"[model check] States before reaching a bottom state at node `${nextNode}`:\n${oldStateMap.printStatesOnPath(path.reverse)}")
+              // logger.traceOrError(s"Current node: $currentNode")
+              logger.traceOrError(s"States before reaching a bottom state at node `${nextNode}`:\n${oldStateMap.printStatesOnPath(path.reverse)}")
             }
           }
           val (newValuation, keepExploring) = {
             oldStateMap.valuations.get(nextNode) match {
               case Some(existingValuation) =>
-                logger.trace(s"[model check] Old valuation after node `${nextNode.prettyPrintToCFG}`: ${existingValuation.toShortString}")
+                logger.trace(s"Old valuation after node `${nextNode.prettyPrintToCFG}`: ${existingValuation.toShortString}")
                 if (existingValuation.include(newState.valuation)) {
-                  logger.trace(s"[model check] The new valuation is included in the old one")
+                  logger.trace(s"The new valuation is included in the old one")
                   (existingValuation, false)
                 }
                 else {
-                  logger.trace(s"[model check] The new valuation is not included in the old one")
+                  logger.trace(s"The new valuation is not included in the old one")
                   if (debugJoinWiden) {
-                    logger.traceOrError(s"[model check] Path: ${newPath.reverse.map(n => n.simplifiedString).mkString(", ")}")
-                    logger.traceOrError(s"[model check] Old valuation after node `${nextNode.prettyPrintToCFG}`: ${existingValuation.toShortString}")
-                    logger.traceOrError(s"[model check] New valuation after node `${nextNode.prettyPrintToCFG}`: ${newState.valuation.toShortString}")
+                    logger.traceOrError(s"Path: ${newPath.reverse.map(n => n.simplifiedString).mkString(", ")}")
+                    logger.traceOrError(s"Old valuation after node `${nextNode.prettyPrintToCFG}`: ${existingValuation.toShortString}")
+                    logger.traceOrError(s"New valuation after node `${nextNode.prettyPrintToCFG}`: ${newState.valuation.toShortString}")
                   }
 
                   val occurrences = newPath.count(node => node == nextNode)
@@ -99,18 +99,18 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                     if (occurrences >= arguments.getWidenThreshold) {
                       val widenedValuation = existingValuation.widen(newState.valuation)
                       if (debugJoinWiden)
-                        logger.traceOrError(s"[model check] Widened valuation: `${widenedValuation.toShortString}`")
+                        logger.traceOrError(s"Widened valuation: `${widenedValuation.toShortString}`")
                       widenedValuation
                     } else {
                       val joinedValuation = newState.valuation.joinCopy(existingValuation)
                       if (debugJoinWiden)
-                        logger.traceOrError(s"[model check] Joined valuation: `${joinedValuation.toShortString}`")
+                        logger.traceOrError(s"Joined valuation: `${joinedValuation.toShortString}`")
                       joinedValuation
                     }
                   }
                   if (newState.indexOnPath <= maxPathLength) (newValuation, true)
                   else {
-                    logger.trace(s"[model check] Will stop exploring due to reaching the max path length `$maxPathLength` in `$newPath`")
+                    logger.trace(s"Will stop exploring due to reaching the max path length `$maxPathLength` in `$newPath`")
                     stoppedEarly = true
                     // Add this path to the counterexamples, so that it can be avoided in the future
                     counterexamplePaths = counterexamplePaths + newPath
@@ -146,9 +146,9 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                 }
                 !verified
               }
-              logger.trace(s"[model check] New state ${if (refuted) "does not satisfy" else "satisfies"} assertion `$assertion`")
+              logger.trace(s"New state ${if (refuted) "does not satisfy" else "satisfies"} assertion `$assertion`")
               if (refuted) {
-                logger.infoOrError(s"[model check] Assertion violation state: `${newState.toShortString}`")
+                logger.infoOrError(s"Assertion violation state: `${newState.toShortString}`")
               }
               refuted
             } else false
