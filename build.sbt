@@ -40,15 +40,24 @@ fork in(Test, testOnly) := true
 // To avoid errors when running `sbt test`: https://stackoverflow.com/a/45173411
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-P1")
 
-envVars in Test := Map("LD_LIBRARY_PATH" -> {
+val nativeLibraryPath = {
   val currentDirectory = System.getProperty("user.dir")
   val fileSeparator = java.io.File.separator
-  val z3Libraries = s"$currentDirectory${fileSeparator}lib${fileSeparator}z3"
-  val apronLibraries = s"$currentDirectory${fileSeparator}lib${fileSeparator}apron"
-
-  val nativeLibraryPath = List(z3Libraries, apronLibraries).mkString(java.io.File.pathSeparator)
+  val paths = System.getProperty("os.name") match {
+    case "Mac OS X" =>
+      val z3Libraries = s"$currentDirectory${fileSeparator}lib${fileSeparator}z3${fileSeparator}mac"
+      val apronLibraries = s"$currentDirectory${fileSeparator}lib${fileSeparator}apron${fileSeparator}mac"
+      List(z3Libraries, apronLibraries)
+    case _ =>
+      val z3Libraries = s"$currentDirectory${fileSeparator}lib${fileSeparator}z3"
+      val apronLibraries = s"$currentDirectory${fileSeparator}lib${fileSeparator}apron"
+      List(z3Libraries, apronLibraries)
+  }
+  val nativeLibraryPath = paths.mkString(java.io.File.pathSeparator)
   nativeLibraryPath
-})
+}
+
+envVars in Test := Map("LD_LIBRARY_PATH" -> nativeLibraryPath, "DYLD_LIBRARY_PATH" -> nativeLibraryPath)
 
 // javaOptions in Test += s"-Djava.library.path=$nativeLibraryPath"
 // javaOptions in Runtime += s"-Djava.library.path=$nativeLibraryPath"
