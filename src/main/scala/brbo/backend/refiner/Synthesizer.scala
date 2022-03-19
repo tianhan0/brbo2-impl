@@ -1,6 +1,7 @@
 package brbo.backend.refiner
 
-import brbo.backend.verifier.{AbstractInterpreter, InterpreterKind, SymbolicExecution}
+import brbo.backend.verifier.modelchecker.AbstractMachine
+import brbo.backend.verifier.{AbstractInterpreter, InterpreterKind}
 import brbo.common._
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
@@ -33,6 +34,7 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
 
   def synthesize(refinement: Refinement): BrboProgram = {
     logger.infoOrError(s"Synthesize a new main function from a refinement: `${refinement.toStringNoPath}`.")
+    val postConditions = PostConditions(refinement.path)
     val useReplacements: Map[Command, Set[Command]] = useCommands.foldLeft(Map[Command, Set[Command]]())({
       (useMap, useCommand) =>
         val use = useCommand.asInstanceOf[Use]
@@ -40,7 +42,7 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
         val newUses: Set[Command] = {
           if (indexMap.nonEmpty) {
             logger.traceOrError(s"Split-Use: Synthesize new uses from old use `${use.prettyPrintToCFG}`")
-            computeNewUses(refinement.path, use, indexMap)
+            computeNewUses(use, indexMap, postConditions)
           }
           else {
             logger.traceOrError(s"Split-Use: Old use `${use.prettyPrintToCFG}` is not split")
@@ -59,7 +61,7 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
         val newResets: Set[Command] = indexMap.foldLeft(Set[Command]())({
           case (acc, (newGroupId, (keepSet, removeSet))) =>
             logger.traceOrError(s"Synthesize-Reset: New group `$newGroupId` (which replaces old group: `${reset.groupId})")
-            val newReset = computeNewReset(refinement.path, newGroupId, keepSet, removeSet, reset.condition)
+            val newReset = computeNewReset(newGroupId, keepSet, removeSet, reset.condition, postConditions)
             acc + newReset
         })
         logger.traceOrError(s"Synthesize-Reset: Old reset `${reset.prettyPrintToCFG}` is replaced by `$newResets`")
@@ -90,10 +92,10 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     originalProgram.replaceMainFunction(newMainFunction)
   }
 
-  def computeNewUses(path: List[CFGNode], oldUse: Use, indexMap: Map[Int, Set[Int]]): Set[Command] = {
+  def computeNewUses(oldUse: Use, indexMap: Map[Int, Set[Int]], postConditions: PostConditions): Set[Command] = {
     val candidateGuardMap = indexMap.foldLeft(Map[Int, List[Predicate]]())({
       case (acc, (groupId, indices)) =>
-        val postCondition = computePostCondition(path, indices)
+        val postCondition = postConditions.joinStatesAtIndices(indices)
         logger.traceOrError(s"Split-Use: Compute predicates implied from post conditions right before use instances in new group `$groupId`")
         val impliedPredicates = computeImpliedPredicates(postCondition)
         acc + (groupId -> impliedPredicates)
@@ -112,17 +114,18 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     }).toSet
   }
 
-  def computeNewReset(path: List[CFGNode], groupIdForNewReset: Int, keepSet: Set[Int], removeSet: Set[Int], guardOfReset: BrboExpr): Reset = {
+  def computeNewReset(groupIdForNewReset: Int, keepSet: Set[Int], removeSet: Set[Int],
+                      guardOfReset: BrboExpr, postConditions: PostConditions): Reset = {
     // Necessary short circuit. Otherwise we will compute post-conditions for an empty trace, whose semantics is unclear.
     if (removeSet.isEmpty)
       return Reset(groupIdForNewReset, guardOfReset.uniqueCopyExpr)
     if (keepSet.isEmpty)
       return Reset(groupIdForNewReset, Bool(b = false))
-    val postConditionKeep = computePostCondition(path, keepSet)
+    val postConditionKeep = postConditions.joinStatesAtIndices(keepSet)
     logger.traceOrError(s"Synthesize-Reset: Compute predicates implied from post conditions right before keeping resets in group `$groupIdForNewReset`")
     val impliedPredicatesKeep = computeImpliedPredicates(postConditionKeep)
 
-    val postConditionRemove = computePostCondition(path, removeSet)
+    val postConditionRemove = postConditions.joinStatesAtIndices(removeSet)
     logger.traceOrError(s"Synthesize-Reset: Compute predicates implied from post conditions right before removing resets in group `$groupIdForNewReset`")
     val impliedPredicatesRemove = computeImpliedPredicates(postConditionRemove)
 
@@ -132,18 +135,21 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     Reset(groupIdForNewReset, And(guardOfReset.uniqueCopyExpr, predicateKeep.expr)) // Only keep the reset under the computed predicate
   }
 
-  def computePostCondition(path: List[CFGNode], indices: Set[Int]): AST = {
-    assert(indices.nonEmpty)
-    val postConditions = indices.map({
-      index =>
-        // TODO: It is probably fine to use the model checker, because
-        //  - we only use linear constraints to partition the states, and
-        //  - if linear constraints can partition the concrete states, then they may also partition the abstract states
-        val (ast, _) =
-          AbstractInterpreter.interpretPath(path.slice(0, index), inputVariables, solver, InterpreterKind.MODEL_CHECK, argument)
-        ast
-    }).toSeq
-    solver.mkOr(postConditions: _*)
+  case class PostConditions(path: List[CFGNode]) {
+    // TODO: It is probably fine to use the model checker, because
+    //  - we only use linear constraints to partition the states, and
+    //  - if linear constraints can partition the concrete states, then they may also partition the abstract states
+    logger.traceOrError(s"Compute post conditions on path: ${path.map(n => n.simplifiedString).mkString(", ")}")
+    private val result = AbstractInterpreter.interpretPath(path, inputVariables, solver, InterpreterKind.MODEL_CHECK, argument)
+    private val states = result.moreInformation.get.asInstanceOf[List[AbstractMachine.Valuation]]
+
+    def stateAtIndex(index: Int): AST = states(index).stateToZ3Ast(solver, toInt = true)
+
+    def joinStatesAtIndices(indices: Set[Int]): AST = {
+      assert(indices.nonEmpty)
+      val postConditions = indices.map({ index => stateAtIndex(index) }).toSeq
+      solver.mkOr(postConditions: _*)
+    }
   }
 
   def computeImpliedPredicates(whatToImplyFrom: AST): List[Predicate] = {
@@ -192,7 +198,6 @@ object Synthesizer {
     })
   }
 
-  // predicates are created with solver
   def isCover(predicates: Iterable[Predicate], solver: Z3Solver): Boolean = {
     solver.checkAssertionForallPushPop(
       solver.mkIff(solver.mkOr(predicates.toSeq.map(p => p.toAst(solver)): _*), solver.mkTrue()))

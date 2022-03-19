@@ -25,7 +25,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     case POLKA_STRICT => new Polka(true)
     case POLKA_NONSTRICT => new Polka(false)
   }
-  private val debugJoinWiden: Boolean = false
+  private val debugJoinWiden: Boolean = arguments.getDebugMode
   private val debugBottom: Boolean = false
 
   private val initialValuation = {
@@ -95,9 +95,8 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
 
                   val occurrences = newPath.count(node => node == nextNode)
                   val newValuation = {
-                    // TODO: This number affects the precision
-                    // TODO: Parameterize this
-                    if (occurrences >= 4) {
+                    // This number greatly affects the precision
+                    if (occurrences >= arguments.getWidenThreshold) {
                       val widenedValuation = existingValuation.widen(newState.valuation)
                       if (debugJoinWiden)
                         logger.traceOrError(s"[model check] Widened valuation: `${widenedValuation.toShortString}`")
@@ -174,10 +173,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         else VerifierResult(VerifierStatus.TRUE_RESULT, paths)
       }
     }
-    val finalValuations = maximalPaths.map({
-      case (path, pathState) => pathState.valuations(path.head)
-    })
-    Result(result, finalValuations)
+    Result(result, maximalPaths)
   }
 
   // Return a set of pairs of the current node (which may be negated) and the next state
@@ -396,7 +392,11 @@ object AbstractMachine {
     def toShortString: String
   }
 
-  case class Result(result: VerifierResult, finalStates: Iterable[Valuation])
+  case class Result(result: VerifierResult, maximalPaths: Map[List[CFGNode], StateMap]) {
+    val finalValuations: Iterable[Valuation] = maximalPaths.map({
+      case (path, pathState) => pathState.valuations(path.head)
+    })
+  }
 
   case class State(node: CFGNode, valuation: Valuation, indexOnPath: Int, shouldVerify: Boolean) extends ToShortString {
     val scope: Scope = valuation.scopeOperations.getScope(node.value)

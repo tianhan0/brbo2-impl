@@ -71,6 +71,10 @@ class CommandLineArguments {
     usage = "Assume inputs are all positive numbers. Such information is used to recover imprecision caused by widening.")
   private var assumePositiveInputs: Boolean = DEFAULT_ASSUME_POSITIVE_INPUTS
 
+  @Option(name = "--widen", aliases = Array("-w"), required = false,
+    usage = "The number of visits to a same location before widening all abstracts at this location.")
+  private var widenThreshold: Int = DEFAULT_WIDEN_THRESHOLD
+
   def getAmortizationMode: AmortizationMode = {
     amortizationMode.toLowerCase() match {
       case "no" => NO_AMORTIZE
@@ -115,13 +119,16 @@ class CommandLineArguments {
 
   def getAssumePositiveInputs: Boolean = assumePositiveInputs
 
+  def getWidenThreshold: Int = widenThreshold
+
   private var initialized = false
 
   def initialize(amortizationMode: AmortizationMode, debugMode: Boolean, directoryToAnalyze: String,
                  printVerifierInputs: Boolean, verifierTimeout: Int,
                  printCFG: Boolean, maxGroups: Int, verifierDirectory: String,
                  relationalPredicates: Boolean, maxIterations: Int, assertionTag: String,
-                 abstractDomain: String, maxPathLength: Int, checkWithZ3: Boolean, assumePositiveInputs: Boolean): Unit = {
+                 abstractDomain: String, maxPathLength: Int, checkWithZ3: Boolean, assumePositiveInputs: Boolean,
+                 widenThreshold: Int): Unit = {
     if (initialized) throw new Exception(s"Already initialized")
     initialized = true
     this.amortizationMode = amortizationModeToShortString(amortizationMode)
@@ -139,6 +146,7 @@ class CommandLineArguments {
     this.maxPathLength = maxPathLength
     this.checkWithZ3 = checkWithZ3
     this.assumePositiveInputs = assumePositiveInputs
+    this.widenThreshold = widenThreshold
   }
 
   override def toString: String = {
@@ -158,6 +166,7 @@ class CommandLineArguments {
       s"The maximum length of a single path that the verifier will explore: `$maxPathLength`",
       s"Check the satisfiability of abstract states with Z3? `$checkWithZ3`",
       s"Assume all inputs are positive? `$assumePositiveInputs`",
+      s"Widen threshold: `$widenThreshold`",
     )
     strings.mkString("\n")
   }
@@ -185,7 +194,7 @@ object CommandLineArguments {
   val DEFAULT_PRINT_CFG = false
   val DEFAULT_PRINT_VERIFIER_INPUTS = false
   val DEFAULT_RELATIONAL_PREDICATES = false
-  val DEFAULT_CHECK_WITH_Z3 = false
+  val DEFAULT_CHECK_WITH_Z3 = true
   val DEFAULT_ASSUME_POSITIVE_INPUTS = true
   val DEFAULT_MAX_GROUPS = 3
   val DEFAULT_TIMEOUT = 20
@@ -194,6 +203,7 @@ object CommandLineArguments {
   val DEFAULT_ABSTRACT_DOMAIN: String = POLKA_STRICT.toString
   val DEFAULT_MAX_PATH_LENGTH = 30
   val DEFAULT_VERIFIER_TIME_OUT = 60 // Unit: Second
+  val DEFAULT_WIDEN_THRESHOLD = 4
 
   private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)
 
@@ -217,7 +227,7 @@ object CommandLineArguments {
       maxGroups = DEFAULT_MAX_GROUPS, verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = DEFAULT_RELATIONAL_PREDICATES, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
       abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH,
-      checkWithZ3 = DEFAULT_CHECK_WITH_Z3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS)
+      checkWithZ3 = DEFAULT_CHECK_WITH_Z3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS, widenThreshold = DEFAULT_WIDEN_THRESHOLD)
     arguments
   }
 
@@ -228,7 +238,7 @@ object CommandLineArguments {
       maxGroups = DEFAULT_MAX_GROUPS, verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = DEFAULT_RELATIONAL_PREDICATES, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
       abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH,
-      checkWithZ3 = DEFAULT_CHECK_WITH_Z3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS)
+      checkWithZ3 = DEFAULT_CHECK_WITH_Z3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS, widenThreshold = DEFAULT_WIDEN_THRESHOLD)
     arguments
   }
 }

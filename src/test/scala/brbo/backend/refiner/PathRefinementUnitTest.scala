@@ -27,7 +27,8 @@ class PathRefinementUnitTest extends AnyFlatSpec {
       abstractDomain = DEFAULT_ABSTRACT_DOMAIN,
       maxPathLength = DEFAULT_MAX_PATH_LENGTH,
       checkWithZ3 = DEFAULT_CHECK_WITH_Z3,
-      assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS
+      assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS,
+      widenThreshold = DEFAULT_WIDEN_THRESHOLD,
     )
     arguments
   }

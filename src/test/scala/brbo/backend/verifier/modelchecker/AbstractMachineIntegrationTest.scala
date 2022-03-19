@@ -65,7 +65,8 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
       printVerifierInputs = DEFAULT_PRINT_VERIFIER_INPUTS, verifierTimeout = DEFAULT_TIMEOUT, printCFG = DEFAULT_PRINT_CFG,
       maxGroups = DEFAULT_MAX_GROUPS, verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
       relationalPredicates = DEFAULT_RELATIONAL_PREDICATES, DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
-      abstractDomain = POLKA_STRICT.toString, maxPathLength, checkWithZ3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS)
+      abstractDomain = POLKA_STRICT.toString, maxPathLength, checkWithZ3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS,
+      widenThreshold = DEFAULT_WIDEN_THRESHOLD)
     arguments
   }
 

@@ -4,8 +4,8 @@ import brbo.backend.verifier.AbstractInterpreter
 import brbo.backend.verifier.InterpreterKind.InterpreterKind
 import brbo.backend.verifier.cex.Path
 import brbo.common.GhostVariableTyp.{Counter, Resource, Star}
-import brbo.common.ast.{BoundAssertion, BrboProgram}
 import brbo.common._
+import brbo.common.ast.{BoundAssertion, BrboProgram}
 import com.microsoft.z3.{AST, Expr}
 
 class Refiner(arguments: CommandLineArguments) {
@@ -35,7 +35,7 @@ class Refiner(arguments: CommandLineArguments) {
             // TODO: Not directly using the verification result from the model checker, because the model checker
             //  is only used for computing reachable states. But this can be optimized by using the model checker for verification
             // TODO: Parallelize the checking of every refinement
-            val (finalState, newVariables) = AbstractInterpreter.interpretPath(refinedPath, inputVariables, solver, interpreterKind, arguments)
+            val AbstractInterpreter.Result(finalState, newVariables, _) = AbstractInterpreter.interpretPath(refinedPath, inputVariables, solver, interpreterKind, arguments)
             declaredVariables = declaredVariables ++ newVariables
             val allGroupIds: List[Int] = // Get all group IDs and then all ghost variables
               (originalProgram.mainFunction.groupIds ++ refinement.groupIds.values.flatten).toList.sorted

@@ -29,6 +29,7 @@ class DriverUnitTest extends AnyFlatSpec {
     maxPathLength = DEFAULT_MAX_PATH_LENGTH,
     checkWithZ3 = DEFAULT_CHECK_WITH_Z3,
     assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS,
+    widenThreshold = DEFAULT_WIDEN_THRESHOLD,
   )
 
   "Driver" should "correctly verify with selective amortization" in {

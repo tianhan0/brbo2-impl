@@ -140,6 +140,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
                 TRUE_RESULT
               case FALSE_RESULT =>
                 logger.infoOrError(s"Explore child nodes of the child of the current node (which has failed).")
+                // TODO: Validate if the false result is spurious
                 helper(newChildNode)
               case UNKNOWN_RESULT =>
                 logger.infoOrError(s"Explore a new child node of the current node (because the verification returns unknown) by re-refining the current node.")

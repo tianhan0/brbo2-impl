@@ -12,7 +12,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class SynthesizerUnitTest extends AnyFlatSpec {
   "Synthesizing programs" should "succeed" in {
-    // val programSynthesis = new ProgramSynthesis(ProgramSynthesisUnitTest.program, CommandLineArguments.DEBUG_MODE_ARGUMENTS)
     val programSynthesis = new Synthesizer(SynthesizerUnitTest.program, CommandLineArguments.TEST_ARGUMENTS)
     synthesizeTests.foreach({
       testCase =>
