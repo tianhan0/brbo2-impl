@@ -58,15 +58,14 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
 
   private val maxPathLength = 30
   private val checkWithZ3 = true
-  private val debugMode = true
+  private val debugMode = false
   private val polkaArgument: CommandLineArguments = {
     val arguments = new CommandLineArguments
     arguments.initialize(TEST_MODE, debugMode, "",
-      printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
-      maxGroups = DEFAULT_MAX_GROUPS,
-      verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
-      relationalPredicates = false, DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
-      abstractDomain = POLKA_STRICT.toString, maxPathLength, checkWithZ3)
+      printVerifierInputs = DEFAULT_PRINT_VERIFIER_INPUTS, verifierTimeout = DEFAULT_TIMEOUT, printCFG = DEFAULT_PRINT_CFG,
+      maxGroups = DEFAULT_MAX_GROUPS, verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
+      relationalPredicates = DEFAULT_RELATIONAL_PREDICATES, DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
+      abstractDomain = POLKA_STRICT.toString, maxPathLength, checkWithZ3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS)
     arguments
   }
 
@@ -77,8 +76,8 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(result.toString, """VerifierResult(TRUE_RESULT,Set())""".stripMargin)
   }
 
-  // TODO: Uncomment and debug these tests
-  /*"Model checking program 2" should "be correct" in {
+
+  "Model checking program 2" should "be correct" in {
     val abstractMachine = new AbstractMachine(program2, polkaArgument)
     val assertion = LessThanOrEqualTo(approximatedResourceUsage, t)
     val result = abstractMachine.verify(assertion).result
@@ -119,10 +118,10 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
 
   "Model checking program 3" should "be correct" in {
     val abstractMachine = new AbstractMachine(program3, polkaArgument)
-    val assertion = LessThanOrEqualTo(approximatedResourceUsage, Multiplication(n, a))
+    val assertion = LessThanOrEqualTo(approximatedResourceUsage, t)
     val result = abstractMachine.verify(assertion).result
     StringCompare.ignoreWhitespaces(result.toString, """VerifierResult(TRUE_RESULT,Set())""".stripMargin)
-  }*/
+  }
 }
 
 object AbstractMachineIntegrationTest {

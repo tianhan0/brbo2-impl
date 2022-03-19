@@ -11,7 +11,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class RefinerUnitTest extends AnyFlatSpec {
   private val debugMode = false
-  private val arguments = if (debugMode) CommandLineArguments.DEBUG_MODE_ARGUMENTS else CommandLineArguments.DEFAULT_ARGUMENTS
+  private val arguments = if (debugMode) CommandLineArguments.TEST_ARGUMENTS_DEBUG_MODE else CommandLineArguments.TEST_ARGUMENTS
   private val refiner = new Refiner(arguments)
 
   private val i: Identifier = Identifier("i", INT)
@@ -136,6 +136,7 @@ class RefinerUnitTest extends AnyFlatSpec {
         |  [017] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R3
         |  [018] (-1) if (true) use R1 e [fun `main`] -> if (true) use R3 e
         |Removed resets:
+        |  [011]: (-1) if (true) reset R1 [fun `main`]
         |  [017]: (-1) if (true) reset R1 [fun `main`])
         |Some(Program name: `Test program`
         |Global assertions to verify: ``
@@ -156,8 +157,8 @@ class RefinerUnitTest extends AnyFlatSpec {
         |      else
         |        e = b;
         |      {
+        |        if (false) reset R2
         |        if (false) reset R3
-        |        if (true) reset R2
         |      }
         |      {
         |        if (((0 - i) >= 0) && true) use R2 e
@@ -165,7 +166,8 @@ class RefinerUnitTest extends AnyFlatSpec {
         |      }
         |      i = i + 1;
         |    }
-        |  })""".stripMargin, s"Symbolic execution is incorrect")
+        |  })
+        |""".stripMargin, s"Symbolic execution is incorrect\nPath: $path1\nProgram: ${program1.mainFunction}")
 
     val (newProgram2, refinement2) = refiner.refine(program1, path1, boundAssertion, Set(), InterpreterKind.MODEL_CHECK)
     StringCompare.ignoreWhitespaces(s"$refinement2\n$newProgram2",
@@ -195,6 +197,7 @@ class RefinerUnitTest extends AnyFlatSpec {
         |  [017] (-1) if (true) reset R1 [fun `main`] -> if (true) reset R3
         |  [018] (-1) if (true) use R1 e [fun `main`] -> if (true) use R3 e
         |Removed resets:
+        |  [011]: (-1) if (true) reset R1 [fun `main`]
         |  [017]: (-1) if (true) reset R1 [fun `main`])
         |Some(Program name: `Test program`
         |Global assertions to verify: ``
@@ -215,8 +218,8 @@ class RefinerUnitTest extends AnyFlatSpec {
         |      else
         |        e = b;
         |      {
+        |        if (false) reset R2
         |        if (false) reset R3
-        |        if (true) reset R2
         |      }
         |      {
         |        if (((0 - i) >= 0) && true) use R2 e
@@ -224,7 +227,8 @@ class RefinerUnitTest extends AnyFlatSpec {
         |      }
         |      i = i + 1;
         |    }
-        |  })""".stripMargin, "Model checking is incorrect")
+        |  })
+        |""".stripMargin, s"Model checking is incorrect\nPath: $path1\nProgram: ${program1.mainFunction}")
   }
 
   "Refining program 2 with symbolic execution" should "succeed" in {
@@ -254,7 +258,8 @@ class RefinerUnitTest extends AnyFlatSpec {
         |  [012] (-1) if (true) use R1 (n - k) [fun `main`] -> if (true) use R3 (n - k)
         |Removed resets:
         |  [005]: (-1) if (true) reset R1 [fun `main`]
-        |  [008]: (-1) if (true) reset R1 [fun `main`])
+        |  [008]: (-1) if (true) reset R1 [fun `main`]
+        |  [011]: (-1) if (true) reset R1 [fun `main`])
         |Some(Program name: `Test program`
         |Global assertions to verify: ``
         |void main(int n)
@@ -281,12 +286,12 @@ class RefinerUnitTest extends AnyFlatSpec {
         |    }
         |    k = k + 2;
         |    {
-        |      if (true) reset R3
+        |      if (false) reset R3
         |    }
         |    {
         |      if (true && true) use R3 (n - k)
         |    }
-        |  })""".stripMargin, s"Symbolic execution is incorrect")
+        |  })""".stripMargin, s"Symbolic execution is incorrect\nPath: $path2\nProgram: ${program2.mainFunction}")
     val (newProgram2, refinement2) = refiner.refine(program2, path2, boundAssertion, Set(), InterpreterKind.MODEL_CHECK)
     StringCompare.ignoreWhitespaces(s"$refinement2\n$newProgram2",
       """Some(Path:
@@ -312,7 +317,8 @@ class RefinerUnitTest extends AnyFlatSpec {
         |  [012] (-1) if (true) use R1 (n - k) [fun `main`] -> if (true) use R3 (n - k)
         |Removed resets:
         |  [005]: (-1) if (true) reset R1 [fun `main`]
-        |  [008]: (-1) if (true) reset R1 [fun `main`])
+        |  [008]: (-1) if (true) reset R1 [fun `main`]
+        |  [011]: (-1) if (true) reset R1 [fun `main`])
         |Some(Program name: `Test program`
         |Global assertions to verify: ``
         |void main(int n)
@@ -339,12 +345,13 @@ class RefinerUnitTest extends AnyFlatSpec {
         |    }
         |    k = k + 2;
         |    {
-        |      if (true) reset R3
+        |      if (false) reset R3
         |    }
         |    {
         |      if (true && true) use R3 (n - k)
         |    }
-        |  })""".stripMargin, "Model checking is incorrect")
+        |  })
+        |""".stripMargin, s"Model checking is incorrect\nPath: $path2\nProgram: ${program2.mainFunction}")
 
   }
 }

@@ -14,19 +14,20 @@ class PathRefinementUnitTest extends AnyFlatSpec {
     val arguments = new CommandLineArguments
     arguments.initialize(
       TEST_MODE,
-      debugMode = false,
+      debugMode = DEFAULT_DEBUG_MODE,
       "",
-      printVerifierInputs = false,
+      printVerifierInputs = DEFAULT_PRINT_VERIFIER_INPUTS,
       verifierTimeout = 20,
       printCFG = false,
       maxGroups = 5,
       verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
-      relationalPredicates = false,
+      relationalPredicates = DEFAULT_RELATIONAL_PREDICATES,
       maxIterations = DEFAULT_MAX_ITERATIONS,
       assertionTag = DEFAULT_ASSERTION_TAG,
       abstractDomain = DEFAULT_ABSTRACT_DOMAIN,
       maxPathLength = DEFAULT_MAX_PATH_LENGTH,
-      checkWithZ3 = false,
+      checkWithZ3 = DEFAULT_CHECK_WITH_Z3,
+      assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS
     )
     arguments
   }

@@ -17,15 +17,15 @@ class CommandLineArguments {
 
   @Option(name = "--debug", aliases = Array("-g"), required = false,
     usage = "Turn on the debug mode.")
-  private var debugMode: Boolean = false
+  private var debugMode: Boolean = DEFAULT_DEBUG_MODE
 
   @Option(name = "--print-verifier-inputs", aliases = Array("-i"), required = false,
     usage = "Print input programs to the verifier.")
-  private var printVerifierInputs: Boolean = false
+  private var printVerifierInputs: Boolean = DEFAULT_PRINT_VERIFIER_INPUTS
 
   @Option(name = "--directory", aliases = Array("-d"), required = true,
     usage = "The directory (which will be " + "recursively traversed) or the file to analyze.")
-  private var directoryToAnalyze: String = "."
+  private var directoryToAnalyze: String = DEFAULT_DIRECTORY_TO_ANALYZE
 
   @Option(name = "--verifier-timeout", aliases = Array("-t"),
     usage = "The amount of timeout (unit: seconds) allowed for each invocation to the verifier. Negative numbers mean no timeout.")
@@ -33,7 +33,7 @@ class CommandLineArguments {
 
   @Option(name = "--print-cfg", aliases = Array("--cfg"), required = false,
     usage = "Print the control flow graph of the main function.")
-  private var printCFG: Boolean = false
+  private var printCFG: Boolean = DEFAULT_PRINT_CFG
 
   @Option(name = "--max-group", required = false,
     usage = "The max number of amortization groups.")
@@ -45,7 +45,7 @@ class CommandLineArguments {
 
   @Option(name = "--relational-predicates", required = false,
     usage = "Search relational (i.e., Octagon) predicates " + "when synthesizing new predicates.")
-  private var relationalPredicates: Boolean = false
+  private var relationalPredicates: Boolean = DEFAULT_RELATIONAL_PREDICATES
 
   @Option(name = "--iterations", aliases = Array("--it"), required = false,
     usage = "The max number of refinement iterations when analyzing a program.")
@@ -65,7 +65,11 @@ class CommandLineArguments {
 
   @Option(name = "--use-z3", aliases = Array("--z3"), required = false,
     usage = "Check the satisfiability of abstract states (represented in Apron) with Z3, instead of using Apron.")
-  private var checkWithZ3: Boolean = false
+  private var checkWithZ3: Boolean = DEFAULT_CHECK_WITH_Z3
+
+  @Option(name = "--positive-inputs", required = false,
+    usage = "Assume inputs are all positive numbers. Such information is used to recover imprecision caused by widening.")
+  private var assumePositiveInputs: Boolean = DEFAULT_ASSUME_POSITIVE_INPUTS
 
   def getAmortizationMode: AmortizationMode = {
     amortizationMode.toLowerCase() match {
@@ -109,13 +113,15 @@ class CommandLineArguments {
 
   def getCheckWithZ3: Boolean = checkWithZ3
 
+  def getAssumePositiveInputs: Boolean = assumePositiveInputs
+
   private var initialized = false
 
   def initialize(amortizationMode: AmortizationMode, debugMode: Boolean, directoryToAnalyze: String,
                  printVerifierInputs: Boolean, verifierTimeout: Int,
                  printCFG: Boolean, maxGroups: Int, verifierDirectory: String,
                  relationalPredicates: Boolean, maxIterations: Int, assertionTag: String,
-                 abstractDomain: String, maxPathLength: Int, checkWithZ3: Boolean): Unit = {
+                 abstractDomain: String, maxPathLength: Int, checkWithZ3: Boolean, assumePositiveInputs: Boolean): Unit = {
     if (initialized) throw new Exception(s"Already initialized")
     initialized = true
     this.amortizationMode = amortizationModeToShortString(amortizationMode)
@@ -132,6 +138,7 @@ class CommandLineArguments {
     this.abstractDomain = abstractDomain
     this.maxPathLength = maxPathLength
     this.checkWithZ3 = checkWithZ3
+    this.assumePositiveInputs = assumePositiveInputs
   }
 
   override def toString: String = {
@@ -149,7 +156,8 @@ class CommandLineArguments {
       s"The index of the assertion to verify: `$assertionTag`",
       s"The abstract domain to use: `$getAbstractDomain`",
       s"The maximum length of a single path that the verifier will explore: `$maxPathLength`",
-      s"Check the satisfiability of abstract states with Z3? `$checkWithZ3`"
+      s"Check the satisfiability of abstract states with Z3? `$checkWithZ3`",
+      s"Assume all inputs are positive? `$assumePositiveInputs`",
     )
     strings.mkString("\n")
   }
@@ -162,22 +170,30 @@ class CommandLineArguments {
     s"""$amortizationMode-$timeoutString-$assertionIndexString-$abstractDomain-$checkWithZ3String"""
   }
 
-  def copyDebugModeOff(): CommandLineArguments = {
+  /*def copyDebugModeOff(): CommandLineArguments = {
     val arguments = new CommandLineArguments
     arguments.initialize(getAmortizationMode, debugMode = false, directoryToAnalyze, printVerifierInputs,
       verifierTimeout, printCFG, maxGroups, verifierDirectory, relationalPredicates, maxIterations,
-      assertionTag, abstractDomain, maxPathLength, checkWithZ3)
+      assertionTag, abstractDomain, maxPathLength, checkWithZ3, assumePositiveInputs)
     arguments
-  }
+  }*/
 }
 
 object CommandLineArguments {
+  val DEFAULT_DIRECTORY_TO_ANALYZE = "."
+  val DEFAULT_DEBUG_MODE = false
+  val DEFAULT_PRINT_CFG = false
+  val DEFAULT_PRINT_VERIFIER_INPUTS = false
+  val DEFAULT_RELATIONAL_PREDICATES = false
+  val DEFAULT_CHECK_WITH_Z3 = false
+  val DEFAULT_ASSUME_POSITIVE_INPUTS = true
   val DEFAULT_MAX_GROUPS = 3
   val DEFAULT_TIMEOUT = 20
   val DEFAULT_MAX_ITERATIONS = 1000
   val DEFAULT_ASSERTION_TAG: String = "all"
   val DEFAULT_ABSTRACT_DOMAIN: String = POLKA_STRICT.toString
   val DEFAULT_MAX_PATH_LENGTH = 30
+  val DEFAULT_VERIFIER_TIME_OUT = 60 // Unit: Second
 
   private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)
 
@@ -194,27 +210,25 @@ object CommandLineArguments {
     arguments
   }
 
-  val DEFAULT_VERIFIER_TIME_OUT = 60 // Unit: Second
-
-  val DEFAULT_ARGUMENTS: CommandLineArguments = {
+  val TEST_ARGUMENTS: CommandLineArguments = {
     val arguments = new CommandLineArguments
-    arguments.initialize(TEST_MODE, debugMode = false, "",
-      printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
-      maxGroups = DEFAULT_MAX_GROUPS,
-      verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
-      relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
-      abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH, checkWithZ3 = false)
+    arguments.initialize(TEST_MODE, debugMode = DEFAULT_DEBUG_MODE, directoryToAnalyze = DEFAULT_DIRECTORY_TO_ANALYZE,
+      printVerifierInputs = DEFAULT_PRINT_VERIFIER_INPUTS, verifierTimeout = DEFAULT_TIMEOUT, printCFG = DEFAULT_PRINT_CFG,
+      maxGroups = DEFAULT_MAX_GROUPS, verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
+      relationalPredicates = DEFAULT_RELATIONAL_PREDICATES, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
+      abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH,
+      checkWithZ3 = DEFAULT_CHECK_WITH_Z3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS)
     arguments
   }
 
-  val DEBUG_MODE_ARGUMENTS: CommandLineArguments = {
+  val TEST_ARGUMENTS_DEBUG_MODE: CommandLineArguments = {
     val arguments = new CommandLineArguments
-    arguments.initialize(TEST_MODE, debugMode = true, "",
-      printVerifierInputs = false, verifierTimeout = DEFAULT_TIMEOUT, printCFG = false,
-      maxGroups = DEFAULT_MAX_GROUPS,
-      verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
-      relationalPredicates = false, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
-      abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH, checkWithZ3 = false)
+    arguments.initialize(TEST_MODE, debugMode = !DEFAULT_DEBUG_MODE, directoryToAnalyze = DEFAULT_DIRECTORY_TO_ANALYZE,
+      printVerifierInputs = DEFAULT_PRINT_VERIFIER_INPUTS, verifierTimeout = DEFAULT_TIMEOUT, printCFG = DEFAULT_PRINT_CFG,
+      maxGroups = DEFAULT_MAX_GROUPS, verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
+      relationalPredicates = DEFAULT_RELATIONAL_PREDICATES, maxIterations = DEFAULT_MAX_ITERATIONS, assertionTag = DEFAULT_ASSERTION_TAG,
+      abstractDomain = DEFAULT_ABSTRACT_DOMAIN, maxPathLength = DEFAULT_MAX_PATH_LENGTH,
+      checkWithZ3 = DEFAULT_CHECK_WITH_Z3, assumePositiveInputs = DEFAULT_ASSUME_POSITIVE_INPUTS)
     arguments
   }
 }

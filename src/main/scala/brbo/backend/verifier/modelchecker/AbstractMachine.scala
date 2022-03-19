@@ -25,7 +25,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     case POLKA_STRICT => new Polka(true)
     case POLKA_NONSTRICT => new Polka(false)
   }
-  private val debugJoinWiden: Boolean = false // TODO: Probably need to turn on this for debugging
+  private val debugJoinWiden: Boolean = false
   private val debugBottom: Boolean = false
 
   private val initialValuation = {
@@ -40,6 +40,9 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
       (acc, v) => acc.createUninitializedVariable(Variable(v, None))
     })
   }
+  private val inputsArePositive = brboProgram.mainFunction.parameters.map(i => GreaterThan(i, Number(0))).foldLeft(Bool(b = true): BrboExpr)({
+    (acc, gt) => And(acc, gt)
+  })
 
   def verify(assertion: BrboExpr, maxPathLength: Int = arguments.getMaxPathLength): Result = {
     logger.infoOrError(s"Verify assertion `${assertion.prettyPrintToCFG}` (Max path length: `$maxPathLength`)")
@@ -94,7 +97,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                   val newValuation = {
                     // TODO: This number affects the precision
                     // TODO: Parameterize this
-                    if (occurrences >= 3) {
+                    if (occurrences >= 4) {
                       val widenedValuation = existingValuation.widen(newState.valuation)
                       if (debugJoinWiden)
                         logger.traceOrError(s"[model check] Widened valuation: `${widenedValuation.toShortString}`")
@@ -135,12 +138,12 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
             if (newState.shouldVerify) {
               val refuted = {
                 val verified = {
-                  /*val positiveInputs = brboProgram.mainFunction.parameters.map(i => GreaterThan(i, Number(0))).foldLeft(Bool(b = true): BrboExpr)({
-                    (acc, gt) => And(acc, gt)
-                  })
-                  val imply = Imply(positiveInputs, assertion)*/
-                  if (arguments.getCheckWithZ3) newState.satisfyWithZ3(assertion)
-                  else newState.satisfy(assertion)
+                  val assertionToCheck = {
+                    // Sometimes, recovering such additional information (that is lost due to widening) helps proving the assertion
+                    Imply(inputsArePositive, assertion)
+                  }
+                  if (arguments.getCheckWithZ3) newState.satisfyWithZ3(assertionToCheck)
+                  else newState.satisfy(assertionToCheck)
                 }
                 !verified
               }
@@ -631,14 +634,8 @@ object AbstractMachine {
 
     private def satisfyWithZ3(ast: AST, toInt: Boolean): Boolean = {
       val imply = solver.mkImplies(solver.mkAnd(if (!toInt) stateFloat else stateInt), ast)
-      /*val query = {
-        val variablesZ3 = allVariables.map(v => solver.mkIntVar(v.identifier.name))
-        solver.mkForall(variablesZ3, imply)
-      }*/
-      // TODO: Why does the integration test fail???
-      error(logger, s"imply: $imply")
+      // error(logger, s"[check valuation satisfiability] imply: $imply")
       solver.checkAssertionForallPushPop(imply, debugMode)
-      // solver.checkAssertionPushPop(query, debugMode)
     }
 
     def imposeConstraint(constraint: Constraint): Valuation = {
