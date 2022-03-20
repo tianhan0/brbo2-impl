@@ -57,6 +57,11 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
     ???
   }
 
+  def validateCexPath(path: Path): Boolean = {
+    // TODO: Validate if the false result is spurious
+    false
+  }
+
   def verifySelectivelyAmortize(boundAssertion: BoundAssertion): VerifierStatus = {
     val initialAbstraction = generateInitialAbstraction(afterExtractingUses)
     val result = verify(initialAbstraction, boundAssertion)
@@ -71,6 +76,8 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         logger.infoOrError(s"Verifier returns `$UNKNOWN_RESULT` for the initial abstraction.")
         result.counterexamplePaths
     }
+    val existsTrueCexPath = counterexamplePaths.exists(p => validateCexPath(p))
+    if (existsTrueCexPath) return FALSE_RESULT
 
     // No Self-loops; No Multiple Edges; No Weighted
     val tree = new SimpleDirectedGraph[TreeNode, DefaultEdge](classOf[DefaultEdge])
@@ -120,14 +127,15 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
       else {
         // Assume that all assert() in node.program are ub checks, so that we can safely remove all assert() from the cex.
         // TODO: Should make use of all counterexample paths
-        val pathWithoutUBChecks = Path.removeCommandsForUBCheck(result.counterexamplePaths.head)
+        // TODO: Randomly select a counterexample path to refine the failed program
+        val pathWithoutUBChecks = result.counterexamplePaths.head // Path.removeCommandsForUBCheck(result.counterexamplePaths.head)
         // Refine the current node, possibly once again, based on the same counterexample
         // When a node is visited for a second (or more) time, then it must be caused by backtracking, which
         // implies that all nodes in one of its subtree have failed
         refiner.refine(node.program, pathWithoutUBChecks, boundAssertion, avoidRefinements) match {
           case (Some(refinedProgram), Some(refinement)) =>
             val result = verify(refinedProgram, boundAssertion)
-            val newChildNode = createNode(tree, parent = Some(node), refinedProgram, Set(pathWithoutUBChecks), Some(refinement))
+            val newChildNode = createNode(tree, parent = Some(node), refinedProgram, result.counterexamplePaths, Some(refinement))
             val exploreRefinedProgram: NodeStatus = result.rawResult match {
               case TRUE_RESULT | FALSE_RESULT => EXPLORING
               case UNKNOWN_RESULT => SHOULD_NOT_EXPLORE
@@ -140,10 +148,13 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
                 TRUE_RESULT
               case FALSE_RESULT =>
                 logger.infoOrError(s"Explore child nodes of the child of the current node (which has failed).")
-                // TODO: Validate if the false result is spurious
+                val existsTrueCexPath = result.counterexamplePaths.exists(path => validateCexPath(path))
+                if (existsTrueCexPath) return FALSE_RESULT
                 helper(newChildNode)
               case UNKNOWN_RESULT =>
                 logger.infoOrError(s"Explore a new child node of the current node (because the verification returns unknown) by re-refining the current node.")
+                val existsTrueCexPath = result.counterexamplePaths.exists(path => validateCexPath(path))
+                if (existsTrueCexPath) return FALSE_RESULT
                 helper(node)
             }
           case (None, None) =>
