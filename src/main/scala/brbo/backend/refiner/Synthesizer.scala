@@ -1,5 +1,6 @@
 package brbo.backend.refiner
 
+import brbo.backend.verifier.AbstractInterpreter.ModelCheckerResult
 import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.backend.verifier.{AbstractInterpreter, InterpreterKind}
 import brbo.common._
@@ -86,6 +87,8 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     logger.trace(s"Old groups: `${originalProgram.mainFunction.groupIds}`")
     logger.trace(s"New groups from the path refinement: `${refinement.groupIds}`")
     logger.trace(s"New groups (overall): `$newGroupIds`")
+    // TODO: Try to release memory
+    postConditions.releaseMemory()
     val newMainFunction = originalProgram.mainFunction
       .replaceBodyWithoutInitialization(newMainBody.asInstanceOf[Statement])
       .replaceGroupIds(newGroupIds)
@@ -141,14 +144,19 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     //  - if linear constraints can partition the concrete states, then they may also partition the abstract states
     logger.traceOrError(s"Compute post conditions on path: ${path.map(n => n.simplifiedString).mkString(", ")}")
     private val result = AbstractInterpreter.interpretPath(path, inputVariables, solver, InterpreterKind.MODEL_CHECK, argument)
-    private val states = result.moreInformation.get.asInstanceOf[List[AbstractMachine.Valuation]]
+    private val modelCheckerResult = result.moreInformation.get.asInstanceOf[ModelCheckerResult]
 
-    def stateAtIndex(index: Int): AST = states(index).stateToZ3Ast(solver, toInt = true)
+    def stateAtIndex(index: Int): AST = modelCheckerResult.stateMap(index).stateToZ3Ast(solver, toInt = true)
 
     def joinStatesAtIndices(indices: Set[Int]): AST = {
       assert(indices.nonEmpty)
       val postConditions = indices.map({ index => stateAtIndex(index) }).toSeq
       solver.mkOr(postConditions: _*)
+    }
+
+    def releaseMemory(): Unit = {
+      logger.error(s"Releasing native memory")
+      modelCheckerResult.result.releaseMemory()
     }
   }
 

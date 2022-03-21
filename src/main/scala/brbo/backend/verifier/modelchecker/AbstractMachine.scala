@@ -74,7 +74,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
           if (newState.valuation.isBottom) {
             if (debugBottom) {
               // logger.traceOrError(s"Current node: $currentNode")
-              logger.traceOrError(s"States before reaching a bottom state at node `${nextNode}`:\n${oldStateMap.printStatesOnPath(path.reverse)}")
+              logger.traceOrError(s"States before reaching a bottom state at node `$nextNode`:\n${oldStateMap.printStatesOnPath(path.reverse)}")
             }
           }
           val (newValuation, keepExploring) = {
@@ -173,7 +173,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         else VerifierResult(VerifierStatus.TRUE_RESULT, paths)
       }
     }
-    Result(result, maximalPaths)
+    Result(result, maximalPaths, initialValuation.stateManager)
   }
 
   // Return a set of pairs of the current node (which may be negated) and the next state
@@ -392,10 +392,15 @@ object AbstractMachine {
     def toShortString: String
   }
 
-  case class Result(result: VerifierResult, maximalPaths: Map[List[CFGNode], StateMap]) {
+  case class Result(result: VerifierResult, maximalPaths: Map[List[CFGNode], StateMap], stateManager: StateManager) {
     val finalValuations: Iterable[Valuation] = maximalPaths.map({
       case (path, pathState) => pathState.valuations(path.head)
     })
+
+    def releaseMemory(): Unit = {
+      stateManager.releaseMemory()
+      // manager.finalize()
+    }
   }
 
   case class State(node: CFGNode, valuation: Valuation, indexOnPath: Int, shouldVerify: Boolean) extends ToShortString {
@@ -437,8 +442,10 @@ object AbstractMachine {
                        apronState: Abstract0,
                        allVariables: List[Variable],
                        scopeOperations: ScopeOperations,
+                       stateManager: StateManager,
                        logger: Option[MyLogger] = None) extends ToShortString { // TODO: Let this logger be non-optional
     assert(apronState != null)
+    stateManager.register(apronState)
     private val manager = apronState.getCreationManager
     // traceOrError(logger, s"Create a new state. isTop: `${apronState.isTop(manager)}`. isBottom: `${apronState.isBottom(manager)}`")
     private val debugMode = logger match {
@@ -510,7 +517,7 @@ object AbstractMachine {
         }
       }
       val newApronState = apronState.addDimensionsCopy(manager, dimensionChange, initialize)
-      Valuation(liveVariables :+ variable, newApronState, allVariables :+ variable, scopeOperations, logger)
+      Valuation(liveVariables :+ variable, newApronState, allVariables :+ variable, scopeOperations, stateManager, logger)
     }
 
     /*def forgetVariablesInScope(scope: Statement): Valuation = {
@@ -544,13 +551,13 @@ object AbstractMachine {
     def joinCopy(other: Valuation): Valuation = {
       val (v1: Valuation, v2: Valuation) = equalizeVariables(other)
       val newApronState = v1.apronState.joinCopy(manager, v2.apronState)
-      Valuation(v1.liveVariables, newApronState, v1.allVariables, scopeOperations, logger)
+      Valuation(v1.liveVariables, newApronState, v1.allVariables, scopeOperations, stateManager, logger)
     }
 
     def widen(other: Valuation): Valuation = {
       val (v1: Valuation, v2: Valuation) = equalizeVariables(other)
       val newApronState = v1.apronState.widening(manager, v2.apronState)
-      Valuation(v1.liveVariables, newApronState, v1.allVariables, scopeOperations, logger)
+      Valuation(v1.liveVariables, newApronState, v1.allVariables, scopeOperations, stateManager, logger)
     }
 
     private def equalizeVariables(other: Valuation): (Valuation, Valuation) = {
@@ -576,7 +583,8 @@ object AbstractMachine {
           else acc.createUninitializedVariable(v)
       })
       // The newly created variables in v1 are not necessarily live variables
-      val v2 = Valuation(more.liveVariables, v1.apronState, v1.allVariables, v1.scopeOperations, v1.logger)
+      assert(less.stateManager == more.stateManager)
+      val v2 = Valuation(more.liveVariables, v1.apronState, v1.allVariables, v1.scopeOperations, more.stateManager, v1.logger)
       assert(v1.allVariables == more.allVariables,
         s"v.allVariables: ${v1.allVariablesNoScope}\nmore.allVariables: ${more.allVariablesNoScope}\nless.allVariables:${less.allVariablesNoScope}")
       v2
@@ -587,7 +595,7 @@ object AbstractMachine {
       if (index == -1) this
       else {
         val newState = apronState.assignCopy(manager, index, new Texpr0Intern(expression), null)
-        Valuation(liveVariables, newState, allVariables, scopeOperations, logger)
+        Valuation(liveVariables, newState, allVariables, scopeOperations, stateManager, logger)
       }
     }
 
@@ -645,7 +653,7 @@ object AbstractMachine {
       val joinedState = newStates.tail.foldLeft(newStates.head)({
         (acc, newState) => acc.joinCopy(manager, newState)
       })
-      Valuation(liveVariables, joinedState, allVariables, scopeOperations, logger)
+      Valuation(liveVariables, joinedState, allVariables, scopeOperations, stateManager, logger)
     }
 
     def toBottom: Valuation = imposeConstraint(Singleton(Apron.mkEqZero(Apron.mkIntVal(1))))
@@ -660,7 +668,7 @@ object AbstractMachine {
         trace(logger, s"Removing variables in scope `$scope` from variables `$liveVariables`")
         trace(logger, s"toRemove: `$toRemove`")
         assert(toRemove.forall(v => v.scope == scope))
-        Valuation(toKeep, apronState, allVariables, scopeOperations, logger)
+        Valuation(toKeep, apronState, allVariables, scopeOperations, stateManager, logger)
       }
     }
 
@@ -668,7 +676,7 @@ object AbstractMachine {
       val index = allVariables.indexWhere(v => v.identifier.sameAs(variable.identifier) && scopeOperations.isSame(v.scope, variable.scope))
       if (index >= 0 && index <= allVariables.length) {
         val newState = apronState.forgetCopy(manager, index, false)
-        Valuation(liveVariables, newState, allVariables, scopeOperations, logger)
+        Valuation(liveVariables, newState, allVariables, scopeOperations, stateManager, logger)
       }
       else {
         error(logger, s"Variable `$variable` cannot be found in `$allVariables`")
@@ -739,7 +747,8 @@ object AbstractMachine {
                            logger: Option[MyLogger],
                            scopeOperations: ScopeOperations = DEFAULT_SCOPE_OPERATIONS): Valuation = {
     val state = new Abstract0(manager, 0, 0)
-    Valuation(Nil, state, Nil, scopeOperations, logger)
+    val stateManager = StateManager()
+    Valuation(Nil, state, Nil, scopeOperations, stateManager, logger)
   }
 
   private def traceOrError(logger: Option[MyLogger], message: String): Unit = {
@@ -762,4 +771,17 @@ object AbstractMachine {
       case None =>
     }
   }
+
+  case class StateManager() {
+    private var states: Set[Abstract0] = Set()
+
+    def register(state: Abstract0): Unit = states = states + state
+
+    def releaseMemory(): Unit = states.foreach(a => a.finalize())
+  }
+
+  /*val cleaner: Cleaner = Cleaner.create()
+  case class CleanUp(apronState: Abstract0) extends Runnable {
+    override def run(): Unit = () // apronState.finalize()
+  }*/
 }

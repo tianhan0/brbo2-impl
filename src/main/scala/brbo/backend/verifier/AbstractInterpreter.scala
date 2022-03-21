@@ -33,7 +33,7 @@ object AbstractInterpreter {
           finalValuations.head
         }
         val ast = finalValuation.stateToZ3Ast(solver, toInt = true)
-        Result(ast, finalValuation.allVariablesNoScope.map(v => v.name).toSet, Some(result.stateMap))
+        Result(ast, finalValuation.allVariablesNoScope.map(v => v.name).toSet, Some(result))
     }
   }
 

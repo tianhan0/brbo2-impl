@@ -1,8 +1,10 @@
 package brbo.backend.refiner
 
+import apron.Abstract0
 import brbo.backend.verifier.AbstractInterpreter
 import brbo.backend.verifier.VerifierStatus.VerifierStatus
 import brbo.backend.verifier.cex.Path
+import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.common._
 import brbo.common.ast.{BoundAssertion, BrboProgram}
 
@@ -45,7 +47,7 @@ class Refiner(arguments: CommandLineArguments) {
               boundAssertion.replaceResourceVariable(sum)
             }
             val result = AbstractInterpreter.verifyPath(refinedPath, assertion, inputVariables, arguments)
-            Some((refinement, result.result.rawResult))
+            Some((refinement, result))
           }
         }
     })
@@ -53,13 +55,15 @@ class Refiner(arguments: CommandLineArguments) {
     val results = Await.result(futures, Duration.Inf)
     val programSynthesis = new Synthesizer(originalProgram, arguments)
     val numberOfSuccessfulPathRefinements = results.count({
-      case Some(value) => value._2 == brbo.backend.verifier.VerifierStatus.TRUE_RESULT
+      case Some(value) => value._2.result.rawResult == brbo.backend.verifier.VerifierStatus.TRUE_RESULT
       case None => false
     })
     logger.infoOrError(s"Number of successful path refinements: `${numberOfSuccessfulPathRefinements}`")
     results.foreach({
-      case Some((refinement: Refinement, validationResult: VerifierStatus)) =>
-        validationResult match {
+      case Some((refinement: Refinement, result: AbstractMachine.Result)) =>
+        // TODO: Try to release memory
+        // result.releaseMemory()
+        result.result.rawResult match {
           case brbo.backend.verifier.VerifierStatus.TRUE_RESULT =>
             try {
               val newProgram = programSynthesis.synthesize(refinement)
