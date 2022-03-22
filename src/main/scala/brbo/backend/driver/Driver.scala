@@ -178,7 +178,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
     // val ubcheckInserted = insertUBCheck(program, boundAssertion)
     // val result = uAutomizerVerifier.verify(ubcheckInserted)
     val modelChecker = new AbstractMachine(program, arguments)
-    val result = modelChecker.verify(assertion).result
+    val result = modelChecker.verify(assertion, None).result
 	// TODO: Check the validity of the counterexample path if refuted?
     logger.infoOrError(s"Verifier result: `$result`.")
     result

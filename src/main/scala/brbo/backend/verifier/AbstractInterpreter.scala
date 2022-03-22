@@ -24,26 +24,25 @@ object AbstractInterpreter {
         val symbolicExecution = new SymbolicExecution(inputVariables, arguments.getDebugMode)
         val SymbolicExecution.Result(finalState, declaredVariables) = symbolicExecution.execute(path, solver)
         val finalStateAst = solver.mkAnd(valuationToAST(finalState.valuations.head, solver), finalState.pathCondition)
-        Result(finalStateAst, declaredVariables, None)
+        Result(finalStateAst, None)
       case brbo.backend.verifier.InterpreterKind.MODEL_CHECK =>
-        val result = interpretOrVerifyPath(path, None, inputVariables, arguments)
+        val result: ModelCheckerResult = interpretOrVerifyPath(path, None, Some(solver), inputVariables, arguments)
         val finalValuation = {
           val finalValuations = result.result.finalValuations
-          assert(finalValuations.size == 1, s"finalValuations: ${finalValuations.map(s => s.toShortString)}")
+          assert(finalValuations.size == 1)
           finalValuations.head
         }
-        val ast = finalValuation.stateToZ3Ast(solver, toInt = true)
-        Result(ast, finalValuation.allVariablesNoScope.map(v => v.name).toSet, Some(result))
+        Result(finalValuation, Some(result))
     }
   }
 
   def verifyPath(path: List[CFGNode], assertion: BrboExpr,
                  inputVariables: List[Identifier], arguments: CommandLineArguments): AbstractMachine.Result = {
-    val result = interpretOrVerifyPath(path, Some(assertion), inputVariables, arguments)
+    val result = interpretOrVerifyPath(path, Some(assertion), None, inputVariables, arguments)
     result.result
   }
 
-  private def interpretOrVerifyPath(path: List[CFGNode], assertion: Option[BrboExpr],
+  private def interpretOrVerifyPath(path: List[CFGNode], assertion: Option[BrboExpr], solver: Option[Z3Solver],
                                     inputVariables: List[Identifier], arguments: CommandLineArguments): ModelCheckerResult = {
     val (nodesMap, newPath) = path.zipWithIndex.foldLeft((Map[CommandOrExpr, (CFGNode, Int)](), List[Command]()))({
       case ((accMap, accPath), (node, index)) =>
@@ -64,24 +63,30 @@ object AbstractInterpreter {
         case Some(value) => value
         case None => Bool(b = true)
       }
-    val result = abstractMachine.verify(assertionToVerify, MAX_PATH_LENGTH)
-    val stateMap: List[AbstractMachine.Valuation] = {
-      assert(result.maximalPaths.size == 1)
-      val stateMap = result.maximalPaths.head._2.valuations
-      stateMap
-        .filter({ case (node, _) => nodesMap.contains(node.value) }) // The model checker may generate nodes that do not exist in the given path
-        .toList.sortWith({ // Sort the list of command-state pairs by the indices of the command in the given path
-        case ((n1, _), (n2, _)) =>
-          (nodesMap.get(n1.value), nodesMap.get(n2.value)) match {
-            case (Some((_, index1)), Some((_, index2))) => index1 < index2
-            case _ => throw new Exception
-          }
-      }).map({ case (_, valuation) => valuation })
+    val result = abstractMachine.verify(assertionToVerify, solver, MAX_PATH_LENGTH)
+    val stateMap: List[AST] = {
+      solver match {
+        case Some(_) =>
+          assert(result.maximalPaths.size == 1)
+          val stateMap = result.maximalPaths.head._2.valuations
+          stateMap
+            // The model checker may generate nodes that do not exist in the given path
+            .filter({ case (node, _) => nodesMap.contains(node.value) })
+            // Sort the list of command-state pairs by the indices of the command in the given path
+            .toList.sortWith({
+            case ((n1, _), (n2, _)) =>
+              (nodesMap.get(n1.value), nodesMap.get(n2.value)) match {
+                case (Some((_, index1)), Some((_, index2))) => index1 < index2
+                case _ => throw new Exception
+              }
+          }).map({ case (_, valuation) => valuation })
+        case None => List()
+      }
     }
     ModelCheckerResult(result, stateMap)
   }
 
-  case class Result(finalState: AST, declaredVariables: Set[String], moreInformation: Option[Any])
+  case class Result(finalState: AST, moreInformation: Option[Any])
 
-  case class ModelCheckerResult(result: AbstractMachine.Result, stateMap: List[AbstractMachine.Valuation])
+  case class ModelCheckerResult(result: AbstractMachine.Result, stateMap: List[AST])
 }

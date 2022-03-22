@@ -87,8 +87,6 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     logger.trace(s"Old groups: `${originalProgram.mainFunction.groupIds}`")
     logger.trace(s"New groups from the path refinement: `${refinement.groupIds}`")
     logger.trace(s"New groups (overall): `$newGroupIds`")
-    // TODO: Try to release memory
-    postConditions.releaseMemory()
     val newMainFunction = originalProgram.mainFunction
       .replaceBodyWithoutInitialization(newMainBody.asInstanceOf[Statement])
       .replaceGroupIds(newGroupIds)
@@ -146,17 +144,12 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     private val result = AbstractInterpreter.interpretPath(path, inputVariables, solver, InterpreterKind.MODEL_CHECK, argument)
     private val modelCheckerResult = result.moreInformation.get.asInstanceOf[ModelCheckerResult]
 
-    def stateAtIndex(index: Int): AST = modelCheckerResult.stateMap(index).stateToZ3Ast(solver, toInt = true)
+    def stateAtIndex(index: Int): AST = modelCheckerResult.stateMap(index)
 
     def joinStatesAtIndices(indices: Set[Int]): AST = {
       assert(indices.nonEmpty)
       val postConditions = indices.map({ index => stateAtIndex(index) }).toSeq
       solver.mkOr(postConditions: _*)
-    }
-
-    def releaseMemory(): Unit = {
-      logger.error(s"Releasing native memory")
-      modelCheckerResult.result.releaseMemory()
     }
   }
 

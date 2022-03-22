@@ -39,6 +39,8 @@ fork in(Test, testOnly) := true
 
 // To avoid errors when running `sbt test`: https://stackoverflow.com/a/45173411
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-P1")
+// Show full stack trace when exceptions are thrown
+testOptions in Test += Tests.Argument("-oDF")
 
 val nativeLibraryPath = {
   val currentDirectory = System.getProperty("user.dir")

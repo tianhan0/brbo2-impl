@@ -44,7 +44,14 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     (acc, gt) => And(acc, gt)
   })
 
-  def verify(assertion: BrboExpr, maxPathLength: Int = arguments.getMaxPathLength): Result = {
+  /**
+   *
+   * @param assertion     The assertion to verify
+   * @param solver        Represent all explored states with this solver, so that the native memory of apron states can be released
+   * @param maxPathLength The max length of any path that we can explore
+   * @return
+   */
+  def verify(assertion: BrboExpr, solver: Option[Z3Solver], maxPathLength: Int = arguments.getMaxPathLength): Result = {
     logger.infoOrError(s"Verify assertion `${assertion.prettyPrintToCFG}` (Max path length: `$maxPathLength`)")
     val initialState = State(fakeInitialNode, initialValuation, indexOnPath = 0, shouldVerify = true)
     // Every CFGNode corresponds to a location, which is the location right after the node
@@ -83,7 +90,8 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                 logger.trace(s"Old valuation after node `${nextNode.prettyPrintToCFG}`: ${existingValuation.toShortString}")
                 if (existingValuation.include(newState.valuation)) {
                   logger.trace(s"The new valuation is included in the old one")
-                  (existingValuation, false)
+                  // TODO: Probably unnecessary to create a copy, because we only need to keep track of apron states
+                  (existingValuation.createCopy(), false)
                 }
                 else {
                   logger.trace(s"The new valuation is not included in the old one")
@@ -173,7 +181,18 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         else VerifierResult(VerifierStatus.TRUE_RESULT, paths)
       }
     }
-    Result(result, maximalPaths, initialValuation.stateManager)
+    val maximalPathsZ3 = {
+      solver match {
+        case Some(solver) =>
+          maximalPaths.foldLeft(Map[List[CFGNode], StateMapZ3]())({
+            case (acc, (path, stateMap)) => acc + (path -> stateMap.toZ3(solver))
+          })
+        case None => Map[List[CFGNode], StateMapZ3]()
+      }
+    }
+    // Release all native memory occupied by apron states
+    initialValuation.stateManager.releaseMemory()
+    Result(result, maximalPathsZ3)
   }
 
   // Return a set of pairs of the current node (which may be negated) and the next state
@@ -392,15 +411,10 @@ object AbstractMachine {
     def toShortString: String
   }
 
-  case class Result(result: VerifierResult, maximalPaths: Map[List[CFGNode], StateMap], stateManager: StateManager) {
-    val finalValuations: Iterable[Valuation] = maximalPaths.map({
+  case class Result(result: VerifierResult, maximalPaths: Map[List[CFGNode], StateMapZ3]) {
+    val finalValuations: Iterable[AST] = maximalPaths.map({
       case (path, pathState) => pathState.valuations(path.head)
     })
-
-    def releaseMemory(): Unit = {
-      stateManager.releaseMemory()
-      // manager.finalize()
-    }
   }
 
   case class State(node: CFGNode, valuation: Valuation, indexOnPath: Int, shouldVerify: Boolean) extends ToShortString {
@@ -428,7 +442,17 @@ object AbstractMachine {
       }).mkString("\n")
       s"Path (${path.length}):\n$pathString\nStates (${valuations.size}):\n$statesString"
     }
+
+    def toZ3(solver: Z3Solver, toInt: Boolean = true): StateMapZ3 = {
+      val valuationsZ3 = valuations.foldLeft(Map[CFGNode, AST]())({
+        case (acc, (node, valuation)) =>
+          acc + (node -> valuation.stateToZ3Ast(solver, toInt))
+      })
+      StateMapZ3(valuationsZ3, solver)
+    }
   }
+
+  case class StateMapZ3(valuations: Map[CFGNode, AST], solver: Z3Solver)
 
   /**
    *
@@ -461,8 +485,12 @@ object AbstractMachine {
     val allVariablesSet: Set[Variable] = allVariables.toSet
     private val solver = new Z3Solver
     allVariables.foreach(v => solver.mkIntVar(v.identifier.name))
+
+    private val constraints: Array[Tcons0] = apronState.toTcons(manager)
     private val stateFloat = stateToZ3Ast(solver, toInt = false)
     private val stateInt = stateToZ3Ast(solver, toInt = true)
+    private val stateString = apronState.toString(manager, allVariablesNames)
+    private val stateShortString = apronState.toString(manager, allVariablesShortNames)
 
     def indexOfVariableThisScope(variable: Variable): Int =
       liveVariables.indexWhere(v => v.identifier.sameAs(variable.identifier) && scopeOperations.isSame(v.scope, variable.scope))
@@ -561,6 +589,7 @@ object AbstractMachine {
     }
 
     private def equalizeVariables(other: Valuation): (Valuation, Valuation) = {
+      assert(this.stateManager == other.stateManager)
       if (other.allVariablesSet.subsetOf(allVariablesSet)) {
         (this, createUninitializedVariables(other, this))
       }
@@ -577,13 +606,13 @@ object AbstractMachine {
      * @return A valuation that is created from `less` but contains the same variables as `more`
      */
     private def createUninitializedVariables(less: Valuation, more: Valuation): Valuation = {
+      assert(less.stateManager == more.stateManager)
       val v1 = more.allVariables.foldLeft(less)({
         (acc, v) =>
           if (less.allVariables.contains(v)) acc
           else acc.createUninitializedVariable(v)
       })
       // The newly created variables in v1 are not necessarily live variables
-      assert(less.stateManager == more.stateManager)
       val v2 = Valuation(more.liveVariables, v1.apronState, v1.allVariables, v1.scopeOperations, more.stateManager, v1.logger)
       assert(v1.allVariables == more.allVariables,
         s"v.allVariables: ${v1.allVariablesNoScope}\nmore.allVariables: ${more.allVariablesNoScope}\nless.allVariables:${less.allVariablesNoScope}")
@@ -647,12 +676,14 @@ object AbstractMachine {
     }
 
     def imposeConstraint(constraint: Constraint): Valuation = {
-      val newStates = Apron.imposeConstraint(apronState, constraint)
+      val newStates = Apron.imposeConstraint(apronState, constraint, stateManager)
       if (newStates.size > 1)
         trace(logger, s"Approximate the disjunction in `$constraint` with a conjunctive domain")
-      val joinedState = newStates.tail.foldLeft(newStates.head)({
-        (acc, newState) => acc.joinCopy(manager, newState)
+      val joinedState = newStates.head
+      newStates.tail.foreach({
+        newState => joinedState.join(manager, newState)
       })
+      // The head new state will be registered when creating the valuation
       Valuation(liveVariables, joinedState, allVariables, scopeOperations, stateManager, logger)
     }
 
@@ -672,6 +703,8 @@ object AbstractMachine {
       }
     }
 
+    def createCopy(): Valuation = imposeConstraint(Singleton(Apron.mkBoolVal(value = true)))
+
     def forgetVariable(variable: Variable): Valuation = {
       val index = allVariables.indexWhere(v => v.identifier.sameAs(variable.identifier) && scopeOperations.isSame(v.scope, variable.scope))
       if (index >= 0 && index <= allVariables.length) {
@@ -686,19 +719,17 @@ object AbstractMachine {
 
     override def toString: String = {
       val variablesString = "  " + liveVariables.map(v => v.toString).mkString("\n  ")
-      val stateString = apronState.toString(manager, allVariablesNames)
       s"Variables:\n$variablesString\nApronState: $stateString"
     }
 
     override def toShortString: String = {
       // val variablesString = liveVariables.map(v => v.toShortString)
-      val stateString = apronState.toString(manager, allVariablesShortNames)
       // String.format("Variables: %-30s ApronState: %-50s", variablesString, stateString)
-      s"ApronState: $stateString"
+      s"ApronState: $stateShortString"
     }
 
     def stateToZ3Ast(solver: Z3Solver, toInt: Boolean): AST = {
-      val asts = apronState.toTcons(manager).map({
+      val asts = constraints.map({
         constraint => Apron.constraintToZ3(constraint, solver, allVariablesNoScope, toInt)
       })
       if (asts.nonEmpty) solver.mkAnd(asts: _*)
@@ -772,16 +803,19 @@ object AbstractMachine {
     }
   }
 
+  def copyApronState(state: Abstract0): Abstract0 = state.joinCopy(state.getCreationManager, state)
+
   case class StateManager() {
     private var states: Set[Abstract0] = Set()
 
-    def register(state: Abstract0): Unit = states = states + state
+    def register(state: Abstract0): Unit = {
+      // assert(!states.contains(state))
+      states = states + state
+    }
 
-    def releaseMemory(): Unit = states.foreach(a => a.finalize())
+    def releaseMemory(): Unit = {
+      states.foreach(a => a.finalize())
+      states = Set() // So that we won't double release the memory
+    }
   }
-
-  /*val cleaner: Cleaner = Cleaner.create()
-  case class CleanUp(apronState: Abstract0) extends Runnable {
-    override def run(): Unit = () // apronState.finalize()
-  }*/
 }

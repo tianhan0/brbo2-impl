@@ -73,7 +73,7 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
   "Model checking program 1" should "be correct" in {
     val abstractMachine = new AbstractMachine(program1, polkaArgument)
     val assertion = LessThanOrEqualTo(approximatedResourceUsage, Multiplication(n, a))
-    val result = abstractMachine.verify(assertion).result
+    val result = abstractMachine.verify(assertion, None).result
     StringCompare.ignoreWhitespaces(result.toString, """VerifierResult(TRUE_RESULT,Set())""".stripMargin)
   }
 
@@ -81,7 +81,7 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
   "Model checking program 2" should "be correct" in {
     val abstractMachine = new AbstractMachine(program2, polkaArgument)
     val assertion = LessThanOrEqualTo(approximatedResourceUsage, t)
-    val result = abstractMachine.verify(assertion).result
+    val result = abstractMachine.verify(assertion, None).result
     StringCompare.ignoreWhitespaces(result.toString,
       """VerifierResult(UNKNOWN_RESULT,Set(Path:
         |  [000] (2) int C1 = -1; [fun `main`]
@@ -120,7 +120,7 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
   "Model checking program 3" should "be correct" in {
     val abstractMachine = new AbstractMachine(program3, polkaArgument)
     val assertion = LessThanOrEqualTo(approximatedResourceUsage, t)
-    val result = abstractMachine.verify(assertion).result
+    val result = abstractMachine.verify(assertion, None).result
     StringCompare.ignoreWhitespaces(result.toString, """VerifierResult(TRUE_RESULT,Set())""".stripMargin)
   }
 }

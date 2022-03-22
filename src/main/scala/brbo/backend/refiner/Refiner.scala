@@ -1,10 +1,8 @@
 package brbo.backend.refiner
 
-import apron.Abstract0
 import brbo.backend.verifier.AbstractInterpreter
 import brbo.backend.verifier.VerifierStatus.VerifierStatus
 import brbo.backend.verifier.cex.Path
-import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.common._
 import brbo.common.ast.{BoundAssertion, BrboProgram}
 
@@ -23,47 +21,50 @@ class Refiner(arguments: CommandLineArguments) {
     logger.infoOrError(s"Generated `${allRefinements.size}` path refinements")
     refinementsToAvoid.foreach(r => logger.traceOrError(s"Avoid refinement: ${r.toStringNoPath}"))
 
+    def validateRefinement(refinement: Refinement): Option[(Refinement, VerifierStatus)] = {
+      logger.traceOrError(s"Generated refinement: ${refinement.toStringNoPath}")
+      // It is expected that, the refined path is empty when there is no refinement (over the original path)
+      if (refinement.noRefinement || refinementsToAvoid.exists(r => r.sameAs(refinement))) {
+        None
+      } else {
+        val refinedPath = refinement.refinedPath(originalProgram.mainFunction)
+        // logger.traceOrError(s"Validate refined path:\n`${refinedPath.mkString("\n")}`")
+        // Using the model checker for verification
+        val assertion = {
+          val allGroupIds: Set[Int] = // Get all group IDs and then all ghost variables
+            originalProgram.mainFunction.groupIds ++ refinement.groupIds.values.flatten
+          val sum = GhostVariableUtils.approximatedResourceUsage(allGroupIds)
+          logger.traceOrError(s"Approximated resource usage: `${sum.prettyPrintToC()}`")
+          boundAssertion.replaceResourceVariable(sum)
+        }
+        val result = AbstractInterpreter.verifyPath(refinedPath, assertion, inputVariables, arguments)
+        Some((refinement, result.result.rawResult))
+      }
+    }
+
     logger.infoOrError(s"Search for a refinement for path `$path`.")
-    implicit val executionContext: ExecutionContext = {
+    /*implicit val executionContext: ExecutionContext = {
       if (arguments.getThreads == CommandLineArguments.DEFAULT_NUMBER_OF_THREADS) scala.concurrent.ExecutionContext.Implicits.global
       else ExecutionContext.fromExecutorService(Executors.newWorkStealingPool(arguments.getThreads))
     }
     val futures = Future.traverse(allRefinements)({
-      refinement =>
-        Future {
-          logger.traceOrError(s"Generated refinement: ${refinement.toStringNoPath}")
-          // It is expected that, the refined path is empty when there is no refinement (over the original path)
-          if (refinement.noRefinement || refinementsToAvoid.exists(r => r.sameAs(refinement))) {
-            None
-          } else {
-            val refinedPath = refinement.refinedPath(originalProgram.mainFunction)
-            // logger.traceOrError(s"Validate refined path:\n`${refinedPath.mkString("\n")}`")
-            // Using the model checker for verification
-            val assertion = {
-              val allGroupIds: Set[Int] = // Get all group IDs and then all ghost variables
-                (originalProgram.mainFunction.groupIds ++ refinement.groupIds.values.flatten)
-              val sum = GhostVariableUtils.approximatedResourceUsage(allGroupIds)
-              logger.traceOrError(s"Approximated resource usage: `${sum.prettyPrintToC()}`")
-              boundAssertion.replaceResourceVariable(sum)
-            }
-            val result = AbstractInterpreter.verifyPath(refinedPath, assertion, inputVariables, arguments)
-            Some((refinement, result))
-          }
-        }
-    })
+      refinement => Future {
+        validateRefinement(refinement)
+      }
+    })*/
 
-    val results = Await.result(futures, Duration.Inf)
+    val results = allRefinements.map(r => validateRefinement(r)) // Await.result(futures, Duration.Inf)
     val programSynthesis = new Synthesizer(originalProgram, arguments)
     val numberOfSuccessfulPathRefinements = results.count({
-      case Some(value) => value._2.result.rawResult == brbo.backend.verifier.VerifierStatus.TRUE_RESULT
+      case Some(value) => value._2 == brbo.backend.verifier.VerifierStatus.TRUE_RESULT
       case None => false
     })
-    logger.infoOrError(s"Number of successful path refinements: `${numberOfSuccessfulPathRefinements}`")
+    logger.infoOrError(s"Number of successful path refinements: `$numberOfSuccessfulPathRefinements`")
     results.foreach({
-      case Some((refinement: Refinement, result: AbstractMachine.Result)) =>
+      case Some((refinement: Refinement, result: VerifierStatus)) =>
         // TODO: Try to release memory
         // result.releaseMemory()
-        result.result.rawResult match {
+        result match {
           case brbo.backend.verifier.VerifierStatus.TRUE_RESULT =>
             try {
               val newProgram = programSynthesis.synthesize(refinement)
