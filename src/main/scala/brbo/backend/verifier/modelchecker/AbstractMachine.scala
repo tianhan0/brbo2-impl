@@ -90,8 +90,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                 logger.trace(s"Old valuation after node `${nextNode.prettyPrintToCFG}`: ${existingValuation.toShortString}")
                 if (existingValuation.include(newState.valuation)) {
                   logger.trace(s"The new valuation is included in the old one")
-                  // TODO: Probably unnecessary to create a copy, because we only need to keep track of apron states
-                  (existingValuation.createCopy(), false)
+                  (existingValuation, false)
                 }
                 else {
                   logger.trace(s"The new valuation is not included in the old one")
@@ -805,17 +804,22 @@ object AbstractMachine {
 
   def copyApronState(state: Abstract0): Abstract0 = state.joinCopy(state.getCreationManager, state)
 
-  case class StateManager() {
-    private var states: Set[Abstract0] = Set()
+  private var pointers: Map[Long, Abstract0] = Map()
+  private var released: Set[Long] = Set()
 
+  case class StateManager() {
     def register(state: Abstract0): Unit = {
-      // assert(!states.contains(state))
-      states = states + state
+      pointers = pointers + (state.getAddress() -> state)
     }
 
     def releaseMemory(): Unit = {
-      states.foreach(a => a.finalize())
-      states = Set() // So that we won't double release the memory
+      pointers.foreach({
+        case (pointer, state) =>
+          if (!released.contains(pointer)) {
+            state.finalize()
+            released = released + pointer
+          }
+      })
     }
   }
 }
