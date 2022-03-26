@@ -421,7 +421,7 @@ object AbstractMachine {
 
     def satisfy(brboExpr: BrboExpr): Boolean = valuation.satisfy(brboExpr)
 
-    def satisfyWithZ3(brboExpr: BrboExpr): Boolean = valuation.satisfyWithZ3(brboExpr, toInt = true)
+    def satisfyWithZ3(brboExpr: BrboExpr): Boolean = valuation.satisfyWithZ3(brboExpr)
 
     def toShortString: String = s"Node: `${node.prettyPrintToCFG}`. Number of visits: `$indexOnPath`. shouldVerify: `$shouldVerify`. Valuation: ${valuation.toShortString}"
   }
@@ -442,10 +442,10 @@ object AbstractMachine {
       s"Path (${path.length}):\n$pathString\nStates (${valuations.size}):\n$statesString"
     }
 
-    def toZ3(solver: Z3Solver, toInt: Boolean = true): StateMapZ3 = {
+    def toZ3(solver: Z3Solver): StateMapZ3 = {
       val valuationsZ3 = valuations.foldLeft(Map[CFGNode, AST]())({
         case (acc, (node, valuation)) =>
-          acc + (node -> valuation.stateToZ3Ast(solver, toInt))
+          acc + (node -> valuation.stateToZ3Ast(solver))
       })
       StateMapZ3(valuationsZ3, solver)
     }
@@ -486,8 +486,7 @@ object AbstractMachine {
     allVariables.foreach(v => solver.mkIntVar(v.identifier.name))
 
     private val constraints: Array[Tcons0] = apronState.toTcons(manager)
-    private val stateFloat = stateToZ3Ast(solver, toInt = false)
-    private val stateInt = stateToZ3Ast(solver, toInt = true)
+    private val stateAst = stateToZ3Ast(solver)
     private val stateString = apronState.toString(manager, allVariablesNames)
     private val stateShortString = apronState.toString(manager, allVariablesShortNames)
 
@@ -649,27 +648,27 @@ object AbstractMachine {
       }
     }
 
-    def satisfyWithZ3(constraint: Constraint, toInt: Boolean): Boolean = {
+    def satisfyWithZ3(constraint: Constraint): Boolean = {
       constraint match {
-        case Apron.Conjunction(left, right) => satisfyWithZ3(left, toInt) && satisfyWithZ3(right, toInt)
-        case Apron.Disjunction(left, right) => satisfyWithZ3(left, toInt) || satisfyWithZ3(right, toInt)
-        case Singleton(constraint) => satisfyWithZ3(constraint, toInt)
+        case Apron.Conjunction(left, right) => satisfyWithZ3(left) && satisfyWithZ3(right)
+        case Apron.Disjunction(left, right) => satisfyWithZ3(left) || satisfyWithZ3(right)
+        case Singleton(constraint) => satisfyWithZ3(constraint)
         case _ => throw new Exception
       }
     }
 
-    def satisfyWithZ3(constraint: Tcons0, toInt: Boolean): Boolean = {
-      val constraintZ3 = Apron.constraintToZ3(constraint, solver, allVariablesNoScope, toInt)
-      satisfyWithZ3(constraintZ3, toInt)
+    def satisfyWithZ3(constraint: Tcons0): Boolean = {
+      val constraintZ3 = Apron.constraintToZ3(constraint, solver, allVariablesNoScope)
+      satisfyWithZ3(constraintZ3)
     }
 
-    def satisfyWithZ3(constraint: BrboExpr, toInt: Boolean): Boolean = {
+    def satisfyWithZ3(constraint: BrboExpr): Boolean = {
       val constraintZ3 = constraint.toZ3AST(solver)
-      satisfyWithZ3(constraintZ3, toInt)
+      satisfyWithZ3(constraintZ3)
     }
 
-    private def satisfyWithZ3(ast: AST, toInt: Boolean): Boolean = {
-      val imply = solver.mkImplies(solver.mkAnd(if (!toInt) stateFloat else stateInt), ast)
+    private def satisfyWithZ3(ast: AST): Boolean = {
+      val imply = solver.mkImplies(solver.mkAnd(stateAst), ast)
       // error(logger, s"[check valuation satisfiability] imply: $imply")
       solver.checkAssertionForallPushPop(imply, debugMode)
     }
@@ -725,9 +724,9 @@ object AbstractMachine {
       s"ApronState: $stateShortString"
     }
 
-    def stateToZ3Ast(solver: Z3Solver, toInt: Boolean): AST = {
+    def stateToZ3Ast(solver: Z3Solver): AST = {
       val asts = constraints.map({
-        constraint => Apron.constraintToZ3(constraint, solver, allVariablesNoScope, toInt)
+        constraint => Apron.constraintToZ3(constraint, solver, allVariablesNoScope)
       })
       if (asts.nonEmpty) solver.mkAnd(asts: _*)
       else solver.mkTrue()

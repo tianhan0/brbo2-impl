@@ -3,7 +3,7 @@ package brbo.backend.verifier.modelchecker
 import apron._
 import brbo.backend.verifier.modelchecker.AbstractMachine.StateManager
 import brbo.common.Z3Solver
-import brbo.common.ast.Identifier
+import brbo.common.ast._
 import com.microsoft.z3.AST
 import org.apache.logging.log4j.LogManager
 
@@ -155,45 +155,44 @@ object Apron {
     }
   }
 
-  def constraintToZ3(constraint: Tcons0, solver: Z3Solver, variables: List[Identifier], toInt: Boolean): AST = {
-    val node = expressionToZ3(constraint.toTexpr0Node, solver, variables, toInt)
+  def constraintToZ3(constraint: Tcons0, solver: Z3Solver, variables: List[Identifier]): AST = {
+    val node = constraintToBrboExpr(constraint, variables)
+    node.toZ3AST(solver)
+  }
+
+  def expressionToZ3(node: Texpr0Node, solver: Z3Solver, variables: List[Identifier]): AST = {
+    val brboExpr = expressionToBrboExpr(node, variables)
+    brboExpr.toZ3AST(solver)
+  }
+
+  def constraintToBrboExpr(constraint: Tcons0, variables: List[Identifier]): BrboExpr = {
+    val node = expressionToBrboExpr(constraint.toTexpr0Node, variables)
+    // TODO: Release node
     constraint.kind match {
       case Tcons0.EQ =>
-        if (!toInt) solver.mkEq(node, solver.mkDoubleVal(0))
-        else solver.mkEq(node, solver.mkIntVal(0))
+        Equal(node, Number(0))
       case Tcons0.SUPEQ =>
-        if (!toInt) solver.mkFPGe(node, solver.mkDoubleVal(0))
-        else solver.mkGe(node, solver.mkIntVal(0))
+        GreaterThanOrEqualTo(node, Number(0))
       case Tcons0.SUP =>
-        if (!toInt) solver.mkFPGt(node, solver.mkDoubleVal(0))
-        else solver.mkGt(node, solver.mkIntVal(0))
+        GreaterThan(node, Number(0))
       case Tcons0.EQMOD => throw new Exception
       case Tcons0.DISEQ =>
-        if (!toInt) solver.mkNe(node, solver.mkDoubleVal(0))
-        else solver.mkNe(node, solver.mkIntVal(0))
+        Negation(Equal(node, Number(0)))
     }
   }
 
-  def expressionToZ3(node: Texpr0Node, solver: Z3Solver, variables: List[Identifier], toInt: Boolean): AST = {
+  def expressionToBrboExpr(node: Texpr0Node, variables: List[Identifier]): BrboExpr = {
     node match {
       case node: Texpr0BinNode =>
         val left = node.lArg
         val right = node.rArg
-        val leftExpr = expressionToZ3(left, solver, variables, toInt)
-        val rightExpr = expressionToZ3(right, solver, variables, toInt)
+        val leftExpr = expressionToBrboExpr(left, variables)
+        val rightExpr = expressionToBrboExpr(right, variables)
         node.op match {
-          case Texpr0BinNode.OP_ADD =>
-            if (!toInt) solver.mkFPAdd(leftExpr, rightExpr)
-            else solver.mkAdd(leftExpr, rightExpr)
-          case Texpr0BinNode.OP_SUB =>
-            if (!toInt) solver.mkFPSub(leftExpr, rightExpr)
-            else solver.mkSub(leftExpr, rightExpr)
-          case Texpr0BinNode.OP_MUL =>
-            if (!toInt) solver.mkFPMul(leftExpr, rightExpr)
-            else solver.mkMul(leftExpr, rightExpr)
-          case Texpr0BinNode.OP_DIV =>
-            if (!toInt) solver.mkFPDiv(leftExpr, rightExpr)
-            else solver.mkDiv(leftExpr, rightExpr)
+          case Texpr0BinNode.OP_ADD => Addition(leftExpr, rightExpr)
+          case Texpr0BinNode.OP_SUB => Subtraction(leftExpr, rightExpr)
+          case Texpr0BinNode.OP_MUL => Multiplication(leftExpr, rightExpr)
+          case Texpr0BinNode.OP_DIV => Division(leftExpr, rightExpr)
           case _ => throw new Exception
         }
       case node: Texpr0CstNode =>
@@ -210,30 +209,30 @@ object Apron {
         }
         assert(!java.lang.Double.isInfinite(upper))
         val average = (lower + upper) / 2
-        if (!toInt) solver.mkDoubleVal(average)
-        else {
-          assert(average == average.round, s"Expecting the average between `$lower` and `$upper` to be an integer")
-          solver.mkIntVal(average.round.toInt)
-        }
+        assert(average == average.round, s"Expecting the average between `$lower` and `$upper` to be an integer")
+        // TODO: Treat as double
+        Number(average.round.toInt)
       case node: Texpr0DimNode =>
         //  This resolution from dimensions to variable names is correct, because we expect `variables` to
         //  contain all variables declared in an Apron state, in their declaration order
         val variable = variables(node.dim)
         variable.typ match {
-          case brbo.common.BrboType.INT =>
-            if (!toInt) solver.mkDoubleVar(variable.name)
-            else solver.mkIntVar(variable.name)
+          case brbo.common.BrboType.INT => variable
           case brbo.common.BrboType.BOOL =>
-            if (!toInt) solver.mkDoubleVar(variable.name) // Apron only accepts numerals
-            else solver.mkIntVar(variable.name)
+            /**
+             * Since all variables are integers in Apron, the abstract states also treat all variables as integers.
+             * Since this function is used to export abstract states into a different representation, we need to respect
+             * the above fact (because for example a constraint may involve multiplying two integers where one of them
+             * is actually a boolean).
+             */
+            Identifier(variable.name, brbo.common.BrboType.INT)
           case _ => throw new Exception
         }
       case node: Texpr0UnNode =>
         node.op match {
           case Texpr0UnNode.OP_NEG =>
-            val expr = expressionToZ3(node.getArgument, solver, variables, toInt)
-            if (!toInt) solver.mkFPSub(solver.mkDoubleVal(0), expr)
-            else solver.mkSub(solver.mkIntVal(0), expr)
+            val expr = expressionToBrboExpr(node.getArgument, variables)
+            Subtraction(Number(0), expr)
           case _ => throw new Exception
         }
       case _ => throw new Exception

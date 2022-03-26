@@ -276,7 +276,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(a,None)
         |ApronState: {  -1x(00) +1z(01) = 0;  1a(02) -1 >= 0;  1x(00) -1 >= 0 }""".stripMargin)
     StringCompare.ignoreWhitespaces(v2Polka.satisfy(constraint).toString, "false", "Check with Apron")
-    StringCompare.ignoreWhitespaces(v2Polka.satisfyWithZ3(constraint, toInt = true).toString, "true", "Check with Z3")
+    StringCompare.ignoreWhitespaces(v2Polka.satisfyWithZ3(constraint).toString, "true", "Check with Z3")
 
     v1Polka.stateManager.releaseMemory()
   }

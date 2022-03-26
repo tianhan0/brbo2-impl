@@ -9,38 +9,20 @@ import brbo.common.{BrboType, Z3Solver}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ApronUnitTest extends AnyFlatSpec {
-  "Translating expressions to Z3" should "succeed" in {
-    expressionTests.foreach({
-      test =>
-        val solver = new Z3Solver
-        val actual = Apron.expressionToZ3(test.input.asInstanceOf[Texpr0Node], solver, variables, toInt = false)
-        StringCompare.ignoreWhitespaces(actual.toString, test.expectedOutput, s"Test `${test.name}` failed!")
-    })
-  }
-
-  "Translating expressions to Z3 (integer constraints)" should "be correct" in {
+  "Translating expressions to Z3 (treating doubles as integers)" should "be correct" in {
     expressionTestsToInt.foreach({
       test =>
         val solver = new Z3Solver
-        val actual = Apron.expressionToZ3(test.input.asInstanceOf[Texpr0Node], solver, variables, toInt = true)
+        val actual = Apron.expressionToZ3(test.input.asInstanceOf[Texpr0Node], solver, variables)
         StringCompare.ignoreWhitespaces(actual.toString, test.expectedOutput, s"Test `${test.name}` failed!")
     })
   }
 
-  "Translating constraints to Z3" should "succeed" in {
-    constraintTest.foreach({
-      test =>
-        val solver = new Z3Solver
-        val actual = Apron.constraintToZ3(test.input.asInstanceOf[Tcons0], solver, variables, toInt = false)
-        StringCompare.ignoreWhitespaces(actual.toString, test.expectedOutput, s"Test `${test.name}` failed!")
-    })
-  }
-
-  "Translating constraints to Z3 (integer constraints)" should "be correct" in {
+  "Translating constraints to Z3 (treating doubles as integers)" should "be correct" in {
     constraintTestToInt.foreach({
       test =>
         val solver = new Z3Solver
-        val actual = Apron.constraintToZ3(test.input.asInstanceOf[Tcons0], solver, variables, toInt = true)
+        val actual = Apron.constraintToZ3(test.input.asInstanceOf[Tcons0], solver, variables)
         StringCompare.ignoreWhitespaces(actual.toString, test.expectedOutput, s"Test `${test.name}` failed!")
     })
   }
