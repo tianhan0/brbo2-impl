@@ -1,7 +1,6 @@
 package brbo.backend.verifier.modelchecker
 
 import apron._
-import brbo.backend.verifier.modelchecker.AbstractMachine.StateManager
 import brbo.common.Z3Solver
 import brbo.common.ast._
 import com.microsoft.z3.AST
@@ -49,15 +48,14 @@ object Apron {
     override def negate(): Constraint = Conjunction(left.negate(), right.negate())
   }
 
-  def imposeConstraint(apronState: Abstract0, constraint: Constraint, stateManager: StateManager): Set[Abstract0] = {
+  def imposeConstraint(apronState: Abstract0, constraint: Constraint): Set[Abstract0] = {
     constraint match {
       case Conjunction(left, right) =>
-        imposeConstraint(apronState, left, stateManager).flatMap({ newState => imposeConstraint(newState, right, stateManager) })
+        imposeConstraint(apronState, left).flatMap({ newState => imposeConstraint(newState, right) })
       case Disjunction(left, right) =>
-        imposeConstraint(apronState, left, stateManager) ++ imposeConstraint(apronState, right, stateManager)
+        imposeConstraint(apronState, left) ++ imposeConstraint(apronState, right)
       case Singleton(constraint) =>
         val newState = apronState.meetCopy(apronState.getCreationManager, constraint)
-        stateManager.register(newState)
         Set(newState)
       case _ => throw new Exception
     }
@@ -167,7 +165,6 @@ object Apron {
 
   def constraintToBrboExpr(constraint: Tcons0, variables: List[Identifier]): BrboExpr = {
     val node = expressionToBrboExpr(constraint.toTexpr0Node, variables)
-    // TODO: Release node
     constraint.kind match {
       case Tcons0.EQ =>
         Equal(node, Number(0))

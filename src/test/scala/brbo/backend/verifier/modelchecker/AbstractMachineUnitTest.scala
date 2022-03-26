@@ -45,7 +45,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |ApronState: <empty>""".stripMargin)
     StringCompare.compareLiteral(bottom.apronState.isBottom(bottom.apronState.getCreationManager).toString, "true")
 
-    v1.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Creating new variables in a valuation" should "be correct" in {
@@ -88,7 +88,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |ApronState: {  1x(00) >= 0;  -1x(00) >= 0;  -1x(00) +1x(01) >= 0;  1x(00) +1x(01) >= 0;  1x(01) >= 0;  -1x(00) -1x(01) >= 0;  1x(00) -1x(01) >= 0;  -1x(01) >= 0 }""".stripMargin,
       "Variables: x, x (different scope)")
 
-    v1.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Removing out-of-scope variables from a valuation" should "be correct" in {
@@ -111,7 +111,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(x,None)
         |  Variable(z,None)
         |ApronState: <universal>""".stripMargin, "Removing uninitialized variables")
-    v1.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
 
     val v3 = emptyValuationStrictPolka(debug = false).createInitializedVariable(xVar1)
       .createInitializedVariable(zVar1).createInitializedVariable(xVar2)
@@ -127,7 +127,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(z,None)
         |ApronState: {  1x(02) = 0;  1z(01) = 0;  1x(00) = 0 }""".stripMargin, "Removing initialized variables")
 
-    v3.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Assigning to variables in a valuation" should "be correct" in {
@@ -166,7 +166,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(z,None)
         |ApronState: {  -1x(00) +2z(01) = 0 }""".stripMargin, "When x = 11, do x := z + z")
 
-    v1.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Joining two valuations" should "be correct" in {
@@ -179,7 +179,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(x,None)
         |ApronState: {  1x(00) -50.0 >= 0;  -1x(00) +100.0 >= 0 }""".stripMargin)
 
-    v1.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Imposing constraints on a valuation" should "be correct" in {
@@ -204,7 +204,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(x,None)
         |ApronState: {  1x(00) -50.0 >= 0;  -1x(00) +100.0 >= 0 }""".stripMargin, "Disjunction")
 
-    v1.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Finding indices of variables from a valuation" should "be correct" in {
@@ -242,7 +242,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(v6.indexOfVariableThisScope(Variable(x, scope3)).toString, """3""", "Look up x in Scope 3")
     StringCompare.ignoreWhitespaces(v6.indexOfVariableThisScope(Variable(x, scope1)).toString, """0""", "Look up x in Scope 1 (again)")
 
-    v1.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Inclusion check between two valuations" should "be correct" in {
@@ -254,7 +254,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     StringCompare.compareLiteral(v3.include(v2).toString, "true") // x>=0 include x=10
     StringCompare.compareLiteral(v2.include(v3).toString, "false")
 
-    v1.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Check the satisfaction of polynomial constraints for valuations" should "be correct" in {
@@ -278,7 +278,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(v2Polka.satisfy(constraint).toString, "false", "Check with Apron")
     StringCompare.ignoreWhitespaces(v2Polka.satisfyWithZ3(constraint).toString, "true", "Check with Z3")
 
-    v1Polka.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Check the satisfaction of constraints for valuations" should "be correct" in {
@@ -358,8 +358,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val disjunctionPolka = Disjunction(Singleton(gePolka), Singleton(lePolka))
     StringCompare.compareLiteral(v2Polka.satisfy(disjunctionPolka).toString, "true", "Satisfy Disjunction (Polka)")
 
-    v1Octagon.stateManager.releaseMemory()
-    v1Polka.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Evaluating commands VariableDeclaration and Assignment" should "be correct" in {
@@ -483,8 +483,8 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     }
     StringCompare.compareLiteral(v5Octagon.satisfy(rEqAPlusFive).toString, "true", "When r = a, do r = r + a (Octagon)")
 
-    v0Octagon.stateManager.releaseMemory()
-    v0Polka.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Evaluating ndInt() in assignment commands" should "be correct" in {
@@ -495,7 +495,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val v2Polka = evalCommand(v1Polka, Assignment(xVar.identifier, callNdInt), debug = false)
     StringCompare.ignoreWhitespaces(v2Polka.toShortString, """ApronState: <universal>""")
 
-    v0Polka.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Evaluating commands Use and Reset" should "be correct" in {
@@ -631,7 +631,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
         |  Variable(C1,None)
         |ApronState: {  1C1(04) +1 = 0;  1S1(03) = 0;  1R1(02) = 0;  1b(01) -1 >= 0;  1a(00) -1 >= 0 }""".stripMargin, s"$useFalse")
 
-    v0.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Operations over lexical scopes" should "be correct" in {
@@ -657,7 +657,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
       .createUninitializedVariable(zVar).createInitializedVariable(aVar)
     StringCompare.ignoreWhitespaces(v2.toShortString, """ApronState: {  1a = 0;  1y = 0 }""")
 
-    v1.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   "Forgetting the values of variables" should "be correct" in {
@@ -667,7 +667,7 @@ class AbstractMachineUnitTest extends AnyFlatSpec {
     val v3 = v2.forgetVariable(xVar).forgetVariable(yVar)
     StringCompare.ignoreWhitespaces(v3.toShortString, """ApronState: <universal>""")
 
-    v1.stateManager.releaseMemory()
+    ApronMemoryManager.releaseMemory()
   }
 
   // Initialize r, r*, r#
