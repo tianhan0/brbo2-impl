@@ -38,4 +38,12 @@ object StringFormatUtils {
         String.format(format, columnsAtThisLine.map(pair => pair._1): _*)
     }).mkString("\n")
   }
+
+  def formatSize(v: Long): String = {
+    if (v < 1024) return v + " B"
+    val z = (63 - java.lang.Long.numberOfLeadingZeros(v)) / 10
+    val size = float(v.toDouble / (1L << (z * 10)))
+    val unit = " KMGTPE".charAt(z)
+    s"$size$unit"
+  }
 }

@@ -245,7 +245,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
 }
 
 object AbstractMachine {
-  // private val logger = MyLogger.createLogger(AbstractMachine.getClass, debugMode = false)
+  private val logger = MyLogger.createLogger(AbstractMachine.getClass, debugMode = false)
 
   /**
    *
@@ -702,8 +702,6 @@ object AbstractMachine {
       }
     }
 
-    def createCopy(): Valuation = imposeConstraint(Singleton(Apron.mkBoolVal(value = true)))
-
     def forgetVariable(variable: Variable): Valuation = {
       val index = allVariables.indexWhere(v => v.identifier.sameAs(variable.identifier) && scopeOperations.isSame(v.scope, variable.scope))
       if (index >= 0 && index <= allVariables.length) {
@@ -802,22 +800,22 @@ object AbstractMachine {
     }
   }
 
-  def copyApronState(state: Abstract0): Abstract0 = state.joinCopy(state.getCreationManager, state)
+  def heapSize: String = StringFormatUtils.formatSize(Runtime.getRuntime.totalMemory)
 
-  private var pointers: Map[Long, Abstract0] = Map()
-  private var released: Set[Long] = Set()
+  private var abstract0Pointers: Map[Long, Abstract0] = Map()
+  private var abstract0Released: Set[Long] = Set()
 
   case class StateManager() {
     def register(state: Abstract0): Unit = {
-      pointers = pointers + (state.getAddress() -> state)
+      abstract0Pointers = abstract0Pointers + (state.getAddress() -> state)
     }
 
     def releaseMemory(): Unit = {
-      pointers.foreach({
+      abstract0Pointers.foreach({
         case (pointer, state) =>
-          if (!released.contains(pointer)) {
+          if (!abstract0Released.contains(pointer)) {
             state.finalize()
-            released = released + pointer
+            abstract0Released = abstract0Released + pointer
           }
       })
     }

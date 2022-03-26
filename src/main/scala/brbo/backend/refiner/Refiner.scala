@@ -53,7 +53,8 @@ class Refiner(arguments: CommandLineArguments) {
       }
     })*/
 
-    val results = allRefinements.map(r => validateRefinement(r)) // Await.result(futures, Duration.Inf)
+    val results = allRefinements.map(r => validateRefinement(r))
+    // val results = Await.result(futures, Duration.Inf)
     val programSynthesis = new Synthesizer(originalProgram, arguments)
     val numberOfSuccessfulPathRefinements = results.count({
       case Some(value) => value._2 == brbo.backend.verifier.VerifierStatus.TRUE_RESULT

@@ -11,7 +11,7 @@ mkdir -p output/amortizations
 brbo_jar="./target/scala-2.12/brbo2-impl.jar:$HOME/Desktop/brbo2-impl.jar" # Assume this jar file only contains the code of brbo
 
 # Jars dependency
-lib_jars="lib/deps/*:lib/apronjava.jar:lib/com.microsoft.z3.jar"
+lib_jars="lib/deps/*:lib/japron.jar:lib/com.microsoft.z3.jar"
 
 # Set up paths for Z3
 lib="$(pwd)/lib"
