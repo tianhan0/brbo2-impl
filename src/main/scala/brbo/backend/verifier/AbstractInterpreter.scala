@@ -32,7 +32,7 @@ object AbstractInterpreter {
           assert(finalValuations.size == 1)
           finalValuations.head
         }
-        Result(finalValuation, Some(result))
+        Result(finalValuation.toZ3AST(solver), Some(result))
     }
   }
 
@@ -64,7 +64,7 @@ object AbstractInterpreter {
         case None => Bool(b = true)
       }
     val result = abstractMachine.verify(assertionToVerify, solver, MAX_PATH_LENGTH)
-    val stateMap: List[AST] = {
+    val stateMap: List[BrboExpr] = {
       solver match {
         case Some(_) =>
           assert(result.maximalPaths.size == 1)
@@ -88,5 +88,5 @@ object AbstractInterpreter {
 
   case class Result(finalState: AST, moreInformation: Option[Any])
 
-  case class ModelCheckerResult(result: AbstractMachine.Result, stateMap: List[AST])
+  case class ModelCheckerResult(result: AbstractMachine.Result, stateMap: List[BrboExpr])
 }

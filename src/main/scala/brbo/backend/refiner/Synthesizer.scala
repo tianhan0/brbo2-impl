@@ -144,11 +144,11 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     private val result = AbstractInterpreter.interpretPath(path, inputVariables, solver, InterpreterKind.MODEL_CHECK, argument)
     private val modelCheckerResult = result.moreInformation.get.asInstanceOf[ModelCheckerResult]
 
-    def stateAtIndex(index: Int): AST = modelCheckerResult.stateMap(index)
+    def stateAtIndex(index: Int): BrboExpr = modelCheckerResult.stateMap(index)
 
     def joinStatesAtIndices(indices: Set[Int]): AST = {
       assert(indices.nonEmpty)
-      val postConditions = indices.map({ index => stateAtIndex(index) }).toSeq
+      val postConditions = indices.map({ index => stateAtIndex(index).toZ3AST(solver) }).toSeq
       solver.mkOr(postConditions: _*)
     }
   }

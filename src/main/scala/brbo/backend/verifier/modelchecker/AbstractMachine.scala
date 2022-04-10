@@ -48,7 +48,6 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
   /**
    *
    * @param assertion     The assertion to verify
-   * @param solver        Represent all explored states with this solver, so that the native memory of apron states can be released
    * @param maxPathLength The max length of any path that we can explore
    * @return
    */
@@ -187,10 +186,10 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     val maximalPathsZ3 = {
       solver match {
         case Some(solver) =>
-          maximalPaths.foldLeft(Map[List[CFGNode], StateMapZ3]())({
-            case (acc, (path, stateMap)) => acc + (path -> stateMap.toZ3(solver))
+          maximalPaths.foldLeft(Map[List[CFGNode], StateMapBrboExpr]())({
+            case (acc, (path, stateMap)) => acc + (path -> stateMap.toBrboExpr)
           })
-        case None => Map[List[CFGNode], StateMapZ3]()
+        case None => Map[List[CFGNode], StateMapBrboExpr]()
       }
     }
     // Release all native memory occupied by apron states
@@ -414,8 +413,8 @@ object AbstractMachine {
     def toShortString: String
   }
 
-  case class Result(result: VerifierResult, maximalPaths: Map[List[CFGNode], StateMapZ3]) {
-    val finalValuations: Iterable[AST] = maximalPaths.map({
+  case class Result(result: VerifierResult, maximalPaths: Map[List[CFGNode], StateMapBrboExpr]) {
+    val finalValuations: Iterable[BrboExpr] = maximalPaths.map({
       case (path, pathState) => pathState.valuations(path.head)
     })
   }
@@ -446,16 +445,16 @@ object AbstractMachine {
       s"Path (${path.length}):\n$pathString\nStates (${valuations.size}):\n$statesString"
     }
 
-    def toZ3(solver: Z3Solver): StateMapZ3 = {
-      val valuationsZ3 = valuations.foldLeft(Map[CFGNode, AST]())({
+    def toBrboExpr: StateMapBrboExpr = {
+      val valuationsBrboExpr = valuations.foldLeft(Map[CFGNode, BrboExpr]())({
         case (acc, (node, valuation)) =>
-          acc + (node -> valuation.stateToZ3Ast(solver))
+          acc + (node -> valuation.stateToBrboExpr)
       })
-      StateMapZ3(valuationsZ3, solver)
+      StateMapBrboExpr(valuationsBrboExpr)
     }
   }
 
-  case class StateMapZ3(valuations: Map[CFGNode, AST], solver: Z3Solver)
+  case class StateMapBrboExpr(valuations: Map[CFGNode, BrboExpr])
 
   /**
    *
@@ -728,6 +727,12 @@ object AbstractMachine {
       val asts = constraints.map(c => c.toZ3AST(solver))
       if (asts.nonEmpty) solver.mkAnd(asts: _*)
       else solver.mkTrue()
+    }
+
+    def stateToBrboExpr: BrboExpr = {
+      constraints.foldLeft(Bool(b = true): BrboExpr)({
+        (acc, constraint) => And(acc, constraint)
+      })
     }
   }
 
