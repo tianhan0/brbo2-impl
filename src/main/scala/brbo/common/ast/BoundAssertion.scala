@@ -1,15 +1,23 @@
 package brbo.common.ast
 
-import brbo.common.{BrboType, GhostVariableTyp, GhostVariableUtils}
+import brbo.common.{BrboType, GhostVariableTyp, GhostVariableUtils, SameAs}
 
 /**
  *
  * @param resourceVariable The resource variable used in the assertion
  * @param assertion        The assertion about the resource variable
  */
-case class BoundAssertion(resourceVariable: String, assertion: BrboExpr, tag: String) {
+case class BoundAssertion(resourceVariable: String, assertion: BrboExpr, tag: String) extends SameAs with Serializable {
   def replaceResourceVariable(into: BrboExpr): BrboExpr = {
     BrboExprUtils.replaceCLiteral(assertion, Identifier(resourceVariable, BrboType.INT), into)
+  }
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case BoundAssertion(otherResourceVariable, otherAssertion, otherTag) =>
+        otherResourceVariable == resourceVariable && otherAssertion.sameAs(assertion) && otherTag == tag
+      case _ => false
+    }
   }
 }
 

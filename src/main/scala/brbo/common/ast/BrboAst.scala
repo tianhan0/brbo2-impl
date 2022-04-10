@@ -6,10 +6,11 @@ import brbo.common.{BrboType, GhostVariableUtils, SameAs}
 
 import java.util.UUID
 
+@SerialVersionUID(1L)
 case class BrboProgram(name: String, mainFunction: BrboFunction,
                        boundAssertions: List[BoundAssertion] = Nil,
                        functions: List[BrboFunction] = Nil, uuid: UUID = UUID.randomUUID())
-  extends PrettyPrintToC with OverrideToString {
+  extends PrettyPrintToC with OverrideToString with SameAs with Serializable {
   override def prettyPrintToC(indent: Int): String = {
     val functionsString = (functions :+ mainFunction).map(function => function.prettyPrintToC(indent)).mkString("\n")
     s"${PreDefinedFunctions.UNDEFINED_FUNCTIONS_MACRO}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
@@ -24,6 +25,22 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
 
   def replaceMainFunction(newMainFunction: BrboFunction): BrboProgram =
     BrboProgram(name, newMainFunction, boundAssertions, functions)
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case BrboProgram(otherName, otherMainFunction, otherBoundAssertions, otherFunctions, _) =>
+        if (otherBoundAssertions.length != boundAssertions.length || otherFunctions.length != functions.length)
+          false
+        else
+          otherName == name && otherMainFunction.sameAs(mainFunction) &&
+            otherBoundAssertions.zip(boundAssertions).forall({
+              case (a1, a2) => a1.sameAs(a2)
+            }) && otherFunctions.zip(functions).forall({
+            case (f1, f2) => f1.sameAs(f2)
+          })
+      case _ => false
+    }
+  }
 }
 
 /**
@@ -38,9 +55,10 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
  *                             has been applied to the function.
  * @param uuid                 Unique ID
  */
+@SerialVersionUID(2L)
 case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier],
                         bodyNoInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
-  extends PrettyPrintToC with OverrideToString with SameAs {
+  extends PrettyPrintToC with OverrideToString with SameAs with Serializable {
   val ghostVariableInitializations: List[Command] = groupIds.flatMap({
     groupId => GhostVariableUtils.declareVariables(groupId)
   }).toList.sortWith({ case (c1, c2) => c1.toIR() < c2.toIR() })

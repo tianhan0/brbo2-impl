@@ -454,7 +454,7 @@ object AbstractMachine {
     }
   }
 
-  case class StateMapBrboExpr(valuations: Map[CFGNode, BrboExpr])
+  case class StateMapBrboExpr(valuations: Map[CFGNode, BrboExpr]) extends Serializable
 
   /**
    *

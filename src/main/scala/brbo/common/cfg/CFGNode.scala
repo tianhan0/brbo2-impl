@@ -12,7 +12,8 @@ import com.ibm.wala.util.intset.{BimodalMutableIntSet, IntSet}
  * @param id       A unique (if desired) ID among all commands and expressions in all functions
  */
 case class CFGNode(value: CommandOrExpr, function: Option[BrboFunction] = None, id: Int = CFGNode.DONT_CARE_ID)
-  extends NodeWithNumber with INodeWithNumberedEdges with PrettyPrintToC with PrettyPrintToCFG with GetFunctionCalls {
+  extends NodeWithNumber with INodeWithNumberedEdges with PrettyPrintToC
+    with PrettyPrintToCFG with GetFunctionCalls with Serializable {
   private val predNumbers = new BimodalMutableIntSet()
   private val succNumbers = new BimodalMutableIntSet()
   val functionIdentifier: String = function match {

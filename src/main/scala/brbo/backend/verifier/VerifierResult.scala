@@ -3,7 +3,7 @@ package brbo.backend.verifier
 import brbo.backend.verifier.VerifierStatus._
 import brbo.backend.verifier.cex.Path
 
-case class VerifierResult(rawResult: VerifierStatus, counterexamplePaths: Set[Path]) {
+case class VerifierResult(rawResult: VerifierStatus, counterexamplePaths: Set[Path]) extends Serializable {
   rawResult match {
     case TRUE_RESULT => assert(counterexamplePaths.isEmpty)
     case FALSE_RESULT => assert(counterexamplePaths.nonEmpty)

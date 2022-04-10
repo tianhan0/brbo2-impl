@@ -6,7 +6,7 @@ import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.{GhostVariableUtils, MyLogger}
 
-case class Path(pathNodes: List[CFGNode]) {
+case class Path(pathNodes: List[CFGNode]) extends Serializable {
   pathNodes.map(pathNode => pathNode.value).foreach({
     case _: Command =>
     case brboExpr: BrboExpr => assert(brboExpr.typ == BOOL)

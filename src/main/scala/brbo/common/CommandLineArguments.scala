@@ -9,7 +9,7 @@ import org.kohsuke.args4j.{CmdLineException, CmdLineParser, Option}
 
 import scala.collection.JavaConverters._
 
-class CommandLineArguments {
+class CommandLineArguments extends Serializable {
 
   @Option(name = "--amortize", aliases = Array("-a"), required = false,
     usage = "The amortization mode. Choose from: `FULL`, `NO`, `SELECTIVE`, `ALL` (case-insensitive)")
