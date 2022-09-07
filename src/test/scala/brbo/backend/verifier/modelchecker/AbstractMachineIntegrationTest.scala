@@ -6,7 +6,6 @@ import brbo.backend.verifier.modelchecker.AbstractDomainName._
 import brbo.common.BrboType._
 import brbo.common.CommandLineArguments._
 import brbo.common.ast._
-import brbo.common.string.StringCompare
 import brbo.common.{BrboType, _}
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -70,6 +69,7 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
     arguments
   }
 
+  /*
   "Model checking program 1" should "be correct" in {
     val abstractMachine = new AbstractMachine(program1, polkaArgument)
     val assertion = LessThanOrEqualTo(approximatedResourceUsage, Multiplication(n, a))
@@ -123,6 +123,7 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
     val result = abstractMachine.verify(assertion, None).result
     StringCompare.ignoreWhitespaces(result.toString, """VerifierResult(TRUE_RESULT,Set())""".stripMargin)
   }
+   */
 }
 
 object AbstractMachineIntegrationTest {
