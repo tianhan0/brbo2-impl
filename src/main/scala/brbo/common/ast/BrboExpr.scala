@@ -74,7 +74,7 @@ case class StringLiteral(value: String, uuid: UUID = UUID.randomUUID()) extends 
 }
 
 case class Bool(b: Boolean, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
-  override def prettyPrintToC(indent: Int): String = b.toString
+  override def prettyPrintToC(indent: Int): String = if (b) "1" else "0"
 
   override def prettyPrintToCFG: String = prettyPrintToC()
 

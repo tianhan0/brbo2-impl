@@ -2,17 +2,18 @@ package brbo.backend.verifier
 
 import brbo.TestCase
 import brbo.backend.verifier.AmortizationMode.TEST_MODE
-import brbo.common.BrboType.{INT, VOID}
+import brbo.common.BrboType.{BOOL, INT, VOID}
 import brbo.common.CommandLineArguments
 import brbo.common.CommandLineArguments._
 import brbo.common.ast._
+import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
 class UAutomizerVerifierUnitTest extends AnyFlatSpec {
   val arguments = new CommandLineArguments
   arguments.initialize(
     TEST_MODE,
-    debugMode = DEFAULT_DEBUG_MODE,
+    debugMode = true,
     "",
     printVerifierInputs = DEFAULT_PRINT_VERIFIER_INPUTS,
     verifierTimeout = 10,
@@ -33,9 +34,9 @@ class UAutomizerVerifierUnitTest extends AnyFlatSpec {
   "Parsing counterexample paths" should "be correct" in {
     UAutomizerVerifierUnitTest.testCases.foreach({
       testCase =>
-      // val verifier = new UAutomizerVerifier(arguments)
-      // val result = verifier.verify(testCase.input.asInstanceOf[BrboProgram])
-      // StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"Test `${testCase.name}` failed")
+       val verifier = new UAutomizerVerifier(arguments)
+       val result = verifier.verify(testCase.input.asInstanceOf[BrboProgram])
+       StringCompare.ignoreWhitespaces(result.toString, testCase.expectedOutput, s"Test `${testCase.name}` failed")
     })
   }
 }
@@ -47,10 +48,12 @@ object UAutomizerVerifierUnitTest {
     val a = Identifier("a", INT)
     val b = Identifier("b", INT)
     val R = Identifier("R", INT)
+    val x = Identifier("x", BOOL)
+    val statement0 = VariableDeclaration(x, Bool(b = false))
     val statement1 = VariableDeclaration(i, Number(0))
     val statement2 = VariableDeclaration(R, Number(0))
     val statement3 = PreDefinedFunctions.createAssume(GreaterThan(n, Number(0)))
-    val statement5 = FunctionCall(FunctionCallExpr("ndBool", Nil, INT)) // To test parsing counterexample paths when involving function calls
+    val statement5 = Assignment(x, FunctionCallExpr("ndBool", Nil, BOOL)) // To test parsing counterexample paths when involving function calls
     val statement6 = {
       val e = Identifier("e", INT)
       val statement1 = VariableDeclaration(e, Number(0))
@@ -63,13 +66,13 @@ object UAutomizerVerifierUnitTest {
     val assertionFalse = PreDefinedFunctions.createAssert(LessThanOrEqualTo(R, a))
 
     val test01 = {
-      val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionTrue)), Set())
+      val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement0, statement1, statement2, statement3, statement6, statement5, assertionTrue)), Set())
       BrboProgram("test01", function, Nil, PreDefinedFunctions.allFunctionsList)
     }
     val test01Expected = """VerifierResult(UNKNOWN_RESULT,Set())"""
 
     val test02 = {
-      val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionFalse)), Set())
+      val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement0, statement1, statement2, statement3, statement6, statement5, assertionFalse)), Set())
       BrboProgram("test02", function, Nil, PreDefinedFunctions.allFunctionsList)
     }
     val test02Expected =
