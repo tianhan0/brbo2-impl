@@ -6,6 +6,7 @@ import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.backend.verifier.modelchecker.AbstractMachine.Variable
 import brbo.common.BrboType.INT
 import brbo.common.ast.BrboExprUnitTest._
+import brbo.common.ast.BrboExprUtils.{imply, greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo, notEqual}
 import brbo.common.string.StringCompare
 import brbo.common.{BrboType, MyLogger}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -20,7 +21,7 @@ class BrboExprUnitTest extends AnyFlatSpec {
     })
   }
 
-  private val valuation = {
+  /*private val valuation = {
     val manager = new Octagon()
     val logger = Some(MyLogger.createLogger(classOf[BrboExprUnitTest], debugMode = false))
     val valuation = AbstractMachine.createEmptyValuation(manager, logger)
@@ -34,7 +35,7 @@ class BrboExprUnitTest extends AnyFlatSpec {
         val (apronValue, newValuation) = BrboExprUtils.toApron(testCase.input.asInstanceOf[BrboExpr], valuation, None)
         StringCompare.ignoreWhitespaces(s"$apronValue\n$newValuation", testCase.expectedOutput, s"${testCase.name} failed!")
     })
-  }
+  }*/
 }
 
 object BrboExprUnitTest {
@@ -47,19 +48,18 @@ object BrboExprUnitTest {
       TestCase("Addition", Addition(Number(2), Number(3)), "(2 + 3)"),
       TestCase("Subtraction", Subtraction(Number(2), Number(3)), "(2 - 3)"),
       TestCase("Multiplication", Multiplication(Number(2), Number(3)), "(2 * 3)"),
-      TestCase("Division", Division(Number(2), Number(3)), "(2 / 3)"),
       TestCase("Negation", Negation(Bool(b = true)), "!(true)"),
       TestCase("LessThan", LessThan(Number(2), Number(3)), "(2 < 3)"),
-      TestCase("LessThanOrEqualTo", LessThanOrEqualTo(Number(2), Number(3)), "(2 <= 3)"),
-      TestCase("GreaterThan", GreaterThan(Number(2), Number(3)), "(2 > 3)"),
-      TestCase("GreaterThanOrEqualTo", GreaterThanOrEqualTo(Number(2), Number(3)), "(2 >= 3)"),
+      TestCase("LessThanOrEqualTo", lessThanOrEqualTo(Number(2), Number(3)), "((2 < 3) || (2 == 3))"),
+      TestCase("GreaterThan", greaterThan(Number(2), Number(3)), "!((2 < 3))"),
+      TestCase("GreaterThanOrEqualTo", greaterThanOrEqualTo(Number(2), Number(3)), "(!((2 < 3)) || (2 == 3))"),
       TestCase("Equal", Equal(Number(2), Number(3)), "(2 == 3)"),
-      TestCase("NotEqual", NotEqual(Number(2), Number(3)), "(2 != 3)"),
+      TestCase("NotEqual", notEqual(Number(2), Number(3)), "!((2 == 3))"),
       TestCase("And", And(Bool(b = true), Bool(b = false)), "(true && false)"),
       TestCase("Or", Or(Bool(b = true), Bool(b = false)), "(true || false)"),
       TestCase("FunctionCallExpr", FunctionCallExpr("f", List(Identifier("a", INT), Identifier("b", INT), Identifier("c", INT)), BrboType.INT), "f(a, b, c)"),
       TestCase("ITEExpr", ITEExpr(Bool(b = true), Number(0), Number(1)), "true ? 0 : 1"),
-      TestCase("Imply", Imply(Bool(b = true), Bool(b = false)), "(!true || false)"),
+      TestCase("Imply", imply(Bool(b = true), Bool(b = false)), "(!(true) || false)"),
     )
 
   private val x = Identifier("x", BrboType.INT)
@@ -123,13 +123,6 @@ object BrboExprUnitTest {
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
-      TestCase("Division", Division(x, Number(3)),
-        """ApronExpr(x0 / 3.0)
-          |Variables:
-          |  Variable(x,None)
-          |  Variable(y,None)
-          |  Variable(z,None)
-          |ApronState: <universal>""".stripMargin),
       TestCase("Negation", Negation(Bool(b = true)),
         """Singleton(1.0 - 1.0 <> 0)
           |Variables:
@@ -144,21 +137,21 @@ object BrboExprUnitTest {
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
-      TestCase("LessThanOrEqualTo", LessThanOrEqualTo(x, Number(3)),
+      TestCase("LessThanOrEqualTo", lessThanOrEqualTo(x, Number(3)),
         """Singleton(3.0 - x0 >= 0)
           |Variables:
           |  Variable(x,None)
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
-      TestCase("GreaterThan", GreaterThan(x, Number(3)),
+      TestCase("GreaterThan", greaterThan(x, Number(3)),
         """Singleton(x0 - 3.0 > 0)
           |Variables:
           |  Variable(x,None)
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
-      TestCase("GreaterThanOrEqualTo", GreaterThanOrEqualTo(x, Number(3)),
+      TestCase("GreaterThanOrEqualTo", greaterThanOrEqualTo(x, Number(3)),
         """Singleton(x0 - 3.0 >= 0)
           |Variables:
           |  Variable(x,None)
@@ -172,7 +165,7 @@ object BrboExprUnitTest {
           |  Variable(y,None)
           |  Variable(z,None)
           |ApronState: <universal>""".stripMargin),
-      TestCase("NotEqual", NotEqual(x, Number(3)),
+      TestCase("NotEqual", notEqual(x, Number(3)),
         """Singleton(x0 - 3.0 <> 0)
           |Variables:
           |  Variable(x,None)
@@ -208,7 +201,7 @@ object BrboExprUnitTest {
           |  Variable(z,None)
           |  Variable(v!3,None)
           |ApronState: {  1x3 -2.0 >= 0;  -1x3 +2.0 >= 0 }""".stripMargin),*/
-      TestCase("Imply", Imply(Bool(b = true), Bool(b = false)),
+      TestCase("Imply", imply(Bool(b = true), Bool(b = false)),
         """Disjunction(Singleton(1.0 - 1.0 <> 0),Singleton(1.0 = 0))
           |Variables:
           |  Variable(x,None)

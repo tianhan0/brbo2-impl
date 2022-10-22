@@ -2,6 +2,7 @@ package brbo.common.cfg
 
 import brbo.TestCase
 import brbo.common.BrboType.{INT, VOID}
+import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
 import brbo.common.ast._
 import brbo.common.string.StringCompare
 import org.apache.logging.log4j.{LogManager, Logger}
@@ -69,16 +70,16 @@ object ControlFlowGraphUnitTest {
                            |  24 [ shape=oval label="(24) [Function Exit]" ];
                            |  25 [ shape=rectangle label="(25) int x = ndInt();" ];
                            |  26 [ shape=oval label="(26) [Branch Head]" ];
-                           |  27 [ shape=diamond label="(27) (x > 0)" ];
-                           |  28 [ shape=diamond label="(28) !((x > 0))" ];
+                           |  27 [ shape=diamond label="(27) !((x < 0))" ];
+                           |  28 [ shape=diamond label="(28) !(!((x < 0)))" ];
                            |  29 [ shape=rectangle label="(29) return true;" ];
                            |  30 [ shape=rectangle label="(30) return false;" ];
                            |  31 [ shape=oval label="(31) [Function Exit]" ];
                            |  32 [ shape=rectangle label="(32) int x = ndInt();" ];
-                           |  33 [ shape=rectangle label="(33) assume((lower <= x) && (x <= upper));" ];
+                           |  33 [ shape=rectangle label="(33) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)));" ];
                            |  34 [ shape=rectangle label="(34) return x;" ];
                            |  35 [ shape=oval label="(35) [Function Exit]" ];
-                           |  36 [ shape=rectangle label="(36) assume((lower <= x) && (x <= upper));" ];
+                           |  36 [ shape=rectangle label="(36) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)));" ];
                            |  37 [ shape=oval label="(37) [Function Exit]" ];
                            |  38 [ shape=oval label="(38) [Empty Node]" ];
                            |  8 -> 6 [ label="0.0" ];
@@ -241,16 +242,16 @@ object ControlFlowGraphUnitTest {
     val test06 = {
       val i = Identifier("i", INT)
       val variableDeclaration = VariableDeclaration(i, Number(0))
-      val reset: Reset = Reset(1, LessThanOrEqualTo(i, Number(0)))
-      val use: Use = Use(Some(1), i, GreaterThan(i, Number(5)))
+      val reset: Reset = Reset(1, lessThanOrEqualTo(i, Number(0)))
+      val use: Use = Use(Some(1), i, greaterThan(i, Number(5)))
       val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, reset, use)), Set())
       BrboProgram("test06", main, Nil, Nil)
     }
     val test06Expected = """strict digraph G {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
                            |  2 [ shape=rectangle label="(2) int i = 0;" ];
-                           |  3 [ shape=rectangle label="(3) if (i <= 0) reset R1" ];
-                           |  4 [ shape=rectangle label="(4) if (i > 5) use R1 i" ];
+                           |  3 [ shape=rectangle label="(3) if ((i < 0) || (i == 0)) reset R1" ];
+                           |  4 [ shape=rectangle label="(4) if (!((i < 5))) use R1 i" ];
                            |  2 -> 3 [ label="0.0" ];
                            |  3 -> 4 [ label="0.0" ];
                            |  4 -> 1 [ label="0.0" ];

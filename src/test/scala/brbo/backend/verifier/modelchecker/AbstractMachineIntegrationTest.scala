@@ -5,8 +5,9 @@ import brbo.backend.verifier.UAutomizerVerifier
 import brbo.backend.verifier.modelchecker.AbstractDomainName._
 import brbo.common.BrboType._
 import brbo.common.CommandLineArguments._
+import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
 import brbo.common.ast._
-import brbo.common.{BrboType, _}
+import brbo.common._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class AbstractMachineIntegrationTest extends AnyFlatSpec {
@@ -23,20 +24,20 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
     val declaration = VariableDeclaration(i, Number(0))
     val increment = Assignment(i, Addition(i, Number(1)))
     val condition = LessThan(i, n)
-    val assume = Assume(And(GreaterThan(a, Number(0)), GreaterThan(n, Number(0))))
+    val assume = Assume(And(greaterThan(a, Number(0)), greaterThan(n, Number(0))))
     val loop = Loop(condition, Block(List(reset, use, increment)))
     val mainFunction = BrboFunction("main", VOID, List(n, a), Block(List(assume, declaration, loop)), Set(groupId))
     BrboProgram("Test program 1", mainFunction)
   }
 
   private val (program2, program3) = {
-    val assume = Assume(GreaterThan(t, Number(0)))
+    val assume = Assume(greaterThan(t, Number(0)))
     val l = Identifier("l", BrboType.INT)
     val s = Identifier("s", BrboType.INT)
     val e = Identifier("e", BrboType.INT)
     val reset = Reset(groupId)
-    val s1 = Assume(And(LessThanOrEqualTo(e, s), LessThanOrEqualTo(s, t)))
-    val s2 = Assume(And(LessThanOrEqualTo(s, e), LessThanOrEqualTo(e, t)))
+    val s1 = Assume(And(lessThanOrEqualTo(e, s), lessThanOrEqualTo(s, t)))
+    val s2 = Assume(And(lessThanOrEqualTo(s, e), lessThanOrEqualTo(e, t)))
     val use1 = Use(Some(groupId), Subtraction(s, l))
     val s3 = Assignment(l, e)
 

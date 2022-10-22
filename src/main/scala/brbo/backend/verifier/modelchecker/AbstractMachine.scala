@@ -6,6 +6,7 @@ import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.modelchecker.AbstractDomainName._
 import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.backend.verifier.modelchecker.Apron._
+import brbo.common.ast.BrboExprUtils.{imply, greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo}
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 import brbo.common.string.StringFormatUtils
@@ -40,7 +41,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
       (acc, v) => acc.createUninitializedVariable(Variable(v, None))
     })
   }
-  private val inputsArePositive = brboProgram.mainFunction.parameters.map(i => GreaterThan(i, Number(0))).foldLeft(Bool(b = true): BrboExpr)({
+  private val inputsArePositive = brboProgram.mainFunction.parameters.map(i => greaterThan(i, Number(0))).foldLeft(Bool(b = true): BrboExpr)({
     (acc, gt) => And(acc, gt)
   })
   private var firstRun = true
@@ -149,7 +150,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                 val verified = {
                   val assertionToCheck = {
                     // Sometimes, recovering such additional information (that is lost due to widening) helps proving the assertion
-                    Imply(inputsArePositive, assertion)
+                    imply(inputsArePositive, assertion)
                   }
                   if (arguments.getCheckWithZ3) newState.satisfyWithZ3(assertionToCheck)
                   else newState.satisfy(assertionToCheck)
@@ -286,7 +287,7 @@ object AbstractMachine {
                */
               val v = assign(reset.starVariable, reset.resourceVariable, createNewVariable = false, valuation, commandScope)
               val updateStar = valuation.satisfy(LessThan(reset.starVariable, reset.resourceVariable))
-              val notUpdateStar = valuation.satisfy(GreaterThanOrEqualTo(reset.starVariable, reset.resourceVariable))
+              val notUpdateStar = valuation.satisfy(greaterThanOrEqualTo(reset.starVariable, reset.resourceVariable))
               assert(!(updateStar && notUpdateStar))
               trace(logger, s"Update r*? `$updateStar`. Not update r*? `$notUpdateStar`. r*=r: ${v.toShortString}")
               trace(logger, s"r*=r*: ${valuation.toShortString}")
@@ -318,7 +319,7 @@ object AbstractMachine {
             val lower = arguments.head
             val x = arguments(1)
             val upper = arguments(2)
-            val condition = And(LessThanOrEqualTo(lower, x), LessThanOrEqualTo(x, upper))
+            val condition = And(lessThanOrEqualTo(lower, x), lessThanOrEqualTo(x, upper))
             evalExpr(valuation, condition, commandScope)
           case _ => throw new Exception
         }

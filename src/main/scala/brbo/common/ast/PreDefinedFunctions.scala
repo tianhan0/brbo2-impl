@@ -1,6 +1,7 @@
 package brbo.common.ast
 
 import brbo.common.BrboType.{BOOL, INT, VOID}
+import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
 import brbo.frontend.TargetProgram
 
 object PreDefinedFunctions {
@@ -95,7 +96,7 @@ object PreDefinedFunctions {
     val body = {
       val x = Identifier("x", INT)
       val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
-      val ite = ITE(GreaterThan(x, Number(0)), Return(Some(Bool(b = true))), Return(Some(Bool(b = false))))
+      val ite = ITE(greaterThan(x, Number(0)), Return(Some(Bool(b = true))), Return(Some(Bool(b = false))))
       Block(List(variableDeclaration, ite))
     }
     BrboFunction(NDBOOL, BOOL, Nil, body, Set())
@@ -107,7 +108,7 @@ object PreDefinedFunctions {
     val body = {
       val x = Identifier("x", INT)
       val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
-      val assume = createAssume(And(LessThanOrEqualTo(lower, x), LessThanOrEqualTo(x, upper)))
+      val assume = createAssume(And(lessThanOrEqualTo(lower, x), lessThanOrEqualTo(x, upper)))
       val returnCommand = Return(Some(x))
       Block(List(variableDeclaration, assume, returnCommand))
     }
@@ -119,7 +120,7 @@ object PreDefinedFunctions {
     val lower = Identifier("lower", INT)
     val upper = Identifier("upper", INT)
     val body = {
-      val assume = createAssume(And(LessThanOrEqualTo(lower, x), LessThanOrEqualTo(x, upper)))
+      val assume = createAssume(And(lessThanOrEqualTo(lower, x), lessThanOrEqualTo(x, upper)))
       Block(List(assume))
     }
     BrboFunction(NDINT3, VOID, List(lower, x, upper), body, Set())

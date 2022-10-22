@@ -1,5 +1,6 @@
 package brbo.frontend
 
+import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo, notEqual}
 import brbo.common.ast._
 import brbo.common.{GhostVariableTyp, GhostVariableUtils, MyLogger}
 import brbo.frontend.TargetProgram.PREDEFINED_VARIABLES
@@ -159,15 +160,14 @@ case class TargetProgram(fullQualifiedClassName: String,
             case Kind.PLUS => Addition(left, right)
             case Kind.MINUS => Subtraction(left, right)
             case Kind.MULTIPLY => Multiplication(left, right)
-            case Kind.DIVIDE => Division(left, right)
             case Kind.LESS_THAN => LessThan(left, right)
-            case Kind.LESS_THAN_EQUAL => LessThanOrEqualTo(left, right)
-            case Kind.GREATER_THAN => GreaterThan(left, right)
-            case Kind.GREATER_THAN_EQUAL => GreaterThanOrEqualTo(left, right)
+            case Kind.LESS_THAN_EQUAL => lessThanOrEqualTo(left, right)
+            case Kind.GREATER_THAN => greaterThan(left, right)
+            case Kind.GREATER_THAN_EQUAL => greaterThanOrEqualTo(left, right)
             case Kind.CONDITIONAL_AND => And(left, right)
             case Kind.CONDITIONAL_OR => Or(left, right)
             case Kind.EQUAL_TO => Equal(left, right)
-            case Kind.NOT_EQUAL_TO => NotEqual(left, right)
+            case Kind.NOT_EQUAL_TO => notEqual(left, right)
             case Kind.AND => And(left, right)
             case Kind.OR => Or(left, right)
             case _ => throw new Exception(s"Unsupported binary tree: `$tree`")
@@ -185,7 +185,6 @@ case class TargetProgram(fullQualifiedClassName: String,
                 case Kind.PLUS_ASSIGNMENT => Addition(identifier, update)
                 case Kind.MINUS_ASSIGNMENT => Subtraction(identifier, update)
                 case Kind.MULTIPLY_ASSIGNMENT => Multiplication(identifier, update)
-                case Kind.DIVIDE_ASSIGNMENT => Division(identifier, update)
                 case _ => throw new Exception(s"Unsupported compound assignment tree `$tree`")
               }
               Right(Assignment(identifier, rhs))

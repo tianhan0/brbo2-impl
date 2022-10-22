@@ -41,7 +41,6 @@ object ApronUnitTest {
   private val testAdd = Apron.mkAdd(x, Apron.mkAdd(y, number1))
   private val testSub = Apron.mkSub(x, Apron.mkSub(y, number2))
   private val testMul = Apron.mkMul(x, Apron.mkMul(y, number3))
-  private val testDiv = Apron.mkDiv(x, Apron.mkDiv(y, number1))
   private val testNegative1 = Apron.mkNegative(x)
   private val testNegative2 = Apron.mkNegative(number2)
 
@@ -61,9 +60,6 @@ object ApronUnitTest {
       TestCase("TestMul", testMul, """(fp.mul roundNearestTiesToEven
                                      |        x
                                      |        (fp.mul roundNearestTiesToEven y (fp #b1 #b10000000000 #x8000000000000)))""".stripMargin),
-      TestCase("TestDiv", testDiv, """(fp.div roundNearestTiesToEven
-                                     |        x
-                                     |        (fp.div roundNearestTiesToEven y (fp #b0 #b01111111111 #x0000000000000)))""".stripMargin),
       TestCase("TestNegative1", testNegative1, "(fp.sub roundNearestTiesToEven (_ +zero 11 53) x)"),
       TestCase("TestNegative2", testNegative2, """(fp.sub roundNearestTiesToEven
                                                  |        (_ +zero 11 53)
@@ -81,7 +77,6 @@ object ApronUnitTest {
       TestCase("TestAdd", testAdd, """(+ x y 1)""".stripMargin),
       TestCase("TestSub", testSub, """(- x (- y 2))""".stripMargin),
       TestCase("TestMul", testMul, """(* x y (- 3))""".stripMargin),
-      TestCase("TestDiv", testDiv, """(div x (div y 1))""".stripMargin),
       TestCase("TestNegative1", testNegative1, "(- 0 x)"),
       TestCase("TestNegative2", testNegative2, "(- 0 2)"),
     )
@@ -90,7 +85,6 @@ object ApronUnitTest {
   private val gez = Apron.mkGeZero(testAdd)
   private val gtz = Apron.mkGtZero(testSub)
   private val eqz = Apron.mkEqZero(testMul)
-  private val nez = Apron.mkNeZero(testDiv)
   private val ge = Apron.mkGe(x, number2)
   private val gt = Apron.mkGt(x, number2)
   private val le = Apron.mkLe(x, number2)
@@ -116,12 +110,6 @@ object ApronUnitTest {
                                     |                   y
                                     |                   (fp #b1 #b10000000000 #x8000000000000)))
                                     |   (_ +zero 11 53))""".stripMargin),
-      TestCase("TestNeZero", nez, """(not (= (fp.div roundNearestTiesToEven
-                               |                x
-                               |                (fp.div roundNearestTiesToEven
-                               |                        y
-                               |                        (fp #b0 #b01111111111 #x0000000000000)))
-                               |        (_ +zero 11 53)))""".stripMargin),
       TestCase("TestGe", ge, """(fp.geq (fp.sub roundNearestTiesToEven x (fp #b0 #b10000000000 #x0000000000000))
                                |        (_ +zero 11 53))""".stripMargin),
       TestCase("TestGt", gt, """(fp.gt (fp.sub roundNearestTiesToEven x (fp #b0 #b10000000000 #x0000000000000))
@@ -135,14 +123,13 @@ object ApronUnitTest {
 
   val constraintTestToInt: List[TestCase] = {
     List(
-      TestCase("TestGeZero", gez, """(>= (+ x y 1) 0)""".stripMargin),
-      TestCase("TestGtZero", gtz, """(> (- x (- y 2)) 0)""".stripMargin),
+      TestCase("TestGeZero", gez, """(or (not (< (+ x y 1) 0)) (= (+ x y 1) 0))""".stripMargin),
+      TestCase("TestGtZero", gtz, """(not (< (- x (- y 2)) 0))""".stripMargin),
       TestCase("TestEqZero", eqz, """(= (* x y (- 3)) 0)""".stripMargin),
-      TestCase("TestNeZero", nez, """(not (= (div x (div y 1)) 0))""".stripMargin),
-      TestCase("TestGe", ge, """(>= (- x 2) 0)""".stripMargin),
-      TestCase("TestGt", gt, """(> (- x 2) 0)""".stripMargin),
-      TestCase("TestLe", le, """(>= (- 2 x) 0)""".stripMargin),
-      TestCase("TestLt", lt, """(> (- 2 x) 0)""".stripMargin),
+      TestCase("TestGe", ge, """(or (not (< (- x 2) 0)) (= (- x 2) 0))""".stripMargin),
+      TestCase("TestGt", gt, """(not (< (- x 2) 0))""".stripMargin),
+      TestCase("TestLe", le, """(or (not (< (- 2 x) 0)) (= (- 2 x) 0))""".stripMargin),
+      TestCase("TestLt", lt, """(not (< (- 2 x) 0))""".stripMargin),
     )
   }
 }

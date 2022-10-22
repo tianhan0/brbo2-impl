@@ -2,6 +2,7 @@ package brbo.backend.verifier.modelchecker
 
 import apron._
 import brbo.common.Z3Solver
+import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo}
 import brbo.common.ast._
 import com.microsoft.z3.AST
 import org.apache.logging.log4j.LogManager
@@ -169,9 +170,9 @@ object Apron {
       case Tcons0.EQ =>
         Equal(node, Number(0))
       case Tcons0.SUPEQ =>
-        GreaterThanOrEqualTo(node, Number(0))
+        greaterThanOrEqualTo(node, Number(0))
       case Tcons0.SUP =>
-        GreaterThan(node, Number(0))
+        greaterThan(node, Number(0))
       case Tcons0.EQMOD => throw new Exception
       case Tcons0.DISEQ =>
         Negation(Equal(node, Number(0)))
@@ -189,7 +190,6 @@ object Apron {
           case Texpr0BinNode.OP_ADD => Addition(leftExpr, rightExpr)
           case Texpr0BinNode.OP_SUB => Subtraction(leftExpr, rightExpr)
           case Texpr0BinNode.OP_MUL => Multiplication(leftExpr, rightExpr)
-          case Texpr0BinNode.OP_DIV => Division(leftExpr, rightExpr)
           case _ => throw new Exception
         }
       case node: Texpr0CstNode =>

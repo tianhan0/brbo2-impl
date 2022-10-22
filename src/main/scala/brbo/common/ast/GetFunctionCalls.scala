@@ -1,7 +1,5 @@
 package brbo.common.ast
 
-import brbo.common.BrboType.BrboType
-
 /*abstract class BrboAnf extends PrettyPrintPrintToCFG
 
 abstract class EXPRESSION extends BrboAnf

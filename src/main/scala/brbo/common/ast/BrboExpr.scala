@@ -277,32 +277,6 @@ case class Multiplication(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.ran
   }
 }
 
-case class Division(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
-  assert(left.typ == INT)
-  assert(right.typ == INT)
-
-  override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} / ${right.prettyPrintToC()})"
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
-
-  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
-
-  override def toZ3AST(solver: Z3Solver): AST = solver.mkDiv(left.toZ3AST(solver), right.toZ3AST(solver))
-
-  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
-
-  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
-
-  override def uniqueCopyExpr: BrboExpr = Division(left, right)
-
-  def sameAs(other: Any): Boolean = {
-    other match {
-      case Division(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
-      case _ => false
-    }
-  }
-}
-
 case class Negation(expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
   assert(expression.typ == BOOL)
 
@@ -354,84 +328,6 @@ case class LessThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUI
   }
 }
 
-case class LessThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
-  assert(left.typ == INT)
-  assert(right.typ == INT)
-
-  override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} <= ${right.prettyPrintToC()})"
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
-
-  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
-
-  override def toZ3AST(solver: Z3Solver): AST = solver.mkLe(left.toZ3AST(solver), right.toZ3AST(solver))
-
-  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
-
-  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
-
-  override def uniqueCopyExpr: BrboExpr = LessThanOrEqualTo(left, right)
-
-  def sameAs(other: Any): Boolean = {
-    other match {
-      case LessThanOrEqualTo(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
-      case _ => false
-    }
-  }
-}
-
-case class GreaterThan(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
-  assert(left.typ == INT)
-  assert(right.typ == INT)
-
-  override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} > ${right.prettyPrintToC()})"
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
-
-  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
-
-  override def toZ3AST(solver: Z3Solver): AST = solver.mkGt(left.toZ3AST(solver), right.toZ3AST(solver))
-
-  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
-
-  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
-
-  override def uniqueCopyExpr: BrboExpr = GreaterThan(left, right)
-
-  def sameAs(other: Any): Boolean = {
-    other match {
-      case GreaterThan(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
-      case _ => false
-    }
-  }
-}
-
-case class GreaterThanOrEqualTo(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
-  assert(left.typ == INT)
-  assert(right.typ == INT)
-
-  override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} >= ${right.prettyPrintToC()})"
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
-
-  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
-
-  override def toZ3AST(solver: Z3Solver): AST = solver.mkGe(left.toZ3AST(solver), right.toZ3AST(solver))
-
-  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
-
-  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
-
-  override def uniqueCopyExpr: BrboExpr = GreaterThanOrEqualTo(left, right)
-
-  def sameAs(other: Any): Boolean = {
-    other match {
-      case GreaterThanOrEqualTo(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
-      case _ => false
-    }
-  }
-}
-
 case class Equal(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
   assert(left.typ == right.typ)
 
@@ -452,31 +348,6 @@ case class Equal(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()
   def sameAs(other: Any): Boolean = {
     other match {
       case Equal(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
-      case _ => false
-    }
-  }
-}
-
-case class NotEqual(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
-  assert(left.typ == right.typ)
-
-  override def prettyPrintToC(indent: Int): String = s"(${left.prettyPrintToC()} != ${right.prettyPrintToC()})"
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
-
-  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
-
-  override def toZ3AST(solver: Z3Solver): AST = solver.mkNe(left.toZ3AST(solver), right.toZ3AST(solver))
-
-  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
-
-  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
-
-  override def uniqueCopyExpr: BrboExpr = NotEqual(left, right)
-
-  def sameAs(other: Any): Boolean = {
-    other match {
-      case NotEqual(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
       case _ => false
     }
   }
@@ -588,32 +459,6 @@ case class ITEExpr(condition: BrboExpr, thenExpr: BrboExpr, elseExpr: BrboExpr, 
     other match {
       case ITEExpr(otherCondition, otherThenExpr, otherElseExpr, _) =>
         otherCondition.sameAs(condition) && otherThenExpr.sameAs(thenExpr) && otherElseExpr.sameAs(elseExpr)
-      case _ => false
-    }
-  }
-}
-
-case class Imply(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
-  assert(left.typ == BOOL)
-  assert(right.typ == BOOL)
-
-  override def prettyPrintToC(indent: Int): String = s"(!${left.prettyPrintToC()} || ${right.prettyPrintToC()})"
-
-  override def prettyPrintToCFG: String = s"(${left.prettyPrintToC()} => ${right.prettyPrintToC()})"
-
-  override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
-
-  override def toZ3AST(solver: Z3Solver): AST = solver.mkImplies(left.toZ3AST(solver), right.toZ3AST(solver))
-
-  override def getUses: Set[Identifier] = left.getUses ++ right.getUses
-
-  override def getDefs: Set[Identifier] = left.getDefs ++ right.getDefs
-
-  override def uniqueCopyExpr: BrboExpr = Imply(left, right)
-
-  def sameAs(other: Any): Boolean = {
-    other match {
-      case Imply(otherLeft, otherRight, _) => otherLeft.sameAs(left) && otherRight.sameAs(right)
       case _ => false
     }
   }

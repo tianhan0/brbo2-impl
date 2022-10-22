@@ -39,7 +39,7 @@ object BasicProcessorUnitTest {
       """class Test {
         |  void main(int n, int m) {
         |    if (n > m || n >= m || n == m) {
-        |      int z = (((n + 1) - 2) * 3) / 4;
+        |      int z = (((n + 1) - 2) * 3);
         |    }
         |    if (n < m && n <= m && n != m) {
         |      return;
@@ -53,7 +53,6 @@ object BasicProcessorUnitTest {
         |    z += n;
         |    z -= n;
         |    z *= n;
-        |    z /= n;
         |  }
         |}""".stripMargin
     val test06 =
@@ -151,15 +150,15 @@ object BasicProcessorUnitTest {
       TestCase("Binary expressions", ("Test", test04),
         """void main(int n, int m)
           |{
-          |  if (((n > m) || (n >= m)) || (n == m))
+          |  if ((!((n < m)) || (!((n < m)) || (n == m))) || (n == m))
           |  {
-          |    int z = (((n + 1) - 2) * 3) / 4;
+          |    int z = ((n + 1) - 2) * 3;
           |  }
           |  else
           |  {
           |
           |  }
-          |  if (((n < m) && (n <= m)) && (n != m))
+          |  if (((n < m) && ((n < m) || (n == m))) && !((n == m)))
           |  {
           |    return;
           |  }
@@ -175,7 +174,6 @@ object BasicProcessorUnitTest {
           |  z = z + n;
           |  z = z - n;
           |  z = z * n;
-          |  z = z / n;
           |}""".stripMargin),
       TestCase("Unary", ("Test", test06),
         """void main(int n, int m)
@@ -242,7 +240,7 @@ object BasicProcessorUnitTest {
       TestCase("ITE", ("Test", test12),
         """void main(int n, int m)
           |{
-          |  if (n > 0)
+          |  if (!((n < 0)))
           |    return;
           |  else
           |    ;

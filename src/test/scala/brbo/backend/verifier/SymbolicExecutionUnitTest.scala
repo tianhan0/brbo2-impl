@@ -4,6 +4,7 @@ import brbo.TestCase
 import brbo.backend.verifier.cex.Path
 import brbo.common.BrboType._
 import brbo.common.Z3Solver
+import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.string.StringCompare
@@ -46,7 +47,7 @@ object SymbolicExecutionUnitTest {
       Path(List(
         CFGNode((VariableDeclaration(i, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
         CFGNode((VariableDeclaration(R, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode((BeforeFunctionCall(assumeFunction, List(GreaterThan(n, Number(0))))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((BeforeFunctionCall(assumeFunction, List(greaterThan(n, Number(0))))), Some(mainFunction), CFGNode.DONT_CARE_ID),
         CFGNode((Negation(Negation(assumeCond))), Some(assumeFunction), CFGNode.DONT_CARE_ID),
         CFGNode((FunctionExit()), Some(assumeFunction), CFGNode.DONT_CARE_ID),
         CFGNode((BeforeFunctionCall(ndBoolFunction, Nil)), Some(mainFunction), CFGNode.DONT_CARE_ID),
@@ -64,7 +65,7 @@ object SymbolicExecutionUnitTest {
         CFGNode((Assignment(R, Addition(R, e))), Some(mainFunction), CFGNode.DONT_CARE_ID),
         CFGNode((Assignment(i, Addition(i, Number(1)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
         CFGNode((Negation(LessThan(i, Number(1)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
-        CFGNode((BeforeFunctionCall(assertFunction, List(LessThanOrEqualTo(R, a)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((BeforeFunctionCall(assertFunction, List(lessThanOrEqualTo(R, a)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
         CFGNode((Negation(assertCond)), Some(assertFunction), CFGNode.DONT_CARE_ID),
         CFGNode((LabeledCommand("ERROR", FunctionCall(FunctionCallExpr(PreDefinedFunctions.VERIFIER_ERROR, Nil, VOID)))), Some(assertFunction), CFGNode.DONT_CARE_ID),
         CFGNode((Return(None)), Some(assertFunction), CFGNode.DONT_CARE_ID)
@@ -72,8 +73,8 @@ object SymbolicExecutionUnitTest {
     }
 
     val test02 = {
-      val use = Use(Some(2), Number(1), GreaterThan(n, a))
-      val reset = Reset(2, GreaterThan(n, b))
+      val use = Use(Some(2), Number(1), greaterThan(n, a))
+      val reset = Reset(2, greaterThan(n, b))
       Path(List(
         CFGNode((VariableDeclaration(use.resourceVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
         CFGNode((VariableDeclaration(reset.starVariable, Number(0))), Some(mainFunction), CFGNode.DONT_CARE_ID),
@@ -93,14 +94,10 @@ object SymbolicExecutionUnitTest {
           |  (e,(INT,Value(a)))
           |  (i,(INT,Value((+ 0 1))))
           |  (n,(INT,Value(n)))
-          |Path condition: (let ((a!1 (not (not (or (= v5 0) (= v5 1))))))
-          |  (and true
-          |       (not (not (> n 0)))
-          |       a!1
-          |       (< 0 n)
-          |       (< 0 1)
-          |       (not (< (+ 0 1) 1))
-          |       (not (<= (+ 0 a) a))))
+          |Path condition: (let ((a!1 (not (not (not (< n 0)))))
+          |      (a!2 (not (not (or (= v5 0) (= v5 1)))))
+          |      (a!3 (not (or (< (+ 0 a) a) (= (+ 0 a) a)))))
+          |  (and true a!1 a!2 (< 0 n) (< 0 1) (not (< (+ 0 1) 1)) a!3))
           |Return values:
           |  (ndBool,List(Value(v5)))
           |  (ndInt,List())""".stripMargin),
@@ -112,7 +109,7 @@ object SymbolicExecutionUnitTest {
           |  (a,(INT,Value(a)))
           |  (b,(INT,Value(b)))
           |  (n,(INT,Value(n)))
-          |Path condition: (and true (> n a) (> n b) (> n a))
+          |Path condition: (and true (not (< n a)) (not (< n b)) (not (< n a)))
           |Return values:
           |""".stripMargin)
     )

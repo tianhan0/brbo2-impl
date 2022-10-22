@@ -1,5 +1,6 @@
 package brbo.backend.refiner
 
+import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo}
 import brbo.common.ast._
 import brbo.common.{MathUtils, Z3Solver}
 import com.microsoft.z3.AST
@@ -23,8 +24,8 @@ object Predicate {
               expression =>
                 CONSTANTS.flatMap({
                   constant =>
-                    val ge = Predicate(GreaterThanOrEqualTo(expression, constant))
-                    val gt = Predicate(GreaterThan(expression, constant))
+                    val ge = Predicate(greaterThanOrEqualTo(expression, constant))
+                    val gt = Predicate(greaterThan(expression, constant))
                     List(ge, gt)
                 })
             })
@@ -39,7 +40,7 @@ object Predicate {
             expressions.flatMap({
               expression =>
                 CONSTANTS.map(constant =>
-                  Predicate(LessThanOrEqualTo(expression, constant))
+                  Predicate(lessThanOrEqualTo(expression, constant))
                 )
             })
           case _ => Set[Predicate]()

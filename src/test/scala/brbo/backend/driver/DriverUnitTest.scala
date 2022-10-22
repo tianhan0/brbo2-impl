@@ -5,6 +5,7 @@ import brbo.backend.driver.DriverUnitTest.testCases
 import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.backend.verifier.UAutomizerVerifier
 import brbo.common.CommandLineArguments._
+import brbo.common.ast.BrboExprUtils.lessThanOrEqualTo
 import brbo.common.ast._
 import brbo.common.string.StringCompare
 import brbo.common.{BrboType, CommandLineArguments}
@@ -39,7 +40,7 @@ class DriverUnitTest extends AnyFlatSpec {
         val (className, code, upperBound) = testCase.input.asInstanceOf[(String, String, BrboExpr)]
         val targetProgram = BasicProcessor.getTargetProgram(className, code)
         val driver = new Driver(arguments, targetProgram.program)
-        val boundAssertion = BoundAssertion("R", LessThanOrEqualTo(Identifier("R", BrboType.INT), upperBound), tag = "IrrelevantTag")
+        val boundAssertion = BoundAssertion("R", lessThanOrEqualTo(Identifier("R", BrboType.INT), upperBound), tag = "IrrelevantTag")
         StringCompare.ignoreWhitespaces(driver.verifySelectivelyAmortize(boundAssertion).toString, """TRUE_RESULT""")
     })
   }

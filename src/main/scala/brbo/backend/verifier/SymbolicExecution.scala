@@ -169,30 +169,10 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
           val (leftValue, returnValues1) = evaluateExpression(valuation, returnValues, left)
           val (rightValue, returnValues2) = evaluateExpression(valuation, returnValues1, right)
           (Some(solver.mkMul(leftValue.get, rightValue.get)), returnValues2)
-        case Division(left, right, _) =>
-          val (leftValue, returnValues1) = evaluateExpression(valuation, returnValues, left)
-          val (rightValue, returnValues2) = evaluateExpression(valuation, returnValues1, right)
-          (Some(solver.mkDiv(leftValue.get, rightValue.get)), returnValues2)
         case LessThan(left, right, _) =>
           val (leftValue, returnValues1) = evaluateExpression(valuation, returnValues, left)
           val (rightValue, returnValues2) = evaluateExpression(valuation, returnValues1, right)
           (Some(solver.mkLt(leftValue.get, rightValue.get)), returnValues2)
-        case LessThanOrEqualTo(left, right, _) =>
-          val (leftValue, returnValues1) = evaluateExpression(valuation, returnValues, left)
-          val (rightValue, returnValues2) = evaluateExpression(valuation, returnValues1, right)
-          (Some(solver.mkLe(leftValue.get, rightValue.get)), returnValues2)
-        case GreaterThan(left, right, _) =>
-          val (leftValue, returnValues1) = evaluateExpression(valuation, returnValues, left)
-          val (rightValue, returnValues2) = evaluateExpression(valuation, returnValues1, right)
-          (Some(solver.mkGt(leftValue.get, rightValue.get)), returnValues2)
-        case GreaterThanOrEqualTo(left, right, _) =>
-          val (leftValue, returnValues1) = evaluateExpression(valuation, returnValues, left)
-          val (rightValue, returnValues2) = evaluateExpression(valuation, returnValues1, right)
-          (Some(solver.mkGe(leftValue.get, rightValue.get)), returnValues2)
-        case NotEqual(left, right, _) =>
-          val (leftValue, returnValues1) = evaluateExpression(valuation, returnValues, left)
-          val (rightValue, returnValues2) = evaluateExpression(valuation, returnValues1, right)
-          (Some(solver.mkNe(leftValue.get, rightValue.get)), returnValues2)
         case FunctionCallExpr(identifier, _, _, _) =>
           // Assume the return value of this function call is already in the current state
           returnValues.get(identifier) match {

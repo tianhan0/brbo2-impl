@@ -19,19 +19,13 @@ object BrboExprUtils {
       case Addition(left, right, _) =>
       case Subtraction(left, right, _) =>
       case Multiplication(left, right, _) =>
-      case Division(left, right, _) =>
       case Negation(expression, _) =>
       case LessThan(left, right, _) =>
-      case LessThanOrEqualTo(left, right, _) =>
-      case GreaterThan(left, right, _) =>
-      case GreaterThanOrEqualTo(left, right, _) =>
       case Equal(left, right, _) =>
-      case NotEqual(left, right, _) =>
       case And(left, right, _) =>
       case Or(left, right, _) =>
       case FunctionCallExpr(identifier, arguments, returnType, _) =>
       case ITEExpr(condition, thenExpr, elseExpr, _) =>
-      case Imply(left, right, _) =>
     }
   }
 
@@ -48,22 +42,12 @@ object BrboExprUtils {
         Subtraction(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
       case Multiplication(left, right, _) =>
         Multiplication(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
-      case Division(left, right, _) =>
-        Division(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
       case Negation(expression, _) =>
         Negation(replaceCLiteral(expression, from, to))
       case LessThan(left, right, _) =>
         LessThan(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
-      case LessThanOrEqualTo(left, right, _) =>
-        LessThanOrEqualTo(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
-      case GreaterThan(left, right, _) =>
-        GreaterThan(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
-      case GreaterThanOrEqualTo(left, right, _) =>
-        GreaterThanOrEqualTo(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
       case Equal(left, right, _) =>
         Equal(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
-      case NotEqual(left, right, _) =>
-        NotEqual(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
       case And(left, right, _) =>
         And(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
       case Or(left, right, _) =>
@@ -72,8 +56,6 @@ object BrboExprUtils {
         FunctionCallExpr(identifier, arguments.map(a => replaceCLiteral(a, from, to)), returnType)
       case ITEExpr(condition, thenExpr, elseExpr, _) =>
         ITEExpr(replaceCLiteral(condition, from, to), replaceCLiteral(thenExpr, from, to), replaceCLiteral(elseExpr, from, to))
-      case Imply(left, right, _) =>
-        Imply(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
     }
   }
 
@@ -87,21 +69,11 @@ object BrboExprUtils {
         collectIdentifiers(left) ++ collectIdentifiers(right)
       case Multiplication(left, right, _) =>
         collectIdentifiers(left) ++ collectIdentifiers(right)
-      case Division(left, right, _) =>
-        collectIdentifiers(left) ++ collectIdentifiers(right)
       case Negation(expression, _) =>
         collectIdentifiers(expression)
       case LessThan(left, right, _) =>
         collectIdentifiers(left) ++ collectIdentifiers(right)
-      case LessThanOrEqualTo(left, right, _) =>
-        collectIdentifiers(left) ++ collectIdentifiers(right)
-      case GreaterThan(left, right, _) =>
-        collectIdentifiers(left) ++ collectIdentifiers(right)
-      case GreaterThanOrEqualTo(left, right, _) =>
-        collectIdentifiers(left) ++ collectIdentifiers(right)
       case Equal(left, right, _) =>
-        collectIdentifiers(left) ++ collectIdentifiers(right)
-      case NotEqual(left, right, _) =>
         collectIdentifiers(left) ++ collectIdentifiers(right)
       case And(left, right, _) =>
         collectIdentifiers(left) ++ collectIdentifiers(right)
@@ -111,8 +83,6 @@ object BrboExprUtils {
         arguments.flatMap(a => collectIdentifiers(a)).toSet
       case ITEExpr(condition, thenExpr, elseExpr, _) =>
         collectIdentifiers(condition) ++ collectIdentifiers(thenExpr) ++ collectIdentifiers(elseExpr)
-      case Imply(left, right, _) =>
-        collectIdentifiers(left) ++ collectIdentifiers(right)
     }
   }
 
@@ -180,11 +150,6 @@ object BrboExprUtils {
             case (ApronExpr(left), ApronExpr(right)) => ApronExpr(Apron.mkMul(left, right))
             case _ => throw new Exception
           }
-        case Division(left, right, _) =>
-          (toApronHelper(left), toApronHelper(right)) match {
-            case (ApronExpr(left), ApronExpr(right)) => ApronExpr(Apron.mkDiv(left, right))
-            case _ => throw new Exception
-          }
         case Negation(expression, _) =>
           toApronHelper(expression) match {
             case ApronExpr(_) => throw new Exception
@@ -195,29 +160,9 @@ object BrboExprUtils {
             case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGtZero(mkSub(right, left)))
             case _ => throw new Exception
           }
-        case LessThanOrEqualTo(left, right, _) =>
-          (toApronHelper(left), toApronHelper(right)) match {
-            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGeZero(mkSub(right, left)))
-            case _ => throw new Exception
-          }
-        case GreaterThan(left, right, _) =>
-          (toApronHelper(left), toApronHelper(right)) match {
-            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGtZero(mkSub(left, right)))
-            case _ => throw new Exception
-          }
-        case GreaterThanOrEqualTo(left, right, _) =>
-          (toApronHelper(left), toApronHelper(right)) match {
-            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkGeZero(mkSub(left, right)))
-            case _ => throw new Exception
-          }
         case Equal(left, right, _) =>
           (toApronHelper(left), toApronHelper(right)) match {
             case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkEqZero(mkSub(left, right)))
-            case _ => throw new Exception
-          }
-        case NotEqual(left, right, _) =>
-          (toApronHelper(left), toApronHelper(right)) match {
-            case (ApronExpr(left), ApronExpr(right)) => Singleton(Apron.mkNeZero(mkSub(left, right)))
             case _ => throw new Exception
           }
         case And(left, right, _) =>
@@ -262,7 +207,7 @@ object BrboExprUtils {
         case ITEExpr(condition, thenExpr, elseExpr, _) =>
           (thenExpr.typ, elseExpr.typ) match {
             case (BrboType.BOOL, BrboType.BOOL) =>
-              toApronHelper(And(Imply(condition, thenExpr), Imply(Negation(condition), elseExpr)))
+              toApronHelper(And(imply(condition, thenExpr), imply(Negation(condition), elseExpr)))
             case (BrboType.INT, BrboType.INT) => throw new Exception
             /*val (temporaryVariable, index) = createNewVariable()
             temporaryVariables =
@@ -280,7 +225,6 @@ object BrboExprUtils {
             ApronExpr(Apron.mkVar(index))*/
             case _ => throw new Exception
           }
-        case Imply(left, right, _) => toApronHelper(Or(Negation(left), right))
       }
       result match {
         case ApronExpr(_) => assert(expr.typ == BrboType.INT, s"expr: `${expr.prettyPrintToCFG}`")
@@ -315,19 +259,33 @@ object BrboExprUtils {
       case Addition(_, _, uuid) => uuid
       case Subtraction(_, _, uuid) => uuid
       case Multiplication(_, _, uuid) => uuid
-      case Division(_, _, uuid) => uuid
       case Negation(_, uuid) => uuid
       case LessThan(_, _, uuid) => uuid
-      case LessThanOrEqualTo(_, _, uuid) => uuid
-      case GreaterThan(_, _, uuid) => uuid
-      case GreaterThanOrEqualTo(_, _, uuid) => uuid
       case Equal(_, _, uuid) => uuid
-      case NotEqual(_, _, uuid) => uuid
       case And(_, _, uuid) => uuid
       case Or(_, _, uuid) => uuid
       case FunctionCallExpr(_, _, _, uuid) => uuid
       case ITEExpr(_, _, _, uuid) => uuid
-      case Imply(_, _, uuid) => uuid
     }
+  }
+
+  def lessThanOrEqualTo(left: BrboExpr, right: BrboExpr): BrboExpr = {
+    Or(LessThan(left, right), Equal(left, right))
+  }
+
+  def greaterThan(left: BrboExpr, right: BrboExpr): BrboExpr = {
+    Negation(LessThan(left, right))
+  }
+
+  def greaterThanOrEqualTo(left: BrboExpr, right: BrboExpr): BrboExpr = {
+    Or(greaterThan(left, right), Equal(left, right))
+  }
+
+  def notEqual(left: BrboExpr, right: BrboExpr): BrboExpr = {
+    Negation(Equal(left, right))
+  }
+
+  def imply(left: BrboExpr, right: BrboExpr): BrboExpr = {
+    Or(Negation(left), right)
   }
 }
