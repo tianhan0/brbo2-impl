@@ -1,8 +1,8 @@
 package brbo.frontend
 
-import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
+import brbo.common.BrboType.{BOOL, INT, VOID}
 import brbo.common.ast.Identifier
-import brbo.common.MyLogger
+import brbo.common.{BrboType, MyLogger}
 import com.sun.source.tree.{MethodTree, StatementTree, VariableTree}
 
 import scala.collection.immutable.HashMap
@@ -15,7 +15,7 @@ case class TargetMethod(methodTree: MethodTree) {
 
   val methodName: String = methodTree.getName.toString
 
-  val returnType: BrboType =
+  val returnType: BrboType.T =
     if (methodTree.getReturnType == null) VOID
     else {
       methodTree.getReturnType.toString match {
@@ -34,7 +34,7 @@ case class TargetMethod(methodTree: MethodTree) {
   val localVariables: Map[String, Identifier] =
     if (methodTree.getBody == null) Map()
     else {
-      allCommands.foldLeft(HashMap[String, BrboType]())({
+      allCommands.foldLeft(HashMap[String, BrboType.T]())({
         (acc, statement) =>
           statement match {
             case tree: VariableTree =>

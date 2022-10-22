@@ -1,6 +1,6 @@
 package brbo.frontend
 
-import brbo.common.BrboType.BrboType
+import brbo.common.BrboType
 import com.sun.source.tree._
 import com.sun.source.util.TreePath
 
@@ -33,7 +33,7 @@ object TreeUtils {
     }
   }
 
-  def getAllInputVariables(methodTree: MethodTree): Map[String, BrboType] = {
+  def getAllInputVariables(methodTree: MethodTree): Map[String, BrboType.T] = {
     val parameters = methodTree.getParameters.asScala.foldLeft(HashMap[String, TypeMirror]())({
       (acc, param) => acc + (param.getName.toString -> org.checkerframework.javacutil.TreeUtils.typeOf(param.getType))
     })

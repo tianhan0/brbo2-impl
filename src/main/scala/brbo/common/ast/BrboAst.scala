@@ -56,7 +56,7 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
  * @param uuid                 Unique ID
  */
 @SerialVersionUID(2L)
-case class BrboFunction(identifier: String, returnType: BrboType, parameters: List[Identifier],
+case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: List[Identifier],
                         bodyNoInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
   extends PrettyPrintToC with OverrideToString with SameAs with Serializable {
   val ghostVariableInitializations: List[Command] = groupIds.flatMap({

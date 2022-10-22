@@ -1,12 +1,14 @@
 package brbo.common.ast
 
-import brbo.common.BrboType.{BOOL, BrboType, INT, STRING}
+import brbo.common.BrboType.{ARRAY, BOOL, INT, STRING}
 import brbo.common.{BrboType, Z3Solver}
 import com.microsoft.z3.AST
 
 import java.util.UUID
 
-abstract class BrboExpr(val typ: BrboType) extends CommandOrExpr with PrettyPrintToC
+trait BrboValue
+
+abstract class BrboExpr(val typ: BrboType.T) extends CommandOrExpr with PrettyPrintToC
   with GetFunctionCalls with Z3AST with UseDefVariables with UniqueCopy {
   override def prettyPrintToC(indent: Int): String
 
@@ -19,7 +21,7 @@ abstract class BrboExpr(val typ: BrboType) extends CommandOrExpr with PrettyPrin
   }
 }
 
-case class Identifier(name: String, override val typ: BrboType, uuid: UUID = UUID.randomUUID()) extends BrboExpr(typ) {
+case class Identifier(name: String, override val typ: BrboType.T, uuid: UUID = UUID.randomUUID()) extends BrboExpr(typ) {
   override def prettyPrintToC(indent: Int): String = name
 
   def typeNamePairInC(): String = s"${BrboType.toCString(typ)} $name"
@@ -50,7 +52,7 @@ case class Identifier(name: String, override val typ: BrboType, uuid: UUID = UUI
   }
 }
 
-case class StringLiteral(value: String, uuid: UUID = UUID.randomUUID()) extends BrboExpr(STRING) {
+case class StringLiteral(value: String, uuid: UUID = UUID.randomUUID()) extends BrboExpr(STRING) with BrboValue {
   override def prettyPrintToC(indent: Int): String = value
 
   override def prettyPrintToCFG: String = prettyPrintToC()
@@ -73,7 +75,7 @@ case class StringLiteral(value: String, uuid: UUID = UUID.randomUUID()) extends 
   }
 }
 
-case class Bool(b: Boolean, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) {
+case class Bool(b: Boolean, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL) with BrboValue {
   override def prettyPrintToC(indent: Int): String = b.toString
 
   override def prettyPrintToCFG: String = prettyPrintToC()
@@ -96,7 +98,7 @@ case class Bool(b: Boolean, uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOO
   }
 }
 
-case class Number(n: Int, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
+case class Number(n: Int, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) with BrboValue {
   override def prettyPrintToC(indent: Int): String = n.toString
 
   override def prettyPrintToCFG: String = prettyPrintToC()
@@ -117,6 +119,84 @@ case class Number(n: Int, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) 
       case _ => false
     }
   }
+}
+
+case class BrboArray(values: List[BrboExpr], innerType: BrboType.T, uuid: UUID = UUID.randomUUID()) extends BrboExpr(ARRAY(innerType)) with BrboValue {
+  assert(values.forall(v => v.isInstanceOf[BrboValue] && v.typ == innerType))
+
+  override def prettyPrintToC(indent: Int): String = ???
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case BrboArray(otherValues, _, _) =>
+        if (values.length != otherValues.length)
+          false
+        else {
+          values.zip(otherValues).forall({ case (v1, v2) => v1.sameAs(v2) })
+        }
+      case _ => false
+    }
+  }
+
+  override def toZ3AST(solver: Z3Solver): AST = ???
+
+  override def uniqueCopyExpr: BrboExpr = BrboArray(values, innerType)
+
+  override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
+
+  override def prettyPrintToCFG: String = s"Array(${values.map(v => v.prettyPrintToCFG).mkString(",")})"
+}
+
+case class Read(array: BrboExpr, index: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(array.typ.asInstanceOf[BrboType.ARRAY].typ) {
+  override def prettyPrintToC(indent: Int): String = ???
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case Read(otherArray, otherIndex, _) => array.sameAs(otherArray) && index.sameAs(otherIndex)
+      case _ => false
+    }
+  }
+
+  override def toZ3AST(solver: Z3Solver): AST = ???
+
+  override def uniqueCopyExpr: BrboExpr = Read(array, index)
+
+  override def getFunctionCalls: List[FunctionCallExpr] = array.getFunctionCalls ::: index.getFunctionCalls
+
+  override def getUses: Set[Identifier] = array.getUses ++ index.getUses
+
+  override def getDefs: Set[Identifier] = array.getDefs ++ index.getDefs
+
+  override def prettyPrintToCFG: String = ???
+}
+
+case class Length(array: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
+  assert(array.typ.isInstanceOf[BrboType.ARRAY])
+
+  override def prettyPrintToC(indent: Int): String = ???
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case Length(otherArray, _) => array.sameAs(otherArray)
+      case _ => false
+    }
+  }
+
+  override def toZ3AST(solver: Z3Solver): AST = ???
+
+  override def uniqueCopyExpr: BrboExpr = Length(array)
+
+  override def getFunctionCalls: List[FunctionCallExpr] = array.getFunctionCalls
+
+  override def getUses: Set[Identifier] = array.getUses
+
+  override def getDefs: Set[Identifier] = array.getDefs
+
+  override def prettyPrintToCFG: String = ???
 }
 
 case class Addition(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT) {
@@ -454,7 +534,7 @@ case class Or(left: BrboExpr, right: BrboExpr, uuid: UUID = UUID.randomUUID()) e
   }
 }
 
-case class FunctionCallExpr(identifier: String, arguments: List[BrboExpr], returnType: BrboType, uuid: UUID = UUID.randomUUID()) extends BrboExpr(returnType) {
+case class FunctionCallExpr(identifier: String, arguments: List[BrboExpr], returnType: BrboType.T, uuid: UUID = UUID.randomUUID()) extends BrboExpr(returnType) {
   override def prettyPrintToC(indent: Int): String = {
     val argumentsString = arguments.map(argument => argument.prettyPrintToCNoOuterBrackets).mkString(", ")
     s"$identifier($argumentsString)"

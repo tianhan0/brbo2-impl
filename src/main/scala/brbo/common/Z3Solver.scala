@@ -1,6 +1,6 @@
 package brbo.common
 
-import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
+import brbo.common.BrboType.{BOOL, INT, VOID}
 import brbo.common.ast.{Identifier, Z3AST}
 import com.microsoft.z3._
 import org.apache.logging.log4j.LogManager
@@ -396,7 +396,7 @@ object Z3Solver {
 
   def variableToZ3(identifier: Identifier, solver: Z3Solver): AST = variableToZ3(identifier.name, identifier.typ, solver)
 
-  def variableToZ3(identifier: String, typ: BrboType, solver: Z3Solver): AST = {
+  def variableToZ3(identifier: String, typ: BrboType.T, solver: Z3Solver): AST = {
     typ match {
       case INT => solver.mkIntVar(identifier)
       case BOOL => solver.mkBoolVar(identifier)

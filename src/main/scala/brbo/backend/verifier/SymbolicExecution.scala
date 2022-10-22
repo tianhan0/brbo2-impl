@@ -1,11 +1,11 @@
 package brbo.backend.verifier
 
 import brbo.backend.verifier.SymbolicExecution._
-import brbo.common.BrboType.{BOOL, BrboType, INT, VOID}
+import brbo.common.BrboType.{BOOL, INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.string.StringCompare
-import brbo.common.{MyLogger, Z3Solver}
+import brbo.common.{BrboType, MyLogger, Z3Solver}
 import com.microsoft.z3.{AST, BoolExpr, Expr}
 
 import scala.annotation.tailrec
@@ -14,19 +14,19 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
   private val logger = MyLogger.createLogger(classOf[SymbolicExecution], debugMode)
 
   def execute(nodes: List[CFGNode], solver: Z3Solver): Result = {
-    val inputs: Valuation = inputVariables.foldLeft(Map[String, (BrboType, Value)]())({
+    val inputs: Valuation = inputVariables.foldLeft(Map[String, (BrboType.T, Value)]())({
       (acc, parameter) =>
         val z3AST = Z3Solver.variableToZ3(parameter.name, parameter.typ, solver)
         acc + (parameter.name -> (parameter.typ, Value(z3AST)))
     })
     var declaredVariables: Valuation = inputs
 
-    def createFreshVariable(typ: BrboType): (String, Expr) = {
+    def createFreshVariable(typ: BrboType.T): (String, Expr) = {
       val variableName = s"v${declaredVariables.size}"
       declareVariable(variableName, typ)
     }
 
-    def declareVariable(name: String, typ: BrboType): (String, Expr) = {
+    def declareVariable(name: String, typ: BrboType.T): (String, Expr) = {
       val z3AST = typ match {
         case INT => solver.mkIntVar(name)
         case BOOL => solver.mkBoolVar(name)
@@ -54,7 +54,7 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
                     (value.get :: values, newReturnValue)
                 })
               val map =
-                callee.parameters.zip(reversedValues.reverse).foldLeft(Map[String, (BrboType, Value)]())({
+                callee.parameters.zip(reversedValues.reverse).foldLeft(Map[String, (BrboType.T, Value)]())({
                   case (acc, (formalArgument, value)) =>
                     acc + (formalArgument.name -> (formalArgument.typ, Value(value)))
                 })
@@ -229,7 +229,7 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
 object SymbolicExecution {
   type ReturnValues = Map[String, List[Value]]
 
-  type Valuation = Map[String, (BrboType, Value)]
+  type Valuation = Map[String, (BrboType.T, Value)]
 
   case class Result(finalState: State, usedVariables: Set[String])
 
