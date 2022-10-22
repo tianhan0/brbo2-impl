@@ -1,7 +1,7 @@
 package brbo.backend.verifier
 
 import brbo.backend.verifier.cex.ParseCounterexamplePath
-import brbo.common.ast.{BrboProgram, BrboProgramInC}
+import brbo.common.ast.{BrboProgram, BrboCProgram}
 import brbo.common.{CommandLineArguments, FileUtils}
 import org.apache.commons.io.IOUtils
 
@@ -22,7 +22,7 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
   private val FULL_OUTPUT = "--full-output"
 
   override def verify(program: BrboProgram): VerifierResult = {
-    val programInC = BrboProgramInC(program)
+    val programInC = BrboCProgram(program)
 
     val cSourceCode = programInC.program.prettyPrintToC()
     if (arguments.getPrintVerifierInputs) logger.info(s"Input to UAutomizer:\n$cSourceCode")

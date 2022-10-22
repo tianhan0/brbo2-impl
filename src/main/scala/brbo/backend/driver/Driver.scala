@@ -92,7 +92,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         logger.infoOrError(s"Output all unknown amortizations to `${BrboMain.OUTPUT_DIRECTORY}/amortizations/`")
         tree.vertexSet().asScala.zipWithIndex.foreach({
           case (node, index) =>
-            val programInC = BrboProgramInC(node.program)
+            val programInC = BrboCProgram(node.program)
             val cSourceCode = programInC.program.prettyPrintToC()
             val file = new File(s"${BrboMain.OUTPUT_DIRECTORY}/amortizations/${originalProgram.name}-${StringFormatUtils.integer(index, 3)}.txt")
             FileUtils.writeStringToFile(file, cSourceCode, Charset.forName("UTF-8"))

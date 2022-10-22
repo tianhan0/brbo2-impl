@@ -1,16 +1,16 @@
 package brbo.common.ast
 
-case class BrboProgramInC(originalProgram: BrboProgram) {
+case class BrboCProgram(originalProgram: BrboProgram) {
   val (program: BrboProgram, map: Map[CommandOrExpr, GhostCommand]) = programToC
 
   private def programToC: (BrboProgram, Map[CommandOrExpr, GhostCommand]) = {
     val (newMainFunction, mainMap) = {
-      val c = BrboFunctionInC(originalProgram.mainFunction)
+      val c = BrboCFunction(originalProgram.mainFunction)
       (c.function, c.map)
     }
     val (functions, map) = originalProgram.functions.foldLeft(Nil: List[BrboFunction], mainMap)({
       (acc, function) =>
-        val c = BrboFunctionInC(function)
+        val c = BrboCFunction(function)
         (c.function :: acc._1, acc._2 ++ c.map)
     })
     val newProgram = BrboProgram(originalProgram.name, newMainFunction,
@@ -19,7 +19,7 @@ case class BrboProgramInC(originalProgram: BrboProgram) {
   }
 }
 
-case class BrboFunctionInC(originalFunction: BrboFunction) {
+case class BrboCFunction(originalFunction: BrboFunction) {
   // Map commands or expressions in the C version that are translated from uses or resets in the original program
   val (function: BrboFunction, map: Map[CommandOrExpr, GhostCommand]) = functionToC
 

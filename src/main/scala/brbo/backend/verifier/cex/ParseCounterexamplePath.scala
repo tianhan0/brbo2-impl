@@ -59,7 +59,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
 
   // Map updates to ghost variables into use or reset commands.
   // Assume the input program contains no use or reset commands.
-  def extractUseResetFromCRepresentation(path: Path, programInC: BrboProgramInC): Path = {
+  def extractUseResetFromCRepresentation(path: Path, programInC: BrboCProgram): Path = {
     def extractUseReset(key: CommandOrExpr, node: CFGNode): CFGNode = {
       programInC.map.get(key) match {
         case Some(value) =>
