@@ -93,7 +93,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
         tree.vertexSet().asScala.zipWithIndex.foreach({
           case (node, index) =>
             val programInC = BrboCProgram(node.program)
-            val cSourceCode = programInC.program.prettyPrintToC()
+            val cSourceCode = programInC.program.printToC(0)
             val file = new File(s"${BrboMain.OUTPUT_DIRECTORY}/amortizations/${originalProgram.name}-${StringFormatUtils.integer(index, 3)}.txt")
             FileUtils.writeStringToFile(file, cSourceCode, Charset.forName("UTF-8"))
         })
@@ -174,7 +174,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
 
   private def verify(program: BrboProgram, boundAssertion: BoundAssertion): VerifierResult = {
     val assertion = boundAssertion.replaceResourceVariable(program.mainFunction.approximatedResourceUsage)
-    logger.infoOrError(s"Verify global assertion `${assertion.prettyPrintToCNoOuterBrackets}`")
+    logger.infoOrError(s"Verify global assertion `${assertion.printNoOuterBrackets}`")
     // val ubcheckInserted = insertUBCheck(program, boundAssertion)
     // val result = uAutomizerVerifier.verify(ubcheckInserted)
     val modelChecker = new AbstractMachine(program, arguments)
@@ -192,7 +192,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
           case Assignment(variable, expression, _) =>
             if (GhostVariableUtils.isGhostVariable(variable.name, GhostVariableTyp.Resource)) {
               val errorMessage = s"To successfully extract uses from assignments, the assignment must be in the form of " +
-                s"`${variable.name} = ${variable.name} + e` for some e, instead of `${command.prettyPrintToC()}`"
+                s"`${variable.name} = ${variable.name} + e` for some e, instead of `${command.printToC(0)}`"
               expression match {
                 case Addition(left, right, _) =>
                   left match {
@@ -235,9 +235,9 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
       val sum: BrboExpr = program.mainFunction.approximatedResourceUsage
       val assertFunction: BrboFunction = PreDefinedFunctions.assertFunction
       val assertion = boundAssertion.replaceResourceVariable(sum)
-      FunctionCall(FunctionCallExpr(assertFunction.identifier, List(assertion), assertFunction.returnType))
+      FunctionCallExpr(assertFunction.identifier, List(assertion), assertFunction.returnType)
     }
-    logger.infoOrError(s"Insert ub check assertion: `${assertion.prettyPrintToC()}`")
+    logger.infoOrError(s"Insert ub check assertion: `${assertion.printToC(0)}`")
 
     def generateNewUse(use: Use): List[Command] = {
       // Use the same uuid so that, we can succeed in using commands from the program without UB checks to match against

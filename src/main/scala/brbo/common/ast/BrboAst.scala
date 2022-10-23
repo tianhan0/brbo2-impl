@@ -5,22 +5,23 @@ import brbo.common.GhostVariableTyp._
 import brbo.common.{BrboType, GhostVariableUtils, SameAs}
 
 import java.util.UUID
+import scala.annotation.tailrec
 
 @SerialVersionUID(1L)
 case class BrboProgram(name: String, mainFunction: BrboFunction,
                        boundAssertions: List[BoundAssertion] = Nil,
                        functions: List[BrboFunction] = Nil, uuid: UUID = UUID.randomUUID())
-  extends PrettyPrintToC with OverrideToString with SameAs with Serializable {
-  override def prettyPrintToC(indent: Int): String = {
-    val functionsString = (functions :+ mainFunction).map(function => function.prettyPrintToC(indent)).mkString("\n")
+  extends PrintToC with SameAs with Serializable {
+  override def printToC(indent: Int): String = {
+    val functionsString = (functions :+ mainFunction).map(function => function.printToC(indent)).mkString("\n")
     s"${PreDefinedFunctions.UNDEFINED_FUNCTIONS_MACRO}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
   }
 
-  override def toIR(indent: Int = 0): String = {
+  def toIR(indent: Int = 0): String = {
     val separator = ", "
     s"Program name: `$name`\n" +
       s"Global assertions to verify: `${boundAssertions.map(a => a.assertion.toString).mkString(separator)}`\n" +
-      s"${(functions :+ mainFunction).map(function => function.toIR(DEFAULT_INDENT_IR)).mkString("\n")}"
+      s"${(functions :+ mainFunction).map(function => function.printToC(DEFAULT_INDENT)).mkString("\n")}"
   }
 
   def replaceMainFunction(newMainFunction: BrboFunction): BrboProgram =
@@ -58,10 +59,10 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
 @SerialVersionUID(2L)
 case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: List[Identifier],
                         bodyNoInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
-  extends PrettyPrintToC with OverrideToString with SameAs with Serializable {
+  extends PrintToC with SameAs with Serializable {
   val ghostVariableInitializations: List[Command] = groupIds.flatMap({
     groupId => GhostVariableUtils.declareVariables(groupId)
-  }).toList.sortWith({ case (c1, c2) => c1.toIR() < c2.toIR() })
+  }).toList.sortWith({ case (c1, c2) => c1.printToCFGNode() < c2.printToCFGNode() })
   val approximatedResourceUsage: BrboExpr = GhostVariableUtils.approximatedResourceUsage(groupIds)
 
   // Declare and initialize ghost variables in the function
@@ -71,14 +72,9 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
     case _ => throw new Exception
   }
 
-  override def prettyPrintToC(indent: Int): String = {
+  override def printToC(indent: Int): String = {
     val parametersString = parameters.map(pair => s"${pair.typeNamePairInC()}").mkString(", ")
-    s"${BrboType.toCString(returnType)} $identifier($parametersString) \n${actualBody.prettyPrintToC(0)}"
-  }
-
-  def toIR(indent: Int = 0): String = {
-    val parametersString = parameters.map(pair => s"${pair.typeNamePairInC()}").mkString(", ")
-    s"${BrboType.toCString(returnType)} $identifier($parametersString) \n${actualBody.toIR(indent)}"
+    s"${BrboType.toCString(returnType)} $identifier($parametersString) \n${actualBody.printToC(0)}"
   }
 
   val isAmortized: Boolean = groupIds.isEmpty
@@ -101,23 +97,44 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
   }
 }
 
-trait BrboAst extends BrboAstNode with PrettyPrintToC with OverrideToString
-
-abstract class Command extends BrboAst with CommandOrExpr with GetFunctionCalls with UseDefVariables {
-  override def toIR(indent: Int): String = prettyPrintToC(indent)
+abstract class BrboAst extends SameAs with Serializable with PrintToC {
 }
 
-abstract class Statement extends BrboAst
+abstract class Statement(val uuid: UUID) extends BrboAst {
+}
 
-case class Block(asts: List[BrboAst], uuid: UUID = UUID.randomUUID()) extends Statement {
-  override def prettyPrintToC(indent: Int): String = {
-    val indentString = " " * indent
-    s"$indentString{\n${asts.map(t => t.prettyPrintToC(indent + DEFAULT_INDENT)).mkString("\n")}\n$indentString}"
+abstract class Command(val uuid: UUID) extends BrboAst with PrintToCFGNode with GetFunctionCalls with UseDefVariables {
+  protected def printCommand(indent: Int): String
+
+  final override def printToCFGNode(): String = {
+    this match {
+      case brboExpr: BrboExpr => brboExpr.print(0)
+      case BeforeFunctionCall(callee, actualArguments, _) =>
+        val argumentsString =
+          if (actualArguments.nonEmpty) s" with `${actualArguments.map(a => a.printToCFGNode()).mkString(", ")}`"
+          else " no arguments"
+        s"Call function `${callee.identifier}`$argumentsString"
+      case use@Use(_, update, condition, _) =>
+        s"if (${condition.printNoOuterBrackets}) use ${use.resourceVariable.name} ${update.printToCFGNode()}"
+      case reset@Reset(_, condition, _) =>
+        s"if (${condition.printNoOuterBrackets}) reset ${reset.resourceVariable.name}"
+      case _: Command => printToC(0)
+      case _ => throw new Exception()
+    }
   }
 
-  override def toIR(indent: Int): String = {
-    val indentString = " " * indent
-    s"$indentString{\n${asts.map(t => t.toIR(indent + DEFAULT_INDENT_IR)).mkString("\n")}\n$indentString}"
+  final override def printToC(indent: Int): String = {
+    this match {
+      case brboExpr: BrboExpr => brboExpr.print(indent) + ";"
+      case _: Command => printCommand(indent)
+      case _ => throw new Exception()
+    }
+  }
+}
+
+case class Block(asts: List[BrboAst], override val uuid: UUID = UUID.randomUUID()) extends Statement(uuid) {
+  override def printToC(indent: Int): String = {
+    s"${indentString(indent)}{\n${asts.map(t => t.printToC(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
   }
 
   override def sameAs(other: Any): Boolean = {
@@ -130,27 +147,15 @@ case class Block(asts: List[BrboAst], uuid: UUID = UUID.randomUUID()) extends St
   }
 }
 
-case class Loop(condition: BrboExpr, loopBody: BrboAst, uuid: UUID = UUID.randomUUID()) extends Statement {
-  override def prettyPrintToC(indent: Int): String = {
-    val conditionString = condition.prettyPrintToCNoOuterBrackets
+case class Loop(condition: BrboExpr, loopBody: BrboAst, override val uuid: UUID = UUID.randomUUID()) extends Statement(uuid) {
+  override def printToC(indent: Int): String = {
+    val conditionString = condition.printNoOuterBrackets
     val bodyString = loopBody match {
-      case _: Command => s"${loopBody.prettyPrintToC(indent + DEFAULT_INDENT)}"
-      case _: Statement => s"${loopBody.prettyPrintToC(indent)}"
+      case _: Command => s"${loopBody.printToC(indent + DEFAULT_INDENT)}"
+      case _: Statement => s"${loopBody.printToC(indent)}"
       case _ => throw new Exception
     }
-    val indentString = " " * indent
-    s"${indentString}while ($conditionString)\n$bodyString"
-  }
-
-  override def toIR(indent: Int): String = {
-    val conditionString = condition.prettyPrintToCNoOuterBrackets
-    val bodyString = loopBody match {
-      case _: Command => s"${loopBody.toIR(indent + DEFAULT_INDENT_IR)}"
-      case _: Statement => s"${loopBody.toIR(indent)}"
-      case _ => throw new Exception
-    }
-    val indentString = " " * indent
-    s"${indentString}while ($conditionString)\n$bodyString"
+    s"${indentString(indent)}while ($conditionString)\n$bodyString"
   }
 
   override def sameAs(other: Any): Boolean = {
@@ -162,37 +167,20 @@ case class Loop(condition: BrboExpr, loopBody: BrboAst, uuid: UUID = UUID.random
   }
 }
 
-case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, uuid: UUID = UUID.randomUUID()) extends Statement {
-  override def prettyPrintToC(indent: Int): String = {
-    val conditionString = condition.prettyPrintToCNoOuterBrackets
+case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, override val uuid: UUID = UUID.randomUUID()) extends Statement(uuid) {
+  override def printToC(indent: Int): String = {
+    val conditionString = condition.printNoOuterBrackets
     val thenString = thenAst match {
-      case _: Command => thenAst.prettyPrintToC(indent + DEFAULT_INDENT)
-      case _: Statement => thenAst.prettyPrintToC(indent)
+      case _: Command => thenAst.printToC(indent + DEFAULT_INDENT)
+      case _: Statement => thenAst.printToC(indent)
       case _ => throw new Exception
     }
     val elseString = elseAst match {
-      case _: Command => elseAst.prettyPrintToC(indent + DEFAULT_INDENT)
-      case _: Statement => elseAst.prettyPrintToC(indent)
+      case _: Command => elseAst.printToC(indent + DEFAULT_INDENT)
+      case _: Statement => elseAst.printToC(indent)
       case _ => throw new Exception
     }
-    val indentString = " " * indent
-    s"${indentString}if ($conditionString)\n$thenString\n${indentString}else\n$elseString"
-  }
-
-  override def toIR(indent: Int): String = {
-    val conditionString = condition.prettyPrintToCNoOuterBrackets
-    val thenString = thenAst match {
-      case _: Command => thenAst.toIR(indent + DEFAULT_INDENT_IR)
-      case _: Statement => thenAst.toIR(indent)
-      case _ => throw new Exception
-    }
-    val elseString = elseAst match {
-      case _: Command => elseAst.toIR(indent + DEFAULT_INDENT_IR)
-      case _: Statement => elseAst.toIR(indent)
-      case _ => throw new Exception
-    }
-    val indentString = " " * indent
-    s"${indentString}if ($conditionString)\n$thenString\n${indentString}else\n$elseString"
+    s"${indentString(indent)}if ($conditionString)\n$thenString\n${indentString(indent)}else\n$elseString"
   }
 
   override def sameAs(other: Any): Boolean = {
@@ -204,30 +192,13 @@ case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, uuid: UU
   }
 }
 
-/*case class Assert(condition: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
+case class Assume(condition: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
   assert(condition.typ == BOOL)
 
-  override def prettyPrintToC(indent: Int): String = {
-    val conditionString = condition.prettyPrintToC()
-    val indentString = " " * indent
-    s"${indentString}assert($conditionString);"
+  override def printCommand(indent: Int): String = {
+    val conditionString = condition.printNoOuterBrackets
+    s"${indentString(indent)}assume($conditionString);"
   }
-
-  override def prettyPrintPrintToCFG: String = prettyPrintToC()
-
-  override def getFunctionCalls: List[FunctionCallExpr] = condition.getFunctionCalls
-}*/
-
-case class Assume(condition: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
-  assert(condition.typ == BOOL)
-
-  override def prettyPrintToC(indent: Int): String = {
-    val conditionString = condition.prettyPrintToCNoOuterBrackets
-    val indentString = " " * indent
-    s"${indentString}assume($conditionString);"
-  }
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = condition.getFunctionCalls
 
@@ -247,20 +218,17 @@ case class Assume(condition: BrboExpr, uuid: UUID = UUID.randomUUID()) extends C
   }
 }
 
-case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
-  override def prettyPrintToC(indent: Int): String = {
+case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
+  override def printCommand(indent: Int): String = {
     val initialValueString =
       identifier.typ match {
-        case INT => assert(initialValue.typ == INT, s"variable: `$identifier` (type: `${identifier.typ}`); initialValue: `$initialValue` (type: `${initialValue.typ}`)"); initialValue.prettyPrintToCNoOuterBrackets
-        case BOOL => assert(initialValue.typ == BOOL); initialValue.prettyPrintToCNoOuterBrackets
-        case STRING => assert(initialValue.typ == STRING); initialValue.prettyPrintToCNoOuterBrackets
-        case VOID => throw new Exception
+        case INT => assert(initialValue.typ == INT, s"variable: `$identifier` (type: `${identifier.typ}`); initialValue: `$initialValue` (type: `${initialValue.typ}`)"); initialValue.printNoOuterBrackets
+        case BOOL => assert(initialValue.typ == BOOL); initialValue.printNoOuterBrackets
+        case STRING => assert(initialValue.typ == STRING); initialValue.printNoOuterBrackets
+        case _ => throw new Exception
       }
-    val indentString = " " * indent
-    s"$indentString${BrboType.toCString(identifier.typ)} ${identifier.name} = $initialValueString;"
+    s"${indentString(indent)}${BrboType.toCString(identifier.typ)} ${identifier.name} = $initialValueString;"
   }
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = initialValue.getFunctionCalls
 
@@ -281,15 +249,12 @@ case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, u
   }
 }
 
-case class Assignment(identifier: Identifier, expression: BrboExpr, uuid: UUID = UUID.randomUUID()) extends Command {
+case class Assignment(identifier: Identifier, expression: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
   assert(identifier.typ == expression.typ)
 
-  override def prettyPrintToC(indent: Int): String = {
-    val indentString = " " * indent
-    s"$indentString${identifier.name} = ${expression.prettyPrintToCNoOuterBrackets};"
+  override def printCommand(indent: Int): String = {
+    s"${indentString(indent)}${identifier.name} = ${expression.printNoOuterBrackets};"
   }
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = expression.getFunctionCalls
 
@@ -310,39 +275,10 @@ case class Assignment(identifier: Identifier, expression: BrboExpr, uuid: UUID =
   }
 }
 
-case class FunctionCall(functionCallExpr: FunctionCallExpr, uuid: UUID = UUID.randomUUID()) extends Command {
-  override def prettyPrintToC(indent: Int): String = {
-    val indentString = " " * indent
-    s"$indentString${functionCallExpr.prettyPrintToC()};"
+case class Skip(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
+  override def printCommand(indent: Int): String = {
+    s"${indentString(indent)};"
   }
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
-
-  override def getFunctionCalls: List[FunctionCallExpr] = functionCallExpr.getFunctionCalls
-
-  override def getUses: Set[Identifier] = functionCallExpr.getUses
-
-  override def getDefs: Set[Identifier] = functionCallExpr.getDefs
-
-  override def sameAs(other: Any): Boolean = {
-    other match {
-      case command: Command =>
-        command match {
-          case FunctionCall(otherFunctionCallExpr, _) => otherFunctionCallExpr.sameAs(functionCallExpr)
-          case _ => false
-        }
-      case _ => false
-    }
-  }
-}
-
-case class Skip(uuid: UUID = UUID.randomUUID()) extends Command {
-  override def prettyPrintToC(indent: Int): String = {
-    val indentString = " " * indent
-    s"$indentString;"
-  }
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
@@ -362,18 +298,16 @@ case class Skip(uuid: UUID = UUID.randomUUID()) extends Command {
   }
 }
 
-case class Return(value: Option[BrboExpr], uuid: UUID = UUID.randomUUID()) extends Command {
-  override def prettyPrintToC(indent: Int): String = {
-    val indentString = " " * indent
+case class Return(value: Option[BrboExpr], override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
+  override def printCommand(indent: Int): String = {
+
     val valueString =
       value match {
-        case Some(value) => s" ${value.prettyPrintToCNoOuterBrackets}"
+        case Some(value) => s" ${value.printNoOuterBrackets}"
         case None => ""
       }
-    s"${indentString}return$valueString;"
+    s"${indentString(indent)}return$valueString;"
   }
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = {
     value match {
@@ -408,13 +342,10 @@ case class Return(value: Option[BrboExpr], uuid: UUID = UUID.randomUUID()) exten
   }
 }
 
-case class Break(uuid: UUID = UUID.randomUUID()) extends Command {
-  override def prettyPrintToC(indent: Int): String = {
-    val indentString = " " * indent
-    s"${indentString}break;"
+case class Break(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
+  override def printCommand(indent: Int): String = {
+    s"${indentString(indent)}break;"
   }
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
@@ -434,13 +365,10 @@ case class Break(uuid: UUID = UUID.randomUUID()) extends Command {
   }
 }
 
-case class Continue(uuid: UUID = UUID.randomUUID()) extends Command {
-  override def prettyPrintToC(indent: Int): String = {
-    val indentString = " " * indent
-    s"${indentString}continue;"
+case class Continue(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
+  override def printCommand(indent: Int): String = {
+    s"${indentString(indent)}continue;"
   }
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
@@ -460,16 +388,13 @@ case class Continue(uuid: UUID = UUID.randomUUID()) extends Command {
   }
 }
 
-case class LabeledCommand(label: String, command: Command, uuid: UUID = UUID.randomUUID()) extends Command {
+case class LabeledCommand(label: String, command: Command, override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
   assert(!command.isInstanceOf[LabeledCommand])
   assert(!command.isInstanceOf[GhostCommand], s"Not allow ghost commands to be labeled, due to the translation in BrboAstInC")
 
-  override def prettyPrintToC(indent: Int): String = {
-    val indentString = " " * indent
-    s"$indentString$label: ${command.prettyPrintToC()}"
+  override def printCommand(indent: Int): String = {
+    s"${indentString(indent)}$label: ${command.printToC(0)}"
   }
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = command.getFunctionCalls
 
@@ -492,10 +417,9 @@ case class LabeledCommand(label: String, command: Command, uuid: UUID = UUID.ran
 
 sealed trait CFGOnly
 
-case class FunctionExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
-  override def prettyPrintToC(indent: Int): String = "[Function Exit]"
+case class FunctionExit(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with CFGOnly {
+  override def printCommand(indent: Int): String = "[Function Exit]"
 
-  override def prettyPrintToCFG: String = prettyPrintToC()
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
@@ -515,10 +439,8 @@ case class FunctionExit(uuid: UUID = UUID.randomUUID()) extends Command with CFG
   }
 }
 
-case class LoopExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
-  override def prettyPrintToC(indent: Int): String = "[Loop Exit]"
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
+case class LoopExit(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with CFGOnly {
+  override def printCommand(indent: Int): String = "[Loop Exit]"
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
@@ -538,10 +460,8 @@ case class LoopExit(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly
   }
 }
 
-case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
-  override def prettyPrintToC(indent: Int): String = "[Empty Node]"
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
+case class Empty(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with CFGOnly {
+  override def printCommand(indent: Int): String = "[Empty Node]"
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
@@ -561,10 +481,8 @@ case class Empty(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
   }
 }
 
-case class BranchingHead(uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
-  override def prettyPrintToC(indent: Int): String = "[Branch Head]"
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
+case class BranchingHead(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with CFGOnly {
+  override def printCommand(indent: Int): String = "[Branch Head]"
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
@@ -584,19 +502,11 @@ case class BranchingHead(uuid: UUID = UUID.randomUUID()) extends Command with CF
   }
 }
 
-/*case class UndefinedFunction(functionName: String, uuid: UUID = UUID.randomUUID()) extends Command with CFGOnly {
-  override def prettyPrintToC(indent: Int): String = s"[Undefined Function: `$functionName`]"
-
-  override def prettyPrintToCFG: String = prettyPrintToC()
-
-  override def getFunctionCalls: List[FunctionCallExpr] = Nil
-}*/
-
 sealed trait GhostCommand {
   def replace(newGroupId: Int): GhostCommand
 }
 
-case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Bool(b = true), uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
+case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Bool(b = true), override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with GhostCommand {
   groupId match {
     case Some(value) => assert(value >= 0) // This command represents updating a resource variable for some amortization group
     case None => // This command represents updating the original resource variable
@@ -606,20 +516,14 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
 
   val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
 
-  override def prettyPrintToCFG: String = {
-    s"if (${condition.prettyPrintToCNoOuterBrackets}) use ${resourceVariable.name} ${update.prettyPrintToCFG}"
-  }
-
   override def getFunctionCalls: List[FunctionCallExpr] = update.getFunctionCalls
 
-  override def prettyPrintToC(indent: Int): String = {
-    val indentString = " " * indent
-    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) ${assignmentCommand.prettyPrintToC()}"
+  override def printCommand(indent: Int): String = {
+    s"${indentString(indent)}if (${condition.printNoOuterBrackets}) ${assignmentCommand.printToC(0)}"
   }
 
-  override def toIR(indent: Int): String = {
-    val indentString = " " * indent
-    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) use ${resourceVariable.name} ${update.prettyPrintToCFG}"
+  def toIR(indent: Int): String = {
+    s"${indentString(indent)}if (${condition.printNoOuterBrackets}) use ${resourceVariable.name} ${update.printToCFGNode()}"
   }
 
   override def replace(newGroupId: Int): Use = Use(Some(newGroupId), update, condition)
@@ -641,7 +545,7 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
   }
 }
 
-case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID = UUID.randomUUID()) extends Command with GhostCommand {
+case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with GhostCommand {
   val (resourceVariable: Identifier, starVariable: Identifier, counterVariable: Identifier) =
     GhostVariableUtils.generateVariables(Some(groupId))
 
@@ -655,18 +559,14 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID 
   val resetCommand: Assignment = Assignment(resourceVariable, Number(0))
   val counterCommand: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
 
-  override def prettyPrintToCFG: String = s"if (${condition.prettyPrintToCNoOuterBrackets}) reset ${resourceVariable.name}"
-
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
-  override def prettyPrintToC(indent: Int): String = {
-    val indentString = " " * indent
-    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) {\n${maxStatement.prettyPrintToC(indent + DEFAULT_INDENT)}\n${resetCommand.prettyPrintToC(indent + DEFAULT_INDENT)}\n${counterCommand.prettyPrintToC(indent + DEFAULT_INDENT)}\n$indentString}"
+  override def printCommand(indent: Int): String = {
+    s"${indentString(indent)}if (${condition.printNoOuterBrackets}) {\n${maxStatement.printToC(indent + DEFAULT_INDENT)}\n${resetCommand.printToC(indent + DEFAULT_INDENT)}\n${counterCommand.printToC(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
   }
 
-  override def toIR(indent: Int): String = {
-    val indentString = " " * indent
-    s"${indentString}if (${condition.prettyPrintToCNoOuterBrackets}) reset ${resourceVariable.name}"
+  def toIR(indent: Int): String = {
+    s"${indentString(indent)}if (${condition.printNoOuterBrackets}) reset ${resourceVariable.name}"
   }
 
   def replace(newGroupId: Int): Reset = Reset(newGroupId, condition)
@@ -690,23 +590,17 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), uuid: UUID 
 
 sealed trait CexPathOnly
 
-case class BeforeFunctionCall(callee: BrboFunction, actualArguments: List[BrboExpr], uuid: UUID = UUID.randomUUID()) extends Command with CexPathOnly {
-  override def prettyPrintToCFG: String = {
-    val argumentsString =
-      if (actualArguments.nonEmpty) s" with `${actualArguments.map(a => a.prettyPrintToCFG).mkString(", ")}`"
-      else " no arguments"
-    s"Call function `${callee.identifier}`$argumentsString"
-  }
-
+case class BeforeFunctionCall(callee: BrboFunction, actualArguments: List[BrboExpr], override val uuid: UUID = UUID.randomUUID())
+  extends Command(uuid) with CexPathOnly {
   override def getFunctionCalls: List[FunctionCallExpr] = throw new Exception
 
-  override def prettyPrintToC(indent: Int): String = throw new Exception
+  override def printCommand(indent: Int): String = throw new Exception
 
   override def getUses: Set[Identifier] = throw new Exception
 
   override def getDefs: Set[Identifier] = throw new Exception
 
-  override def toIR(indent: Int): String = prettyPrintToCFG
+  def toIR(indent: Int): String = printToCFGNode()
 
   override def sameAs(other: Any): Boolean = {
     other match {

@@ -51,7 +51,7 @@ object UAutomizerVerifierUnitTest {
     val statement1 = VariableDeclaration(i, Number(0))
     val statement2 = VariableDeclaration(R, Number(0))
     val statement3 = PreDefinedFunctions.createAssume(greaterThan(n, Number(0)))
-    val statement5 = FunctionCall(FunctionCallExpr("ndBool", Nil, INT)) // To test parsing counterexample paths when involving function calls
+    val statement5 = FunctionCallExpr("ndBool", Nil, INT) // To test parsing counterexample paths when involving function calls
     val statement6 = {
       val e = Identifier("e", INT)
       val statement1 = VariableDeclaration(e, Number(0))

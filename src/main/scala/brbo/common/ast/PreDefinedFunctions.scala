@@ -61,7 +61,7 @@ object PreDefinedFunctions {
     val body = {
       val ite = {
         val condition = Negation(cond)
-        val thenStatement = LabeledCommand("ERROR", FunctionCall(FunctionCallExpr("__VERIFIER_error", Nil, VOID)))
+        val thenStatement = LabeledCommand("ERROR", FunctionCallExpr("__VERIFIER_error", Nil, VOID))
         val elseStatement = Skip()
         ITE(condition, thenStatement, elseStatement)
       }
@@ -75,7 +75,7 @@ object PreDefinedFunctions {
     val body = {
       val ite = {
         val condition = Negation(cond)
-        val thenStatement = FunctionCall(FunctionCallExpr("abort", Nil, VOID))
+        val thenStatement = FunctionCallExpr("abort", Nil, VOID)
         val elseStatement = Skip()
         ITE(condition, thenStatement, elseStatement)
       }
@@ -139,7 +139,7 @@ object PreDefinedFunctions {
     UNINITIALIZED -> uninitializedFunction, BOUND_ASSERTION -> boundAssertFunction)
   val allFunctionsList = List(assertFunction, assumeFunction, ndIntFunction, ndBoolFunction, ndInt2Function, ndInt3Function, boundAssertFunction)
 
-  def createAssert(expression: BrboExpr): FunctionCall = FunctionCall(FunctionCallExpr(ASSERT, List(expression), BOOL))
+  def createAssert(expression: BrboExpr): FunctionCallExpr = FunctionCallExpr(ASSERT, List(expression), BOOL)
 
-  def createAssume(expression: BrboExpr): FunctionCall = FunctionCall(FunctionCallExpr(ASSUME, List(expression), BOOL))
+  def createAssume(expression: BrboExpr): FunctionCallExpr = FunctionCallExpr(ASSUME, List(expression), BOOL)
 }

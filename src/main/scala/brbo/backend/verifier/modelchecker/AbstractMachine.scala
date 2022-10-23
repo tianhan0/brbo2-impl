@@ -30,9 +30,9 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
   private val debugBottom: Boolean = false
 
   private val initialValuation = {
-    val parentStatements: Map[BrboAstNode, Statement] =
+    val parentStatements: Map[BrboAst, Statement] =
       (brboProgram.mainFunction :: brboProgram.functions)
-        .foldLeft(Map[BrboAstNode, Statement](fakeInitialNode.value -> brboProgram.mainFunction.actualBody))({
+        .foldLeft(Map[BrboAst, Statement](fakeInitialNode.command -> brboProgram.mainFunction.actualBody))({
           (acc, function) => acc ++ BrboAstUtils.findParentStatements(function.actualBody)
         })
     val scopeOperations = new ScopeOperations(parentStatements)
@@ -56,7 +56,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     if (!firstRun) throw new Exception(s"Every instance of AbstractMachine can only run verification once, " +
       s"due to releasing all native memory after the verification")
     firstRun = false
-    logger.infoOrError(s"Verify assertion `${assertion.prettyPrintToCFG}` (Max path length: `$maxPathLength`)")
+    logger.infoOrError(s"Verify assertion `${assertion.printToCFGNode}` (Max path length: `$maxPathLength`)")
     val initialState = State(fakeInitialNode, initialValuation, indexOnPath = 0, shouldVerify = true)
     // Every CFGNode corresponds to a location, which is the location right after the node
     // fakeInitialNode corresponds to the program entry, which is right before the first command / expression
@@ -91,7 +91,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
           val (newValuation, keepExploring) = {
             oldStateMap.valuations.get(nextNode) match {
               case Some(existingValuation) =>
-                logger.trace(s"Old valuation after node `${nextNode.prettyPrintToCFG}`: ${existingValuation.toShortString}")
+                logger.trace(s"Old valuation after node `${nextNode.printToCFGNode}`: ${existingValuation.toShortString}")
                 if (existingValuation.include(newState.valuation)) {
                   logger.trace(s"The new valuation is included in the old one")
                   (existingValuation, false)
@@ -100,8 +100,8 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                   logger.trace(s"The new valuation is not included in the old one")
                   if (debugJoinWiden) {
                     logger.traceOrError(s"Path: ${newPath.reverse.map(n => n.simplifiedString).mkString(", ")}")
-                    logger.traceOrError(s"Old valuation after node `${nextNode.prettyPrintToCFG}`: ${existingValuation.toShortString}")
-                    logger.traceOrError(s"New valuation after node `${nextNode.prettyPrintToCFG}`: ${newState.valuation.toShortString}")
+                    logger.traceOrError(s"Old valuation after node `${nextNode.printToCFGNode}`: ${existingValuation.toShortString}")
+                    logger.traceOrError(s"New valuation after node `${nextNode.printToCFGNode}`: ${newState.valuation.toShortString}")
                   }
 
                   val occurrences = newPath.count(node => node == nextNode)
@@ -129,7 +129,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                   }
                 }
               case None =>
-                logger.trace(s"Old valuation after node `${nextNode.prettyPrintToCFG}` does not exist")
+                logger.trace(s"Old valuation after node `${nextNode.printToCFGNode}` does not exist")
                 (newState.valuation, true)
             }
           }
@@ -209,21 +209,21 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         val nextNodes = cfg.findSuccessorNodes(currentNode)
         nextNodes.size match {
           case 0 | 1 | 2 =>
-          case _ => throw new Exception(s"Current state `${currentNode.prettyPrintToCFG}` has the following successor nodes: `$nextNodes`.")
+          case _ => throw new Exception(s"Current state `${currentNode.printToCFGNode}` has the following successor nodes: `$nextNodes`.")
         }
         nextNodes
       }
     }
-    val currentScope = scopeOperations.getScope(currentNode.value)
+    val currentScope = scopeOperations.getScope(currentNode.command)
     logger.trace(s"[step] Current scope: `$currentScope`")
     nextNodes.map({
       nextNode =>
-        logger.trace(s"[step] Next node: `${nextNode.prettyPrintToCFG}`")
-        val nextScope = scopeOperations.getScope(nextNode.value)
+        logger.trace(s"[step] Next node: `${nextNode.printToCFGNode}`")
+        val nextScope = scopeOperations.getScope(nextNode.command)
         logger.trace(s"[step] Next scope: `$nextScope`")
         val valuation = {
           val valuation = {
-            nextNode.value match {
+            nextNode.command match {
               case expr: BrboExpr => evalExpr(state.valuation, expr, nextScope)
               case command: Command => evalCommand(state.valuation, command, nextScope, Some(logger))
               case _ => throw new Exception
@@ -239,7 +239,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
             valuation.removeVariablesInScope(currentScope)
           }
         }
-        val shouldVerify = nextNode.value match {
+        val shouldVerify = nextNode.command match {
           case _: Use => true // Only need to verify a state after executing a use command
           case _ => false
         }
@@ -268,14 +268,14 @@ object AbstractMachine {
         assign(identifier, expression, createNewVariable = false, valuation, commandScope)
       case _: CFGOnly => valuation
       case use@Use(_, update, condition, _) =>
-        trace(logger, s"Evaluating `${use.prettyPrintToCFG}`")
+        trace(logger, s"Evaluating `${use.printToCFGNode}`")
         val updatedValuation =
           assign(use.resourceVariable, Addition(use.resourceVariable, update), createNewVariable = false, valuation, commandScope)
         trace(logger, s"Updated valuation: `${updatedValuation.toShortString}`")
         evalGhostCommandHelper(condition, valuation.satisfy(condition), valuation.satisfy(Negation(condition)),
           updatedValuation, valuation, logger)
       case reset@Reset(_, condition, _) =>
-        trace(logger, s"Evaluating `${reset.prettyPrintToCFG}`")
+        trace(logger, s"Evaluating `${reset.printToCFGNode}`")
         val counterUpdated = {
           val resourceUpdated = {
             val starUpdated = {
@@ -313,7 +313,7 @@ object AbstractMachine {
           case Some(_) => throw new Exception
           case None => valuation
         }
-      case FunctionCall(FunctionCallExpr(identifier, arguments, _, _), _) =>
+      case FunctionCallExpr(identifier, arguments, _, _) =>
         identifier match {
           case PreDefinedFunctions.NDINT3 =>
             val lower = arguments.head
@@ -341,8 +341,8 @@ object AbstractMachine {
 
   private def evalGhostCommandHelper(condition: BrboExpr, allThen: Boolean, allElse: Boolean,
                                      thenValuation: Valuation, elseValuation: Valuation, logger: Option[MyLogger]): Valuation = {
-    trace(logger, s"All states satisfy `${condition.prettyPrintToCFG}`? `$allThen`")
-    trace(logger, s"All states satisfy `${Negation(condition).prettyPrintToCFG}`? `$allElse`")
+    trace(logger, s"All states satisfy `${condition.printToCFGNode}`? `$allThen`")
+    trace(logger, s"All states satisfy `${Negation(condition).printToCFGNode}`? `$allElse`")
     if (allThen) thenValuation
     else {
       if (allElse) elseValuation
@@ -421,13 +421,13 @@ object AbstractMachine {
   }
 
   case class State(node: CFGNode, valuation: Valuation, indexOnPath: Int, shouldVerify: Boolean) extends ToShortString {
-    val scope: Scope = valuation.scopeOperations.getScope(node.value)
+    val scope: Scope = valuation.scopeOperations.getScope(node.command)
 
     def satisfy(brboExpr: BrboExpr): Boolean = valuation.satisfy(brboExpr)
 
     def satisfyWithZ3(brboExpr: BrboExpr): Boolean = valuation.satisfyWithZ3(brboExpr)
 
-    def toShortString: String = s"Node: `${node.prettyPrintToCFG}`. Number of visits: `$indexOnPath`. shouldVerify: `$shouldVerify`. Valuation: ${valuation.toShortString}"
+    def toShortString: String = s"Node: `${node.printToCFGNode}`. Number of visits: `$indexOnPath`. shouldVerify: `$shouldVerify`. Valuation: ${valuation.toShortString}"
   }
 
   /**
@@ -746,8 +746,8 @@ object AbstractMachine {
   val UNKNOWN_SCOPE: Scope = None
   val DEFAULT_SCOPE_OPERATIONS = new ScopeOperations(Map())
 
-  class ScopeOperations(parentStatements: Map[BrboAstNode, Statement]) {
-    def getScope(node: BrboAstNode): Scope = parentStatements.get(node)
+  class ScopeOperations(parentStatements: Map[BrboAst, Statement]) {
+    def getScope(node: BrboAst): Scope = parentStatements.get(node)
 
     def isSubScope(child: Scope, parent: Scope): Boolean = isStrictSubScope(child, parent) || isSame(child, parent)
 

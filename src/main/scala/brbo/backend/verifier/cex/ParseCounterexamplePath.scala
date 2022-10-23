@@ -60,10 +60,10 @@ class ParseCounterexamplePath(debugMode: Boolean) {
   // Map updates to ghost variables into use or reset commands.
   // Assume the input program contains no use or reset commands.
   def extractUseResetFromCRepresentation(path: Path, programInC: BrboCProgram): Path = {
-    def extractUseReset(key: CommandOrExpr, node: CFGNode): CFGNode = {
+    def extractUseReset(key: Command, node: CFGNode): CFGNode = {
       programInC.map.get(key) match {
         case Some(value) =>
-          logger.traceOrError(s"Translate `$key` (in C representation) to `${value.asInstanceOf[Command].prettyPrintToCFG}`")
+          logger.traceOrError(s"Translate `$key` (in C representation) to `${value.asInstanceOf[Command].printToCFGNode}`")
           CFGNode(value.asInstanceOf[Command], node.function, CFGNode.DONT_CARE_ID)
         case None => node
       }
@@ -71,14 +71,14 @@ class ParseCounterexamplePath(debugMode: Boolean) {
 
     val newNodes: List[CFGNode] = path.pathNodes.map({
       node =>
-        node.value match {
-          case _: Command => extractUseReset(node.value, node)
+        node.command match {
+          case _: Command => extractUseReset(node.command, node)
           case brboExpr: BrboExpr =>
             brboExpr match {
               case Negation(notNegated, _) =>
                 // Properly extract a use / reset when its conditionals are negated
                 extractUseReset(notNegated, node)
-              case _ => extractUseReset(node.value, node)
+              case _ => extractUseReset(node.command, node)
             }
         }
     })
@@ -134,7 +134,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
       val currentFunction = state.subState.currentFunction
 
       // Early return for commands that cannot be matched (since they don't appear in UAutomizer's outputs)
-      currentNode.value match {
+      currentNode.command match {
         case command: Command =>
           command match {
             case FunctionExit(_) | Return(None, _) =>
@@ -153,7 +153,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                   state.matchedNodes match {
                     case Nil => true
                     case ::(head, _) =>
-                      head.value match {
+                      head.command match {
                         case command2: Command =>
                           command2 match {
                             case Return(_, _) =>
@@ -174,7 +174,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                 case 1 =>
                   val newSubState = SubState(successorNodes.head, state.subState.processFunctionCalls, state.subState.currentFunction)
                   return matchPath(State(newSubState, state.callStack, state.matchedNodes, state.remainingPath, state.shouldContinue))
-                case _ => throw new Exception(s"Node `${currentNode.prettyPrintToC()}` must have 1 successor node!")
+                case _ => throw new Exception(s"Node `${currentNode.printToCFGNode()}` must have 1 successor node!")
               }
             case _ =>
           }
@@ -207,10 +207,10 @@ class ParseCounterexamplePath(debugMode: Boolean) {
             logger.traceOrError(s"Calling function: `${function.identifier}`")
             val (returnTarget, processFunctionCalls) = {
               val skipCurrentNodeWhenReturn: Boolean = {
-                currentNode.value match {
+                currentNode.command match {
                   case command: Command =>
                     command match {
-                      case FunctionCall(_, _) => true // Skip function calls whose return values are not assigned to any variable
+                      case FunctionCallExpr(_, _, _, _) => true // Skip function calls whose return values are not assigned to any variable
                       case _ => false
                     }
                   case _: BrboExpr => false
@@ -257,7 +257,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               val result: MatchResult = matchNode(head, currentNode)
               logger.traceOrError(s"Current AST node `$currentNode` ${if (result.matched) "indeed matches" else "does not match"} current path node `$head`")
               if (!result.matched) {
-                currentNode.value match {
+                currentNode.command match {
                   case command: Command =>
                     command match {
                       case _@(Continue(_) | Break(_)) =>
@@ -280,7 +280,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               val successorNodes = cfg.findSuccessorNodes(currentNode)
               if (matchResult.matchedExpression) {
                 // Matched an expression
-                assert(successorNodes.size == 2, s"Successor nodes:\n`${successorNodes.map(n => n.prettyPrintToCFG).mkString("\n")}`")
+                assert(successorNodes.size == 2, s"Successor nodes:\n`${successorNodes.map(n => n.printToCFGNode()).mkString("\n")}`")
                 // Find the branch to proceed
                 val (trueNode: CFGNode, falseNode: CFGNode) = {
                   val n1 = successorNodes.head
@@ -306,7 +306,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
             val matchedNode: CFGNode = {
               if (!matchResult.matchedExpression) currentNode // Match a command
               else {
-                currentNode.value match {
+                currentNode.command match {
                   case _: Command => throw new Exception
                   case brboExpr: BrboExpr =>
                     if (matchResult.matchedTrueBranch) currentNode // Match the true branch
@@ -340,13 +340,13 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     val exactString =
       if (pathNode.startsWith("[") && pathNode.endsWith("]")) pathNode.substring(1, pathNode.length - 1)
       else pathNode
-    node.value match {
+    node.command match {
       case command: Command =>
         val expected = expectedUAutomizerString(command)
         logger.traceOrError(s"Expected UAutomizer string: `$expected` (`${command.getClass}`)")
         MatchResult(expected == exactString, matchedExpression = false, matchedTrueBranch = false)
       case brboExpr: BrboExpr =>
-        val expected = brboExpr.prettyPrintToCNoOuterBrackets
+        val expected = brboExpr.printNoOuterBrackets
         val negated = s"!($expected)"
         logger.traceOrError(s"Expected UAutomizer string: `$expected`. Negated: `$negated`. Exact string: `$exactString`.")
         val matchedTrueBranch = expected == exactString
@@ -358,15 +358,15 @@ class ParseCounterexamplePath(debugMode: Boolean) {
   @tailrec
   private def expectedUAutomizerString(command: Command): String = {
     def getRidOfSemicolon(command2: Command): String = {
-      val s = command2.prettyPrintToC()
+      val s = command2.printToC(0)
       assert(s.endsWith(";"))
       s.substring(0, s.length - 1)
     }
 
     command match {
-      case Assignment(_, _, _) | FunctionCall(_, _) => getRidOfSemicolon(command)
+      case Assignment(_, _, _) => getRidOfSemicolon(command)
       case LabeledCommand(_, command2, _) => expectedUAutomizerString(command2)
-      case _ => command.prettyPrintToC()
+      case _ => command.printToC(0)
     }
   }
 
@@ -384,11 +384,11 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                            remainingPath: List[String],
                            shouldContinue: Boolean) {
     override def toString: String = {
-      val s1 = s"Current node: `${subState.currentNode.prettyPrintToCFG}`"
+      val s1 = s"Current node: `${subState.currentNode.printToCFGNode}`"
       val s2 = s"Current function: `${subState.currentFunction.identifier}`"
       val s3 = s"Process function calls: `${subState.processFunctionCalls}`"
       val s4 = s"Call stack: `${callStack.map({ subState => subState.toString })}`"
-      val s5 = s"Matched nodes: `${matchedNodes.map({ pathNode => s"`${pathNode.prettyPrintToCFG}`" }).reverse}`"
+      val s5 = s"Matched nodes: `${matchedNodes.map({ pathNode => s"`${pathNode.printToCFGNode}`" }).reverse}`"
       val s6 = s"Remaining path: `$remainingPath`"
       val s7 = s"Should continue: `$shouldContinue`"
       List(s1, s2, s3, s4, s5, s6, s7).mkString("\n")
@@ -402,7 +402,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
    * @param currentFunction      The function that the current node belongs to
    */
   private case class SubState(currentNode: CFGNode, processFunctionCalls: Boolean, currentFunction: BrboFunction) {
-    override def toString: String = s"Node ${currentNode.prettyPrintToC()} in function `${currentFunction.identifier}` (Process function calls: $processFunctionCalls)"
+    override def toString: String = s"Node ${currentNode.printToCFGNode()} in function `${currentFunction.identifier}` (Process function calls: $processFunctionCalls)"
   }
 
   // Copied from https://github.com/jgrapht/jgrapht/blob/6aba8e81053660997fe681c50974c07e312027d1/jgrapht-io/src/test/java/org/jgrapht/nio/graphml/GraphMLImporterTest.java

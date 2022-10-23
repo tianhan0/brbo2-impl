@@ -30,7 +30,7 @@ object BrboExprUtils {
   }
 
   def replaceCLiteral(body: BrboExpr, from: BrboExpr, to: BrboExpr): BrboExpr = {
-    if (from.prettyPrintToC() == body.prettyPrintToC()) {
+    if (from.printToC(0) == body.printToC(0)) {
       if (from.typ == body.typ) return to
       else throw new Exception("Type mismatch")
     }
@@ -227,8 +227,8 @@ object BrboExprUtils {
           }
       }
       result match {
-        case ApronExpr(_) => assert(expr.typ == BrboType.INT, s"expr: `${expr.prettyPrintToCFG}`")
-        case _: Constraint => assert(expr.typ == BrboType.BOOL, s"expr: `${expr.prettyPrintToCFG}`")
+        case ApronExpr(_) => assert(expr.typ == BrboType.INT, s"expr: `${expr.printToCFGNode()}`")
+        case _: Constraint => assert(expr.typ == BrboType.BOOL, s"expr: `${expr.printToCFGNode()}`")
         case _ => throw new Exception
       }
       result

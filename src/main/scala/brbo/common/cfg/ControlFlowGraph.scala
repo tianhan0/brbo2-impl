@@ -2,7 +2,6 @@ package brbo.common.cfg
 
 import brbo.BrboMain
 import brbo.common.MathUtils
-import brbo.common.BrboType.BOOL
 import brbo.common.ast._
 import com.ibm.wala.util.graph.NumberedGraph
 import com.ibm.wala.util.graph.impl.DelegatingNumberedGraph
@@ -41,7 +40,7 @@ object ControlFlowGraph {
    * @return
    */
   def toControlFlowGraph(brboProgram: BrboProgram): ControlFlowGraph = {
-    var nodes = new HashMap[CommandOrExpr, CFGNode]
+    var nodes = new HashMap[Command, CFGNode]
     var cfgs = new HashMap[BrboFunction, InternalGraph]
     val walaGraph = new DelegatingNumberedGraph[CFGNode]()
     val jgraphtGraph = new SimpleDirectedWeightedGraph[CFGNode, DefaultEdge](classOf[DefaultEdge])
@@ -72,7 +71,7 @@ object ControlFlowGraph {
       functionCFG
     }
 
-    def getNode(content: CommandOrExpr, brboFunction: BrboFunction): CFGNode = {
+    def getNode(content: Command, brboFunction: BrboFunction): CFGNode = {
       def addNode(node: CFGNode): Unit = {
         walaGraph.addNode(node)
         jgraphtGraph.addVertex(node)
@@ -100,22 +99,19 @@ object ControlFlowGraph {
     def astToInternalGraph(ast: BrboAst, jumpTarget: JumpTarget, brboFunction: BrboFunction): InternalGraph = {
       def addEdgesFromExitsToEntry(exits: Set[CFGNode], entry: CFGNode): Unit = {
         @tailrec
-        def shouldAddEdge(nodeValue: CommandOrExpr): Boolean = {
+        def shouldAddEdge(nodeValue: Command): Boolean = {
           nodeValue match {
-            case command: Command =>
-              command match {
-                case Return(_, _) | Break(_) | Continue(_) =>
-                  false // Not add edge only for commands that do not respect the normal control flow
-                case LabeledCommand(_, command2, _) => shouldAddEdge(command2)
-                case VariableDeclaration(_, _, _) | Assignment(_, _, _) | Skip(_) | FunctionCall(_, _) | Assume(_, _) => true
-                case _: CFGOnly => true
-                case _: GhostCommand => true
-              }
             case _: BrboExpr => true
+            case Return(_, _) | Break(_) | Continue(_) =>
+              false // Not add edge for commands that do not respect the normal control flow
+            case LabeledCommand(_, command2, _) => shouldAddEdge(command2)
+            case VariableDeclaration(_, _, _) | Assignment(_, _, _) | Skip(_) | FunctionCallExpr(_, _, _, _) | Assume(_, _) => true
+            case _: CFGOnly => true
+            case _: GhostCommand => true
           }
         }
 
-        exits.foreach({ exit => if (shouldAddEdge(exit.value)) addEdge(exit, entry) })
+        exits.foreach({ exit => if (shouldAddEdge(exit.command)) addEdge(exit, entry) })
       }
 
       ast match {
@@ -129,10 +125,9 @@ object ControlFlowGraph {
               case VariableDeclaration(_, _, _) =>
               case Assignment(_, _, _) =>
               case Skip(_) =>
-              case FunctionCall(_, _) =>
+              case FunctionCallExpr(_, _, _, _) => // No edge is added for function calls!
               case Assume(_, _) =>
 
-              // No edge is added for function calls!
               case Return(_, _) => addEdge(node, jumpTarget.functionExit)
               case Break(_) => addEdge(node, jumpTarget.immediateLoopExit.get)
               case Continue(_) => addEdge(node, jumpTarget.immediateLoopCondition.get)
@@ -241,17 +236,12 @@ case class ControlFlowGraph(entryNode: CFGNode,
     exporter.setVertexAttributeProvider({
       node: CFGNode =>
         val map = new util.HashMap[String, Attribute]()
-        map.put("label", DefaultAttribute.createAttribute(node.prettyPrintToCFG))
+        map.put("label", DefaultAttribute.createAttribute(node.printToCFGNode()))
         val shape: String =
-          node.value match {
-            case command: Command =>
-              command match {
-                case _: CFGOnly => "oval"
-                case _ => "rectangle"
-              }
-            case brboExpr: BrboExpr =>
-              assert(brboExpr.typ == BOOL)
-              "diamond"
+          node.command match {
+            case _: BrboExpr => "diamond"
+            case _: CFGOnly => "oval"
+            case _ => "rectangle"
           }
         map.put("shape", new DefaultAttribute(shape, AttributeType.IDENTIFIER))
         map

@@ -63,7 +63,7 @@ object ControlFlowGraphUnitTest {
                            |  17 [ shape=oval label="(17) [Branch Head]" ];
                            |  18 [ shape=diamond label="(18) !(cond)" ];
                            |  19 [ shape=diamond label="(19) !(!(cond))" ];
-                           |  20 [ shape=rectangle label="(20) abort();" ];
+                           |  20 [ shape=diamond label="(20) abort()" ];
                            |  21 [ shape=rectangle label="(21) ;" ];
                            |  22 [ shape=oval label="(22) [Function Exit]" ];
                            |  23 [ shape=rectangle label="(23) return __VERIFIER_nondet_int();" ];
@@ -76,10 +76,10 @@ object ControlFlowGraphUnitTest {
                            |  30 [ shape=rectangle label="(30) return false;" ];
                            |  31 [ shape=oval label="(31) [Function Exit]" ];
                            |  32 [ shape=rectangle label="(32) int x = ndInt();" ];
-                           |  33 [ shape=rectangle label="(33) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)));" ];
+                           |  33 [ shape=diamond label="(33) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)))" ];
                            |  34 [ shape=rectangle label="(34) return x;" ];
                            |  35 [ shape=oval label="(35) [Function Exit]" ];
-                           |  36 [ shape=rectangle label="(36) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)));" ];
+                           |  36 [ shape=diamond label="(36) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)))" ];
                            |  37 [ shape=oval label="(37) [Function Exit]" ];
                            |  38 [ shape=oval label="(38) [Empty Node]" ];
                            |  8 -> 6 [ label="0.0" ];

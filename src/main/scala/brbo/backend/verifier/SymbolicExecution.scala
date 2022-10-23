@@ -41,84 +41,78 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
     def evaluate(state: State, node: CFGNode): State = {
       val valuation: Valuation = state.valuations.head
 
-      node.value match {
-        case command: Command =>
-          command match {
-            case BeforeFunctionCall(callee, actualArguments, _) => // Calling a new function
-              assert(callee.parameters.length == actualArguments.length)
-              // Assume that when calling a function, all actual arguments must have a value
-              val (reversedValues: List[AST], newReturnValues) =
-                actualArguments.foldLeft((Nil: List[AST], state.returnValues))({
-                  case ((values, returnValues), actualArgument) =>
-                    val (value, newReturnValue) = evaluateExpression(valuation, returnValues, actualArgument)
-                    (value.get :: values, newReturnValue)
-                })
-              val map =
-                callee.parameters.zip(reversedValues.reverse).foldLeft(Map[String, (BrboType.T, Value)]())({
-                  case (acc, (formalArgument, value)) =>
-                    acc + (formalArgument.name -> (formalArgument.typ, Value(value)))
-                })
-              State(map :: state.valuations, state.pathCondition, newReturnValues)
-            case Return(value, _) =>
-              val newReturnValues: ReturnValues =
-                value match {
-                  case Some(value2) =>
-                    val (returnValue, newReturnValues) = evaluateExpression(valuation, state.returnValues, value2)
-                    val currentFunctionName = node.functionIdentifier
-                    val newList: List[Value] =
-                      state.returnValues.get(currentFunctionName) match {
-                        case Some(list) => Value(returnValue.get) :: list
-                        case None => List(Value(returnValue.get))
-                      }
-                    // Push the return value
-                    newReturnValues.updated(currentFunctionName, newList)
-                  case None => state.returnValues
-                }
-              // Pop the environment map
-              State(state.valuations.tail, state.pathCondition, newReturnValues)
-            case Assignment(_, _, _) | VariableDeclaration(_, _, _) =>
-              val (newValuation, newReturnValues) = {
-                val command2 = command match {
-                  case x@Assignment(_, _, _) => Left(x)
-                  case x@VariableDeclaration(_, _, _) => Right(x)
-                }
-                evaluateAssignment(valuation, state.returnValues, command2)
-              }
-              // Update the environment map
-              State(newValuation :: state.valuations.tail, state.pathCondition, newReturnValues)
-            case FunctionExit(_) =>
-              // Pop the environment map
-              State(state.valuations.tail, state.pathCondition, state.returnValues)
-            case LabeledCommand(_, command2, _) =>
-              evaluate(state, CFGNode(command2, node.function, CFGNode.DONT_CARE_ID))
-            case FunctionCall(functionCallExpr, _) =>
-              val (_, newReturnValues) = evaluateExpression(valuation, state.returnValues, functionCallExpr)
-              State(state.valuations, state.pathCondition, newReturnValues)
-            case use@Use(_, _, condition, _) =>
-              val (extraPathCondition: Option[AST], newReturnValues) = evaluateExpression(valuation, state.returnValues, condition)
-              val (newValuation, newReturnValues2) = evaluateAssignment(valuation, newReturnValues, Left(use.assignmentCommand))
-              State(newValuation :: state.valuations.tail, solver.mkAnd(state.pathCondition, extraPathCondition.get), newReturnValues2)
-            case reset@Reset(_, condition, _) =>
-              val (extraPathCondition: Option[AST], newReturnValues) = evaluateExpression(valuation, state.returnValues, condition)
-
-              var newValuation: Valuation = valuation
-              var newReturnValues2: ReturnValues = newReturnValues
-              List(reset.maxCommand, reset.resetCommand, reset.counterCommand).foreach({
-                assignment =>
-                  val r = evaluateAssignment(newValuation, newReturnValues2, Left(assignment))
-                  newValuation = r._1
-                  newReturnValues2 = r._2
-              })
-              State(newValuation :: state.valuations.tail, solver.mkAnd(state.pathCondition, extraPathCondition.get), newReturnValues2)
-            case Break(_) | Continue(_) =>
-              // It is expected that, when parsing cex. paths, the result contains break or continue commands
-              state
-            case _: CFGOnly | Skip(_) => state
-            case _ => throw new Exception(s"Unexpected command: `$command`")
-          }
+      node.command match {
         case brboExpr: BrboExpr =>
           val (extraPathCondition, newReturnValues) = evaluateExpression(valuation, state.returnValues, brboExpr)
           State(state.valuations, solver.mkAnd(state.pathCondition, extraPathCondition.get), newReturnValues)
+        case BeforeFunctionCall(callee, actualArguments, _) => // Calling a new function
+          assert(callee.parameters.length == actualArguments.length)
+          // Assume that when calling a function, all actual arguments must have a value
+          val (reversedValues: List[AST], newReturnValues) =
+            actualArguments.foldLeft((Nil: List[AST], state.returnValues))({
+              case ((values, returnValues), actualArgument) =>
+                val (value, newReturnValue) = evaluateExpression(valuation, returnValues, actualArgument)
+                (value.get :: values, newReturnValue)
+            })
+          val map =
+            callee.parameters.zip(reversedValues.reverse).foldLeft(Map[String, (BrboType.T, Value)]())({
+              case (acc, (formalArgument, value)) =>
+                acc + (formalArgument.name -> (formalArgument.typ, Value(value)))
+            })
+          State(map :: state.valuations, state.pathCondition, newReturnValues)
+        case Return(value, _) =>
+          val newReturnValues: ReturnValues =
+            value match {
+              case Some(value2) =>
+                val (returnValue, newReturnValues) = evaluateExpression(valuation, state.returnValues, value2)
+                val currentFunctionName = node.functionIdentifier
+                val newList: List[Value] =
+                  state.returnValues.get(currentFunctionName) match {
+                    case Some(list) => Value(returnValue.get) :: list
+                    case None => List(Value(returnValue.get))
+                  }
+                // Push the return value
+                newReturnValues.updated(currentFunctionName, newList)
+              case None => state.returnValues
+            }
+          // Pop the environment map
+          State(state.valuations.tail, state.pathCondition, newReturnValues)
+        case Assignment(_, _, _) | VariableDeclaration(_, _, _) =>
+          val (newValuation, newReturnValues) = {
+            val command2 = node.command match {
+              case x@Assignment(_, _, _) => Left(x)
+              case x@VariableDeclaration(_, _, _) => Right(x)
+            }
+            evaluateAssignment(valuation, state.returnValues, command2)
+          }
+          // Update the environment map
+          State(newValuation :: state.valuations.tail, state.pathCondition, newReturnValues)
+        case FunctionExit(_) =>
+          // Pop the environment map
+          State(state.valuations.tail, state.pathCondition, state.returnValues)
+        case LabeledCommand(_, command2, _) =>
+          evaluate(state, CFGNode(command2, node.function, CFGNode.DONT_CARE_ID))
+        case use@Use(_, _, condition, _) =>
+          val (extraPathCondition: Option[AST], newReturnValues) = evaluateExpression(valuation, state.returnValues, condition)
+          val (newValuation, newReturnValues2) = evaluateAssignment(valuation, newReturnValues, Left(use.assignmentCommand))
+          State(newValuation :: state.valuations.tail, solver.mkAnd(state.pathCondition, extraPathCondition.get), newReturnValues2)
+        case reset@Reset(_, condition, _) =>
+          val (extraPathCondition: Option[AST], newReturnValues) = evaluateExpression(valuation, state.returnValues, condition)
+
+          var newValuation: Valuation = valuation
+          var newReturnValues2: ReturnValues = newReturnValues
+          List(reset.maxCommand, reset.resetCommand, reset.counterCommand).foreach({
+            assignment =>
+              val r = evaluateAssignment(newValuation, newReturnValues2, Left(assignment))
+              newValuation = r._1
+              newReturnValues2 = r._2
+          })
+          State(newValuation :: state.valuations.tail, solver.mkAnd(state.pathCondition, extraPathCondition.get), newReturnValues2)
+        case Break(_) | Continue(_) =>
+          // It is expected that, when parsing cex. paths, the result contains break or continue commands
+          state
+        case _: CFGOnly | Skip(_) => state
+        case _ => throw new Exception(s"Unexpected command: `${node.command}`")
       }
     }
 

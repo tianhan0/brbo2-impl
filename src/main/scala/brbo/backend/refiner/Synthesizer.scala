@@ -26,7 +26,7 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     val filterFalsePredicates = allPredicates.filter({
       p =>
         val isFalse = solver.checkAssertionForallPushPop(solver.mkIff(p.toAst(solver), solver.mkFalse()))
-        if (isFalse) logger.traceOrError(s"Predicate `${p.expr.prettyPrintToCFG}` is false!")
+        if (isFalse) logger.traceOrError(s"Predicate `${p.expr.printToCFGNode}` is false!")
         !isFalse
     })
     logger.traceOrError(s"Candidate predicates (`${filterFalsePredicates.size}`): `$filterFalsePredicates`")
@@ -42,22 +42,22 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
         val indexMap = refinement.getSplitUseInstances(use)
         val newUses: Set[Command] = {
           if (indexMap.nonEmpty) {
-            logger.traceOrError(s"Split-Use: Synthesize new uses from old use `${use.prettyPrintToCFG}`")
+            logger.traceOrError(s"Split-Use: Synthesize new uses from old use `${use.printToCFGNode}`")
             computeNewUses(use, indexMap, postConditions)
           }
           else {
-            logger.traceOrError(s"Split-Use: Old use `${use.prettyPrintToCFG}` is not split")
+            logger.traceOrError(s"Split-Use: Old use `${use.printToCFGNode}` is not split")
             Set(use)
           }
         }
-        logger.traceOrError(s"Split-Use: Old use `${use.prettyPrintToCFG}` is replaced by `$newUses`")
+        logger.traceOrError(s"Split-Use: Old use `${use.printToCFGNode}` is replaced by `$newUses`")
         useMap + (use -> newUses)
     })
 
     val resetReplacements: Map[Command, Set[Command]] = resetCommands.foldLeft(Map[Command, Set[Command]]())({
       (acc, resetCommand) =>
         val reset = resetCommand.asInstanceOf[Reset]
-        logger.traceOrError(s"Synthesize-Reset: Synthesize new reset(s) from old reset: `${reset.prettyPrintToCFG}`")
+        logger.traceOrError(s"Synthesize-Reset: Synthesize new reset(s) from old reset: `${reset.printToCFGNode}`")
         val indexMap = refinement.getResetInstances(reset)
         val newResets: Set[Command] = indexMap.foldLeft(Set[Command]())({
           case (acc, (newGroupId, (keepSet, removeSet))) =>
@@ -65,13 +65,13 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
             val newReset = computeNewReset(newGroupId, keepSet, removeSet, reset.condition, postConditions)
             acc + newReset
         })
-        logger.traceOrError(s"Synthesize-Reset: Old reset `${reset.prettyPrintToCFG}` is replaced by `$newResets`")
+        logger.traceOrError(s"Synthesize-Reset: Old reset `${reset.printToCFGNode}` is replaced by `$newResets`")
         acc + (reset -> newResets)
     })
 
     val newMainBody = (useReplacements ++ resetReplacements).foldLeft(originalProgram.mainFunction.bodyNoInitialization: BrboAst)({
       case (acc, (command, newCommands)) =>
-        val commandsInList = newCommands.toList.sortWith({ case (c1, c2) => c1.prettyPrintToC() < c2.prettyPrintToC() })
+        val commandsInList = newCommands.toList.sortWith({ case (c1, c2) => c1.printToC(0) < c2.printToC(0) })
         BrboAstUtils.replaceAst(acc, command, Block(commandsInList))
     })
     logger.infoOrError(s"Successful: New main function body:\n`$newMainBody`")
@@ -194,7 +194,7 @@ object Synthesizer {
     MathUtils.choose2(predicates).forall({
       case (p1, p2) =>
         val disjoint = solver.checkAssertionForallPushPop(solver.mkIff(solver.mkAnd(p1.toAst(solver), p2.toAst(solver)), solver.mkFalse()))
-        logger.traceOrError(s"Decide the disjointness between `${p1.expr.prettyPrintToCFG}` and `${p2.expr.prettyPrintToCFG}`: `$disjoint`")
+        logger.traceOrError(s"Decide the disjointness between `${p1.expr.printToCFGNode}` and `${p2.expr.printToCFGNode}`: `$disjoint`")
         disjoint
     })
   }

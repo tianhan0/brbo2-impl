@@ -7,13 +7,13 @@ import com.ibm.wala.util.intset.{BimodalMutableIntSet, IntSet}
 
 /**
  *
- * @param value    Every node is either a command or an expression
+ * @param command    Every node is either a command or an expression
  * @param function The function that this command or expression belongs to (if any)
  * @param id       A unique (if desired) ID among all commands and expressions in all functions
  */
-case class CFGNode(value: CommandOrExpr, function: Option[BrboFunction] = None, id: Int = CFGNode.DONT_CARE_ID)
-  extends NodeWithNumber with INodeWithNumberedEdges with PrettyPrintToC
-    with PrettyPrintToCFG with GetFunctionCalls with Serializable {
+case class CFGNode(command: Command, function: Option[BrboFunction] = None, id: Int = CFGNode.DONT_CARE_ID)
+  extends NodeWithNumber with INodeWithNumberedEdges
+    with PrintToCFGNode with GetFunctionCalls with Serializable {
   private val predNumbers = new BimodalMutableIntSet()
   private val succNumbers = new BimodalMutableIntSet()
   val functionIdentifier: String = function match {
@@ -21,11 +21,11 @@ case class CFGNode(value: CommandOrExpr, function: Option[BrboFunction] = None, 
     case None => CFGNode.FUNCTION_NAME_WHEN_FUNCTION_NOT_EXIST
   }
 
-  def replaceCopy(newValue: CommandOrExpr): CFGNode = CFGNode(newValue, function, id)
+  def replaceCopy(newValue: Command): CFGNode = CFGNode(newValue, function, id)
 
-  def printWithUUID(): String = s"${prettyPrintToC()} ${CommandOrExpr.extractUUID(value)}"
+  def printWithUUID(): String = s"${printToCFGNode()} $command"
 
-  def sameValue(other: CFGNode): Boolean = other.value.sameAs(value)
+  def sameValue(other: CFGNode): Boolean = other.command.sameAs(command)
 
   override def getGraphNodeId: Int = id
 
@@ -44,29 +44,16 @@ case class CFGNode(value: CommandOrExpr, function: Option[BrboFunction] = None, 
   override def removeAllIncidentEdges(): Unit = throw new Exception
 
   override def toString: String = {
-    value match {
-      case expr: BrboExpr => s"($id) ${expr.prettyPrintToCFG} [fun `$functionIdentifier`]"
-      case command: Command => s"($id) ${command.toIR()} [fun `$functionIdentifier`]"
-    }
+    s"($id) ${command.printToCFGNode()} [fun `$functionIdentifier`]"
   }
 
-  override def prettyPrintToC(indent: Int): String = {
-    value match {
-      case command: Command => s"${command.prettyPrintToC()}"
-      case expr: BrboExpr => s"${expr.prettyPrintToC()}"
-    }
-  }
+  override def printToCFGNode(): String = s"($id) ${command.printToCFGNode()}"
 
   override def getFunctionCalls: List[FunctionCallExpr] = {
-    value match {
-      case command: Command => command.getFunctionCalls
-      case expr: BrboExpr => expr.getFunctionCalls
-    }
+    command.getFunctionCalls
   }
 
-  override def prettyPrintToCFG: String = s"($id) ${value.prettyPrintToCFG}"
-
-  def simplifiedString: String = value.prettyPrintToCFG
+  def simplifiedString: String = command.printToCFGNode()
 
   // Whether this node is a use command, or a use command for the given group in the given function
   def isUse(groupId: Option[Int], functionName: Option[String]): Boolean = {
@@ -75,19 +62,15 @@ case class CFGNode(value: CommandOrExpr, function: Option[BrboFunction] = None, 
       case None =>
     }
 
-    value match {
-      case command: Command =>
-        command match {
-          case Use(groupId2, _, _, _) =>
-            (groupId2, groupId) match {
-              case (Some(value2), Some(value)) => value2 == value
-              case (Some(_), None) => true
-              case (None, Some(_)) => false
-              case (None, None) => true
-            }
-          case _ => false
+    command match {
+      case Use(groupId2, _, _, _) =>
+        (groupId2, groupId) match {
+          case (Some(value2), Some(value)) => value2 == value
+          case (Some(_), None) => true
+          case (None, Some(_)) => false
+          case (None, None) => true
         }
-      case _: BrboExpr => false
+      case _ => false
     }
   }
 
@@ -98,17 +81,13 @@ case class CFGNode(value: CommandOrExpr, function: Option[BrboFunction] = None, 
       case None =>
     }
 
-    value match {
-      case command: Command =>
-        command match {
-          case Reset(groupID2, _, _) =>
-            groupId match {
-              case Some(value) => groupID2 == value
-              case None => true
-            }
-          case _ => false
+    command match {
+      case Reset(groupID2, _, _) =>
+        groupId match {
+          case Some(value) => groupID2 == value
+          case None => true
         }
-      case _: BrboExpr => false
+      case _ => false
     }
   }
 }

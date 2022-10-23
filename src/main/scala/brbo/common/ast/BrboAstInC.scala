@@ -1,9 +1,9 @@
 package brbo.common.ast
 
 case class BrboCProgram(originalProgram: BrboProgram) {
-  val (program: BrboProgram, map: Map[CommandOrExpr, GhostCommand]) = programToC
+  val (program: BrboProgram, map: Map[Command, GhostCommand]) = programToC
 
-  private def programToC: (BrboProgram, Map[CommandOrExpr, GhostCommand]) = {
+  private def programToC: (BrboProgram, Map[Command, GhostCommand]) = {
     val (newMainFunction, mainMap) = {
       val c = BrboCFunction(originalProgram.mainFunction)
       (c.function, c.map)
@@ -21,10 +21,10 @@ case class BrboCProgram(originalProgram: BrboProgram) {
 
 case class BrboCFunction(originalFunction: BrboFunction) {
   // Map commands or expressions in the C version that are translated from uses or resets in the original program
-  val (function: BrboFunction, map: Map[CommandOrExpr, GhostCommand]) = functionToC
+  val (function: BrboFunction, map: Map[Command, GhostCommand]) = functionToC
 
-  private def functionToC: (BrboFunction, Map[CommandOrExpr, GhostCommand]) = {
-    var map: Map[CommandOrExpr, GhostCommand] = Map()
+  private def functionToC: (BrboFunction, Map[Command, GhostCommand]) = {
+    var map: Map[Command, GhostCommand] = Map()
 
     def astToC(ast: BrboAst): BrboAst = {
       ast match {
@@ -67,7 +67,6 @@ case class BrboCFunction(originalFunction: BrboFunction) {
           map = map + (use.assignmentCommand -> use)
           map = map + (condition -> use)
           ITE(condition, use.assignmentCommand, Skip())
-        case FunctionCall(functionCallExpr, _) => FunctionCall(functionCallExpr)
         case LabeledCommand(label, command, _) => LabeledCommand(label, commandToC(command).asInstanceOf[Command])
         case BeforeFunctionCall(_, _, _) => throw new Exception
         case Assignment(variable, expression, _) => Assignment(variable, expression)

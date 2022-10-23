@@ -1,8 +1,8 @@
 package brbo.common.ast
 
 import brbo.TestCase
-import brbo.common.BrboType.INT
 import brbo.common.BrboType
+import brbo.common.BrboType.INT
 import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -33,7 +33,11 @@ class BrboAstUnitTest extends AnyFlatSpec {
   "Pretty-printing BrboAst to C statements" should "be correct" in {
     BrboAstUnitTest.prettyPrintToCUnitTest.foreach({
       testCase =>
-        assert(StringCompare.compareLiteral(testCase.input.asInstanceOf[BrboAst].prettyPrintToC(2), testCase.expectedOutput, s"${testCase.name} failed!"))
+        StringCompare.compareLiteral(
+          testCase.input.asInstanceOf[BrboAst].printToC(2),
+          testCase.expectedOutput,
+          s"${testCase.name} failed!"
+        )
     })
   }
 }
@@ -56,7 +60,14 @@ object BrboAstUnitTest {
       TestCase("Block", createBlock, "  {\n    x = 0;\n    x = 1;\n  }"),
       TestCase("Use", createUse, "  if (true) R5 = R5 + 1;"),
       TestCase("Use 2", createUse2, "  if (true) R = R + 2;"),
-      TestCase("Reset", createReset, "  if (true) {\n    if (S5 < R5)\n      S5 = R5;\n    else\n      ;\n    R5 = 0;\n    C5 = C5 + 1;\n  }")
+      TestCase("Reset", createReset, """  if (true) {
+                                       |    if (S5 < R5)
+                                       |      S5 = R5;
+                                       |    else
+                                       |      ;
+                                       |    R5 = 0;
+                                       |    C5 = C5 + 1;
+                                       |  }""".stripMargin)
     )
 
   def createContinue: Continue = Continue()
@@ -67,7 +78,7 @@ object BrboAstUnitTest {
 
   def createReturn: Return = Return(Some(Identifier("x", INT)))
 
-  def createFunctionCall: FunctionCall = FunctionCall(FunctionCallExpr("f", List(Identifier("a", INT), Identifier("b", INT)), BrboType.INT))
+  def createFunctionCall: FunctionCallExpr = FunctionCallExpr("f", List(Identifier("a", INT), Identifier("b", INT)), BrboType.INT)
 
   def createAssignment: Assignment = Assignment(Identifier("x", INT), Number(0))
 
@@ -79,7 +90,7 @@ object BrboAstUnitTest {
 
   def createLabeledCommand: LabeledCommand = LabeledCommand("label", Return(None))
 
-  def createITE: ITE = ITE(Bool(true), Assignment(Identifier("x", INT), Number(0)), Assignment(Identifier("x", INT), Number(1)))
+  def createITE: ITE = ITE(Bool(b = true), Assignment(Identifier("x", INT), Number(0)), Assignment(Identifier("x", INT), Number(1)))
 
   def createLoop: Loop = Loop(LessThan(Number(0), Identifier("x", BrboType.INT)), Block(List(Assignment(Identifier("x", INT), Number(0)), Assignment(Identifier("x", INT), Number(1)))))
 

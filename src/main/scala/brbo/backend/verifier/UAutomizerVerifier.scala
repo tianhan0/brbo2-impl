@@ -24,7 +24,7 @@ class UAutomizerVerifier(override val arguments: CommandLineArguments) extends V
   override def verify(program: BrboProgram): VerifierResult = {
     val programInC = BrboCProgram(program)
 
-    val cSourceCode = programInC.program.prettyPrintToC()
+    val cSourceCode = programInC.program.printToC(0)
     if (arguments.getPrintVerifierInputs) logger.info(s"Input to UAutomizer:\n$cSourceCode")
     else logger.traceOrError(s"Input to UAutomizer:\n$cSourceCode")
     runAndGetStdOutput(cSourceCode) match {

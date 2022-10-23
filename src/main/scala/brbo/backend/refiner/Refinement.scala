@@ -39,7 +39,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
   def refinedPath(whereToInitializeGhostVariables: BrboFunction): List[CFGNode] = {
     val newGroupInitializations = groupIds.values.flatten.flatMap({
       groupId => GhostVariableUtils.declareVariables(groupId).map(c => CFGNode(c, Some(whereToInitializeGhostVariables), CFGNode.DONT_CARE_ID))
-    }).toList.sortWith({ case (n1, n2) => n1.value.asInstanceOf[Command].toIR() < n2.value.asInstanceOf[Command].toIR() })
+    }).toList.sortWith({ case (n1, n2) => n1.command.asInstanceOf[Command].printToC(0) < n2.command.asInstanceOf[Command].printToC(0) })
     // logger.traceOrError(s"Path (length `${path.size}`):\n`$path`")
     val afterSplit: List[CFGNode] = splitUses.foldLeft(path)({
       case (acc, (i, replacement)) => acc.updated(i, replacement.newNode)
@@ -59,7 +59,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
         var map: Map[Int, Set[Int]] = Map()
         path.indices.foreach({
           i =>
-            path(i).value match {
+            path(i).command match {
               case command: Command =>
                 if (command == useInOriginalPath) {
                   // Assume the given command and the cex. path are generated from the same program, because their uuids are the same
@@ -80,7 +80,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
               case _: BrboExpr =>
             }
         })
-        assert(map.keySet.subsetOf(newGroupIds), s"Find instances for use `${useInOriginalPath.toIR()}`. newGroupIds: `${map.keySet}`. allNewGroupIds: `$newGroupIds`")
+        assert(map.keySet.subsetOf(newGroupIds), s"Find instances for use `${useInOriginalPath.toIR(0)}`. newGroupIds: `${map.keySet}`. allNewGroupIds: `$newGroupIds`")
         map
       case None => Map[Int, Set[Int]]() // This use does not split
     }
@@ -92,7 +92,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
     val thisGroupId = resetInOriginalPath.groupId
     path.indices.foldLeft(Map[Int, (Set[Int], Set[Int])]())({
       (acc, i) =>
-        path(i).value match {
+        path(i).command match {
           case command: Command =>
             if (command == resetInOriginalPath) {
               // Assume the given command and the cex. path are generated from the same program, because their uuids are the same
@@ -152,9 +152,9 @@ object Refinement {
   abstract class Replace(val newNode: CFGNode, val newGroupId: Int) extends SameAs
 
   case class UseNode(newUse: CFGNode, override val newGroupId: Int) extends Replace(newUse, newGroupId) {
-    val use: Use = newUse.value.asInstanceOf[Use]
+    val use: Use = newUse.command.asInstanceOf[Use]
 
-    override def toString: String = use.prettyPrintToCFG
+    override def toString: String = use.printToCFGNode
 
     override def sameAs(other: Any): Boolean = {
       other match {
@@ -166,9 +166,9 @@ object Refinement {
   }
 
   case class ResetNode(newReset: CFGNode, override val newGroupId: Int) extends Replace(newReset, newGroupId) {
-    val reset: Reset = newReset.value.asInstanceOf[Reset]
+    val reset: Reset = newReset.command.asInstanceOf[Reset]
 
-    override def toString: String = reset.prettyPrintToCFG
+    override def toString: String = reset.printToCFGNode
 
     override def sameAs(other: Any): Boolean = {
       other match {

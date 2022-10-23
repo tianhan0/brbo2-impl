@@ -7,14 +7,14 @@ import brbo.common.cfg.CFGNode
 import brbo.common.{GhostVariableUtils, MyLogger}
 
 case class Path(pathNodes: List[CFGNode]) extends Serializable {
-  pathNodes.map(pathNode => pathNode.value).foreach({
+  pathNodes.map(pathNode => pathNode.command).foreach({
     case _: Command =>
     case brboExpr: BrboExpr => assert(brboExpr.typ == BOOL)
   })
 
   val groupsInPath: Set[Int] = pathNodes.foldLeft(Set[Int]())({
     (acc, node) =>
-      node.value match {
+      node.command match {
         case command: Command =>
           command match {
             case Use(groupId, _, _, _) =>
@@ -68,7 +68,7 @@ case class Path(pathNodes: List[CFGNode]) extends Serializable {
   private def existDeclaration(identifier: Identifier): Boolean = {
     pathNodes.exists({
       node =>
-        node.value match {
+        node.command match {
           case command: Command =>
             command match {
               case VariableDeclaration(variable, _, _) => variable.sameAs(identifier)
@@ -90,7 +90,7 @@ object Path {
     var i = 0
     while (i < nodes.size) {
       val node = nodes(i)
-      node.value match {
+      node.command match {
         case command: Command =>
           command match {
             case BeforeFunctionCall(callee, _, _) =>
@@ -98,15 +98,15 @@ object Path {
                 i = i + 1
                 val nextNode = nodes(i)
                 logger.trace(s"nextNode: `$nextNode`")
-                nextNode.value match {
+                nextNode.command match {
                   case _: Command => throw new Exception
                   case condition: BrboExpr =>
                     condition match {
                       case Negation(Negation(cond, _), _) =>
-                        assert(cond.prettyPrintToC() == "cond")
+                        assert(cond.printToC(0) == "cond")
                         i = i + 2 // Directly exit
                       case Negation(cond, _) =>
-                        assert(cond.prettyPrintToC() == "cond")
+                        assert(cond.printToC(0) == "cond")
                         i = i + 3 // Reach the error location
                       case _ => throw new Exception
                     }

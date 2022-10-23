@@ -44,16 +44,16 @@ object AbstractInterpreter {
 
   private def interpretOrVerifyPath(path: List[CFGNode], assertion: Option[BrboExpr], solver: Option[Z3Solver],
                                     inputVariables: List[Identifier], arguments: CommandLineArguments): ModelCheckerResult = {
-    val (nodesMap, newPath) = path.zipWithIndex.foldLeft((Map[CommandOrExpr, (CFGNode, Int)](), List[Command]()))({
+    val (nodesMap, newPath) = path.zipWithIndex.foldLeft((Map[Command, (CFGNode, Int)](), List[Command]()))({
       case ((accMap, accPath), (node, index)) =>
         // Give every node a new ID. Otherwise if a node appears twice
         // in the given path, the generated CFG will contain a loop.
-        val newCommandOrExpr = node.value match {
+        val newCommand = node.command match {
           case expr: BrboExpr => Assume(expr)
           case command: Command => BrboAstUtils.generateNewId(command)
           case _ => throw new Exception
         }
-        (accMap + (newCommandOrExpr -> (node, index)), newCommandOrExpr :: accPath)
+        (accMap + (newCommand -> (node, index)), newCommand :: accPath)
     })
     val mainFunction = BrboFunction("main", BrboType.VOID, inputVariables, Block(newPath.reverse), groupIds = Set())
     val brboProgram = BrboProgram("Symbolic Execution", mainFunction = mainFunction)
@@ -71,11 +71,11 @@ object AbstractInterpreter {
           val stateMap = result.maximalPaths.head._2.valuations
           stateMap
             // The model checker may generate nodes that do not exist in the given path
-            .filter({ case (node, _) => nodesMap.contains(node.value) })
+            .filter({ case (node, _) => nodesMap.contains(node.command) })
             // Sort the list of command-state pairs by the indices of the command in the given path
             .toList.sortWith({
             case ((n1, _), (n2, _)) =>
-              (nodesMap.get(n1.value), nodesMap.get(n2.value)) match {
+              (nodesMap.get(n1.command), nodesMap.get(n2.command)) match {
                 case (Some((_, index1)), Some((_, index2))) => index1 < index2
                 case _ => throw new Exception
               }

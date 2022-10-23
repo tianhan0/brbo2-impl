@@ -71,7 +71,7 @@ case class TargetProgram(fullQualifiedClassName: String,
               toAST(tree.getExpression) match {
                 case Left(value) =>
                   value match {
-                    case x@FunctionCallExpr(_, _, _, _) => Left(FunctionCall(x))
+                    case _@FunctionCallExpr(_, _, _, _) => Left(value)
                     case _ => throw new Exception
                   }
                 case Right(value) =>

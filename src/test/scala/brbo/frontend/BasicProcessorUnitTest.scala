@@ -10,7 +10,7 @@ class BasicProcessorUnitTest extends AnyFlatSpec {
       testCase =>
         val (className, code) = testCase.input.asInstanceOf[(String, String)]
         val result = BasicProcessor.getTargetProgram(className, code)
-        StringCompare.ignoreWhitespaces(result.program.mainFunction.toString, testCase.expectedOutput, s"`${testCase.name}` failed!")
+        StringCompare.ignoreWhitespaces(result.program.mainFunction.printToC(0), testCase.expectedOutput, s"`${testCase.name}` failed!")
     })
   }
 }

@@ -1,7 +1,5 @@
 package brbo.common.ast
 
-import java.util.UUID
-
 object BrboAstUtils {
   def collectCommands(brboAst: BrboAst): Set[Command] = {
     brboAst match {
@@ -51,29 +49,25 @@ object BrboAstUtils {
     }
   }
 
-  def findParentStatements(currentNode: BrboAstNode, parent: Option[Statement] = None): Map[BrboAstNode, Statement] = {
-    val currentMap: Map[BrboAstNode, Statement] = parent match {
+  def findParentStatements(currentNode: BrboAst, parent: Option[Statement] = None): Map[BrboAst, Statement] = {
+    val currentMap: Map[BrboAst, Statement] = parent match {
       case Some(value) => Map(currentNode -> value)
       case None => Map()
     }
-    val childrenMap: Map[BrboAstNode, Statement] = currentNode match {
-      case brboAst: BrboAst =>
-        brboAst match {
-          case _: Command => Map()
-          case statement: Statement =>
-            statement match {
-              case Block(asts, _) =>
-                asts.flatMap(ast => findParentStatements(ast, Some(statement))).toMap
-              case ITE(condition, thenAst, elseAst, _) =>
-                findParentStatements(condition, Some(statement)) ++ findParentStatements(thenAst, Some(statement)) ++
-                  findParentStatements(elseAst, Some(statement))
-              case Loop(condition, loopBody, _) =>
-                findParentStatements(condition, Some(statement)) ++ findParentStatements(loopBody, Some(statement))
-              case _ => throw new Exception
-            }
+    val childrenMap: Map[BrboAst, Statement] = currentNode match {
+      case _: Command => Map()
+      case statement: Statement =>
+        statement match {
+          case Block(asts, _) =>
+            asts.flatMap(ast => findParentStatements(ast, Some(statement))).toMap
+          case ITE(condition, thenAst, elseAst, _) =>
+            findParentStatements(condition, Some(statement)) ++ findParentStatements(thenAst, Some(statement)) ++
+              findParentStatements(elseAst, Some(statement))
+          case Loop(condition, loopBody, _) =>
+            findParentStatements(condition, Some(statement)) ++ findParentStatements(loopBody, Some(statement))
           case _ => throw new Exception
         }
-      case _: BrboExpr => Map()
+      case _ => throw new Exception
     }
     currentMap ++ childrenMap
   }
@@ -94,29 +88,7 @@ object BrboAstUtils {
       case Return(value, _) => Return(value)
       case Assume(condition, _) => Assume(condition)
       case Reset(groupId, condition, _) => Reset(groupId, condition)
-      case FunctionCall(functionCallExpr, _) => FunctionCall(functionCallExpr)
       case LabeledCommand(label, command, _) => LabeledCommand(label, command)
-    }
-  }
-
-  def extractUUID(command: Command): UUID = {
-    command match {
-      case BeforeFunctionCall(_, _, uuid) => uuid
-      case VariableDeclaration(_, _, uuid) => uuid
-      case Assignment(_, _, uuid) => uuid
-      case Use(_, _, _, uuid) => uuid
-      case Skip(uuid) => uuid
-      case Break(uuid) => uuid
-      case Empty(uuid) => uuid
-      case Continue(uuid) => uuid
-      case LoopExit(uuid) => uuid
-      case FunctionExit(uuid) => uuid
-      case BranchingHead(uuid) => uuid
-      case Return(_, uuid) => uuid
-      case Assume(_, uuid) => uuid
-      case Reset(_, _, uuid) => uuid
-      case FunctionCall(_, uuid) => uuid
-      case LabeledCommand(_, _, uuid) => uuid
     }
   }
 }

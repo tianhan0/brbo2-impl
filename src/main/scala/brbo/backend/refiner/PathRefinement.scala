@@ -28,7 +28,7 @@ class PathRefinement(arguments: CommandLineArguments) {
           // Do not transform commands in functions other than the given function
           if (head.functionIdentifier != targetFunctionName)
             return helper(numberToKeep, currentRefine, currentIndex + 1, tail)
-          head.value match {
+          head.command match {
             case command: Command =>
               command match {
                 case Reset(_, _, _) =>
@@ -61,7 +61,7 @@ class PathRefinement(arguments: CommandLineArguments) {
       var groupIds = Set[Int]()
       path.pathNodes.foreach({
         node =>
-          node.value match {
+          node.command match {
             case command: Command =>
               command match {
                 case Use(groupID, _, _, _) => groupIds = groupIds + groupID.get
@@ -117,11 +117,11 @@ class PathRefinement(arguments: CommandLineArguments) {
                     assert(!acc2.contains(pathIndex))
                     // Do not transform commands in functions other than the target function
                     if (node.isReset(Some(toSplitGroupId), Some(targetFunctionName))) {
-                      val newReset = CFGNode(node.value.asInstanceOf[Reset].replace(newGroupId), None, CFGNode.DONT_CARE_ID)
+                      val newReset = CFGNode(node.command.asInstanceOf[Reset].replace(newGroupId), None, CFGNode.DONT_CARE_ID)
                       acc2 + (pathIndex -> ResetNode(newReset, newGroupId))
                     }
                     else if (node.isUse(Some(toSplitGroupId), Some(targetFunctionName))) {
-                      val newUse = CFGNode(node.value.asInstanceOf[Use].replace(newGroupId), None, CFGNode.DONT_CARE_ID)
+                      val newUse = CFGNode(node.command.asInstanceOf[Use].replace(newGroupId), None, CFGNode.DONT_CARE_ID)
                       acc2 + (pathIndex -> UseNode(newUse, newGroupId))
                     }
                     else acc2
