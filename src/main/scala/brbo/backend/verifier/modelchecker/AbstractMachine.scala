@@ -315,7 +315,7 @@ object AbstractMachine {
         }
       case FunctionCallExpr(identifier, arguments, _, _) =>
         identifier match {
-          case PreDefinedFunctions.NDINT3 =>
+          case PreDefinedFunctions.NdInt3.name =>
             val lower = arguments.head
             val x = arguments(1)
             val upper = arguments(2)
@@ -370,8 +370,8 @@ object AbstractMachine {
       expr match {
         case FunctionCallExpr(identifier, _, _, _) =>
           identifier match {
-            case PreDefinedFunctions.UNINITIALIZED => true
-            case PreDefinedFunctions.NDINT => true
+            case PreDefinedFunctions.Uninitialize.name => true
+            case PreDefinedFunctions.NdInt.name => true
             case _ => false
           }
         case _ => false

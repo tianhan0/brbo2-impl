@@ -46,7 +46,7 @@ case class TargetProgram(fullQualifiedClassName: String,
       case Right(statement) => statement
     }
     val mainFunction = BrboFunction(mainMethod.methodName, mainMethod.returnType, mainMethod.inputVariables.values.toList, body, Set())
-    BrboProgram(s"$fullQualifiedClassName.${mainMethod.methodName}", mainFunction, boundAssertions, PreDefinedFunctions.allFunctionsList)
+    BrboProgram(s"$fullQualifiedClassName.${mainMethod.methodName}", mainFunction, boundAssertions, PreDefinedFunctions.SpecialFunctionInternalRepresentations)
   }
 
   class ConvertToAST(allVariables: Map[String, Identifier]) {
@@ -212,8 +212,10 @@ case class TargetProgram(fullQualifiedClassName: String,
             val select = tree.getMethodSelect
             assert(select.isInstanceOf[IdentifierTree])
             val functionName = select.toString
-            PreDefinedFunctions.allFunctions.get(functionName) match {
-              case Some(function) => (functionName, function.returnType)
+            PreDefinedFunctions.SpecialFunctions.find({
+              f => f.name == functionName
+            }) match {
+              case Some(f) => (f.name, f.internalRepresentation.returnType)
               case None =>
                 allMethods.find(targetMethod => targetMethod.methodName == functionName) match {
                   case Some(targetMethod) => (functionName, targetMethod.returnType)
@@ -229,7 +231,7 @@ case class TargetProgram(fullQualifiedClassName: String,
               }
           }).toList
           functionName match {
-            case PreDefinedFunctions.BOUND_ASSERTION =>
+            case PreDefinedFunctions.BoundAssertion.name =>
               logger.trace(s"Extract bound assertion `${arguments.head}`")
               boundAssertions = BoundAssertion.parse(arguments.head, arguments(1)) :: boundAssertions
               Right(Skip())

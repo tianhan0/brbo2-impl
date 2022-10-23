@@ -5,25 +5,7 @@ import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
 import brbo.frontend.TargetProgram
 
 object PreDefinedFunctions {
-  val VERIFIER_ERROR: String = "__VERIFIER_error"
-  val ABORT: String = "abort"
-  val VERIFIER_NONDET_INT: String = "__VERIFIER_nondet_int"
-
-  /*val __VERIFIER_error: BrboFunction = BrboFunction(VERIFIER_ERROR, VOID, Nil, Block(Nil))
-  val abort: BrboFunction = BrboFunction(ABORT, VOID, Nil, Block(Nil))
-  val __VERIFIER_nondet_int: BrboFunction = BrboFunction(VERIFIER_NONDET_INT, INT, Nil, Block(Nil))
-
-  val UNDEFINED_FUNCTIONS: Map[String, BrboFunction] = Map(
-    VERIFIER_ERROR -> __VERIFIER_error,
-    ABORT -> abort,
-    VERIFIER_NONDET_INT -> __VERIFIER_nondet_int
-  )*/
-
-  val ATOMIC_FUNCTIONS_C_DECLARATION: String =
-    s"""extern void $VERIFIER_ERROR() __attribute__((noreturn));
-       |extern void $ABORT(void);
-       |extern int $VERIFIER_NONDET_INT ();""".stripMargin
-
+  val ATOMIC_FUNCTIONS_C_DECLARATION: String = List(VerifierError, VerifierNondetInt, Abort).map(f => f.cRepresentation).mkString("\n")
   val SYMBOLS_MACRO: String = {
     val predefinedVariables = TargetProgram.PREDEFINED_VARIABLES.map({ case (name, value) => s"#define $name $value" }).toList.sorted.mkString("\n")
     s"""#define true 1
@@ -33,120 +15,142 @@ object PreDefinedFunctions {
        |""".stripMargin
   }
 
-  /*val __VERIFIER_assert: BrboFunction = {
-    val cond = Identifier("cond", BOOL)
-    val body = {
-      val ite = {
-        val condition = Negative(cond)
-        val thenStatement = LabeledCommand("ERROR", FunctionCall(None, FunctionCallExpr("__VERIFIER_error", Nil, VOID)))
-        val elseStatement = Skip()
-        ITE(condition, thenStatement, elseStatement)
-      }
-      Block(List(ite, Return(None)))
-    }
-    BrboFunction("__VERIFIER_assert", VOID, List(cond), body)
-  }*/
+  def createAssert(expression: BrboExpr): FunctionCallExpr = FunctionCallExpr(Assert.internalRepresentation.identifier, List(expression), BOOL)
 
-  val ASSERT: String = "assert"
-  val ASSUME: String = "assume"
-  val NDINT: String = "ndInt"
-  val NDBOOL: String = "ndBool"
-  val NDINT2: String = "ndInt2"
-  val NDINT3: String = "ndInt3"
-  val UNINITIALIZED: String = "uninitialized"
-  val BOUND_ASSERTION: String = "boundAssertion"
+  def createAssume(expression: BrboExpr): FunctionCallExpr = FunctionCallExpr(Assume.internalRepresentation.identifier, List(expression), BOOL)
 
-  val assertFunction: BrboFunction = {
-    val cond = Identifier("cond", BOOL)
-    val body = {
-      val ite = {
-        val condition = Negation(cond)
-        val thenStatement = LabeledCommand("ERROR", FunctionCallExpr("__VERIFIER_error", Nil, VOID))
-        val elseStatement = Skip()
-        ITE(condition, thenStatement, elseStatement)
-      }
-      Block(List(ite, Return(None)))
-    }
-    BrboFunction(ASSERT, VOID, List(cond), body, Set())
+  class NotExist extends Exception
+
+  abstract class SpecialFunction(val name: String) {
+    val javaFunctionName: String = name
+
+    def cRepresentation: String = internalRepresentation.printToC(0)
+
+    def internalRepresentation: BrboFunction
   }
 
-  val assumeFunction: BrboFunction = {
-    val cond = Identifier("cond", BOOL)
-    val body = {
-      val ite = {
-        val condition = Negation(cond)
-        val thenStatement = FunctionCallExpr("abort", Nil, VOID)
-        val elseStatement = Skip()
-        ITE(condition, thenStatement, elseStatement)
+  object VerifierError extends SpecialFunction("__VERIFIER_error") {
+    override def cRepresentation: String = "extern void $VERIFIER_ERROR() __attribute__((noreturn));"
+
+    override def internalRepresentation: BrboFunction = throw new NotExist
+  }
+
+  object VerifierNondetInt extends SpecialFunction("__VERIFIER_nondet_int") {
+    override def cRepresentation: String = "extern void $ABORT(void);"
+
+    override def internalRepresentation: BrboFunction = throw new NotExist
+  }
+
+  object Abort extends SpecialFunction("abort") {
+    override def cRepresentation: String = "extern void $ABORT(void);"
+
+    override def internalRepresentation: BrboFunction = throw new NotExist
+  }
+
+  object Assert extends SpecialFunction("assert") {
+    override def internalRepresentation: BrboFunction = {
+      val cond = Identifier("cond", BOOL)
+      val body = {
+        val ite = {
+          val condition = Negation(cond)
+          val thenStatement = LabeledCommand("ERROR", FunctionCallExpr("__VERIFIER_error", Nil, VOID))
+          val elseStatement = Skip()
+          ITE(condition, thenStatement, elseStatement)
+        }
+        Block(List(ite, Return(None)))
       }
-      Block(List(ite))
+      BrboFunction(name, VOID, List(cond), body, Set())
     }
-    BrboFunction(ASSUME, VOID, List(cond), body, Set())
   }
 
-  val ndIntFunction: BrboFunction = {
-    val body = {
-      val returnCommand = Return(Some(FunctionCallExpr("__VERIFIER_nondet_int", Nil, INT)))
-      Block(List(returnCommand))
+  object Assume extends SpecialFunction("assume") {
+    override def internalRepresentation: BrboFunction = {
+      val cond = Identifier("cond", BOOL)
+      val body = {
+        val ite = {
+          val condition = Negation(cond)
+          val thenStatement = FunctionCallExpr("abort", Nil, VOID)
+          val elseStatement = Skip()
+          ITE(condition, thenStatement, elseStatement)
+        }
+        Block(List(ite))
+      }
+      BrboFunction(name, VOID, List(cond), body, Set())
     }
-    BrboFunction(NDINT, INT, Nil, body, Set())
   }
 
-  val ndBoolFunction: BrboFunction = {
-    val body = {
+  object NdInt extends SpecialFunction("ndInt") {
+    override def internalRepresentation: BrboFunction = {
+      val body = {
+        val returnCommand = Return(Some(FunctionCallExpr("__VERIFIER_nondet_int", Nil, INT)))
+        Block(List(returnCommand))
+      }
+      BrboFunction(name, INT, Nil, body, Set())
+    }
+  }
+
+  object NdInt2 extends SpecialFunction("ndInt2") {
+    override def internalRepresentation: BrboFunction = {
+      val lower = Identifier("lower", INT)
+      val upper = Identifier("upper", INT)
+      val body = {
+        val x = Identifier("x", INT)
+        val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
+        val assume = createAssume(And(lessThanOrEqualTo(lower, x), lessThanOrEqualTo(x, upper)))
+        val returnCommand = Return(Some(x))
+        Block(List(variableDeclaration, assume, returnCommand))
+      }
+      BrboFunction(name, INT, List(lower, upper), body, Set())
+    }
+  }
+
+  object NdInt3 extends SpecialFunction("ndInt3") {
+    override def internalRepresentation: BrboFunction = {
       val x = Identifier("x", INT)
-      val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
-      val ite = ITE(greaterThan(x, Number(0)), Return(Some(Bool(b = true))), Return(Some(Bool(b = false))))
-      Block(List(variableDeclaration, ite))
+      val lower = Identifier("lower", INT)
+      val upper = Identifier("upper", INT)
+      val body = {
+        val assume = createAssume(And(lessThanOrEqualTo(lower, x), lessThanOrEqualTo(x, upper)))
+        Block(List(assume))
+      }
+      BrboFunction(name, VOID, List(lower, x, upper), body, Set())
     }
-    BrboFunction(NDBOOL, BOOL, Nil, body, Set())
   }
 
-  val ndInt2Function: BrboFunction = {
-    val lower = Identifier("lower", INT)
-    val upper = Identifier("upper", INT)
-    val body = {
-      val x = Identifier("x", INT)
-      val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
-      val assume = createAssume(And(lessThanOrEqualTo(lower, x), lessThanOrEqualTo(x, upper)))
-      val returnCommand = Return(Some(x))
-      Block(List(variableDeclaration, assume, returnCommand))
+  object NdBool extends SpecialFunction("ndBool") {
+    override def internalRepresentation: BrboFunction = {
+      val body = {
+        val x = Identifier("x", INT)
+        val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
+        val ite = ITE(greaterThan(x, Number(0)), Return(Some(Bool(b = true))), Return(Some(Bool(b = false))))
+        Block(List(variableDeclaration, ite))
+      }
+      BrboFunction(name, BOOL, Nil, body, Set())
     }
-    BrboFunction(NDINT2, INT, List(lower, upper), body, Set())
   }
 
-  val ndInt3Function: BrboFunction = {
-    val x = Identifier("x", INT)
-    val lower = Identifier("lower", INT)
-    val upper = Identifier("upper", INT)
-    val body = {
-      val assume = createAssume(And(lessThanOrEqualTo(lower, x), lessThanOrEqualTo(x, upper)))
-      Block(List(assume))
-    }
-    BrboFunction(NDINT3, VOID, List(lower, x, upper), body, Set())
+  object BoundAssertion extends SpecialFunction("boundAssertion") {
+    override def internalRepresentation: BrboFunction = throw new NotExist
   }
 
-  val uninitializedFunction: BrboFunction = {
-    BrboFunction(UNINITIALIZED, INT, List(), Block(List()), Set())
+  object Uninitialize extends SpecialFunction("uninitialized") {
+    override def internalRepresentation: BrboFunction = throw new NotExist
   }
 
-  val boundAssertFunction: BrboFunction = {
-    BrboFunction(BOUND_ASSERTION, VOID, List(Identifier("assertion", BOOL)), Block(Nil), Set())
-  }
-
-  val allFunctions: Map[String, BrboFunction] = Map(
-    ASSERT -> assertFunction,
-    ASSUME -> assumeFunction,
-    NDINT -> ndIntFunction,
-    NDBOOL -> ndBoolFunction,
-    NDINT2 -> ndInt2Function,
-    NDINT3 -> ndInt3Function,
-    UNINITIALIZED -> uninitializedFunction,
-    BOUND_ASSERTION -> boundAssertFunction
+  val SpecialFunctions: List[SpecialFunction] = List(
+    VerifierError, VerifierNondetInt, Abort, Assert, Assume,
+    NdInt, NdInt2, NdInt3, NdBool, BoundAssertion, Uninitialize
   )
-  val allFunctionsList: List[BrboFunction] = List(assertFunction, assumeFunction, ndIntFunction, ndBoolFunction, ndInt2Function, ndInt3Function, boundAssertFunction)
 
-  def createAssert(expression: BrboExpr): FunctionCallExpr = FunctionCallExpr(ASSERT, List(expression), BOOL)
-
-  def createAssume(expression: BrboExpr): FunctionCallExpr = FunctionCallExpr(ASSUME, List(expression), BOOL)
+  val SpecialFunctionInternalRepresentations: List[BrboFunction] = {
+    SpecialFunctions.foldLeft(Nil: List[BrboFunction])({
+      case (soFar, f) =>
+        try {
+          f.internalRepresentation :: soFar
+        }
+        catch {
+          case _: NotExist => soFar
+        }
+    })
+  }
 }

@@ -173,11 +173,11 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
             case Some(list) => (Some(list.head.v), returnValues.updated(identifier, list.tail))
             case None =>
               identifier match {
-                case PreDefinedFunctions.VERIFIER_NONDET_INT => (Some(createFreshVariable(INT)._2), returnValues)
-                case PreDefinedFunctions.ABORT => throw new Exception
-                case PreDefinedFunctions.VERIFIER_ERROR => (None, returnValues)
-                case PreDefinedFunctions.NDINT => (Some(createFreshVariable(INT)._2), returnValues)
-                case PreDefinedFunctions.NDINT2 => ???
+                case PreDefinedFunctions.VerifierNondetInt.name => (Some(createFreshVariable(INT)._2), returnValues)
+                case PreDefinedFunctions.Abort.name => throw new Exception
+                case PreDefinedFunctions.VerifierError.name => (None, returnValues)
+                case PreDefinedFunctions.NdInt.name => (Some(createFreshVariable(INT)._2), returnValues)
+                case PreDefinedFunctions.NdInt2.name => ???
                 case _ => throw new Exception(s"Unknown function `$identifier`")
               }
           }

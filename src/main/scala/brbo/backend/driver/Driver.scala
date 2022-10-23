@@ -233,7 +233,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
   private def insertUBCheck(program: BrboProgram, boundAssertion: BoundAssertion): BrboProgram = {
     val assertion = {
       val sum: BrboExpr = program.mainFunction.approximatedResourceUsage
-      val assertFunction: BrboFunction = PreDefinedFunctions.assertFunction
+      val assertFunction: BrboFunction = PreDefinedFunctions.Assert.internalRepresentation
       val assertion = boundAssertion.replaceResourceVariable(sum)
       FunctionCallExpr(assertFunction.identifier, List(assertion), assertFunction.returnType)
     }

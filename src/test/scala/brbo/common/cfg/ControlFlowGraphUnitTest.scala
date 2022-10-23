@@ -41,7 +41,7 @@ object ControlFlowGraphUnitTest {
       val variableDeclaration = VariableDeclaration(i, Number(0))
       val loop = Loop(LessThan(i, Number(10)), Block(List(Assignment(i, Addition(i, Number(1))), Break())))
       val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set())
-      BrboProgram("test01", main, Nil, PreDefinedFunctions.allFunctionsList)
+      BrboProgram("test01", main, Nil, PreDefinedFunctions.SpecialFunctionInternalRepresentations)
     }
     val test01Expected = """strict digraph G {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
@@ -53,35 +53,33 @@ object ControlFlowGraphUnitTest {
                            |  7 [ shape=rectangle label="(7) i = i + 1;" ];
                            |  8 [ shape=rectangle label="(8) break;" ];
                            |  9 [ shape=oval label="(9) [Function Exit]" ];
-                           |  10 [ shape=oval label="(10) [Branch Head]" ];
-                           |  11 [ shape=diamond label="(11) !(cond)" ];
-                           |  12 [ shape=diamond label="(12) !(!(cond))" ];
-                           |  13 [ shape=rectangle label="(13) ERROR: __VERIFIER_error();" ];
-                           |  14 [ shape=rectangle label="(14) ;" ];
-                           |  15 [ shape=rectangle label="(15) return;" ];
+                           |  10 [ shape=rectangle label="(10) int x = ndInt();" ];
+                           |  11 [ shape=oval label="(11) [Branch Head]" ];
+                           |  12 [ shape=diamond label="(12) !((x < 0))" ];
+                           |  13 [ shape=diamond label="(13) !(!((x < 0)))" ];
+                           |  14 [ shape=rectangle label="(14) return true;" ];
+                           |  15 [ shape=rectangle label="(15) return false;" ];
                            |  16 [ shape=oval label="(16) [Function Exit]" ];
-                           |  17 [ shape=oval label="(17) [Branch Head]" ];
-                           |  18 [ shape=diamond label="(18) !(cond)" ];
-                           |  19 [ shape=diamond label="(19) !(!(cond))" ];
-                           |  20 [ shape=diamond label="(20) abort()" ];
-                           |  21 [ shape=rectangle label="(21) ;" ];
+                           |  17 [ shape=diamond label="(17) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)))" ];
+                           |  18 [ shape=oval label="(18) [Function Exit]" ];
+                           |  19 [ shape=rectangle label="(19) int x = ndInt();" ];
+                           |  20 [ shape=diamond label="(20) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)))" ];
+                           |  21 [ shape=rectangle label="(21) return x;" ];
                            |  22 [ shape=oval label="(22) [Function Exit]" ];
                            |  23 [ shape=rectangle label="(23) return __VERIFIER_nondet_int();" ];
                            |  24 [ shape=oval label="(24) [Function Exit]" ];
-                           |  25 [ shape=rectangle label="(25) int x = ndInt();" ];
-                           |  26 [ shape=oval label="(26) [Branch Head]" ];
-                           |  27 [ shape=diamond label="(27) !((x < 0))" ];
-                           |  28 [ shape=diamond label="(28) !(!((x < 0)))" ];
-                           |  29 [ shape=rectangle label="(29) return true;" ];
-                           |  30 [ shape=rectangle label="(30) return false;" ];
-                           |  31 [ shape=oval label="(31) [Function Exit]" ];
-                           |  32 [ shape=rectangle label="(32) int x = ndInt();" ];
-                           |  33 [ shape=diamond label="(33) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)))" ];
-                           |  34 [ shape=rectangle label="(34) return x;" ];
-                           |  35 [ shape=oval label="(35) [Function Exit]" ];
-                           |  36 [ shape=diamond label="(36) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)))" ];
-                           |  37 [ shape=oval label="(37) [Function Exit]" ];
-                           |  38 [ shape=oval label="(38) [Empty Node]" ];
+                           |  25 [ shape=oval label="(25) [Branch Head]" ];
+                           |  26 [ shape=diamond label="(26) !(cond)" ];
+                           |  27 [ shape=diamond label="(27) !(!(cond))" ];
+                           |  28 [ shape=diamond label="(28) abort()" ];
+                           |  29 [ shape=rectangle label="(29) ;" ];
+                           |  30 [ shape=oval label="(30) [Function Exit]" ];
+                           |  31 [ shape=oval label="(31) [Branch Head]" ];
+                           |  32 [ shape=diamond label="(32) !(cond)" ];
+                           |  33 [ shape=diamond label="(33) !(!(cond))" ];
+                           |  34 [ shape=rectangle label="(34) ERROR: __VERIFIER_error();" ];
+                           |  35 [ shape=rectangle label="(35) ;" ];
+                           |  36 [ shape=rectangle label="(36) return;" ];
                            |  8 -> 6 [ label="0.0" ];
                            |  7 -> 8 [ label="0.0" ];
                            |  3 -> 4 [ label="1.0" ];
@@ -90,32 +88,31 @@ object ControlFlowGraphUnitTest {
                            |  5 -> 6 [ label="0.0" ];
                            |  2 -> 3 [ label="0.0" ];
                            |  6 -> 1 [ label="0.0" ];
-                           |  10 -> 11 [ label="1.0" ];
-                           |  10 -> 12 [ label="-1.0" ];
-                           |  11 -> 13 [ label="0.0" ];
-                           |  12 -> 14 [ label="0.0" ];
+                           |  14 -> 9 [ label="0.0" ];
                            |  15 -> 9 [ label="0.0" ];
+                           |  11 -> 12 [ label="1.0" ];
+                           |  11 -> 13 [ label="-1.0" ];
+                           |  12 -> 14 [ label="0.0" ];
                            |  13 -> 15 [ label="0.0" ];
-                           |  14 -> 15 [ label="0.0" ];
-                           |  17 -> 18 [ label="1.0" ];
-                           |  17 -> 19 [ label="-1.0" ];
-                           |  18 -> 20 [ label="0.0" ];
-                           |  19 -> 21 [ label="0.0" ];
-                           |  20 -> 16 [ label="0.0" ];
-                           |  21 -> 16 [ label="0.0" ];
+                           |  10 -> 11 [ label="0.0" ];
+                           |  17 -> 16 [ label="0.0" ];
+                           |  21 -> 18 [ label="0.0" ];
+                           |  19 -> 20 [ label="0.0" ];
+                           |  20 -> 21 [ label="0.0" ];
                            |  23 -> 22 [ label="0.0" ];
-                           |  29 -> 24 [ label="0.0" ];
-                           |  30 -> 24 [ label="0.0" ];
-                           |  26 -> 27 [ label="1.0" ];
-                           |  26 -> 28 [ label="-1.0" ];
+                           |  25 -> 26 [ label="1.0" ];
+                           |  25 -> 27 [ label="-1.0" ];
+                           |  26 -> 28 [ label="0.0" ];
                            |  27 -> 29 [ label="0.0" ];
-                           |  28 -> 30 [ label="0.0" ];
-                           |  25 -> 26 [ label="0.0" ];
-                           |  34 -> 31 [ label="0.0" ];
-                           |  32 -> 33 [ label="0.0" ];
-                           |  33 -> 34 [ label="0.0" ];
-                           |  36 -> 35 [ label="0.0" ];
-                           |  38 -> 37 [ label="0.0" ];
+                           |  28 -> 24 [ label="0.0" ];
+                           |  29 -> 24 [ label="0.0" ];
+                           |  31 -> 32 [ label="1.0" ];
+                           |  31 -> 33 [ label="-1.0" ];
+                           |  32 -> 34 [ label="0.0" ];
+                           |  33 -> 35 [ label="0.0" ];
+                           |  36 -> 30 [ label="0.0" ];
+                           |  34 -> 36 [ label="0.0" ];
+                           |  35 -> 36 [ label="0.0" ];
                            |}""".stripMargin
 
     val test02 = {

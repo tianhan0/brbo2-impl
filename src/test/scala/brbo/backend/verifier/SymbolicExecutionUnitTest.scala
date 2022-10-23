@@ -32,10 +32,10 @@ object SymbolicExecutionUnitTest {
   val e: Identifier = Identifier("e", INT)
 
   val mainFunction: BrboFunction = BrboFunction("main", VOID, List(n, a, b), Block(Nil), Set(2))
-  val assumeFunction: BrboFunction = PreDefinedFunctions.assumeFunction
-  val ndBoolFunction: BrboFunction = PreDefinedFunctions.ndBoolFunction
-  val ndIntFunction: BrboFunction = PreDefinedFunctions.ndIntFunction
-  val assertFunction: BrboFunction = PreDefinedFunctions.assertFunction
+  val assumeFunction: BrboFunction = PreDefinedFunctions.Assume.internalRepresentation
+  val ndBoolFunction: BrboFunction = PreDefinedFunctions.NdBool.internalRepresentation
+  val ndIntFunction: BrboFunction = PreDefinedFunctions.NdInt.internalRepresentation
+  val assertFunction: BrboFunction = PreDefinedFunctions.Assert.internalRepresentation
   val program: BrboProgram = BrboProgram("Test program", mainFunction, Nil, List(assumeFunction, ndBoolFunction, ndIntFunction))
 
   val assumeCond: BrboExpr = assumeFunction.parameters.head
@@ -52,7 +52,7 @@ object SymbolicExecutionUnitTest {
         CFGNode((FunctionExit()), Some(assumeFunction), CFGNode.DONT_CARE_ID),
         CFGNode((BeforeFunctionCall(ndBoolFunction, Nil)), Some(mainFunction), CFGNode.DONT_CARE_ID),
         CFGNode((BeforeFunctionCall(ndIntFunction, Nil)), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
-        CFGNode((Return(Some(FunctionCallExpr(PreDefinedFunctions.VERIFIER_NONDET_INT, Nil, INT)))), Some(ndIntFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((Return(Some(FunctionCallExpr(PreDefinedFunctions.VerifierNondetInt.name, Nil, INT)))), Some(ndIntFunction), CFGNode.DONT_CARE_ID),
         CFGNode((VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
         CFGNode((BeforeFunctionCall(assumeFunction, List(Or(Equal(x, Number(0)), Equal(x, Number(1)))))), Some(ndBoolFunction), CFGNode.DONT_CARE_ID),
         CFGNode((Negation(Negation(assumeCond))), Some(assumeFunction), CFGNode.DONT_CARE_ID),
@@ -67,7 +67,7 @@ object SymbolicExecutionUnitTest {
         CFGNode((Negation(LessThan(i, Number(1)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
         CFGNode((BeforeFunctionCall(assertFunction, List(lessThanOrEqualTo(R, a)))), Some(mainFunction), CFGNode.DONT_CARE_ID),
         CFGNode((Negation(assertCond)), Some(assertFunction), CFGNode.DONT_CARE_ID),
-        CFGNode((LabeledCommand("ERROR", FunctionCallExpr(PreDefinedFunctions.VERIFIER_ERROR, Nil, VOID))), Some(assertFunction), CFGNode.DONT_CARE_ID),
+        CFGNode((LabeledCommand("ERROR", FunctionCallExpr(PreDefinedFunctions.VerifierError.name, Nil, VOID))), Some(assertFunction), CFGNode.DONT_CARE_ID),
         CFGNode((Return(None)), Some(assertFunction), CFGNode.DONT_CARE_ID)
       ))
     }
