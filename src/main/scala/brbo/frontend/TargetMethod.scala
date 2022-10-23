@@ -11,7 +11,7 @@ case class TargetMethod(methodTree: MethodTree) {
   private val logger = MyLogger.createLogger(classOf[TargetMethod], debugMode = false)
   if (methodTree.getName == null) throw new Exception(s"Empty method name")
 
-  TreeUtils.acceptableTree(methodTree.getBody)
+  JavaTreeUtils.acceptableTree(methodTree.getBody)
 
   val methodName: String = methodTree.getName.toString
 
@@ -26,10 +26,10 @@ case class TargetMethod(methodTree: MethodTree) {
       }
     }
 
-  val inputVariables: Map[String, Identifier] = TreeUtils.getAllInputVariables(methodTree).map({ case (name, typ) => (name, Identifier(name, typ)) })
+  val inputVariables: Map[String, Identifier] = JavaTreeUtils.getAllInputVariables(methodTree).map({ case (name, typ) => (name, Identifier(name, typ)) })
   logger.trace(s"[Method `${methodTree.getName}`] Input variables: `$inputVariables`")
 
-  val allCommands: Set[StatementTree] = TreeUtils.collectCommands(methodTree.getBody)
+  val allCommands: Set[StatementTree] = JavaTreeUtils.collectCommands(methodTree.getBody)
 
   val localVariables: Map[String, Identifier] =
     if (methodTree.getBody == null) Map()

@@ -134,10 +134,17 @@ object PreDefinedFunctions {
     BrboFunction(BOUND_ASSERTION, VOID, List(Identifier("assertion", BOOL)), Block(Nil), Set())
   }
 
-  val allFunctions = Map(ASSERT -> assertFunction, ASSUME -> assumeFunction, NDINT -> ndIntFunction,
-    NDBOOL -> ndBoolFunction, NDINT2 -> ndInt2Function, NDINT3 -> ndInt3Function,
-    UNINITIALIZED -> uninitializedFunction, BOUND_ASSERTION -> boundAssertFunction)
-  val allFunctionsList = List(assertFunction, assumeFunction, ndIntFunction, ndBoolFunction, ndInt2Function, ndInt3Function, boundAssertFunction)
+  val allFunctions: Map[String, BrboFunction] = Map(
+    ASSERT -> assertFunction,
+    ASSUME -> assumeFunction,
+    NDINT -> ndIntFunction,
+    NDBOOL -> ndBoolFunction,
+    NDINT2 -> ndInt2Function,
+    NDINT3 -> ndInt3Function,
+    UNINITIALIZED -> uninitializedFunction,
+    BOUND_ASSERTION -> boundAssertFunction
+  )
+  val allFunctionsList: List[BrboFunction] = List(assertFunction, assumeFunction, ndIntFunction, ndBoolFunction, ndInt2Function, ndInt3Function, boundAssertFunction)
 
   def createAssert(expression: BrboExpr): FunctionCallExpr = FunctionCallExpr(ASSERT, List(expression), BOOL)
 

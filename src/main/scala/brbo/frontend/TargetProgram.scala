@@ -1,10 +1,10 @@
 package brbo.frontend
 
+import brbo.common.MyLogger
 import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo, notEqual}
 import brbo.common.ast._
-import brbo.common.{GhostVariableTyp, GhostVariableUtils, MyLogger}
+import brbo.frontend.JavaTreeUtils.isCommand
 import brbo.frontend.TargetProgram.PREDEFINED_VARIABLES
-import brbo.frontend.TreeUtils.isCommand
 import com.sun.source.tree.Tree.Kind
 import com.sun.source.tree._
 import com.sun.source.util.TreePath
@@ -40,7 +40,7 @@ case class TargetProgram(fullQualifiedClassName: String,
   }
 
   val program: BrboProgram = {
-    val convertToAST = new ConvertToAST(mainMethod.allVariables, allMethods)
+    val convertToAST = new ConvertToAST(mainMethod.allVariables)
     val body = convertToAST.toAST(mainMethod.methodTree.getBody) match {
       case Left(command) => Block(List(command))
       case Right(statement) => statement
@@ -49,7 +49,7 @@ case class TargetProgram(fullQualifiedClassName: String,
     BrboProgram(s"$fullQualifiedClassName.${mainMethod.methodName}", mainFunction, boundAssertions, PreDefinedFunctions.allFunctionsList)
   }
 
-  class ConvertToAST(allVariables: Map[String, Identifier], allMethods: Set[TargetMethod]) {
+  class ConvertToAST(allVariables: Map[String, Identifier]) {
     def toASTFlatten(statementTree: StatementTree): BrboAst = {
       toAST(statementTree) match {
         case Left(value) => value.asInstanceOf[BrboAst]
@@ -217,7 +217,7 @@ case class TargetProgram(fullQualifiedClassName: String,
               case None =>
                 allMethods.find(targetMethod => targetMethod.methodName == functionName) match {
                   case Some(targetMethod) => (functionName, targetMethod.returnType)
-                  case None => throw new Exception(s"Invoking a non-predefined function `$tree`")
+                  case None => throw new Exception(s"Invoking a function that is neither defined nor predefined: `$tree`")
                 }
             }
           }

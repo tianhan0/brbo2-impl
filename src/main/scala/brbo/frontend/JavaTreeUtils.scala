@@ -8,7 +8,7 @@ import javax.lang.model.`type`.TypeMirror
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{HashMap, HashSet}
 
-object TreeUtils {
+object JavaTreeUtils {
   def acceptableTree(tree: StatementTree): Unit = {
     if (tree == null) return
 
