@@ -81,10 +81,10 @@ object BasicProcessorUnitTest {
     val test08 =
       """class Test {
         |  void main(int n, int m) {
-        |    assume(n == m);
+        |    assume2(n == m);
         |  }
         |
-        |  void assume(boolean b) {
+        |  void assume2(boolean b) {
         |  }
         |}""".stripMargin
     val test09 =
@@ -200,7 +200,7 @@ object BasicProcessorUnitTest {
       TestCase("Method invocation (predefined function)", ("Test", test08),
         """void main(int n, int m)
           |{
-          |  assume(n == m);
+          |  assume2(n == m);
           |}""".stripMargin),
       TestCase("Block and Skip", ("Test", test09),
         """void main(int n, int m)

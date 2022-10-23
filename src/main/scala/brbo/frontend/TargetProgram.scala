@@ -17,6 +17,15 @@ case class TargetProgram(fullQualifiedClassName: String,
                          getLineNumber: Tree => Int,
                          getPath: Tree => TreePath,
                          sourceCode: String) {
+  allMethods.foreach({
+    m =>
+      PreDefinedFunctions.SpecialFunctions.find(f => f.name == m.methodName) match {
+        case Some(_) =>
+          throw new Exception(s"Method ${m.methodName}'s name collides with a pre-defined function")
+        case None =>
+      }
+  })
+
   private val logger = MyLogger.createLogger(classOf[TargetProgram], debugMode = false)
 
   private var boundAssertions: List[BoundAssertion] = Nil
@@ -212,9 +221,7 @@ case class TargetProgram(fullQualifiedClassName: String,
             val select = tree.getMethodSelect
             assert(select.isInstanceOf[IdentifierTree])
             val functionName = select.toString
-            PreDefinedFunctions.SpecialFunctions.find({
-              f => f.name == functionName
-            }) match {
+            PreDefinedFunctions.SpecialFunctions.find({ f => f.name == functionName }) match {
               case Some(f) => (f.name, f.internalRepresentation.returnType)
               case None =>
                 allMethods.find(targetMethod => targetMethod.methodName == functionName) match {
