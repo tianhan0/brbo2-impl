@@ -13,7 +13,7 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
   extends PrintToC with SameAs with Serializable {
   override def printToC(indent: Int): String = {
     val functionsString = (functions :+ mainFunction).map(function => function.printToC(indent)).mkString("\n")
-    s"${PreDefinedFunctions.UNDEFINED_FUNCTIONS_MACRO}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
+    s"${PreDefinedFunctions.ATOMIC_FUNCTIONS_C_DECLARATION}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
   }
 
   def toIR(indent: Int = 0): String = {

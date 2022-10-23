@@ -19,7 +19,7 @@ object PreDefinedFunctions {
     VERIFIER_NONDET_INT -> __VERIFIER_nondet_int
   )*/
 
-  val UNDEFINED_FUNCTIONS_MACRO: String =
+  val ATOMIC_FUNCTIONS_C_DECLARATION: String =
     s"""extern void $VERIFIER_ERROR() __attribute__((noreturn));
        |extern void $ABORT(void);
        |extern int $VERIFIER_NONDET_INT ();""".stripMargin
