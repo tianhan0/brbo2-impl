@@ -62,7 +62,7 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
   extends PrintToC with SameAs with Serializable {
   val ghostVariableInitializations: List[Command] = groupIds.flatMap({
     groupId => GhostVariableUtils.declareVariables(groupId)
-  }).toList.sortWith({ case (c1, c2) => c1.printToCFGNode() < c2.printToCFGNode() })
+  }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
   val approximatedResourceUsage: BrboExpr = GhostVariableUtils.approximatedResourceUsage(groupIds)
 
   // Declare and initialize ghost variables in the function
@@ -103,19 +103,19 @@ abstract class BrboAst extends SameAs with Serializable with PrintToC {
 abstract class Statement(val uuid: UUID) extends BrboAst {
 }
 
-abstract class Command(val uuid: UUID) extends BrboAst with PrintToCFGNode with GetFunctionCalls with UseDefVariables {
+abstract class Command(val uuid: UUID) extends BrboAst with PrintToIR with GetFunctionCalls with UseDefVariables {
   protected def printCommand(indent: Int): String
 
-  final override def printToCFGNode(): String = {
+  final override def printToIR(): String = {
     this match {
       case brboExpr: BrboExpr => brboExpr.print(0)
       case BeforeFunctionCall(callee, actualArguments, _) =>
         val argumentsString =
-          if (actualArguments.nonEmpty) s" with `${actualArguments.map(a => a.printToCFGNode()).mkString(", ")}`"
+          if (actualArguments.nonEmpty) s" with `${actualArguments.map(a => a.printToIR()).mkString(", ")}`"
           else " no arguments"
         s"Call function `${callee.identifier}`$argumentsString"
       case use@Use(_, update, condition, _) =>
-        s"if (${condition.printNoOuterBrackets}) use ${use.resourceVariable.name} ${update.printToCFGNode()}"
+        s"if (${condition.printNoOuterBrackets}) use ${use.resourceVariable.name} ${update.printToIR()}"
       case reset@Reset(_, condition, _) =>
         s"if (${condition.printNoOuterBrackets}) reset ${reset.resourceVariable.name}"
       case _: Command => printToC(0)
@@ -523,7 +523,7 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
   }
 
   def toIR(indent: Int): String = {
-    s"${indentString(indent)}if (${condition.printNoOuterBrackets}) use ${resourceVariable.name} ${update.printToCFGNode()}"
+    s"${indentString(indent)}if (${condition.printNoOuterBrackets}) use ${resourceVariable.name} ${update.printToIR()}"
   }
 
   override def replace(newGroupId: Int): Use = Use(Some(newGroupId), update, condition)
@@ -600,7 +600,7 @@ case class BeforeFunctionCall(callee: BrboFunction, actualArguments: List[BrboEx
 
   override def getDefs: Set[Identifier] = throw new Exception
 
-  def toIR(indent: Int): String = printToCFGNode()
+  def toIR(indent: Int): String = printToIR()
 
   override def sameAs(other: Any): Boolean = {
     other match {

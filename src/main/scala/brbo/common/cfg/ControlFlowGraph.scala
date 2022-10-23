@@ -236,7 +236,7 @@ case class ControlFlowGraph(entryNode: CFGNode,
     exporter.setVertexAttributeProvider({
       node: CFGNode =>
         val map = new util.HashMap[String, Attribute]()
-        map.put("label", DefaultAttribute.createAttribute(node.printToCFGNode()))
+        map.put("label", DefaultAttribute.createAttribute(node.printToIR()))
         val shape: String =
           node.command match {
             case _: BrboExpr => "diamond"

@@ -227,8 +227,8 @@ object BrboExprUtils {
           }
       }
       result match {
-        case ApronExpr(_) => assert(expr.typ == BrboType.INT, s"expr: `${expr.printToCFGNode()}`")
-        case _: Constraint => assert(expr.typ == BrboType.BOOL, s"expr: `${expr.printToCFGNode()}`")
+        case ApronExpr(_) => assert(expr.typ == BrboType.INT, s"expr: `${expr.printToIR()}`")
+        case _: Constraint => assert(expr.typ == BrboType.BOOL, s"expr: `${expr.printToIR()}`")
         case _ => throw new Exception
       }
       result

@@ -6,7 +6,7 @@ import brbo.common.{MathUtils, Z3Solver}
 import com.microsoft.z3.AST
 
 case class Predicate(expr: BrboExpr) {
-  override def toString: String = expr.printToCFGNode
+  override def toString: String = expr.printToIR
 
   def toAst(solver: Z3Solver): AST = expr.toZ3AST(solver)
 }

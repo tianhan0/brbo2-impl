@@ -13,7 +13,7 @@ import com.ibm.wala.util.intset.{BimodalMutableIntSet, IntSet}
  */
 case class CFGNode(command: Command, function: Option[BrboFunction] = None, id: Int = CFGNode.DONT_CARE_ID)
   extends NodeWithNumber with INodeWithNumberedEdges
-    with PrintToCFGNode with GetFunctionCalls with Serializable {
+    with PrintToIR with GetFunctionCalls with Serializable {
   private val predNumbers = new BimodalMutableIntSet()
   private val succNumbers = new BimodalMutableIntSet()
   val functionIdentifier: String = function match {
@@ -23,7 +23,7 @@ case class CFGNode(command: Command, function: Option[BrboFunction] = None, id: 
 
   def replaceCopy(newValue: Command): CFGNode = CFGNode(newValue, function, id)
 
-  def printWithUUID(): String = s"${printToCFGNode()} $command"
+  def printWithUUID(): String = s"${printToIR()} $command"
 
   def sameValue(other: CFGNode): Boolean = other.command.sameAs(command)
 
@@ -44,16 +44,16 @@ case class CFGNode(command: Command, function: Option[BrboFunction] = None, id: 
   override def removeAllIncidentEdges(): Unit = throw new Exception
 
   override def toString: String = {
-    s"($id) ${command.printToCFGNode()} [fun `$functionIdentifier`]"
+    s"($id) ${command.printToIR()} [fun `$functionIdentifier`]"
   }
 
-  override def printToCFGNode(): String = s"($id) ${command.printToCFGNode()}"
+  override def printToIR(): String = s"($id) ${command.printToIR()}"
 
   override def getFunctionCalls: List[FunctionCallExpr] = {
     command.getFunctionCalls
   }
 
-  def simplifiedString: String = command.printToCFGNode()
+  def simplifiedString: String = command.printToIR()
 
   // Whether this node is a use command, or a use command for the given group in the given function
   def isUse(groupId: Option[Int], functionName: Option[String]): Boolean = {

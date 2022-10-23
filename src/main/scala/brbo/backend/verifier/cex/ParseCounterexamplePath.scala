@@ -63,7 +63,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     def extractUseReset(key: Command, node: CFGNode): CFGNode = {
       programInC.map.get(key) match {
         case Some(value) =>
-          logger.traceOrError(s"Translate `$key` (in C representation) to `${value.asInstanceOf[Command].printToCFGNode}`")
+          logger.traceOrError(s"Translate `$key` (in C representation) to `${value.asInstanceOf[Command].printToIR}`")
           CFGNode(value.asInstanceOf[Command], node.function, CFGNode.DONT_CARE_ID)
         case None => node
       }
@@ -174,7 +174,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                 case 1 =>
                   val newSubState = SubState(successorNodes.head, state.subState.processFunctionCalls, state.subState.currentFunction)
                   return matchPath(State(newSubState, state.callStack, state.matchedNodes, state.remainingPath, state.shouldContinue))
-                case _ => throw new Exception(s"Node `${currentNode.printToCFGNode()}` must have 1 successor node!")
+                case _ => throw new Exception(s"Node `${currentNode.printToIR()}` must have 1 successor node!")
               }
             case _ =>
           }
@@ -280,7 +280,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               val successorNodes = cfg.findSuccessorNodes(currentNode)
               if (matchResult.matchedExpression) {
                 // Matched an expression
-                assert(successorNodes.size == 2, s"Successor nodes:\n`${successorNodes.map(n => n.printToCFGNode()).mkString("\n")}`")
+                assert(successorNodes.size == 2, s"Successor nodes:\n`${successorNodes.map(n => n.printToIR()).mkString("\n")}`")
                 // Find the branch to proceed
                 val (trueNode: CFGNode, falseNode: CFGNode) = {
                   val n1 = successorNodes.head
@@ -384,11 +384,11 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                            remainingPath: List[String],
                            shouldContinue: Boolean) {
     override def toString: String = {
-      val s1 = s"Current node: `${subState.currentNode.printToCFGNode}`"
+      val s1 = s"Current node: `${subState.currentNode.printToIR}`"
       val s2 = s"Current function: `${subState.currentFunction.identifier}`"
       val s3 = s"Process function calls: `${subState.processFunctionCalls}`"
       val s4 = s"Call stack: `${callStack.map({ subState => subState.toString })}`"
-      val s5 = s"Matched nodes: `${matchedNodes.map({ pathNode => s"`${pathNode.printToCFGNode}`" }).reverse}`"
+      val s5 = s"Matched nodes: `${matchedNodes.map({ pathNode => s"`${pathNode.printToIR}`" }).reverse}`"
       val s6 = s"Remaining path: `$remainingPath`"
       val s7 = s"Should continue: `$shouldContinue`"
       List(s1, s2, s3, s4, s5, s6, s7).mkString("\n")
@@ -402,7 +402,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
    * @param currentFunction      The function that the current node belongs to
    */
   private case class SubState(currentNode: CFGNode, processFunctionCalls: Boolean, currentFunction: BrboFunction) {
-    override def toString: String = s"Node ${currentNode.printToCFGNode()} in function `${currentFunction.identifier}` (Process function calls: $processFunctionCalls)"
+    override def toString: String = s"Node ${currentNode.printToIR()} in function `${currentFunction.identifier}` (Process function calls: $processFunctionCalls)"
   }
 
   // Copied from https://github.com/jgrapht/jgrapht/blob/6aba8e81053660997fe681c50974c07e312027d1/jgrapht-io/src/test/java/org/jgrapht/nio/graphml/GraphMLImporterTest.java

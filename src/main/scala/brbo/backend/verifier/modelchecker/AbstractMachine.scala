@@ -56,7 +56,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     if (!firstRun) throw new Exception(s"Every instance of AbstractMachine can only run verification once, " +
       s"due to releasing all native memory after the verification")
     firstRun = false
-    logger.infoOrError(s"Verify assertion `${assertion.printToCFGNode}` (Max path length: `$maxPathLength`)")
+    logger.infoOrError(s"Verify assertion `${assertion.printToIR}` (Max path length: `$maxPathLength`)")
     val initialState = State(fakeInitialNode, initialValuation, indexOnPath = 0, shouldVerify = true)
     // Every CFGNode corresponds to a location, which is the location right after the node
     // fakeInitialNode corresponds to the program entry, which is right before the first command / expression
@@ -91,7 +91,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
           val (newValuation, keepExploring) = {
             oldStateMap.valuations.get(nextNode) match {
               case Some(existingValuation) =>
-                logger.trace(s"Old valuation after node `${nextNode.printToCFGNode}`: ${existingValuation.toShortString}")
+                logger.trace(s"Old valuation after node `${nextNode.printToIR}`: ${existingValuation.toShortString}")
                 if (existingValuation.include(newState.valuation)) {
                   logger.trace(s"The new valuation is included in the old one")
                   (existingValuation, false)
@@ -100,8 +100,8 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                   logger.trace(s"The new valuation is not included in the old one")
                   if (debugJoinWiden) {
                     logger.traceOrError(s"Path: ${newPath.reverse.map(n => n.simplifiedString).mkString(", ")}")
-                    logger.traceOrError(s"Old valuation after node `${nextNode.printToCFGNode}`: ${existingValuation.toShortString}")
-                    logger.traceOrError(s"New valuation after node `${nextNode.printToCFGNode}`: ${newState.valuation.toShortString}")
+                    logger.traceOrError(s"Old valuation after node `${nextNode.printToIR}`: ${existingValuation.toShortString}")
+                    logger.traceOrError(s"New valuation after node `${nextNode.printToIR}`: ${newState.valuation.toShortString}")
                   }
 
                   val occurrences = newPath.count(node => node == nextNode)
@@ -129,7 +129,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
                   }
                 }
               case None =>
-                logger.trace(s"Old valuation after node `${nextNode.printToCFGNode}` does not exist")
+                logger.trace(s"Old valuation after node `${nextNode.printToIR}` does not exist")
                 (newState.valuation, true)
             }
           }
@@ -209,7 +209,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
         val nextNodes = cfg.findSuccessorNodes(currentNode)
         nextNodes.size match {
           case 0 | 1 | 2 =>
-          case _ => throw new Exception(s"Current state `${currentNode.printToCFGNode}` has the following successor nodes: `$nextNodes`.")
+          case _ => throw new Exception(s"Current state `${currentNode.printToIR}` has the following successor nodes: `$nextNodes`.")
         }
         nextNodes
       }
@@ -218,7 +218,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     logger.trace(s"[step] Current scope: `$currentScope`")
     nextNodes.map({
       nextNode =>
-        logger.trace(s"[step] Next node: `${nextNode.printToCFGNode}`")
+        logger.trace(s"[step] Next node: `${nextNode.printToIR}`")
         val nextScope = scopeOperations.getScope(nextNode.command)
         logger.trace(s"[step] Next scope: `$nextScope`")
         val valuation = {
@@ -268,14 +268,14 @@ object AbstractMachine {
         assign(identifier, expression, createNewVariable = false, valuation, commandScope)
       case _: CFGOnly => valuation
       case use@Use(_, update, condition, _) =>
-        trace(logger, s"Evaluating `${use.printToCFGNode}`")
+        trace(logger, s"Evaluating `${use.printToIR}`")
         val updatedValuation =
           assign(use.resourceVariable, Addition(use.resourceVariable, update), createNewVariable = false, valuation, commandScope)
         trace(logger, s"Updated valuation: `${updatedValuation.toShortString}`")
         evalGhostCommandHelper(condition, valuation.satisfy(condition), valuation.satisfy(Negation(condition)),
           updatedValuation, valuation, logger)
       case reset@Reset(_, condition, _) =>
-        trace(logger, s"Evaluating `${reset.printToCFGNode}`")
+        trace(logger, s"Evaluating `${reset.printToIR}`")
         val counterUpdated = {
           val resourceUpdated = {
             val starUpdated = {
@@ -341,8 +341,8 @@ object AbstractMachine {
 
   private def evalGhostCommandHelper(condition: BrboExpr, allThen: Boolean, allElse: Boolean,
                                      thenValuation: Valuation, elseValuation: Valuation, logger: Option[MyLogger]): Valuation = {
-    trace(logger, s"All states satisfy `${condition.printToCFGNode}`? `$allThen`")
-    trace(logger, s"All states satisfy `${Negation(condition).printToCFGNode}`? `$allElse`")
+    trace(logger, s"All states satisfy `${condition.printToIR}`? `$allThen`")
+    trace(logger, s"All states satisfy `${Negation(condition).printToIR}`? `$allElse`")
     if (allThen) thenValuation
     else {
       if (allElse) elseValuation
@@ -427,7 +427,7 @@ object AbstractMachine {
 
     def satisfyWithZ3(brboExpr: BrboExpr): Boolean = valuation.satisfyWithZ3(brboExpr)
 
-    def toShortString: String = s"Node: `${node.printToCFGNode}`. Number of visits: `$indexOnPath`. shouldVerify: `$shouldVerify`. Valuation: ${valuation.toShortString}"
+    def toShortString: String = s"Node: `${node.printToIR}`. Number of visits: `$indexOnPath`. shouldVerify: `$shouldVerify`. Valuation: ${valuation.toShortString}"
   }
 
   /**

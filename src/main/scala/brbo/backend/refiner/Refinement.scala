@@ -154,7 +154,7 @@ object Refinement {
   case class UseNode(newUse: CFGNode, override val newGroupId: Int) extends Replace(newUse, newGroupId) {
     val use: Use = newUse.command.asInstanceOf[Use]
 
-    override def toString: String = use.printToCFGNode
+    override def toString: String = use.printToIR
 
     override def sameAs(other: Any): Boolean = {
       other match {
@@ -168,7 +168,7 @@ object Refinement {
   case class ResetNode(newReset: CFGNode, override val newGroupId: Int) extends Replace(newReset, newGroupId) {
     val reset: Reset = newReset.command.asInstanceOf[Reset]
 
-    override def toString: String = reset.printToCFGNode
+    override def toString: String = reset.printToIR
 
     override def sameAs(other: Any): Boolean = {
       other match {
