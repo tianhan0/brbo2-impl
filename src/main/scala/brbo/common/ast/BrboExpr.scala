@@ -20,7 +20,7 @@ abstract class BrboExpr(val typ: BrboType.T, uuid: UUID) extends Command(uuid)
     else string
   }
 
-  override protected def printCommand(indent: Int): String = throw new Exception("Unreachable")
+  override protected def printToCCommand(indent: Int): String = throw new Exception("Unreachable")
 }
 
 case class Identifier(name: String, override val typ: BrboType.T, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(typ, uuid) {

@@ -80,7 +80,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
               case _: BrboExpr =>
             }
         })
-        assert(map.keySet.subsetOf(newGroupIds), s"Find instances for use `${useInOriginalPath.toIR(0)}`. newGroupIds: `${map.keySet}`. allNewGroupIds: `$newGroupIds`")
+        assert(map.keySet.subsetOf(newGroupIds), s"Find instances for use `${useInOriginalPath.printToIR()}`. newGroupIds: `${map.keySet}`. allNewGroupIds: `$newGroupIds`")
         map
       case None => Map[Int, Set[Int]]() // This use does not split
     }

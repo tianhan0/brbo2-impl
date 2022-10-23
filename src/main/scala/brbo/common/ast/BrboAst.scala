@@ -5,7 +5,6 @@ import brbo.common.GhostVariableTyp._
 import brbo.common.{BrboType, GhostVariableUtils, SameAs}
 
 import java.util.UUID
-import scala.annotation.tailrec
 
 @SerialVersionUID(1L)
 case class BrboProgram(name: String, mainFunction: BrboFunction,
@@ -97,14 +96,12 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
   }
 }
 
-abstract class BrboAst extends SameAs with Serializable with PrintToC {
-}
+abstract class BrboAst extends SameAs with Serializable with PrintToC
 
-abstract class Statement(val uuid: UUID) extends BrboAst {
-}
+abstract class Statement(val uuid: UUID) extends BrboAst
 
 abstract class Command(val uuid: UUID) extends BrboAst with PrintToIR with GetFunctionCalls with UseDefVariables {
-  protected def printCommand(indent: Int): String
+  protected def printToCCommand(indent: Int): String
 
   final override def printToIR(): String = {
     this match {
@@ -126,7 +123,7 @@ abstract class Command(val uuid: UUID) extends BrboAst with PrintToIR with GetFu
   final override def printToC(indent: Int): String = {
     this match {
       case brboExpr: BrboExpr => brboExpr.print(indent) + ";"
-      case _: Command => printCommand(indent)
+      case _: Command => printToCCommand(indent)
       case _ => throw new Exception()
     }
   }
@@ -195,7 +192,7 @@ case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, override
 case class Assume(condition: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
   assert(condition.typ == BOOL)
 
-  override def printCommand(indent: Int): String = {
+  override def printToCCommand(indent: Int): String = {
     val conditionString = condition.printNoOuterBrackets
     s"${indentString(indent)}assume($conditionString);"
   }
@@ -219,7 +216,7 @@ case class Assume(condition: BrboExpr, override val uuid: UUID = UUID.randomUUID
 }
 
 case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
-  override def printCommand(indent: Int): String = {
+  override def printToCCommand(indent: Int): String = {
     val initialValueString =
       identifier.typ match {
         case INT => assert(initialValue.typ == INT, s"variable: `$identifier` (type: `${identifier.typ}`); initialValue: `$initialValue` (type: `${initialValue.typ}`)"); initialValue.printNoOuterBrackets
@@ -252,7 +249,7 @@ case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, o
 case class Assignment(identifier: Identifier, expression: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
   assert(identifier.typ == expression.typ)
 
-  override def printCommand(indent: Int): String = {
+  override def printToCCommand(indent: Int): String = {
     s"${indentString(indent)}${identifier.name} = ${expression.printNoOuterBrackets};"
   }
 
@@ -276,7 +273,7 @@ case class Assignment(identifier: Identifier, expression: BrboExpr, override val
 }
 
 case class Skip(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
-  override def printCommand(indent: Int): String = {
+  override def printToCCommand(indent: Int): String = {
     s"${indentString(indent)};"
   }
 
@@ -299,7 +296,7 @@ case class Skip(override val uuid: UUID = UUID.randomUUID()) extends Command(uui
 }
 
 case class Return(value: Option[BrboExpr], override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
-  override def printCommand(indent: Int): String = {
+  override def printToCCommand(indent: Int): String = {
 
     val valueString =
       value match {
@@ -343,7 +340,7 @@ case class Return(value: Option[BrboExpr], override val uuid: UUID = UUID.random
 }
 
 case class Break(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
-  override def printCommand(indent: Int): String = {
+  override def printToCCommand(indent: Int): String = {
     s"${indentString(indent)}break;"
   }
 
@@ -366,7 +363,7 @@ case class Break(override val uuid: UUID = UUID.randomUUID()) extends Command(uu
 }
 
 case class Continue(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
-  override def printCommand(indent: Int): String = {
+  override def printToCCommand(indent: Int): String = {
     s"${indentString(indent)}continue;"
   }
 
@@ -392,7 +389,7 @@ case class LabeledCommand(label: String, command: Command, override val uuid: UU
   assert(!command.isInstanceOf[LabeledCommand])
   assert(!command.isInstanceOf[GhostCommand], s"Not allow ghost commands to be labeled, due to the translation in BrboAstInC")
 
-  override def printCommand(indent: Int): String = {
+  override def printToCCommand(indent: Int): String = {
     s"${indentString(indent)}$label: ${command.printToC(0)}"
   }
 
@@ -418,7 +415,7 @@ case class LabeledCommand(label: String, command: Command, override val uuid: UU
 sealed trait CFGOnly
 
 case class FunctionExit(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with CFGOnly {
-  override def printCommand(indent: Int): String = "[Function Exit]"
+  override def printToCCommand(indent: Int): String = "[Function Exit]"
 
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
@@ -440,7 +437,7 @@ case class FunctionExit(override val uuid: UUID = UUID.randomUUID()) extends Com
 }
 
 case class LoopExit(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with CFGOnly {
-  override def printCommand(indent: Int): String = "[Loop Exit]"
+  override def printToCCommand(indent: Int): String = "[Loop Exit]"
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
@@ -461,7 +458,7 @@ case class LoopExit(override val uuid: UUID = UUID.randomUUID()) extends Command
 }
 
 case class Empty(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with CFGOnly {
-  override def printCommand(indent: Int): String = "[Empty Node]"
+  override def printToCCommand(indent: Int): String = "[Empty Node]"
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
@@ -482,7 +479,7 @@ case class Empty(override val uuid: UUID = UUID.randomUUID()) extends Command(uu
 }
 
 case class BranchingHead(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with CFGOnly {
-  override def printCommand(indent: Int): String = "[Branch Head]"
+  override def printToCCommand(indent: Int): String = "[Branch Head]"
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
@@ -518,12 +515,8 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
 
   override def getFunctionCalls: List[FunctionCallExpr] = update.getFunctionCalls
 
-  override def printCommand(indent: Int): String = {
+  override def printToCCommand(indent: Int): String = {
     s"${indentString(indent)}if (${condition.printNoOuterBrackets}) ${assignmentCommand.printToC(0)}"
-  }
-
-  def toIR(indent: Int): String = {
-    s"${indentString(indent)}if (${condition.printNoOuterBrackets}) use ${resourceVariable.name} ${update.printToIR()}"
   }
 
   override def replace(newGroupId: Int): Use = Use(Some(newGroupId), update, condition)
@@ -561,12 +554,8 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), override va
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
-  override def printCommand(indent: Int): String = {
+  override def printToCCommand(indent: Int): String = {
     s"${indentString(indent)}if (${condition.printNoOuterBrackets}) {\n${maxStatement.printToC(indent + DEFAULT_INDENT)}\n${resetCommand.printToC(indent + DEFAULT_INDENT)}\n${counterCommand.printToC(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
-  }
-
-  def toIR(indent: Int): String = {
-    s"${indentString(indent)}if (${condition.printNoOuterBrackets}) reset ${resourceVariable.name}"
   }
 
   def replace(newGroupId: Int): Reset = Reset(newGroupId, condition)
@@ -594,13 +583,11 @@ case class BeforeFunctionCall(callee: BrboFunction, actualArguments: List[BrboEx
   extends Command(uuid) with CexPathOnly {
   override def getFunctionCalls: List[FunctionCallExpr] = throw new Exception
 
-  override def printCommand(indent: Int): String = throw new Exception
+  override def printToCCommand(indent: Int): String = throw new Exception
 
   override def getUses: Set[Identifier] = throw new Exception
 
   override def getDefs: Set[Identifier] = throw new Exception
-
-  def toIR(indent: Int): String = printToIR()
 
   override def sameAs(other: Any): Boolean = {
     other match {
