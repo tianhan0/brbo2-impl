@@ -37,5 +37,25 @@ object InterpreterUnitTest {
       |  boolean g(boolean b) { return b;}
       |}""".stripMargin
 
-  val expressionTests: List[TestCase] = List(TestCase("Expression test", expressionTest, """???"""))
+  val expressionTests: List[TestCase] = List(TestCase("Expression test", expressionTest,
+    """GoodState$
+      |Value: Some(20)
+      |Store: (x -> 10)
+      |Trace: [Store: (x -> 10)] ==> [(x;, None) ==> Store: (x -> 10)] ==> [(10;, None) ==> Store: (x -> 10)]
+      |       [((x + 10);, None) ==> Store: (x -> 10)] ==> [(5;, None) ==> Store: (x -> 10)] ==> [(((x + 10) - 5);, None) ==> Store: (x -> 10)]
+      |       [Store: (x -> 15)] ==> [(x;, None) ==> Store: (x -> 15)] ==> [(return x;, None) ==> Store: (x -> 15)]
+      |       [(true;, None) ==> Store: (x -> 10)] ==> [(!(true);, None) ==> Store: (x -> 10)] ==> [Store: (b -> false)]
+      |       [(b;, None) ==> Store: (b -> false)] ==> [(return b;, None) ==> Store: (b -> false)] ==> [(10;, None) ==> Store: (x -> 10)]
+      |       [(x;, None) ==> Store: (x -> 10)] ==> [((10 < x);, None) ==> Store: (x -> 10)] ==> [(!((10 < x));, None) ==> Store: (x -> 10)]
+      |       [Store: (b -> true)] ==> [(b;, None) ==> Store: (b -> true)] ==> [(return b;, None) ==> Store: (b -> true)]
+      |       [(10;, None) ==> Store: (x -> 10)] ==> [(x;, None) ==> Store: (x -> 10)] ==> [((10 < x);, None) ==> Store: (x -> 10)]
+      |       [Store: (b -> false)] ==> [(b;, None) ==> Store: (b -> false)] ==> [(return b;, None) ==> Store: (b -> false)]
+      |       [(10;, None) ==> Store: (x -> 10)] ==> [(x;, None) ==> Store: (x -> 10)] ==> [((10 == x);, None) ==> Store: (x -> 10)]
+      |       [Store: (b -> true)] ==> [(b;, None) ==> Store: (b -> true)] ==> [(return b;, None) ==> Store: (b -> true)]
+      |       [(true;, None) ==> Store: (x -> 10)] ==> [(false;, None) ==> Store: (x -> 10)] ==> [((true && false);, None) ==> Store: (x -> 10)]
+      |       [Store: (b -> false)] ==> [(b;, None) ==> Store: (b -> false)] ==> [(return b;, None) ==> Store: (b -> false)]
+      |       [(true;, None) ==> Store: (x -> 10)] ==> [(false;, None) ==> Store: (x -> 10)] ==> [((true || false);, None) ==> Store: (x -> 10)]
+      |       [Store: (b -> true)] ==> [(b;, None) ==> Store: (b -> true)] ==> [(return b;, None) ==> Store: (b -> true)]
+      |       [(x;, None) ==> Store: (x -> 10)] ==> [(2;, None) ==> Store: (x -> 10)] ==> [((x * 2);, None) ==> Store: (x -> 10)]
+      |       [Store: (x -> 20)] ==> [(x;, None) ==> Store: (x -> 20)] ==> [(return x;, None) ==> Store: (x -> 20)]""".stripMargin))
 }
