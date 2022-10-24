@@ -1,39 +1,79 @@
 package brbo.backend.interpreter
 
 import brbo.backend.interpreter.Interpreter._
+import brbo.common.MyLogger
 import brbo.common.ast._
 
 import scala.collection.immutable.HashMap
 
-class Interpreter(brboProgram: BrboProgram) {
-  def interpret(inputValues: List[BrboValue]): TerminalState =
-    evaluateFunction(brboProgram.mainFunction, inputValues, EmptyTrace, None)
+class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
+  protected val logger: MyLogger = MyLogger.createLogger(classOf[Interpreter], debugMode)
 
-  def evaluateFunction(brboFunction: BrboFunction, inputValues: List[BrboValue],
-                       lastTrace: Trace, lastTransition: Option[LastTransition]): TerminalState = {
+  def execute(inputValues: List[BrboValue]): TerminalState =
+    evaluateFunction(brboProgram.mainFunction, inputValues, EmptyTrace)
+
+  def evaluateFunction(brboFunction: BrboFunction, inputValues: List[BrboValue], lastTrace: Trace): TerminalState = {
     val parameters = brboFunction.parameters
     assert(parameters.length == inputValues.length)
     val initialStore = new Store()
     parameters.zip(inputValues).foreach({
       case (parameter, inputValue) => initialStore.set(parameter, inputValue)
     })
-    val initialState = InitialState(brboFunction.actualBody, initialStore,
-      lastTrace.add(TraceNode(initialStore, lastTransition)), lastTransition)
+    logger.traceOrError(s"Evaluate function `${brboFunction.identifier}` with initial store $initialStore")
+    val initialState = InitialState(brboFunction.actualBody, initialStore, lastTrace.add(TraceNode(initialStore, None)))
     val finalState = evaluateAst(initialState)
     // TODO: Sanity check
     finalState
   }
 
-  def evaluateAst(state: InitialState): TerminalState = {
-    state.ast match {
-      case _: BrboExpr => evaluateExpr(state)
-      case _: Command => evaluateCommand(state)
+  def evaluateAst(initialState: InitialState): TerminalState = {
+    initialState.ast match {
+      case _: BrboExpr => evaluateExpr(initialState)
+      case _: Command => evaluateCommand(initialState)
       case statement: Statement =>
         statement match {
-          case Block(asts, _) => ???
-          case ITE(condition, thenAst, elseAst, _) => ???
-          case Loop(condition, loopBody, _) => ???
-          case _ => ???
+          case Block(asts, _) =>
+            val state = GoodState(initialState.store, initialState.trace, None)
+            asts.foldLeft(state: TerminalState)({
+              case (soFar, ast) =>
+                soFar match {
+                  case BadState(_, _) =>
+                    logger.error(s"Error when evaluating statement in a block $ast")
+                    soFar
+                  case GoodState(store, trace, _) => evaluateAst(InitialState(ast, store, trace))
+                  case _ => throw new Exception
+                }
+            })
+          case ITE(condition, thenAst, elseAst, _) =>
+            evaluateExpr(InitialState(condition, initialState.store, initialState.trace)) match {
+              case badState@BadState(_, _) =>
+                logger.error(s"Error when evaluating the conditional in ITE ${initialState.ast}")
+                badState
+              case GoodState(store, trace, value) =>
+                value match {
+                  case Some(Bool(b, _)) =>
+                    if (b) evaluateAst(InitialState(thenAst, store, trace))
+                    else evaluateAst(InitialState(elseAst, store, trace))
+                  case _ => throw new Exception
+                }
+              case _ => throw new Exception
+            }
+          case loop@Loop(condition, loopBody, _) =>
+            evaluateExpr(InitialState(condition, initialState.store, initialState.trace)) match {
+              case badState@BadState(_, _) =>
+                logger.error(s"Error when evaluating the conditional in loop $loop")
+                badState
+              case GoodState(store, trace, value) =>
+                value match {
+                  case Some(Bool(b, _)) =>
+                    val block = Block(List(loopBody, loop))
+                    if (b) evaluateAst(InitialState(block, store, trace))
+                    else GoodState(store, trace, None)
+                  case _ => throw new Exception
+                }
+              case _ => throw new Exception
+            }
+          case _ => throw new Exception
         }
       case _ => throw new Exception()
     }
@@ -43,11 +83,9 @@ class Interpreter(brboProgram: BrboProgram) {
     val ast = initialState.ast
     ast match {
       case brboValue: BrboValue =>
-        val lastTransition = LastTransition(ast)
-        GoodState(initialState.store, traceAppend(initialState, lastTransition), Some(brboValue), Some(lastTransition))
+        GoodState(initialState.store, appendToTraceFrom(initialState, Transition(ast)), Some(brboValue))
       case identifier@Identifier(_, _, _) =>
-        val lastTransition = LastTransition(ast)
-        GoodState(initialState.store, traceAppend(initialState, lastTransition), Some(initialState.store.get(identifier)), Some(lastTransition))
+        GoodState(initialState.store, appendToTraceFrom(initialState, Transition(ast)), Some(initialState.store.get(identifier)))
       case Addition(left, right, _) =>
         evaluateBinaryExpr(ast, left, right, initialState,
           {
@@ -79,11 +117,13 @@ class Interpreter(brboProgram: BrboProgram) {
           }
         )
       case Negation(expression, _) =>
-        val newState = evaluateExpr(InitialState(expression, initialState.store, initialState.trace, initialState.lastTransition))
+        val newState = evaluateExpr(InitialState(expression, initialState.store, initialState.trace))
         newState match {
-          case BadState(_, _, _) => newState
-          case GoodState(store, trace, Some(Bool(b, _)), _) =>
-            GoodState(store, trace, Some(Bool(!b)), Some(LastTransition(ast)))
+          case BadState(_, _) =>
+            logger.error(s"Error when evaluating the expression in `$ast`")
+            newState
+          case GoodState(store, _, Some(Bool(b, _))) =>
+            GoodState(store, appendToTraceFrom(newState, Transition(ast)), Some(Bool(!b)))
           case _ => throw new Exception()
         }
       case LessThan(left, right, _) =>
@@ -128,35 +168,38 @@ class Interpreter(brboProgram: BrboProgram) {
           }
         )
       case FunctionCallExpr(identifier, arguments, _, _) =>
-        val lastTransition = LastTransition(ast)
+        val lastTransition = Transition(ast)
         PreDefinedFunctions.specialFunctions.find(f => f.name == identifier) match {
           case Some(specialFunction) =>
             specialFunction.name match {
               case PreDefinedFunctions.VerifierError.name | PreDefinedFunctions.Abort.name =>
-                BadState(initialState.store, initialState.trace, Some(lastTransition))
+                BadState(initialState.store, appendToTraceFrom(initialState, lastTransition))
               case PreDefinedFunctions.VerifierNondetInt.name =>
                 val random = new scala.util.Random
-                GoodState(initialState.store, initialState.trace, Some(Number(random.nextInt())), Some(lastTransition))
+                GoodState(initialState.store, appendToTraceFrom(initialState, lastTransition), Some(Number(random.nextInt())))
               case PreDefinedFunctions.BoundAssertion.name => throw new Exception
               case PreDefinedFunctions.Uninitialize.name => throw new Exception
               case _ =>
-                evaluateFunctionCall(ast, initialState.trace, specialFunction.internalRepresentation, arguments)
+                evaluateFunctionCall(initialState, specialFunction.internalRepresentation, arguments)
             }
           case None =>
             brboProgram.functions.find(f => f.identifier == identifier) match {
-              case Some(function) => evaluateFunctionCall(ast, initialState.trace, function, arguments)
+              case Some(function) => evaluateFunctionCall(initialState, function, arguments)
               case None => throw new Exception(s"Evaluating a function that is not defined: $ast")
             }
         }
       case ITEExpr(condition, thenExpr, elseExpr, _) =>
-        val newState = evaluateExpr(InitialState(condition, initialState.store, initialState.trace, initialState.lastTransition))
+        val newState = evaluateExpr(InitialState(condition, initialState.store, initialState.trace))
         newState match {
-          case BadState(_, _, _) => newState
-          case GoodState(store, trace, value, lastTransition) =>
+          case BadState(_, _) =>
+            logger.error(s"Error when evaluating the conditional in `$ast`")
+            newState
+          case GoodState(store, _, value) =>
             value match {
               case Some(Bool(b, _)) =>
-                if (b) evaluateExpr(InitialState(thenExpr, store, trace, lastTransition))
-                else evaluateExpr(InitialState(elseExpr, store, trace, lastTransition))
+                val newTrace = appendToTraceFrom(newState, Transition(condition))
+                if (b) evaluateExpr(InitialState(thenExpr, store, newTrace))
+                else evaluateExpr(InitialState(elseExpr, store, newTrace))
               case _ => throw new Exception
             }
           case _ => throw new Exception
@@ -170,30 +213,56 @@ class Interpreter(brboProgram: BrboProgram) {
 
   private def evaluateBinaryExpr(thisExpr: BrboAst, left: BrboExpr, right: BrboExpr, initialState: InitialState,
                                  composeValues: (BrboValue, BrboValue) => BrboValue): TerminalState = {
-    val leftState = evaluateExpr(InitialState(left, initialState.store, initialState.trace, initialState.lastTransition))
-    val rightState = evaluateExpr(InitialState(right, leftState.store, leftState.trace, leftState.lastTransition))
+    val leftState = evaluateExpr(InitialState(left, initialState.store, initialState.trace))
+    val rightState = evaluateExpr(InitialState(right, leftState.store, leftState.trace))
     (leftState, rightState) match {
-      case (GoodState(_, _, Some(leftValue), _), GoodState(_, _, Some(rightValue), _)) =>
-        val lastTransition = LastTransition(thisExpr)
+      case (GoodState(_, _, Some(leftValue)), GoodState(_, _, Some(rightValue))) =>
         GoodState(
           rightState.store,
-          traceAppend(rightState, lastTransition),
-          Some(composeValues(leftValue, rightValue)),
-          Some(lastTransition)
+          appendToTraceFrom(rightState, Transition(thisExpr)),
+          Some(composeValues(leftValue, rightValue))
         )
-      case (BadState(_, _, _), _) => leftState
-      case (_, BadState(_, _, _)) => rightState
+      case (BadState(_, _), _) =>
+        logger.error(s"Error when evaluating the left expression in `$thisExpr`")
+        leftState
+      case (_, BadState(_, _)) =>
+        logger.error(s"Error when evaluating the right expression in `$thisExpr`")
+        rightState
       case _ => throw new Exception
     }
   }
 
-  private def evaluateFunctionCall(callExpr: BrboAst, lastTrace: Trace,
-                                   function: BrboFunction, arguments: List[BrboExpr]): TerminalState = {
-    evaluateFunction(function, arguments.map(e => e.asInstanceOf[BrboValue]),
-      lastTrace, Some(LastTransition(callExpr)))
+  private def evaluateFunctionCall(initialState: InitialState, function: BrboFunction, arguments: List[BrboExpr]): TerminalState = {
+    logger.traceOrError(s"Evaluate function invocation: `${function.identifier}`")
+    val (state, argumentValues) = arguments.foldLeft(
+      GoodState(initialState.store, initialState.trace, None): TerminalState,
+      Nil: List[BrboValue]
+    )({
+      case ((state, argumentValues), argument) =>
+        state match {
+          case BadState(_, _) => (state, argumentValues)
+          case GoodState(store, trace, _) =>
+            evaluateExpr(InitialState(argument, store, trace)) match {
+              case badState@BadState(_, _) =>
+                logger.error(s"Error when evaluating argument `$argument`")
+                (badState, argumentValues)
+              case goodState@GoodState(_, _, value) =>
+                logger.traceOrError(s"Actual argument `$argument` is evaluated as `$value`")
+                (goodState, value.get :: argumentValues)
+              case _ => throw new Exception
+            }
+          case _ => throw new Exception
+        }
+    })
+    state match {
+      case BadState(_, _) => state
+      case GoodState(_, trace, _) =>
+        evaluateFunction(function, argumentValues.reverse, trace)
+      case _ => throw new Exception
+    }
   }
 
-  private def traceAppend(lastState: State, lastTransition: LastTransition): Trace = {
+  private def appendToTraceFrom(lastState: State, lastTransition: Transition): Trace = {
     val (trace, store) = lastState match {
       case state: NonTerminalState => (state.trace, state.store)
       case state: TerminalState => (state.trace, state.store)
@@ -214,15 +283,20 @@ object Interpreter {
 
     def get(variable: Identifier): BrboValue = map.getOrElse(variable, throw new Exception)
 
-    override def toString: String = map.toString()
+    override def toString: String = {
+      val values = map.map({
+        case (identifier, value) => s"$identifier -> $value"
+      }).mkString(", ")
+      s"Store: ($values)"
+    }
   }
 
   /**
    *
-   * @param command The last command or expression that was evaluated
-   * @param cost    The cost (if any) from the last command
+   * @param command The command or expression in this transition
+   * @param cost    The cost (if any) from this transition
    */
-  case class LastTransition(command: BrboAst, cost: Option[Int] = None) {
+  case class Transition(command: BrboAst, cost: Option[Int] = None) {
     override def toString: String = {
       val commandString = command.printToC(0)
       s"($commandString, $cost)"
@@ -233,44 +307,37 @@ object Interpreter {
 
   /**
    *
-   * @param store          The store where the execution terminates
-   * @param trace          The trace from the initial state to the current (terminal) state
-   * @param lastTransition The last transition that was executed before reaching the current state
+   * @param store The store where the execution terminates
+   * @param trace The trace from the initial state to the current (terminal) state
    */
   abstract class TerminalState(val store: Store,
-                               val trace: Trace,
-                               val lastTransition: Option[LastTransition]) extends State
+                               val trace: Trace) extends State
 
   /**
    *
-   * @param store          The store where the execution begins
-   * @param trace          The trace from the initial state to the current (non-terminal) state
-   * @param lastTransition The last transition that was executed before reaching the current state
+   * @param store The store where the execution begins
+   * @param trace The trace from the initial state to the current (non-terminal) state
    */
   abstract class NonTerminalState(val store: Store,
-                                  val trace: Trace,
-                                  val lastTransition: Option[LastTransition]) extends State
+                                  val trace: Trace) extends State
 
   case class BadState(override val store: Store,
-                      override val trace: Trace,
-                      override val lastTransition: Option[LastTransition]) extends TerminalState(store, trace, lastTransition)
+                      override val trace: Trace) extends TerminalState(store, trace)
 
   case class GoodState(override val store: Store,
                        override val trace: Trace,
-                       value: Option[BrboValue],
-                       override val lastTransition: Option[LastTransition]) extends TerminalState(store, trace, lastTransition)
+                       value: Option[BrboValue]) extends TerminalState(store, trace)
 
   case class InitialState(ast: BrboAst,
                           override val store: Store,
-                          override val trace: Trace,
-                          override val lastTransition: Option[LastTransition]) extends NonTerminalState(store, trace, lastTransition)
+                          override val trace: Trace) extends NonTerminalState(store, trace)
 
   /**
    *
    * @param store          The current store
    * @param lastTransition The last transition that was evaluated
    */
-  case class TraceNode(store: Store, lastTransition: Option[LastTransition]) {
+  case class TraceNode(store: Store, lastTransition: Option[Transition]) {
     lastTransition match {
       case Some(transition) =>
         transition.command match {
@@ -283,7 +350,7 @@ object Interpreter {
     override def toString: String = {
       lastTransition match {
         case Some(lastTransition) =>
-          s"${lastTransition.toString}->${store.toString}"
+          s"${lastTransition.toString} -> ${store.toString}"
         case None => store.toString
       }
     }
@@ -297,7 +364,9 @@ object Interpreter {
     def add(node: TraceNode): Trace = Trace(nodes :+ node)
 
     override def toString: String = {
-      nodes.map(n => n.toString).mkString("->")
+      val indent: String = " " * "Trace: ".length
+      val string = nodes.map(n => s"[${n.toString}]").grouped(3).map(group => group.mkString(" -> ")).mkString(s"\n$indent")
+      s"Trace: $string"
     }
   }
 
@@ -308,11 +377,11 @@ object Interpreter {
   def printState(state: State): String = {
     state match {
       case state: InitialState =>
-        s"Command: ${state.ast}\nStore: ${state.store}\nTrace: ${state.trace.toString}\nLast Transition: ${state.lastTransition}"
+        s"${InitialState.getClass.getSimpleName}\nCommand: ${state.ast}\n${state.store}\n${state.trace.toString}"
       case state: GoodState =>
-        s"Value: ${state.value}\nStore: ${state.store}\nTrace: ${state.trace.toString}\nLast Transition: ${state.lastTransition}"
+        s"${GoodState.getClass.getSimpleName}\nValue: ${state.value}\n${state.store}\n${state.trace.toString}"
       case state: BadState =>
-        s"Store: ${state.store}\nTrace: ${state.trace.toString}\nLast Transition: ${state.lastTransition}"
+        s"${BadState.getClass.getSimpleName}\n${state.store}\n${state.trace.toString}"
       case _ => throw new Exception
     }
   }

@@ -11,9 +11,9 @@ class InterpreterUnitTest extends AnyFlatSpec {
     InterpreterUnitTest.expressionTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
-        val interpreter = new Interpreter(targetProgram.program)
-        val exitState = interpreter.interpret(List(Number(10)))
-        StringCompare.ignoreWhitespaces(exitState.toString, testCase.expectedOutput, s"${testCase.name} failed")
+        val interpreter = new Interpreter(targetProgram.program, debugMode = true)
+        val exitState = interpreter.execute(List(Number(10)))
+        StringCompare.ignoreWhitespaces(Interpreter.printState(exitState), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }
