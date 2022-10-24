@@ -30,19 +30,19 @@ object PreDefinedFunctions {
   }
 
   object VerifierError extends SpecialFunction("__VERIFIER_error") {
-    override def cRepresentation: String = "extern void $VERIFIER_ERROR() __attribute__((noreturn));"
+    override def cRepresentation: String = s"extern void $name() __attribute__((noreturn));"
 
     override def internalRepresentation: BrboFunction = throw new NotExist
   }
 
   object VerifierNondetInt extends SpecialFunction("__VERIFIER_nondet_int") {
-    override def cRepresentation: String = "extern void $ABORT(void);"
+    override def cRepresentation: String = s"extern int $name();"
 
     override def internalRepresentation: BrboFunction = throw new NotExist
   }
 
   object Abort extends SpecialFunction("abort") {
-    override def cRepresentation: String = "extern void $ABORT(void);"
+    override def cRepresentation: String = s"extern void $name(void);"
 
     override def internalRepresentation: BrboFunction = throw new NotExist
   }
