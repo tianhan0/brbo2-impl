@@ -19,7 +19,7 @@ case class TargetProgram(fullQualifiedClassName: String,
                          sourceCode: String) {
   allMethods.foreach({
     m =>
-      PreDefinedFunctions.SpecialFunctions.find(f => f.name == m.methodName) match {
+      PreDefinedFunctions.specialFunctions.find(f => f.name == m.methodName) match {
         case Some(_) =>
           throw new Exception(s"Method ${m.methodName}'s name collides with a pre-defined function")
         case None =>
@@ -55,7 +55,7 @@ case class TargetProgram(fullQualifiedClassName: String,
       case Right(statement) => statement
     }
     val mainFunction = BrboFunction(mainMethod.methodName, mainMethod.returnType, mainMethod.inputVariables.values.toList, body, Set())
-    BrboProgram(s"$fullQualifiedClassName.${mainMethod.methodName}", mainFunction, boundAssertions, PreDefinedFunctions.SpecialFunctionInternalRepresentations)
+    BrboProgram(s"$fullQualifiedClassName.${mainMethod.methodName}", mainFunction, boundAssertions, PreDefinedFunctions.specialFunctionInternalRepresentations)
   }
 
   class ConvertToAST(allVariables: Map[String, Identifier]) {
@@ -221,7 +221,7 @@ case class TargetProgram(fullQualifiedClassName: String,
             val select = tree.getMethodSelect
             assert(select.isInstanceOf[IdentifierTree])
             val functionName = select.toString
-            PreDefinedFunctions.SpecialFunctions.find({ f => f.name == functionName }) match {
+            PreDefinedFunctions.specialFunctions.find({ f => f.javaFunctionName == functionName }) match {
               case Some(f) => (f.name, f.internalRepresentation.returnType)
               case None =>
                 allMethods.find(targetMethod => targetMethod.methodName == functionName) match {

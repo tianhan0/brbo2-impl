@@ -137,13 +137,13 @@ object PreDefinedFunctions {
     override def internalRepresentation: BrboFunction = throw new NotExist
   }
 
-  val SpecialFunctions: List[SpecialFunction] = List(
+  val specialFunctions: List[SpecialFunction] = List(
     VerifierError, VerifierNondetInt, Abort, Assert, Assume,
     NdInt, NdInt2, NdInt3, NdBool, BoundAssertion, Uninitialize
   )
 
-  val SpecialFunctionInternalRepresentations: List[BrboFunction] = {
-    SpecialFunctions.foldLeft(Nil: List[BrboFunction])({
+  val specialFunctionInternalRepresentations: List[BrboFunction] = {
+    specialFunctions.foldLeft(Nil: List[BrboFunction])({
       case (soFar, f) =>
         try {
           f.internalRepresentation :: soFar

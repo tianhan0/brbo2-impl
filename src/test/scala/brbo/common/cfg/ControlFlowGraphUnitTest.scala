@@ -41,7 +41,7 @@ object ControlFlowGraphUnitTest {
       val variableDeclaration = VariableDeclaration(i, Number(0))
       val loop = Loop(LessThan(i, Number(10)), Block(List(Assignment(i, Addition(i, Number(1))), Break())))
       val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set())
-      BrboProgram("test01", main, Nil, PreDefinedFunctions.SpecialFunctionInternalRepresentations)
+      BrboProgram("test01", main, Nil, PreDefinedFunctions.specialFunctionInternalRepresentations)
     }
     val test01Expected = """strict digraph G {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
