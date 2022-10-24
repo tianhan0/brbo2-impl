@@ -28,8 +28,6 @@ case class TargetProgram(fullQualifiedClassName: String,
 
   private val logger = MyLogger.createLogger(classOf[TargetProgram], debugMode = false)
 
-  private var boundAssertions: List[BoundAssertion] = Nil
-
   val className: String = {
     // We expect input method's class name to be a fully qualified class name (e.g., `x.y.z.OutputHandler`)
     val index = fullQualifiedClassName.lastIndexOf(".")
@@ -49,16 +47,27 @@ case class TargetProgram(fullQualifiedClassName: String,
   }
 
   val program: BrboProgram = {
-    val convertToAST = new ConvertToAST(mainMethod.allVariables)
-    val body = convertToAST.toAST(mainMethod.methodTree.getBody) match {
+    val (mainFunction, boundAssertions) = toBrboFunction(mainMethod)
+    val otherFunctions = (allMethods - mainMethod).filter(m => m.methodName != "<init>").map(m => toBrboFunction(m)._1).toList
+    BrboProgram(s"$fullQualifiedClassName.${mainMethod.methodName}", mainFunction, boundAssertions,
+      PreDefinedFunctions.specialFunctionInternalRepresentations ::: otherFunctions)
+  }
+
+  private def toBrboFunction(targetMethod: TargetMethod): (BrboFunction, List[BoundAssertion]) = {
+    val translate = new Translate(targetMethod.allVariables)
+    val body = translate.toAST(targetMethod.methodTree.getBody) match {
       case Left(command) => Block(List(command))
       case Right(statement) => statement
     }
-    val mainFunction = BrboFunction(mainMethod.methodName, mainMethod.returnType, mainMethod.inputVariables.values.toList, body, Set())
-    BrboProgram(s"$fullQualifiedClassName.${mainMethod.methodName}", mainFunction, boundAssertions, PreDefinedFunctions.specialFunctionInternalRepresentations)
+    val function = BrboFunction(targetMethod.methodName, targetMethod.returnType, targetMethod.inputVariables.values.toList, body, Set())
+    (function, translate.getBoundAssertions)
   }
 
-  class ConvertToAST(allVariables: Map[String, Identifier]) {
+  private class Translate(allVariables: Map[String, Identifier]) {
+    private var boundAssertions: List[BoundAssertion] = Nil
+
+    def getBoundAssertions: List[BoundAssertion] = boundAssertions
+
     def toASTFlatten(statementTree: StatementTree): BrboAst = {
       toAST(statementTree) match {
         case Left(value) => value.asInstanceOf[BrboAst]
