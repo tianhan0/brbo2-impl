@@ -295,11 +295,11 @@ case class Skip(override val uuid: UUID = UUID.randomUUID()) extends Command(uui
   }
 }
 
-case class Return(value: Option[BrboExpr], override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
+case class Return(expression: Option[BrboExpr], override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
   override def printToCCommand(indent: Int): String = {
 
     val valueString =
-      value match {
+      expression match {
         case Some(value) => s" ${value.printNoOuterBrackets}"
         case None => ""
       }
@@ -307,14 +307,14 @@ case class Return(value: Option[BrboExpr], override val uuid: UUID = UUID.random
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = {
-    value match {
+    expression match {
       case Some(value2) => value2.getFunctionCalls
       case None => Nil
     }
   }
 
   override def getUses: Set[Identifier] = {
-    value match {
+    expression match {
       case Some(v) => v.getUses
       case None => Set()
     }
@@ -327,7 +327,7 @@ case class Return(value: Option[BrboExpr], override val uuid: UUID = UUID.random
       case command: Command =>
         command match {
           case Return(otherValue, _) =>
-            (otherValue, value) match {
+            (otherValue, expression) match {
               case (Some(otherValue), Some(value)) => otherValue.sameAs(value)
               case (None, None) => true
               case _ => false
