@@ -19,15 +19,23 @@ class InterpreterUnitTest extends AnyFlatSpec {
 }
 
 object InterpreterUnitTest {
-  val readVariable =
+  private val expressionTest =
     """class Test {
       |  void main(int x) {
-      |    f(x);
+      |    f(x + 10 - 5);
+      |    g(!true);
+      |    g(10 > x);
+      |    g(10 < x);
+      |    g(10 == x);
+      |    g(true && false);
+      |    g(true || false);
+      |    f(x * 2);
       |  }
       |
-      |  void f(int x) {
-      |  }
+      |  int f(int x) { return x; }
+      |
+      |  boolean g(boolean b) { return b;}
       |}""".stripMargin
 
-  val expressionTests: List[TestCase] = List(TestCase("Read variable", readVariable, """???"""))
+  val expressionTests: List[TestCase] = List(TestCase("Expression test", expressionTest, """???"""))
 }

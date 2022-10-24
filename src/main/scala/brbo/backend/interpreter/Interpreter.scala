@@ -207,8 +207,27 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
     }
   }
 
-  private def evaluateCommand(state: InitialState): TerminalState = {
-    ???
+  private def evaluateCommand(initialState: InitialState): TerminalState = {
+    val ast = initialState.ast
+    ast match {
+      case _: CFGOnly | _: CexPathOnly => throw new Exception()
+      case VariableDeclaration(identifier, initialValue, _) => ???
+      case Assignment(identifier, expression, _) => ???
+      case Use(groupId, update, condition, _) => ???
+      case Skip(_) => ???
+      case Break(_) => ???
+      case Continue(_) => ???
+      case Return(expression, _) =>
+        val newTrace = appendToTraceFrom(initialState, Transition(ast))
+        expression match {
+          case Some(expression) =>
+            evaluateExpr(InitialState(expression, initialState.store, newTrace))
+          case None => GoodState(initialState.store, newTrace, None)
+        }
+      case Assume(condition, _) => ???
+      case Reset(groupId, condition, _) => ???
+      case LabeledCommand(label, command, _) => ???
+    }
   }
 
   private def evaluateBinaryExpr(thisExpr: BrboAst, left: BrboExpr, right: BrboExpr, initialState: InitialState,
@@ -233,7 +252,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
   }
 
   private def evaluateFunctionCall(initialState: InitialState, function: BrboFunction, arguments: List[BrboExpr]): TerminalState = {
-    logger.traceOrError(s"Evaluate function invocation: `${function.identifier}`")
+    logger.traceOrError(s"Evaluate function call: `${function.identifier}` with arguments $arguments")
     val (state, argumentValues) = arguments.foldLeft(
       GoodState(initialState.store, initialState.trace, None): TerminalState,
       Nil: List[BrboValue]
@@ -257,7 +276,15 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
     state match {
       case BadState(_, _) => state
       case GoodState(_, trace, _) =>
-        evaluateFunction(function, argumentValues.reverse, trace)
+        evaluateFunction(function, argumentValues.reverse, trace) match {
+          case badState@BadState(_, _) =>
+            logger.error(s"Error when evaluating function `${function.identifier}` with arguments $arguments")
+            badState
+          case GoodState(_, trace, value) =>
+            // Restore to the initial store
+            GoodState(initialState.store, trace, value)
+          case _ => throw new Exception
+        }
       case _ => throw new Exception
     }
   }
@@ -281,7 +308,8 @@ object Interpreter {
       map = map + (variable -> value)
     }
 
-    def get(variable: Identifier): BrboValue = map.getOrElse(variable, throw new Exception)
+    def get(variable: Identifier): BrboValue = map.getOrElse(variable,
+      throw new Exception(s"Variable `$variable` is not defined in ${this.toString}"))
 
     override def toString: String = {
       val values = map.map({
@@ -350,7 +378,7 @@ object Interpreter {
     override def toString: String = {
       lastTransition match {
         case Some(lastTransition) =>
-          s"${lastTransition.toString} -> ${store.toString}"
+          s"${lastTransition.toString} ==> ${store.toString}"
         case None => store.toString
       }
     }
@@ -365,7 +393,7 @@ object Interpreter {
 
     override def toString: String = {
       val indent: String = " " * "Trace: ".length
-      val string = nodes.map(n => s"[${n.toString}]").grouped(3).map(group => group.mkString(" -> ")).mkString(s"\n$indent")
+      val string = nodes.map(n => s"[${n.toString}]").grouped(3).map(group => group.mkString(" ==> ")).mkString(s"\n$indent")
       s"Trace: $string"
     }
   }
