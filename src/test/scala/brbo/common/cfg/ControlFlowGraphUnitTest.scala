@@ -55,8 +55,8 @@ object ControlFlowGraphUnitTest {
                            |  9 [ shape=oval label="(9) [Function Exit]" ];
                            |  10 [ shape=rectangle label="(10) int x = ndInt();" ];
                            |  11 [ shape=oval label="(11) [Branch Head]" ];
-                           |  12 [ shape=diamond label="(12) !((x < 0))" ];
-                           |  13 [ shape=diamond label="(13) !(!((x < 0)))" ];
+                           |  12 [ shape=diamond label="(12) (!((x < 0)) && !((x == 0)))" ];
+                           |  13 [ shape=diamond label="(13) !((!((x < 0)) && !((x == 0))))" ];
                            |  14 [ shape=rectangle label="(14) return true;" ];
                            |  15 [ shape=rectangle label="(15) return false;" ];
                            |  16 [ shape=oval label="(16) [Function Exit]" ];
@@ -248,7 +248,7 @@ object ControlFlowGraphUnitTest {
                            |  1 [ shape=oval label="(1) [Function Exit]" ];
                            |  2 [ shape=rectangle label="(2) int i = 0;" ];
                            |  3 [ shape=rectangle label="(3) if ((i < 0) || (i == 0)) reset R1" ];
-                           |  4 [ shape=rectangle label="(4) if (!((i < 5))) use R1 i" ];
+                           |  4 [ shape=rectangle label="(4) if (!((i < 5)) && !((i == 5))) use R1 i" ];
                            |  2 -> 3 [ label="0.0" ];
                            |  3 -> 4 [ label="0.0" ];
                            |  4 -> 1 [ label="0.0" ];

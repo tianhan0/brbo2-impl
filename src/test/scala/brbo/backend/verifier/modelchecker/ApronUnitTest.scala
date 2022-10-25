@@ -123,13 +123,14 @@ object ApronUnitTest {
 
   val constraintTestToInt: List[TestCase] = {
     List(
-      TestCase("TestGeZero", gez, """(or (not (< (+ x y 1) 0)) (= (+ x y 1) 0))""".stripMargin),
-      TestCase("TestGtZero", gtz, """(not (< (- x (- y 2)) 0))""".stripMargin),
+      TestCase("TestGeZero", gez, """(not (< (+ x y 1) 0))""".stripMargin),
+      TestCase("TestGtZero", gtz, """(let ((a!1 (not (< (- x (- y 2)) 0))) (a!2 (not (= (- x (- y 2)) 0))))
+                                    |  (and a!1 a!2))""".stripMargin),
       TestCase("TestEqZero", eqz, """(= (* x y (- 3)) 0)""".stripMargin),
-      TestCase("TestGe", ge, """(or (not (< (- x 2) 0)) (= (- x 2) 0))""".stripMargin),
-      TestCase("TestGt", gt, """(not (< (- x 2) 0))""".stripMargin),
-      TestCase("TestLe", le, """(or (not (< (- 2 x) 0)) (= (- 2 x) 0))""".stripMargin),
-      TestCase("TestLt", lt, """(not (< (- 2 x) 0))""".stripMargin),
+      TestCase("TestGe", ge, """(not (< (- x 2) 0))""".stripMargin),
+      TestCase("TestGt", gt, """(and (not (< (- x 2) 0)) (not (= (- x 2) 0)))""".stripMargin),
+      TestCase("TestLe", le, """(not (< (- 2 x) 0))""".stripMargin),
+      TestCase("TestLt", lt, """(and (not (< (- 2 x) 0)) (not (= (- 2 x) 0)))""".stripMargin),
     )
   }
 }

@@ -150,7 +150,7 @@ object BasicProcessorUnitTest {
       TestCase("Binary expressions", ("Test", test04),
         """void main(int n, int m)
           |{
-          |  if ((!((n < m)) || (!((n < m)) || (n == m))) || (n == m))
+          |  if (((!((n < m)) && !((n == m))) || !((n < m))) || (n == m))
           |  {
           |    int z = ((n + 1) - 2) * 3;
           |  }
@@ -240,7 +240,7 @@ object BasicProcessorUnitTest {
       TestCase("ITE", ("Test", test12),
         """void main(int n, int m)
           |{
-          |  if (!((n < 0)))
+          |  if (!((n < 0)) && !((n == 0)))
           |    return;
           |  else
           |    ;

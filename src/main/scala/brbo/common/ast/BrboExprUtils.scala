@@ -274,11 +274,11 @@ object BrboExprUtils {
   }
 
   def greaterThan(left: BrboExpr, right: BrboExpr): BrboExpr = {
-    Negation(LessThan(left, right))
+    And(greaterThanOrEqualTo(left, right), Negation(Equal(left, right)))
   }
 
   def greaterThanOrEqualTo(left: BrboExpr, right: BrboExpr): BrboExpr = {
-    Or(greaterThan(left, right), Equal(left, right))
+    Negation(LessThan(left, right))
   }
 
   def notEqual(left: BrboExpr, right: BrboExpr): BrboExpr = {
