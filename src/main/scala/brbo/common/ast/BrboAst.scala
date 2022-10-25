@@ -503,7 +503,11 @@ sealed trait GhostCommand {
   def replace(newGroupId: Int): GhostCommand
 }
 
-case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Bool(b = true), override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with GhostCommand {
+case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Bool(b = true),
+               override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with GhostCommand {
+  assert(update.typ == BrboType.INT)
+  assert(condition.typ == BrboType.BOOL)
+
   groupId match {
     case Some(value) => assert(value >= 0) // This command represents updating a resource variable for some amortization group
     case None => // This command represents updating the original resource variable
@@ -538,7 +542,10 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
   }
 }
 
-case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true), override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with GhostCommand {
+case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
+                 override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with GhostCommand {
+  assert(condition.typ == BrboType.BOOL)
+
   val (resourceVariable: Identifier, starVariable: Identifier, counterVariable: Identifier) =
     GhostVariableUtils.generateVariables(Some(groupId))
 

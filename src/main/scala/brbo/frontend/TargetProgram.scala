@@ -10,6 +10,7 @@ import com.sun.source.tree._
 import com.sun.source.util.TreePath
 
 import scala.collection.JavaConverters._
+import scala.reflect.internal.util.HashSet
 
 case class TargetProgram(fullQualifiedClassName: String,
                          allMethods: Set[TargetMethod],
@@ -17,16 +18,15 @@ case class TargetProgram(fullQualifiedClassName: String,
                          getLineNumber: Tree => Int,
                          getPath: Tree => TreePath,
                          sourceCode: String) {
+  private val logger = MyLogger.createLogger(classOf[TargetProgram], debugMode = false)
   allMethods.foreach({
     m =>
       PreDefinedFunctions.functions.find(f => f.name == m.methodName) match {
         case Some(_) =>
-          throw new Exception(s"Method ${m.methodName}'s name collides with a pre-defined function")
+          logger.info(s"Method ${m.methodName}'s name collides with a pre-defined function")
         case None =>
       }
   })
-
-  private val logger = MyLogger.createLogger(classOf[TargetProgram], debugMode = false)
 
   val className: String = {
     // We expect input method's class name to be a fully qualified class name (e.g., `x.y.z.OutputHandler`)
@@ -68,14 +68,18 @@ object TargetProgram {
       case Left(command) => Block(List(command))
       case Right(statement) => statement
     }
-    val function = BrboFunction(targetMethod.methodName, targetMethod.returnType, targetMethod.inputVariables.values.toList, body, Set())
+    val function = BrboFunction(targetMethod.methodName, targetMethod.returnType,
+      targetMethod.inputVariables.values.toList, body, translate.getResourceVariables)
     (function, translate.getBoundAssertions)
   }
 
   private class Translate(allVariables: Map[String, Identifier], allMethods: Set[TargetMethod]) {
     private var boundAssertions: List[BoundAssertion] = Nil
+    private var resourceVariables: Set[Int] = Set()
 
     def getBoundAssertions: List[BoundAssertion] = boundAssertions
+
+    def getResourceVariables: Set[Int] = resourceVariables
 
     def toAST(statementTree: StatementTree): BrboAst = {
       toASTInternal(statementTree) match {
@@ -266,9 +270,19 @@ object TargetProgram {
               boundAssertions = BoundAssertion.parse(arguments.head, arguments(1)) :: boundAssertions
               Right(Skip())
             case PreDefinedFunctions.Use.javaFunctionName =>
-              Right(Use(groupId = ???, update = ???, condition = ???))
+              arguments.head match {
+                case Number(groupId, _) =>
+                  resourceVariables = resourceVariables + groupId
+                  Right(Use(Some(groupId), update = arguments(1), condition = arguments(2)))
+                case _ => throw new Exception(s"The first argument must be a number in $tree")
+              }
             case PreDefinedFunctions.Reset.javaFunctionName =>
-              Right(Reset(groupId = ???, condition = ???))
+              arguments.head match {
+                case Number(groupId, _) =>
+                  resourceVariables = resourceVariables + groupId
+                  Right(Reset(groupId, condition = arguments(1)))
+                case _ => throw new Exception(s"The first argument must be a number in $tree")
+              }
             case _ => Left(FunctionCallExpr(functionName, arguments, returnType))
           }
         case tree: ParenthesizedTree => toAST(tree.getExpression)

@@ -4,6 +4,7 @@ import brbo.TestCase
 import brbo.common.BrboType
 import brbo.common.BrboType.INT
 import brbo.common.string.StringCompare
+import brbo.frontend.BasicProcessor
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BrboAstUnitTest extends AnyFlatSpec {
@@ -39,6 +40,14 @@ class BrboAstUnitTest extends AnyFlatSpec {
         )
     })
   }
+
+  "Parsing pre-defined functions" should "be correct" in {
+    BrboAstUnitTest.parsePredefinedFunctions.foreach({
+      testCase =>
+        val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
+        StringCompare.ignoreWhitespaces(targetProgram.program.mainFunction.printToC(0), testCase.expectedOutput, s"${testCase.name} failed")
+    })
+  }
 }
 
 object BrboAstUnitTest {
@@ -59,14 +68,15 @@ object BrboAstUnitTest {
       TestCase("Block", createBlock, "  {\n    x = 0;\n    x = 1;\n  }"),
       TestCase("Use", createUse, "  if (true) R5 = R5 + 1;"),
       TestCase("Use 2", createUse2, "  if (true) R = R + 2;"),
-      TestCase("Reset", createReset, """  if (true) {
-                                       |    if (S5 < R5)
-                                       |      S5 = R5;
-                                       |    else
-                                       |      ;
-                                       |    R5 = 0;
-                                       |    C5 = C5 + 1;
-                                       |  }""".stripMargin)
+      TestCase("Reset", createReset,
+        """  if (true) {
+          |    if (S5 < R5)
+          |      S5 = R5;
+          |    else
+          |      ;
+          |    R5 = 0;
+          |    C5 = C5 + 1;
+          |  }""".stripMargin)
     )
 
   def createContinue: Continue = Continue()
@@ -106,4 +116,35 @@ object BrboAstUnitTest {
   }
 
   def createReset: Reset = Reset(5)
+
+  private val useResetTest =
+    """class Test {
+      |  void main(int x) {
+      |    use(1, 10, x > 10);
+      |    reset(2, x < 10);
+      |  }
+      |
+      |  void use(int x, int cost, boolean condition) {}
+      |  void reset(int x, boolean condition) {}
+      |}""".stripMargin
+
+  val parsePredefinedFunctions: List[TestCase] = List(TestCase("useResetTest", useResetTest,
+    """void main(int x)
+      |{
+      |  int C1 = -1;
+      |  int C2 = -1;
+      |  int R1 = 0;
+      |  int R2 = 0;
+      |  int S1 = 0;
+      |  int S2 = 0;
+      |  if (!((x < 10)) && !((x == 10))) R1 = R1 + 10;
+      |  if (x < 10) {
+      |    if (S2 < R2)
+      |      S2 = R2;
+      |    else
+      |      ;
+      |    R2 = 0;
+      |    C2 = C2 + 1;
+      |  }
+      |}""".stripMargin))
 }
