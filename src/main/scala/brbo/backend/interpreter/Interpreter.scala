@@ -127,12 +127,14 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
                 if (!b) GoodState(store, newTrace, None)
                 else {
                   evaluateExpr(InitialState(update, store, newTrace)) match {
-                    case goodState@GoodState(store, _, value) =>
+                    case GoodState(store, trace, value) =>
                       val cost = value.get match {
                         case Number(n, _) => Some(n)
                         case _ => throw new Exception
                       }
-                      GoodState(store.set(use.resourceVariable, value.get), appendToTraceFrom(goodState, Transition(use, cost)), None)
+                      val newStore = store.set(use.resourceVariable, value.get)
+                      val lastState = GoodState(newStore, trace, None)
+                      GoodState(newStore, appendToTraceFrom(lastState, Transition(use, cost)), None)
                     case _ => throw new Exception
                   }
                 }
@@ -365,15 +367,15 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
 
 object Interpreter {
   class Store {
-    private var map = new HashMap[Identifier, BrboValue]
+    private var map = new HashMap[String, BrboValue]
 
     def set(variable: Identifier, value: BrboValue): Store = {
       val store = new Store
-      store.map = map + (variable -> value)
+      store.map = map + (variable.name -> value)
       store
     }
 
-    def get(variable: Identifier): BrboValue = map.getOrElse(variable,
+    def get(variable: Identifier): BrboValue = map.getOrElse(variable.name,
       throw new Exception(s"Variable `$variable` is not defined in ${this.toString}"))
 
     override def toString: String = {
@@ -393,11 +395,13 @@ object Interpreter {
     override def toString: String = {
       val commandString = command match {
         case brboExpr: BrboExpr => brboExpr.print(0)
+        case use: Use => use.printToIR()
+        case reset: Reset => reset.printToIR()
         case command: Command => command.printToC(0)
         case _ => throw new Exception
       }
       cost match {
-        case Some(cost) => s"($commandString, $cost)"
+        case Some(cost) => s"$commandString <cost=$cost>"
         case None => commandString
       }
     }
@@ -476,7 +480,7 @@ object Interpreter {
       val indent: String = " " * "Trace: ".length
       val string =
         nodes.map(n => s"[${n.toString}]")
-          .grouped(3) // 3 nodes per line
+          .grouped(1) // How many nodes per line
           .map(group => group.mkString(" ==> "))
           .mkString(s"\n$indent")
       s"Trace: $string"

@@ -14,6 +14,16 @@ object GhostVariableUtils {
   private val starVariablePattern = (starVariablePrefix + """\d*""").r
   private val counterVariablePattern = (counterVariablePrefix + """\d*""").r
 
+  def initialValue(identifier: String): Int = {
+    if (isGhostVariable(identifier, Resource))
+      0
+    else if (isGhostVariable(identifier, Star))
+      Int.MinValue
+    else if (isGhostVariable(identifier, Counter))
+      0
+    else throw new Exception
+  }
+
   def approximatedResourceUsage(groupIds: Set[Int]): BrboExpr = groupIds.toList.sorted.foldLeft(Number(0): BrboExpr)({
     (acc, groupId) => Addition(acc, generateSum(Some(groupId)))
   })
@@ -39,9 +49,9 @@ object GhostVariableUtils {
 
   def declareVariables(groupId: Int): List[Command] = {
     val (resource: Identifier, star: Identifier, counter: Identifier) = GhostVariableUtils.generateVariables(Some(groupId))
-    val declaration1 = VariableDeclaration(resource, Number(0))
-    val declaration2 = VariableDeclaration(star, Number(0))
-    val declaration3 = VariableDeclaration(counter, Number(-1))
+    val declaration1 = VariableDeclaration(resource, Number(initialValue(resource.name)))
+    val declaration2 = VariableDeclaration(star, Number(initialValue(star.name)))
+    val declaration3 = VariableDeclaration(counter, Number(initialValue(counter.name)))
     List(declaration1, declaration2, declaration3)
   }
 
