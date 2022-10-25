@@ -10,7 +10,6 @@ import com.sun.source.tree._
 import com.sun.source.util.TreePath
 
 import scala.collection.JavaConverters._
-import scala.reflect.internal.util.HashSet
 
 case class TargetProgram(fullQualifiedClassName: String,
                          allMethods: Set[TargetMethod],

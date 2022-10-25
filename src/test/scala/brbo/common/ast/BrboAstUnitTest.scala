@@ -41,8 +41,8 @@ class BrboAstUnitTest extends AnyFlatSpec {
     })
   }
 
-  "Parsing pre-defined functions" should "be correct" in {
-    BrboAstUnitTest.parsePredefinedFunctions.foreach({
+  "Parsing AST nodes from Java programs" should "be correct" in {
+    BrboAstUnitTest.parsingAstTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
         StringCompare.ignoreWhitespaces(targetProgram.program.mainFunction.printToC(0), testCase.expectedOutput, s"${testCase.name} failed")
@@ -132,38 +132,51 @@ object BrboAstUnitTest {
       |  void reset(int x) {}
       |}""".stripMargin
 
-  val parsePredefinedFunctions: List[TestCase] = List(TestCase("useResetTest", useResetTest,
-    """void main(int x)
-      |{
-      |  int C1 = 0;
-      |  int C2 = 0;
-      |  int C3 = 0;
-      |  int C4 = 0;
-      |  int R1 = 0;
-      |  int R2 = 0;
-      |  int R3 = 0;
-      |  int R4 = 0;
-      |  int S1 = -2147483648;
-      |  int S2 = -2147483648;
-      |  int S3 = -2147483648;
-      |  int S4 = -2147483648;
-      |  if (!((x < 10)) && !((x == 10))) R1 = R1 + 10;
-      |  if (x < 10) {
-      |    if (S2 < R2)
-      |      S2 = R2;
-      |    else
-      |      ;
-      |    R2 = 0;
-      |    C2 = C2 + 1;
+  private val arrayInputTest =
+    """class Test {
+      |  void main(int[] x, int[][] y) {
       |  }
-      |  if (true) R3 = R3 + 100;
-      |  if (true) {
-      |    if (S4 < R4)
-      |      S4 = R4;
-      |    else
-      |      ;
-      |    R4 = 0;
-      |    C4 = C4 + 1;
-      |  }
-      |}""".stripMargin))
+      |}""".stripMargin
+
+  val parsingAstTests: List[TestCase] = List(
+    TestCase("useResetTest", useResetTest,
+      """void main(int x)
+        |{
+        |  int C1 = 0;
+        |  int C2 = 0;
+        |  int C3 = 0;
+        |  int C4 = 0;
+        |  int R1 = 0;
+        |  int R2 = 0;
+        |  int R3 = 0;
+        |  int R4 = 0;
+        |  int S1 = -2147483648;
+        |  int S2 = -2147483648;
+        |  int S3 = -2147483648;
+        |  int S4 = -2147483648;
+        |  if (!((x < 10)) && !((x == 10))) R1 = R1 + 10;
+        |  if (x < 10) {
+        |    if (S2 < R2)
+        |      S2 = R2;
+        |    else
+        |      ;
+        |    R2 = 0;
+        |    C2 = C2 + 1;
+        |  }
+        |  if (true) R3 = R3 + 100;
+        |  if (true) {
+        |    if (S4 < R4)
+        |      S4 = R4;
+        |    else
+        |      ;
+        |    R4 = 0;
+        |    C4 = C4 + 1;
+        |  }
+        |}""".stripMargin),
+    TestCase("arrayInputTest", arrayInputTest,
+      """void main(int[] x, int[][] y)
+        |{
+        |
+        |}""".stripMargin)
+  )
 }

@@ -28,7 +28,7 @@ object BrboType {
       case VOID => "void"
       case FLOAT => "float"
       case STRING => "$string$" // Intentionally invalid type name for C
-      case ARRAY(typ: T) => ???
+      case ARRAY(typ: T) => s"${toCString(typ)}[]"
     }
   }
 }
