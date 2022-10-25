@@ -1,5 +1,7 @@
 package brbo.common.ast
 
+import scala.annotation.tailrec
+
 object BrboAstUtils {
   def collectCommands(brboAst: BrboAst): Set[Command] = {
     brboAst match {
@@ -54,22 +56,24 @@ object BrboAstUtils {
       case Some(value) => Map(currentNode -> value)
       case None => Map()
     }
-    val childrenMap: Map[BrboAst, Statement] = currentNode match {
+    val map: Map[BrboAst, Statement] = currentNode match {
       case _: Command => Map()
       case statement: Statement =>
         statement match {
           case Block(asts, _) =>
             asts.flatMap(ast => immediateParentStatements(ast, Some(statement))).toMap
           case ITE(condition, thenAst, elseAst, _) =>
-            immediateParentStatements(condition, Some(statement)) ++ immediateParentStatements(thenAst, Some(statement)) ++
+            immediateParentStatements(condition, Some(statement)) ++
+              immediateParentStatements(thenAst, Some(statement)) ++
               immediateParentStatements(elseAst, Some(statement))
           case Loop(condition, loopBody, _) =>
-            immediateParentStatements(condition, Some(statement)) ++ immediateParentStatements(loopBody, Some(statement))
+            immediateParentStatements(condition, Some(statement)) ++
+              immediateParentStatements(loopBody, Some(statement))
           case _ => throw new Exception
         }
       case _ => throw new Exception
     }
-    currentMap ++ childrenMap
+    currentMap ++ map
   }
 
   def generateNewId(command: Command): Command = {
@@ -89,6 +93,54 @@ object BrboAstUtils {
       case Assume(condition, _) => Assume(condition)
       case Reset(groupId, condition, _) => Reset(groupId, condition)
       case LabeledCommand(label, command, _) => LabeledCommand(label, command)
+    }
+  }
+
+  @tailrec
+  def immediateOuterLoop(ast: BrboAst, parentStatements: Map[BrboAst, Statement]): Option[Loop] = {
+    parentStatements.get(ast) match {
+      case Some(parentStatement) =>
+        parentStatement match {
+          case _: Block | _: ITE => immediateOuterLoop(parentStatement, parentStatements)
+          case loop: Loop => Some(loop)
+          case _ => throw new Exception
+        }
+      case None => None
+    }
+  }
+
+  // The ast to be executed immediately after the given ast
+  @tailrec
+  def nextAst(ast: BrboAst, parentStatements: Map[BrboAst, Statement]): Option[BrboAst] = {
+    parentStatements.get(ast) match {
+      case Some(parentStatement) =>
+        parentStatement match {
+          case Block(statements, _) =>
+            val index = statements.indexOf(ast)
+            if (index < statements.length - 1) Some(statements(index + 1))
+            else nextAst(parentStatement, parentStatements)
+          case ITE(condition, thenAst, elseAst, _) =>
+            if (ast == condition) {
+              throw new Exception // May go to either branches
+            }
+            else if (ast == thenAst) {
+              nextAst(parentStatement, parentStatements)
+            }
+            else if (ast == elseAst) {
+              nextAst(parentStatement, parentStatements)
+            }
+            else throw new Exception
+          case Loop(condition, loopBody, _) =>
+            if (ast == condition) {
+              throw new Exception // May either exit the loop or stay inside the loop
+            }
+            else if (ast == loopBody) {
+              Some(condition) // Must evaluate the condition
+            }
+            else throw new Exception
+          case _ => throw new Exception
+        }
+      case None => None
     }
   }
 }
