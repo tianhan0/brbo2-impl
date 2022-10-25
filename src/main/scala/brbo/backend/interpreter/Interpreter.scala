@@ -13,10 +13,10 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
   private val parentStatements: Map[BrboAst, Statement] =
     (brboProgram.mainFunction :: brboProgram.functions).flatMap(f => immediateParentStatements(f.bodyWithInitialization)).toMap
 
-  def execute(inputValues: List[BrboValue]): ControlFlowEndState =
+  def execute(inputValues: List[BrboValue]): FlowEndState =
     evaluateFunction(brboProgram.mainFunction, inputValues, EmptyTrace)
 
-  def evaluateFunction(brboFunction: BrboFunction, inputValues: List[BrboValue], lastTrace: Trace): ControlFlowEndState = {
+  def evaluateFunction(brboFunction: BrboFunction, inputValues: List[BrboValue], lastTrace: Trace): FlowEndState = {
     val parameters = brboFunction.parameters
     assert(parameters.length == inputValues.length)
     val initialStore = parameters.zip(inputValues).foldLeft(new Store())({
@@ -29,14 +29,14 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
     finalState
   }
 
-  def evaluateAst(initialState: InitialState): ControlFlowEndState = {
+  def evaluateAst(initialState: InitialState): FlowEndState = {
     initialState.ast match {
       case _: BrboExpr => evaluateExpr(initialState)
       case _: Command => evaluateCommand(initialState)
       case statement: Statement =>
         statement match {
           case Block(asts, _) =>
-            var state: ControlFlowEndState = GoodState(initialState.store, initialState.trace, None)
+            var state: FlowEndState = GoodState(initialState.store, initialState.trace, None)
             var i = 0
             while (i < asts.length) {
               state match {
@@ -96,7 +96,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
   }
 
   @tailrec
-  private def evaluateCommand(initialState: InitialState): ControlFlowEndState = {
+  private def evaluateCommand(initialState: InitialState): FlowEndState = {
     val ast = initialState.ast
     ast match {
       case _: CFGOnly | _: CexPathOnly => throw new Exception()
@@ -169,7 +169,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
     }
   }
 
-  private def evaluateExpr(initialState: InitialState): ControlFlowEndState = {
+  private def evaluateExpr(initialState: InitialState): FlowEndState = {
     val ast = initialState.ast
     ast match {
       case brboValue: BrboValue =>
@@ -292,7 +292,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
   }
 
   private def evaluateBinaryExpr(thisExpr: BrboAst, left: BrboExpr, right: BrboExpr, initialState: InitialState,
-                                 composeValues: (BrboValue, BrboValue) => BrboValue): ControlFlowEndState = {
+                                 composeValues: (BrboValue, BrboValue) => BrboValue): FlowEndState = {
     val leftState = evaluateExpr(InitialState(left, initialState.store, initialState.trace))
     val rightState = evaluateExpr(InitialState(right, leftState.store, leftState.trace))
     (leftState, rightState) match {
@@ -307,10 +307,10 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
   }
 
   private def evaluateFunctionCall(initialState: InitialState,
-                                   function: BrboFunction, arguments: List[BrboExpr]): ControlFlowEndState = {
+                                   function: BrboFunction, arguments: List[BrboExpr]): FlowEndState = {
     logger.traceOrError(s"Evaluate function call: `${function.identifier}` with arguments $arguments")
     val (state, argumentValues) = arguments.foldLeft(
-      GoodState(initialState.store, initialState.trace, None): ControlFlowEndState,
+      GoodState(initialState.store, initialState.trace, None): FlowEndState,
       Nil: List[BrboValue]
     )({
       case ((state, argumentValues), argument) =>
@@ -337,7 +337,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
     }
   }
 
-  private def evaluateAssignment(initialState: InitialState, assignment: BrboAst): ControlFlowEndState = {
+  private def evaluateAssignment(initialState: InitialState, assignment: BrboAst): FlowEndState = {
     val (identifier, value) = assignment match {
       case Assignment(identifier, expression, _) => (identifier, expression)
       case VariableDeclaration(identifier, initialValue, _) => (identifier, initialValue)
@@ -354,8 +354,8 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
 
   private def appendToTraceFrom(lastState: State, lastTransition: Transition): Trace = {
     val (trace, store) = lastState match {
-      case state: ControlFlowBeginState => (state.trace, state.store)
-      case state: ControlFlowEndState => (state.trace, state.store)
+      case state: FlowBeginState => (state.trace, state.store)
+      case state: FlowEndState => (state.trace, state.store)
       case _ => throw new Exception
     }
     val node = TraceNode(store, Some(lastTransition))
@@ -410,20 +410,20 @@ object Interpreter {
    * @param store The store where the execution terminates -- we do not know what is the next transition
    * @param trace The trace from the initial state to the current (terminal) state
    */
-  abstract class ControlFlowEndState(val store: Store,
-                                     val trace: Trace) extends State
+  abstract class FlowEndState(val store: Store,
+                              val trace: Trace) extends State
 
   /**
    *
    * @param store The store where the execution begins
    * @param trace The trace from the initial state to the current (non-terminal) state
    */
-  abstract class ControlFlowBeginState(val store: Store,
-                                       val trace: Trace) extends State
+  abstract class FlowBeginState(val store: Store,
+                                val trace: Trace) extends State
 
   case class GoodState(override val store: Store,
                        override val trace: Trace,
-                       value: Option[BrboValue]) extends ControlFlowEndState(store, trace)
+                       value: Option[BrboValue]) extends FlowEndState(store, trace)
 
   sealed trait Jump
 
@@ -433,11 +433,11 @@ object Interpreter {
 
   case class JumpState(override val store: Store,
                        override val trace: Trace,
-                       jump: Jump) extends ControlFlowEndState(store, trace)
+                       jump: Jump) extends FlowEndState(store, trace)
 
   case class InitialState(ast: BrboAst,
                           override val store: Store,
-                          override val trace: Trace) extends ControlFlowBeginState(store, trace)
+                          override val trace: Trace) extends FlowBeginState(store, trace)
 
   class BadStateException(val store: Store, val trace: Trace) extends Exception
 
