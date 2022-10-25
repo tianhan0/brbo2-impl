@@ -49,7 +49,7 @@ object BrboAstUtils {
     }
   }
 
-  def findParentStatements(currentNode: BrboAst, parent: Option[Statement] = None): Map[BrboAst, Statement] = {
+  def immediateParentStatements(currentNode: BrboAst, parent: Option[Statement] = None): Map[BrboAst, Statement] = {
     val currentMap: Map[BrboAst, Statement] = parent match {
       case Some(value) => Map(currentNode -> value)
       case None => Map()
@@ -59,12 +59,12 @@ object BrboAstUtils {
       case statement: Statement =>
         statement match {
           case Block(asts, _) =>
-            asts.flatMap(ast => findParentStatements(ast, Some(statement))).toMap
+            asts.flatMap(ast => immediateParentStatements(ast, Some(statement))).toMap
           case ITE(condition, thenAst, elseAst, _) =>
-            findParentStatements(condition, Some(statement)) ++ findParentStatements(thenAst, Some(statement)) ++
-              findParentStatements(elseAst, Some(statement))
+            immediateParentStatements(condition, Some(statement)) ++ immediateParentStatements(thenAst, Some(statement)) ++
+              immediateParentStatements(elseAst, Some(statement))
           case Loop(condition, loopBody, _) =>
-            findParentStatements(condition, Some(statement)) ++ findParentStatements(loopBody, Some(statement))
+            immediateParentStatements(condition, Some(statement)) ++ immediateParentStatements(loopBody, Some(statement))
           case _ => throw new Exception
         }
       case _ => throw new Exception
