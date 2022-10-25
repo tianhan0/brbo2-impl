@@ -34,14 +34,14 @@ class PathRefinementUnitTest extends AnyFlatSpec {
     arguments
   }
 
-  "Path refinements by inserting uses" should "be correct" in {
+  /*"Path refinements by inserting uses" should "be correct" in {
     PathRefinementUnitTest.testUses.foreach({
       testCase =>
         val pathRefinement = new PathRefinement(arguments)
         val paths = pathRefinement.replaceUseOnly(testCase.input.asInstanceOf[Path], PathRefinementTestCases.brboProgram.mainFunction.identifier)
         (StringCompare.ignoreWhitespaces(paths, testCase.expectedOutput, s"`${testCase.name}` failed"))
     })
-  }
+  }*/
 
   "Path refinements by inserting resets" should "be correct" in {
     PathRefinementUnitTest.testResets.foreach({

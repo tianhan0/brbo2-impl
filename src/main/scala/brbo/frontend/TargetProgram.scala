@@ -273,14 +273,16 @@ object TargetProgram {
               arguments.head match {
                 case Number(groupId, _) =>
                   resourceVariables = resourceVariables + groupId
-                  Right(Use(Some(groupId), update = arguments(1), condition = arguments(2)))
+                  val condition = if (arguments.length == 3) arguments(2) else Bool(b = true)
+                  Right(Use(Some(groupId), update = arguments(1), condition))
                 case _ => throw new Exception(s"The first argument must be a number in $tree")
               }
             case PreDefinedFunctions.Reset.javaFunctionName =>
               arguments.head match {
                 case Number(groupId, _) =>
                   resourceVariables = resourceVariables + groupId
-                  Right(Reset(groupId, condition = arguments(1)))
+                  val condition = if (arguments.length == 2) arguments(1) else Bool(b = true)
+                  Right(Reset(groupId, condition))
                 case _ => throw new Exception(s"The first argument must be a number in $tree")
               }
             case _ => Left(FunctionCallExpr(functionName, arguments, returnType))

@@ -154,9 +154,13 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
                   (store.get(reset.resourceVariable), store.get(reset.starVariable)) match {
                     case (Number(lastSegmentCost, _), Number(maxSegmentCost, _)) =>
                       val largerCost = if (lastSegmentCost >= maxSegmentCost) lastSegmentCost else maxSegmentCost
+                      val newCounterValue = store.get(reset.counterVariable) match {
+                        case Number(n, _) => Number(n + 1)
+                        case _ => throw new Exception
+                      }
                       val newStore =
                         store.set(reset.starVariable, Number(largerCost))
-                          .set(reset.counterVariable, Number(0))
+                          .set(reset.counterVariable, newCounterValue)
                           .set(reset.resourceVariable, Number(0))
                       GoodState(newStore, appendToTraceFrom(lastState, Transition(reset)), None)
                     case _ => throw new Exception

@@ -319,12 +319,22 @@ object InterpreterUnitTest {
       |  void main(int x) {
       |    use(1, 10, x > 10);
       |    use(1, 100, x >= 10);
-      |    // reset(1, x >= 10);
-      |    // use(1, 200, x >= 10);
-      |    // reset(1, x > 10);
       |  }
       |
       |  void use(int x, int cost, boolean condition) {}
+      |}""".stripMargin
+
+  private val resetTest =
+    """class Test {
+      |  void main(int x) {
+      |    use(1, 100);
+      |    reset(1, x >= 10);
+      |    use(1, 200);
+      |    reset(1, x > 10);
+      |  }
+      |
+      |  void use(int x, int cost, boolean condition) {}
+      |  void use(int x, int cost) {}
       |  void reset(int x, boolean condition) {}
       |}""".stripMargin
 
@@ -537,5 +547,40 @@ object InterpreterUnitTest {
         |       [!((x < 10)) ==> Store: (C1 -> 0, R1 -> 0, S1 -> -2147483648, x -> 10)]
         |       [100 ==> Store: (C1 -> 0, R1 -> 0, S1 -> -2147483648, x -> 10)]
         |       [if (!((x < 10))) use R1 100 <cost=100> ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]""".stripMargin),
+    TestCase("resetTest", resetTest,
+      """GoodState$
+        |Value: None
+        |Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)
+        |Trace: [Store: (x -> 10)]
+        |       [0 ==> Store: (x -> 10)]
+        |       [int C1 = 0; ==> Store: (C1 -> 0, x -> 10)]
+        |       [0 ==> Store: (C1 -> 0, x -> 10)]
+        |       [int R1 = 0; ==> Store: (C1 -> 0, R1 -> 0, x -> 10)]
+        |       [-2147483648 ==> Store: (C1 -> 0, R1 -> 0, x -> 10)]
+        |       [int S1 = -2147483648; ==> Store: (C1 -> 0, R1 -> 0, S1 -> -2147483648, x -> 10)]
+        |       [true ==> Store: (C1 -> 0, R1 -> 0, S1 -> -2147483648, x -> 10)]
+        |       [true ==> Store: (C1 -> 0, R1 -> 0, S1 -> -2147483648, x -> 10)]
+        |       [100 ==> Store: (C1 -> 0, R1 -> 0, S1 -> -2147483648, x -> 10)]
+        |       [if (true) use R1 100 <cost=100> ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
+        |       [x ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
+        |       [10 ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
+        |       [(x < 10) ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
+        |       [!((x < 10)) ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
+        |       [!((x < 10)) ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
+        |       [if (!((x < 10))) reset R1 ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
+        |       [true ==> Store: (C1 -> 1, R1 -> 0, S1 -> 100, x -> 10)]
+        |       [true ==> Store: (C1 -> 1, R1 -> 0, S1 -> 100, x -> 10)]
+        |       [200 ==> Store: (C1 -> 1, R1 -> 0, S1 -> 100, x -> 10)]
+        |       [if (true) use R1 200 <cost=200> ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [x ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [10 ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [(x < 10) ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [!((x < 10)) ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [x ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [10 ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [(x == 10) ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [!((x == 10)) ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [(!((x < 10)) && !((x == 10))) ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [(!((x < 10)) && !((x == 10))) ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]""".stripMargin),
   )
 }
