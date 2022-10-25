@@ -122,13 +122,17 @@ object InterpreterUnitTest {
         |       [b ==> Store: (b -> true)] ==> [return b; ==> Store: (b -> true)]""".stripMargin),
     TestCase("greaterThanTest", greaterThanTest,
       """GoodState$
-        |Value: Some(true)
+        |Value: Some(false)
         |Store: (x -> 10)
         |Trace: [Store: (x -> 10)] ==> [10 ==> Store: (x -> 10)] ==> [x ==> Store: (x -> 10)]
-        |       [(10 < x) ==> Store: (x -> 10)] ==> [!((10 < x)) ==> Store: (x -> 10)] ==> [Store: (b -> true)]
-        |       [b ==> Store: (b -> true)] ==> [return b; ==> Store: (b -> true)] ==> [x ==> Store: (x -> 10)]
-        |       [10 ==> Store: (x -> 10)] ==> [(x < 10) ==> Store: (x -> 10)] ==> [!((x < 10)) ==> Store: (x -> 10)]
-        |       [Store: (b -> true)] ==> [b ==> Store: (b -> true)] ==> [return b; ==> Store: (b -> true)]""".stripMargin),
+        |       [(10 < x) ==> Store: (x -> 10)] ==> [!((10 < x)) ==> Store: (x -> 10)] ==> [10 ==> Store: (x -> 10)]
+        |       [x ==> Store: (x -> 10)] ==> [(10 == x) ==> Store: (x -> 10)] ==> [!((10 == x)) ==> Store: (x -> 10)]
+        |       [(!((10 < x)) && !((10 == x))) ==> Store: (x -> 10)] ==> [Store: (b -> false)] ==> [b ==> Store: (b -> false)]
+        |       [return b; ==> Store: (b -> false)] ==> [x ==> Store: (x -> 10)] ==> [10 ==> Store: (x -> 10)]
+        |       [(x < 10) ==> Store: (x -> 10)] ==> [!((x < 10)) ==> Store: (x -> 10)] ==> [x ==> Store: (x -> 10)]
+        |       [10 ==> Store: (x -> 10)] ==> [(x == 10) ==> Store: (x -> 10)] ==> [!((x == 10)) ==> Store: (x -> 10)]
+        |       [(!((x < 10)) && !((x == 10))) ==> Store: (x -> 10)] ==> [Store: (b -> false)] ==> [b ==> Store: (b -> false)]
+        |       [return b; ==> Store: (b -> false)]""".stripMargin),
     TestCase("lessThanTest", lessThanTest,
       """GoodState$
         |Value: Some(false)
@@ -191,9 +195,43 @@ object InterpreterUnitTest {
     """class Test {
       |  void main(int x) {
       |    int i = 0;
-      |    while (i < 5) {
-      |      if (i == 2)
+      |    while (i < 3) {
+      |      i++;
+      |      if (x == 10) {
       |        continue;
+      |      }
+      |      i = 0;
+      |    }
+      |  }
+      |}""".stripMargin
+
+  private val blockTest =
+    """class Test {
+      |  void main(int x) {
+      |    int a = x;
+      |    int b = a + 10;
+      |    int c = b + 100;
+      |  }
+      |}""".stripMargin
+
+  private val iteTest =
+    """class Test {
+      |  void main(int x) {
+      |    int a = 0;
+      |    if (x > 10) {
+      |      a = a + 100;
+      |    }
+      |    else {
+      |      a = a + 1000;
+      |    }
+      |  }
+      |}""".stripMargin
+
+  private val loopTest =
+    """class Test {
+      |  void main(int x) {
+      |    int i = 0;
+      |    while (i < 4) {
       |      i++;
       |    }
       |  }
@@ -219,6 +257,60 @@ object InterpreterUnitTest {
         |       [(i == 2) ==> Store: (i -> 1, x -> 10)] ==> [i ==> Store: (i -> 1, x -> 10)] ==> [1 ==> Store: (i -> 1, x -> 10)]
         |       [(i + 1) ==> Store: (i -> 1, x -> 10)] ==> [i = i + 1; ==> Store: (i -> 2, x -> 10)] ==> [i ==> Store: (i -> 2, x -> 10)]
         |       [10 ==> Store: (i -> 2, x -> 10)] ==> [(i < 10) ==> Store: (i -> 2, x -> 10)] ==> [i ==> Store: (i -> 2, x -> 10)]
-        |       [2 ==> Store: (i -> 2, x -> 10)] ==> [(i == 2) ==> Store: (i -> 2, x -> 10)] ==> [break; ==> Store: (i -> 2, x -> 10)]""".stripMargin)
+        |       [2 ==> Store: (i -> 2, x -> 10)] ==> [(i == 2) ==> Store: (i -> 2, x -> 10)] ==> [break; ==> Store: (i -> 2, x -> 10)]""".stripMargin),
+    TestCase("loopContinueTest", loopContinueTest,
+      """GoodState$
+        |Value: None
+        |Store: (i -> 3, x -> 10)
+        |Trace: [Store: (x -> 10)] ==> [0 ==> Store: (x -> 10)] ==> [int i = 0; ==> Store: (i -> 0, x -> 10)]
+        |       [i ==> Store: (i -> 0, x -> 10)] ==> [3 ==> Store: (i -> 0, x -> 10)] ==> [(i < 3) ==> Store: (i -> 0, x -> 10)]
+        |       [i ==> Store: (i -> 0, x -> 10)] ==> [1 ==> Store: (i -> 0, x -> 10)] ==> [(i + 1) ==> Store: (i -> 0, x -> 10)]
+        |       [i = i + 1; ==> Store: (i -> 1, x -> 10)] ==> [x ==> Store: (i -> 1, x -> 10)] ==> [10 ==> Store: (i -> 1, x -> 10)]
+        |       [(x == 10) ==> Store: (i -> 1, x -> 10)] ==> [continue; ==> Store: (i -> 1, x -> 10)] ==> [i ==> Store: (i -> 1, x -> 10)]
+        |       [3 ==> Store: (i -> 1, x -> 10)] ==> [(i < 3) ==> Store: (i -> 1, x -> 10)] ==> [i ==> Store: (i -> 1, x -> 10)]
+        |       [1 ==> Store: (i -> 1, x -> 10)] ==> [(i + 1) ==> Store: (i -> 1, x -> 10)] ==> [i = i + 1; ==> Store: (i -> 2, x -> 10)]
+        |       [x ==> Store: (i -> 2, x -> 10)] ==> [10 ==> Store: (i -> 2, x -> 10)] ==> [(x == 10) ==> Store: (i -> 2, x -> 10)]
+        |       [continue; ==> Store: (i -> 2, x -> 10)] ==> [i ==> Store: (i -> 2, x -> 10)] ==> [3 ==> Store: (i -> 2, x -> 10)]
+        |       [(i < 3) ==> Store: (i -> 2, x -> 10)] ==> [i ==> Store: (i -> 2, x -> 10)] ==> [1 ==> Store: (i -> 2, x -> 10)]
+        |       [(i + 1) ==> Store: (i -> 2, x -> 10)] ==> [i = i + 1; ==> Store: (i -> 3, x -> 10)] ==> [x ==> Store: (i -> 3, x -> 10)]
+        |       [10 ==> Store: (i -> 3, x -> 10)] ==> [(x == 10) ==> Store: (i -> 3, x -> 10)] ==> [continue; ==> Store: (i -> 3, x -> 10)]
+        |       [i ==> Store: (i -> 3, x -> 10)] ==> [3 ==> Store: (i -> 3, x -> 10)] ==> [(i < 3) ==> Store: (i -> 3, x -> 10)]
+        |       [i ==> Store: (i -> 3, x -> 10)] ==> [3 ==> Store: (i -> 3, x -> 10)] ==> [(i < 3) ==> Store: (i -> 3, x -> 10)]
+        |       [i ==> Store: (i -> 3, x -> 10)] ==> [3 ==> Store: (i -> 3, x -> 10)] ==> [(i < 3) ==> Store: (i -> 3, x -> 10)]
+        |       [i ==> Store: (i -> 3, x -> 10)] ==> [3 ==> Store: (i -> 3, x -> 10)] ==> [(i < 3) ==> Store: (i -> 3, x -> 10)]""".stripMargin),
+    TestCase("blockTest", blockTest,
+      """GoodState$
+        |Value: None
+        |Store: (a -> 10, b -> 20, c -> 120, x -> 10)
+        |Trace: [Store: (x -> 10)] ==> [x ==> Store: (x -> 10)] ==> [int a = x; ==> Store: (a -> 10, x -> 10)]
+        |       [a ==> Store: (a -> 10, x -> 10)] ==> [10 ==> Store: (a -> 10, x -> 10)] ==> [(a + 10) ==> Store: (a -> 10, x -> 10)]
+        |       [int b = a + 10; ==> Store: (a -> 10, b -> 20, x -> 10)] ==> [b ==> Store: (a -> 10, b -> 20, x -> 10)] ==> [100 ==> Store: (a -> 10, b -> 20, x -> 10)]
+        |       [(b + 100) ==> Store: (a -> 10, b -> 20, x -> 10)] ==> [int c = b + 100; ==> Store: (a -> 10, b -> 20, c -> 120, x -> 10)]""".stripMargin),
+    TestCase("iteTest", iteTest,
+      """GoodState$
+        |Value: None
+        |Store: (a -> 1000, x -> 10)
+        |Trace: [Store: (x -> 10)] ==> [0 ==> Store: (x -> 10)] ==> [int a = 0; ==> Store: (a -> 0, x -> 10)]
+        |       [x ==> Store: (a -> 0, x -> 10)] ==> [10 ==> Store: (a -> 0, x -> 10)] ==> [(x < 10) ==> Store: (a -> 0, x -> 10)]
+        |       [!((x < 10)) ==> Store: (a -> 0, x -> 10)] ==> [x ==> Store: (a -> 0, x -> 10)] ==> [10 ==> Store: (a -> 0, x -> 10)]
+        |       [(x == 10) ==> Store: (a -> 0, x -> 10)] ==> [!((x == 10)) ==> Store: (a -> 0, x -> 10)] ==> [(!((x < 10)) && !((x == 10))) ==> Store: (a -> 0, x -> 10)]
+        |       [a ==> Store: (a -> 0, x -> 10)] ==> [1000 ==> Store: (a -> 0, x -> 10)] ==> [(a + 1000) ==> Store: (a -> 0, x -> 10)]
+        |       [a = a + 1000; ==> Store: (a -> 1000, x -> 10)]""".stripMargin),
+    TestCase("loopTest", loopTest,
+      """GoodState$
+        |Value: None
+        |Store: (i -> 4, x -> 10)
+        |Trace: [Store: (x -> 10)] ==> [0 ==> Store: (x -> 10)] ==> [int i = 0; ==> Store: (i -> 0, x -> 10)]
+        |       [i ==> Store: (i -> 0, x -> 10)] ==> [4 ==> Store: (i -> 0, x -> 10)] ==> [(i < 4) ==> Store: (i -> 0, x -> 10)]
+        |       [i ==> Store: (i -> 0, x -> 10)] ==> [1 ==> Store: (i -> 0, x -> 10)] ==> [(i + 1) ==> Store: (i -> 0, x -> 10)]
+        |       [i = i + 1; ==> Store: (i -> 1, x -> 10)] ==> [i ==> Store: (i -> 1, x -> 10)] ==> [4 ==> Store: (i -> 1, x -> 10)]
+        |       [(i < 4) ==> Store: (i -> 1, x -> 10)] ==> [i ==> Store: (i -> 1, x -> 10)] ==> [1 ==> Store: (i -> 1, x -> 10)]
+        |       [(i + 1) ==> Store: (i -> 1, x -> 10)] ==> [i = i + 1; ==> Store: (i -> 2, x -> 10)] ==> [i ==> Store: (i -> 2, x -> 10)]
+        |       [4 ==> Store: (i -> 2, x -> 10)] ==> [(i < 4) ==> Store: (i -> 2, x -> 10)] ==> [i ==> Store: (i -> 2, x -> 10)]
+        |       [1 ==> Store: (i -> 2, x -> 10)] ==> [(i + 1) ==> Store: (i -> 2, x -> 10)] ==> [i = i + 1; ==> Store: (i -> 3, x -> 10)]
+        |       [i ==> Store: (i -> 3, x -> 10)] ==> [4 ==> Store: (i -> 3, x -> 10)] ==> [(i < 4) ==> Store: (i -> 3, x -> 10)]
+        |       [i ==> Store: (i -> 3, x -> 10)] ==> [1 ==> Store: (i -> 3, x -> 10)] ==> [(i + 1) ==> Store: (i -> 3, x -> 10)]
+        |       [i = i + 1; ==> Store: (i -> 4, x -> 10)] ==> [i ==> Store: (i -> 4, x -> 10)] ==> [4 ==> Store: (i -> 4, x -> 10)]
+        |       [(i < 4) ==> Store: (i -> 4, x -> 10)]""".stripMargin),
   )
 }

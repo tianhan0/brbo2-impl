@@ -56,7 +56,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
                         case None => GoodState(store, trace, None)
                       }
                     case Interpreter.ContinueJump =>
-                      logger.traceOrError(s"Next ast: ${loop.printToC(0)}")
+                      // logger.traceOrError(s"Next ast: ${loop.printToC(0)}")
                       return evaluateAst(InitialState(loop, store, trace))
                   }
                 case GoodState(store, trace, _) =>
