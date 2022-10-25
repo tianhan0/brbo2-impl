@@ -1,10 +1,10 @@
 package brbo.frontend
 
-import brbo.common.MyLogger
 import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo, notEqual}
 import brbo.common.ast._
+import brbo.common.{BrboType, MyLogger}
 import brbo.frontend.JavaTreeUtils.isCommand
-import brbo.frontend.TargetProgram.PREDEFINED_VARIABLES
+import brbo.frontend.TargetProgram.toBrboFunction
 import com.sun.source.tree.Tree.Kind
 import com.sun.source.tree._
 import com.sun.source.util.TreePath
@@ -19,7 +19,7 @@ case class TargetProgram(fullQualifiedClassName: String,
                          sourceCode: String) {
   allMethods.foreach({
     m =>
-      PreDefinedFunctions.specialFunctions.find(f => f.name == m.methodName) match {
+      PreDefinedFunctions.functions.find(f => f.name == m.methodName) match {
         case Some(_) =>
           throw new Exception(s"Method ${m.methodName}'s name collides with a pre-defined function")
         case None =>
@@ -47,15 +47,24 @@ case class TargetProgram(fullQualifiedClassName: String,
   }
 
   val program: BrboProgram = {
-    val (mainFunction, boundAssertions) = toBrboFunction(mainMethod)
-    val otherFunctions = (allMethods - mainMethod).filter(m => m.methodName != "<init>").map(m => toBrboFunction(m)._1).toList
+    val (mainFunction, boundAssertions) = toBrboFunction(mainMethod, allMethods)
+    val otherFunctions = (allMethods - mainMethod).filter(m => m.methodName != "<init>").map(m => toBrboFunction(m, allMethods)._1).toList
     BrboProgram(s"$fullQualifiedClassName.${mainMethod.methodName}", mainFunction, boundAssertions,
-      PreDefinedFunctions.specialFunctionInternalRepresentations ::: otherFunctions)
+      PreDefinedFunctions.functionInternalRepresentations ::: otherFunctions)
   }
+}
 
-  private def toBrboFunction(targetMethod: TargetMethod): (BrboFunction, List[BoundAssertion]) = {
-    val translate = new Translate(targetMethod.allVariables)
-    val body = translate.toAST(targetMethod.methodTree.getBody) match {
+object TargetProgram {
+  val MAIN_FUNCTION = "main"
+  val MAX = 8
+  val LARGE_INT = 10000000
+  val PREDEFINED_VARIABLES: Map[String, Int] = Map("MAX" -> MAX, "LARGE_INT" -> LARGE_INT)
+
+  private val logger = MyLogger.createLogger(TargetProgram.getClass, debugMode = false)
+
+  def toBrboFunction(targetMethod: TargetMethod, allMethods: Set[TargetMethod]): (BrboFunction, List[BoundAssertion]) = {
+    val translate = new Translate(targetMethod.allVariables, allMethods)
+    val body = translate.toASTInternal(targetMethod.methodTree.getBody) match {
       case Left(command) => Block(List(command))
       case Right(statement) => statement
     }
@@ -63,19 +72,19 @@ case class TargetProgram(fullQualifiedClassName: String,
     (function, translate.getBoundAssertions)
   }
 
-  private class Translate(allVariables: Map[String, Identifier]) {
+  private class Translate(allVariables: Map[String, Identifier], allMethods: Set[TargetMethod]) {
     private var boundAssertions: List[BoundAssertion] = Nil
 
     def getBoundAssertions: List[BoundAssertion] = boundAssertions
 
-    def toASTFlatten(statementTree: StatementTree): BrboAst = {
-      toAST(statementTree) match {
+    def toAST(statementTree: StatementTree): BrboAst = {
+      toASTInternal(statementTree) match {
         case Left(value) => value.asInstanceOf[BrboAst]
         case Right(value) => value.asInstanceOf[BrboAst]
       }
     }
 
-    def toAST(statementTree: StatementTree): Either[Command, Statement] = {
+    def toASTInternal(statementTree: StatementTree): Either[Command, Statement] = {
       if (statementTree == null) return Right(Block(Nil))
 
       statementTree match {
@@ -119,22 +128,22 @@ case class TargetProgram(fullQualifiedClassName: String,
 
           }
         case blockTree: BlockTree =>
-          Right(Block(blockTree.getStatements.asScala.map({ t => toASTFlatten(t) }).toList))
+          Right(Block(blockTree.getStatements.asScala.map({ t => toAST(t) }).toList))
         case forLoopTree: ForLoopTree =>
-          val initializers = forLoopTree.getInitializer.asScala.map({ t => toASTFlatten(t) }).toList
-          val updates = forLoopTree.getUpdate.asScala.map({ t => toASTFlatten(t) }).toList
+          val initializers = forLoopTree.getInitializer.asScala.map({ t => toAST(t) }).toList
+          val updates = forLoopTree.getUpdate.asScala.map({ t => toAST(t) }).toList
           val condition = toAST(forLoopTree.getCondition) match {
             case Left(brboExpr) => brboExpr
             case Right(_) => throw new Exception
           }
-          Right(Block(initializers :+ Loop(condition, Block(toASTFlatten(forLoopTree.getStatement) :: updates))))
+          Right(Block(initializers :+ Loop(condition, Block(toAST(forLoopTree.getStatement) :: updates))))
         case ifTree: IfTree =>
           val condition = toAST(ifTree.getCondition) match {
             case Left(brboExpr) => brboExpr
             case Right(_) => throw new Exception
           }
-          val thenStatement = toASTFlatten(ifTree.getThenStatement)
-          val elseStatement = toASTFlatten(ifTree.getElseStatement)
+          val thenStatement = toAST(ifTree.getThenStatement)
+          val elseStatement = toAST(ifTree.getElseStatement)
           Right(ITE(condition, thenStatement, elseStatement))
         // case labeledStatementTree: LabeledStatementTree => toAST(labeledStatementTree.getStatement)
         case whileLoopTree: WhileLoopTree =>
@@ -142,7 +151,7 @@ case class TargetProgram(fullQualifiedClassName: String,
             case Left(brboExpr) => brboExpr
             case Right(_) => throw new Exception
           }
-          val body = toASTFlatten(whileLoopTree.getStatement)
+          val body = toAST(whileLoopTree.getStatement)
           Right(Loop(condition, body))
         case _ => throw new Exception(s"Unsupported tree: `$statementTree`")
       }
@@ -230,8 +239,13 @@ case class TargetProgram(fullQualifiedClassName: String,
             val select = tree.getMethodSelect
             assert(select.isInstanceOf[IdentifierTree])
             val functionName = select.toString
-            PreDefinedFunctions.specialFunctions.find({ f => f.javaFunctionName == functionName }) match {
-              case Some(f) => (f.name, f.internalRepresentation.returnType)
+            PreDefinedFunctions.functions.find({ f => f.javaFunctionName == functionName }) match {
+              case Some(f) =>
+                val returnType = f.name match {
+                  case PreDefinedFunctions.Use.javaFunctionName | PreDefinedFunctions.Reset.javaFunctionName => BrboType.VOID
+                  case _ => f.internalRepresentation.returnType
+                }
+                (f.name, returnType)
               case None =>
                 allMethods.find(targetMethod => targetMethod.methodName == functionName) match {
                   case Some(targetMethod) => (functionName, targetMethod.returnType)
@@ -251,6 +265,10 @@ case class TargetProgram(fullQualifiedClassName: String,
               logger.trace(s"Extract bound assertion `${arguments.head}`")
               boundAssertions = BoundAssertion.parse(arguments.head, arguments(1)) :: boundAssertions
               Right(Skip())
+            case PreDefinedFunctions.Use.javaFunctionName =>
+              Right(Use(groupId = ???, update = ???, condition = ???))
+            case PreDefinedFunctions.Reset.javaFunctionName =>
+              Right(Reset(groupId = ???, condition = ???))
             case _ => Left(FunctionCallExpr(functionName, arguments, returnType))
           }
         case tree: ParenthesizedTree => toAST(tree.getExpression)
@@ -279,11 +297,4 @@ case class TargetProgram(fullQualifiedClassName: String,
       }
     }
   }
-}
-
-object TargetProgram {
-  val MAIN_FUNCTION = "main"
-  val MAX = 8
-  val LARGE_INT = 10000000
-  val PREDEFINED_VARIABLES: Map[String, Int] = Map("MAX" -> MAX, "LARGE_INT" -> LARGE_INT)
 }

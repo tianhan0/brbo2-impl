@@ -256,7 +256,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
         )
       case FunctionCallExpr(identifier, arguments, _, _) =>
         val lastTransition = Transition(ast)
-        PreDefinedFunctions.specialFunctions.find(f => f.name == identifier) match {
+        PreDefinedFunctions.functions.find(f => f.name == identifier) match {
           case Some(specialFunction) =>
             specialFunction.name match {
               case PreDefinedFunctions.VerifierError.name | PreDefinedFunctions.Abort.name =>

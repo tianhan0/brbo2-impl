@@ -19,9 +19,9 @@ object PreDefinedFunctions {
 
   def createAssume(expression: BrboExpr): FunctionCallExpr = FunctionCallExpr(Assume.internalRepresentation.identifier, List(expression), BOOL)
 
-  class NotExist extends Exception
+  class RepresentationNotExist extends Exception
 
-  abstract class SpecialFunction(val name: String) {
+  abstract class PreDefinedFunction(val name: String) {
     val javaFunctionName: String = name
 
     def cRepresentation: String = internalRepresentation.printToC(0)
@@ -29,25 +29,25 @@ object PreDefinedFunctions {
     def internalRepresentation: BrboFunction
   }
 
-  object VerifierError extends SpecialFunction("__VERIFIER_error") {
+  object VerifierError extends PreDefinedFunction("__VERIFIER_error") {
     override def cRepresentation: String = s"extern void $name() __attribute__((noreturn));"
 
-    override def internalRepresentation: BrboFunction = throw new NotExist
+    override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
   }
 
-  object VerifierNondetInt extends SpecialFunction("__VERIFIER_nondet_int") {
+  object VerifierNondetInt extends PreDefinedFunction("__VERIFIER_nondet_int") {
     override def cRepresentation: String = s"extern int $name();"
 
-    override def internalRepresentation: BrboFunction = throw new NotExist
+    override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
   }
 
-  object Abort extends SpecialFunction("abort") {
+  object Abort extends PreDefinedFunction("abort") {
     override def cRepresentation: String = s"extern void $name(void);"
 
-    override def internalRepresentation: BrboFunction = throw new NotExist
+    override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
   }
 
-  object Assert extends SpecialFunction("assert") {
+  object Assert extends PreDefinedFunction("assert") {
     override def internalRepresentation: BrboFunction = {
       val cond = Identifier("cond", BOOL)
       val body = {
@@ -63,7 +63,7 @@ object PreDefinedFunctions {
     }
   }
 
-  object Assume extends SpecialFunction("assume") {
+  object Assume extends PreDefinedFunction("assume") {
     override def internalRepresentation: BrboFunction = {
       val cond = Identifier("cond", BOOL)
       val body = {
@@ -79,7 +79,7 @@ object PreDefinedFunctions {
     }
   }
 
-  object NdInt extends SpecialFunction("ndInt") {
+  object NdInt extends PreDefinedFunction("ndInt") {
     override def internalRepresentation: BrboFunction = {
       val body = {
         val returnCommand = Return(Some(FunctionCallExpr("__VERIFIER_nondet_int", Nil, INT)))
@@ -89,7 +89,7 @@ object PreDefinedFunctions {
     }
   }
 
-  object NdInt2 extends SpecialFunction("ndInt2") {
+  object NdInt2 extends PreDefinedFunction("ndInt2") {
     override def internalRepresentation: BrboFunction = {
       val lower = Identifier("lower", INT)
       val upper = Identifier("upper", INT)
@@ -104,7 +104,7 @@ object PreDefinedFunctions {
     }
   }
 
-  object NdInt3 extends SpecialFunction("ndInt3") {
+  object NdInt3 extends PreDefinedFunction("ndInt3") {
     override def internalRepresentation: BrboFunction = {
       val x = Identifier("x", INT)
       val lower = Identifier("lower", INT)
@@ -117,7 +117,7 @@ object PreDefinedFunctions {
     }
   }
 
-  object NdBool extends SpecialFunction("ndBool") {
+  object NdBool extends PreDefinedFunction("ndBool") {
     override def internalRepresentation: BrboFunction = {
       val body = {
         val x = Identifier("x", INT)
@@ -129,27 +129,44 @@ object PreDefinedFunctions {
     }
   }
 
-  object BoundAssertion extends SpecialFunction("boundAssertion") {
-    override def internalRepresentation: BrboFunction = throw new NotExist
+  object BoundAssertion extends PreDefinedFunction("boundAssertion") {
+    override def cRepresentation: String = throw new RepresentationNotExist
+
+    override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
   }
 
-  object Uninitialize extends SpecialFunction("uninitialized") {
-    override def internalRepresentation: BrboFunction = throw new NotExist
+  object Uninitialize extends PreDefinedFunction("uninitialized") {
+    override def cRepresentation: String = throw new RepresentationNotExist
+
+    override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
   }
 
-  val specialFunctions: List[SpecialFunction] = List(
+  object Use extends PreDefinedFunction("use") {
+    override def cRepresentation: String = throw new RepresentationNotExist
+
+    override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
+  }
+
+  object Reset extends PreDefinedFunction("reset") {
+    override def cRepresentation: String = throw new RepresentationNotExist
+
+    override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
+  }
+
+  val functions: List[PreDefinedFunction] = List(
     VerifierError, VerifierNondetInt, Abort, Assert, Assume,
-    NdInt, NdInt2, NdInt3, NdBool, BoundAssertion, Uninitialize
+    NdInt, NdInt2, NdInt3, NdBool, BoundAssertion, Uninitialize,
+    Use, Reset
   )
 
-  val specialFunctionInternalRepresentations: List[BrboFunction] = {
-    specialFunctions.foldLeft(Nil: List[BrboFunction])({
+  val functionInternalRepresentations: List[BrboFunction] = {
+    functions.foldLeft(Nil: List[BrboFunction])({
       case (soFar, f) =>
         try {
           f.internalRepresentation :: soFar
         }
         catch {
-          case _: NotExist => soFar
+          case _: RepresentationNotExist => soFar
         }
     })
   }

@@ -24,7 +24,6 @@ class BrboAstUnitTest extends AnyFlatSpec {
     assert(createBlock != createBlock)
     assert(FunctionExit() != FunctionExit())
     assert(LoopExit() != LoopExit())
-    // assert(UndefinedFunction("f") != UndefinedFunction("f"))
     assert(createUse != createUse)
     assert(createUse2 != createUse2)
     assert(createReset != createReset)
