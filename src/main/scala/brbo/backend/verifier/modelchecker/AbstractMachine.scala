@@ -32,8 +32,8 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
   private val initialValuation = {
     val parentStatements: Map[BrboAst, Statement] =
       (brboProgram.mainFunction :: brboProgram.functions)
-        .foldLeft(Map[BrboAst, Statement](fakeInitialNode.command -> brboProgram.mainFunction.actualBody))({
-          (acc, function) => acc ++ BrboAstUtils.findParentStatements(function.actualBody)
+        .foldLeft(Map[BrboAst, Statement](fakeInitialNode.command -> brboProgram.mainFunction.bodyWithInitialization))({
+          (acc, function) => acc ++ BrboAstUtils.findParentStatements(function.bodyWithInitialization)
         })
     val scopeOperations = new ScopeOperations(parentStatements)
     val v = createEmptyValuation(manager, Some(logger), scopeOperations)

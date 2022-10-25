@@ -75,7 +75,7 @@ case class BrboCFunction(originalFunction: BrboFunction) {
     }
 
     val newFunction = BrboFunction(originalFunction.identifier, originalFunction.returnType, originalFunction.parameters,
-      astToC(originalFunction.bodyNoInitialization).asInstanceOf[Statement], originalFunction.groupIds)
+      astToC(originalFunction.body).asInstanceOf[Statement], originalFunction.groupIds)
     (newFunction, map)
   }
 }

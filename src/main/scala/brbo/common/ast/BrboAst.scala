@@ -45,19 +45,19 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
 
 /**
  *
- * @param identifier           Function name
- * @param returnType           Return type
- * @param parameters           Function parameters
- * @param bodyNoInitialization Function body without initializing ghost variables
- * @param groupIds             IDs of amortizations groups that *may* be used in this function,
- *                             so that their ghost variables will be initialized.
- *                             This set is empty iff. no amortization (i.e., selectively, worst-case, or fully-amortized reasoning)
- *                             has been applied to the function.
- * @param uuid                 Unique ID
+ * @param identifier Function name
+ * @param returnType Return type
+ * @param parameters Function parameters
+ * @param body       Function body without initializing ghost variables
+ * @param groupIds   IDs of amortizations groups that *may* be used in this function,
+ *                   so that their ghost variables will be initialized.
+ *                   This set is empty iff. no amortization (i.e., selectively, worst-case, or fully-amortized reasoning)
+ *                   has been applied to the function.
+ * @param uuid       Unique ID
  */
 @SerialVersionUID(2L)
 case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: List[Identifier],
-                        bodyNoInitialization: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
+                        body: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
   extends PrintToC with SameAs with Serializable {
   val ghostVariableInitializations: List[Command] = groupIds.flatMap({
     groupId => GhostVariableUtils.declareVariables(groupId)
@@ -65,22 +65,22 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
   val approximatedResourceUsage: BrboExpr = GhostVariableUtils.approximatedResourceUsage(groupIds)
 
   // Declare and initialize ghost variables in the function
-  val actualBody: Statement = bodyNoInitialization match {
+  val bodyWithInitialization: Statement = body match {
     case Block(asts, _) => Block(ghostVariableInitializations ::: asts)
-    case ITE(_, _, _, _) | Loop(_, _, _) => Block(ghostVariableInitializations :+ bodyNoInitialization)
+    case ITE(_, _, _, _) | Loop(_, _, _) => Block(ghostVariableInitializations :+ body)
     case _ => throw new Exception
   }
 
   override def printToC(indent: Int): String = {
     val parametersString = parameters.map(pair => s"${pair.typeNamePairInC()}").mkString(", ")
-    s"${BrboType.toCString(returnType)} $identifier($parametersString) \n${actualBody.printToC(0)}"
+    s"${BrboType.toCString(returnType)} $identifier($parametersString) \n${bodyWithInitialization.printToC(0)}"
   }
 
   val isAmortized: Boolean = groupIds.isEmpty
 
   def replaceBodyWithoutInitialization(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody, groupIds)
 
-  def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, bodyNoInitialization, newGroupIds)
+  def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, body, newGroupIds)
 
   def sameAs(other: Any): Boolean = {
     other match {
@@ -90,7 +90,7 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
           else otherParameters.zip(parameters).forall({ case (i1, i2) => i1.sameAs(i2) })
         }
         otherIdentifier == identifier && otherReturnType == returnType && sameParameters &&
-          otherBodyNoInitialization.sameAs(bodyNoInitialization) && otherGroupIds == groupIds
+          otherBodyNoInitialization.sameAs(body) && otherGroupIds == groupIds
       case _ => false
     }
   }

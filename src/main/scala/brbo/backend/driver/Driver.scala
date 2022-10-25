@@ -185,7 +185,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
   }
 
   private def extractUsesFromMain(program: BrboProgram): BrboProgram = {
-    val allCommands = BrboAstUtils.collectCommands(program.mainFunction.bodyNoInitialization)
+    val allCommands = BrboAstUtils.collectCommands(program.mainFunction.body)
     val (replacements, _) = allCommands.foldLeft((Map[Command, Command](), Map[String, Int]()))({
       case ((replacements, ids), command) =>
         command match {
@@ -223,7 +223,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
           case _ => (replacements, ids)
         }
     })
-    val newBody = replacements.foldLeft(program.mainFunction.bodyNoInitialization: BrboAst)({
+    val newBody = replacements.foldLeft(program.mainFunction.body: BrboAst)({
       case (acc, (oldCommand, newCommand)) => BrboAstUtils.replaceAst(acc, oldCommand, newCommand)
     })
     val newMainFunction = program.mainFunction.replaceBodyWithoutInitialization(newBody.asInstanceOf[Statement])
@@ -262,7 +262,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
   }
 
   private def replaceUses(program: BrboProgram, f: Use => List[Command], newGroupIds: Set[Int]): BrboProgram = {
-    val allCommands = BrboAstUtils.collectCommands(program.mainFunction.bodyNoInitialization)
+    val allCommands = BrboAstUtils.collectCommands(program.mainFunction.body)
     val replacements = allCommands.foldLeft(Map[Command, Block]())({
       (acc, command) =>
         command match {
@@ -270,7 +270,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
           case _ => acc
         }
     })
-    val newBody = replacements.foldLeft(program.mainFunction.bodyNoInitialization: BrboAst)({
+    val newBody = replacements.foldLeft(program.mainFunction.body: BrboAst)({
       case (acc, (oldCode, newCode)) => BrboAstUtils.replaceAst(acc, oldCode, newCode)
     })
     val newMainFunction = {

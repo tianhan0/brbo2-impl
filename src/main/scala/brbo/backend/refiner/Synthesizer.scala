@@ -10,7 +10,7 @@ import com.microsoft.z3.AST
 
 class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) {
   private val logger = MyLogger.createLogger(classOf[Synthesizer], argument.getDebugMode)
-  private val allCommands = BrboAstUtils.collectCommands(originalProgram.mainFunction.actualBody)
+  private val allCommands = BrboAstUtils.collectCommands(originalProgram.mainFunction.bodyWithInitialization)
   private val useCommands = allCommands.filter(command => command.isInstanceOf[Use])
   private val resetCommands = allCommands.filter(command => command.isInstanceOf[Reset])
 
@@ -19,7 +19,7 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
   private val predicates: List[Predicate] = {
     val allNonGhostVariables = {
       val allVariables = originalProgram.mainFunction.parameters.toSet ++
-        BrboAstUtils.collectUseDefVariables(originalProgram.mainFunction.bodyNoInitialization)
+        BrboAstUtils.collectUseDefVariables(originalProgram.mainFunction.body)
       allVariables.filter(v => !GhostVariableUtils.isGhostVariable(v.name))
     }
     val allPredicates = Predicate.generatePredicates(allNonGhostVariables, argument.getRelationalPredicates)
@@ -69,7 +69,7 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
         acc + (reset -> newResets)
     })
 
-    val newMainBody = (useReplacements ++ resetReplacements).foldLeft(originalProgram.mainFunction.bodyNoInitialization: BrboAst)({
+    val newMainBody = (useReplacements ++ resetReplacements).foldLeft(originalProgram.mainFunction.body: BrboAst)({
       case (acc, (command, newCommands)) =>
         val commandsInList = newCommands.toList.sortWith({ case (c1, c2) => c1.printToC(0) < c2.printToC(0) })
         BrboAstUtils.replaceAst(acc, command, Block(commandsInList))
