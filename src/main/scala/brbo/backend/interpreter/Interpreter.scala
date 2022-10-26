@@ -13,8 +13,10 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
   private val parentStatements: Map[BrboAst, Statement] =
     (brboProgram.mainFunction :: brboProgram.functions).flatMap(f => immediateParentStatements(f.bodyWithInitialization)).toMap
 
-  def execute(inputValues: List[BrboValue]): FlowEndState =
+  def execute(inputValues: List[BrboValue]): FlowEndState = {
+    logger.info(s"Execute with inputs: ${inputValues.map(v => v.printToIR())}")
     evaluateFunction(brboProgram.mainFunction, inputValues, EmptyTrace)
+  }
 
   def evaluateFunction(brboFunction: BrboFunction, inputValues: List[BrboValue], lastTrace: Trace): FlowEndState = {
     val parameters = brboFunction.parameters

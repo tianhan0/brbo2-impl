@@ -6,7 +6,6 @@ import com.microsoft.z3.AST
 
 import java.util.UUID
 
-trait BrboValue
 
 abstract class BrboExpr(val typ: BrboType.T, uuid: UUID) extends Command(uuid)
   with GetFunctionCalls with Z3AST with UseDefVariables with UniqueCopy {
@@ -18,6 +17,8 @@ abstract class BrboExpr(val typ: BrboType.T, uuid: UUID) extends Command(uuid)
     else string
   }
 }
+
+abstract class BrboValue(override val typ: BrboType.T, override val uuid: UUID) extends BrboExpr(typ, uuid)
 
 case class Identifier(name: String, override val typ: BrboType.T, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(typ, uuid) {
   override def printToCInternal(indent: Int): String = {
@@ -50,7 +51,7 @@ case class Identifier(name: String, override val typ: BrboType.T, override val u
   }
 }
 
-case class StringLiteral(value: String, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(STRING, uuid) with BrboValue {
+case class StringLiteral(value: String, override val uuid: UUID = UUID.randomUUID()) extends BrboValue(STRING, uuid) {
   override def printToCInternal(indent: Int): String = {
     s"${indentString(indent)}$value"
   }
@@ -73,7 +74,7 @@ case class StringLiteral(value: String, override val uuid: UUID = UUID.randomUUI
   }
 }
 
-case class Bool(b: Boolean, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL, uuid) with BrboValue {
+case class Bool(b: Boolean, override val uuid: UUID = UUID.randomUUID()) extends BrboValue(BOOL, uuid) {
   override def printToCInternal(indent: Int): String = {
     s"${indentString(indent)}${b.toString}"
   }
@@ -96,7 +97,7 @@ case class Bool(b: Boolean, override val uuid: UUID = UUID.randomUUID()) extends
   }
 }
 
-case class Number(n: Int, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT, uuid) with BrboValue {
+case class Number(n: Int, override val uuid: UUID = UUID.randomUUID()) extends BrboValue(INT, uuid) {
   override def printToCInternal(indent: Int): String = {
     s"${indentString(indent)}${n.toString}"
   }
@@ -119,9 +120,9 @@ case class Number(n: Int, override val uuid: UUID = UUID.randomUUID()) extends B
   }
 }
 
-case class BrboArray(values: List[BrboExpr], innerType: BrboType.T, override val uuid: UUID = UUID.randomUUID())
-  extends BrboExpr(ARRAY(innerType), uuid) with BrboValue {
-  assert(values.forall(v => v.isInstanceOf[BrboValue] && v.typ == innerType))
+case class BrboArray(values: List[BrboValue], innerType: BrboType.T, override val uuid: UUID = UUID.randomUUID())
+  extends BrboValue(ARRAY(innerType), uuid) {
+  assert(values.forall(v => v.typ == innerType))
 
   override def printToCInternal(indent: Int): String =
     s"${indentString(indent)}{${values.map(v => v.printToCInternal(0)).mkString(",")}}"
