@@ -1,6 +1,7 @@
 package brbo.backend.interpreter
 
 import brbo.TestCase
+import brbo.common.BrboType.INT
 import brbo.common.ast._
 import brbo.common.string.StringCompare
 import brbo.frontend.BasicProcessor
@@ -13,6 +14,16 @@ class InterpreterUnitTest extends AnyFlatSpec {
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
         val interpreter = new Interpreter(targetProgram.program, debugMode = false)
         val exitState = interpreter.execute(List(Number(10)))
+        StringCompare.ignoreWhitespaces(Interpreter.printState(exitState), testCase.expectedOutput, s"${testCase.name} failed")
+    })
+  }
+
+  "Interpreting array operations" should "be correct" in {
+    InterpreterUnitTest.arrayTests.foreach({
+      testCase =>
+        val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
+        val interpreter = new Interpreter(targetProgram.program, debugMode = false)
+        val exitState = interpreter.execute(List(BrboArray(List(Number(101), Number(17)), INT)))
         StringCompare.ignoreWhitespaces(Interpreter.printState(exitState), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
@@ -98,6 +109,16 @@ object InterpreterUnitTest {
       |  }
       |
       |  boolean g(boolean b) { return b; }
+      |}""".stripMargin
+
+  private val arrayReadTest =
+    """class Test {
+      |  void main(int[] x) {
+      |    int element1 = arrayRead(x, 0);
+      |    int element2 = arrayRead(x, 1);
+      |  }
+      |
+      |  int arrayRead(int[] x, int index) { return 0; }
       |}""".stripMargin
 
   val expressionTests: List[TestCase] = List(
@@ -236,6 +257,24 @@ object InterpreterUnitTest {
         |       [Store: (b -> false)]
         |       [b ==> Store: (b -> false)]
         |       [return b; ==> Store: (b -> false)]""".stripMargin)
+  )
+
+  val arrayTests: List[TestCase] = List(
+    TestCase("arrayReadTest", arrayReadTest,
+      """GoodState$
+        |Value: None
+        |Store: (element1 -> 101, element2 -> 17, x -> {101,17})
+        |Trace: [Store: (x -> {101,17})]
+        |       [x ==> Store: (x -> {101,17})]
+        |       [x ==> Store: (x -> {101,17})]
+        |       [0 ==> Store: (x -> {101,17})]
+        |       [0 ==> Store: (x -> {101,17})]
+        |       [int element1 = arrayRead(x, 0); ==> Store: (element1 -> 101, x -> {101,17})]
+        |       [x ==> Store: (element1 -> 101, x -> {101,17})]
+        |       [x ==> Store: (element1 -> 101, x -> {101,17})]
+        |       [1 ==> Store: (element1 -> 101, x -> {101,17})]
+        |       [1 ==> Store: (element1 -> 101, x -> {101,17})]
+        |       [int element2 = arrayRead(x, 1); ==> Store: (element1 -> 101, element2 -> 17, x -> {101,17})]""".stripMargin),
   )
 
   private val assignmentTest =

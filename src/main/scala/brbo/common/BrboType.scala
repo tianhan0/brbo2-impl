@@ -39,7 +39,8 @@ object BrboType {
         /**
          * Instead of s"${toCString(typ)}[]", we intentionally translate array types into integer types, such that
          * we can model list x as integer x, and model reading from list x as reading an integer that is smaller
-         * than integer x (See PreDefinedFunctions.scala).
+         * than integer x. See ArrayRead and ArrayLength in PreDefinedFunctions.scala and their semantics in
+         * Interpreter.scala.
          */
         "int"
     }

@@ -101,7 +101,6 @@ case class Number(n: Int, override val uuid: UUID = UUID.randomUUID()) extends B
     s"${indentString(indent)}${n.toString}"
   }
 
-
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
   override def toZ3AST(solver: Z3Solver): AST = solver.mkIntVal(n)

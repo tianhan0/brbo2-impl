@@ -282,18 +282,39 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
             }
         }
       case ITEExpr(condition, thenExpr, elseExpr, _) =>
-        val newState = evaluateExpr(InitialState(condition, initialState.store, initialState.trace))
-        newState match {
-          case GoodState(store, _, value) =>
+        evaluateExpr(InitialState(condition, initialState.store, initialState.trace)) match {
+          case goodState@GoodState(store, _, value) =>
             value match {
               case Some(Bool(b, _)) =>
-                val newTrace = appendToTraceFrom(newState, Transition(condition))
+                val newTrace = appendToTraceFrom(goodState, Transition(condition))
                 if (b) evaluateExpr(InitialState(thenExpr, store, newTrace))
                 else evaluateExpr(InitialState(elseExpr, store, newTrace))
               case _ => throw new Exception
             }
           case _ => throw new Exception
         }
+      case ArrayRead(array, index, _) =>
+        evaluateExpr(InitialState(array, initialState.store, initialState.trace)) match {
+          case goodState@GoodState(store, _, value) =>
+            value match {
+              case Some(BrboArray(arrayValue, _, _)) =>
+                val newTrace = appendToTraceFrom(goodState, Transition(array))
+                evaluateExpr(InitialState(index, store, newTrace)) match {
+                  case goodState@GoodState(store, _, indexValue) =>
+                    indexValue match {
+                      case Some(Number(indexValue, _)) =>
+                        val newTrace = appendToTraceFrom(goodState, Transition(index))
+                        val value = arrayValue(indexValue).asInstanceOf[BrboValue]
+                        GoodState(store, newTrace, Some(value))
+                      case _ => throw new Exception
+                    }
+                  case _ => throw new Exception
+                }
+              case _ => throw new Exception
+            }
+          case _ => throw new Exception
+        }
+      case ArrayLength(array, _) => ???
     }
   }
 
