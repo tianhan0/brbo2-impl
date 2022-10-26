@@ -1,7 +1,7 @@
 package brbo.backend.learning
 
 import brbo.backend.interpreter.Interpreter
-import play.api.libs.json.{JsNumber, Json}
+import play.api.libs.json.Json
 
 object TraceClustering {
   def distanceMatrix(traces: List[Interpreter.CostTrace], substitutionPenalty: Int): List[List[Int]] = {
@@ -22,7 +22,8 @@ object TraceClustering {
     // Since permuting a trace has no cost, we eliminate the orders from traces
     val leftCostTrace: Set[String] = costTraceToSet(left)
     val rightCostTrace: Set[String] = costTraceToSet(right)
-    // Common elements between traces have no cost
+    // Common elements between traces have no cost. For example, between {x} and {x, y}, x is the common element and
+    // hence we can ignore it when computing the distance
     val diff1 = leftCostTrace.diff(rightCostTrace)
     val diff2 = rightCostTrace.diff(leftCostTrace)
     // For uncommon elements (e.g., {x, y} and {a, b, c}), we first substitute (e.g., x becomes a and y becomes c)
