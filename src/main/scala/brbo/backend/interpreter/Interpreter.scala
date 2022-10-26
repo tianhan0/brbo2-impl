@@ -562,7 +562,7 @@ object Interpreter {
     }
   }
 
-  def printNodes(nodes: List[String], nodesPerLine: Int, linePrefix: String, arrow: String): String = {
+  private def printNodes(nodes: List[String], nodesPerLine: Int, linePrefix: String, arrow: String): String = {
     nodes.grouped(nodesPerLine)
       .map(group => group.mkString(s" $arrow "))
       .mkString(s"\n$linePrefix")
