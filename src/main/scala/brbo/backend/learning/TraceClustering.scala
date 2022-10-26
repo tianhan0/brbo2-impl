@@ -1,6 +1,7 @@
 package brbo.backend.learning
 
 import brbo.backend.interpreter.Interpreter
+import play.api.libs.json.{JsNumber, Json}
 
 object TraceClustering {
   def distanceMatrix(traces: List[Interpreter.CostTrace], substitutionPenalty: Int): List[List[Int]] = {
@@ -10,6 +11,11 @@ object TraceClustering {
           right => distance(left, right, substitutionPenalty)
         })
     })
+  }
+
+  def matrixToJson(matrix: List[List[Int]]): String = {
+    val jsonObject = Json.obj(("data", matrix))
+    jsonObject.toString()
   }
 
   private def distance(left: Interpreter.CostTrace, right: Interpreter.CostTrace, substitutionPenalty: Int): Int = {

@@ -24,6 +24,8 @@ libraryDependencies += "org.jgrapht" % "jgrapht-core" % "1.5.1"
 // libraryDependencies += "org.jgrapht" % "jgrapht-ext" % "1.5.1"
 libraryDependencies += "org.jgrapht" % "jgrapht-io" % "1.5.1"
 
+libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.3"
+
 // Add tools.jar such that sbt can find it
 unmanagedJars in Compile ~= {
   uj: Classpath =>
