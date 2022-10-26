@@ -500,7 +500,7 @@ object Interpreter {
   }
 
   case class Trace(nodes: List[TraceNode]) {
-    def useTrace(): CostTrace = {
+    val costTrace: CostTrace = {
       val useNodes = nodes.foldLeft(Nil: List[CostTraceNode])({
         case (soFar, node) => node.lastTransition match {
           case Some(lastTransition) =>
