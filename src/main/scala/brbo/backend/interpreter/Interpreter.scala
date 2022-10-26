@@ -497,26 +497,57 @@ object Interpreter {
     }
   }
 
-  case class UseNode(use: Use, cost: Int)
-
   case class Trace(nodes: List[TraceNode]) {
-    // val useTrace: List[UseNode] = ???
+    def useTrace(): CostTrace = {
+      val useNodes = nodes.foldLeft(Nil: List[CostTraceNode])({
+        case (soFar, node) => node.lastTransition match {
+          case Some(lastTransition) =>
+            (lastTransition.cost, lastTransition.command) match {
+              case (Some(cost), use: Use) => UseNode(use, cost) :: soFar
+              case (None, reset: Reset) => ResetNode(reset) :: soFar
+              case _ => soFar
+            }
+          case None => soFar
+        }
+      })
+      CostTrace(useNodes.reverse)
+    }
 
     def add(node: TraceNode): Trace = Trace(nodes :+ node)
 
     override def toString: String = {
-      val indent: String = " " * "Trace: ".length
-      val string =
-        nodes.map(n => s"[${n.toString}]")
-          .grouped(1) // How many nodes per line
-          .map(group => group.mkString(" ==> "))
-          .mkString(s"\n$indent")
-      s"Trace: $string"
+      val prefix = "Trace: "
+      val linePrefix: String = " " * prefix.length
+      val string = printNodes(nodes.map(n => s"[${n.toString}]"), 1, linePrefix, "==>")
+      s"$prefix$string"
     }
   }
 
   object EmptyTrace extends Trace(Nil) {
     override def toString: String = "EmptyTrace"
+  }
+
+  abstract class CostTraceNode
+
+  case class UseNode(use: Use, cost: Int) extends CostTraceNode {
+    override def toString: String = {
+      s"${use.printToIR()} (cost=$cost)"
+    }
+  }
+
+  case class ResetNode(reset: Reset) extends CostTraceNode {
+    override def toString: String = {
+      s"${reset.printToIR()}"
+    }
+  }
+
+  case class CostTrace(nodes: List[CostTraceNode]) {
+    override def toString: String = {
+      val prefix = "Use Trace: "
+      val linePrefix: String = " " * prefix.length
+      val string = printNodes(nodes.map(n => n.toString), 1, linePrefix, "->")
+      s"$prefix$string"
+    }
   }
 
   def printState(state: State): String = {
@@ -529,5 +560,11 @@ object Interpreter {
         s"${JumpState.getClass.getSimpleName}\n${state.store}\n${state.trace.toString}"
       case _ => throw new Exception
     }
+  }
+
+  def printNodes(nodes: List[String], nodesPerLine: Int, linePrefix: String, arrow: String): String = {
+    nodes.grouped(nodesPerLine)
+      .map(group => group.mkString(s" $arrow "))
+      .mkString(s"\n$linePrefix")
   }
 }

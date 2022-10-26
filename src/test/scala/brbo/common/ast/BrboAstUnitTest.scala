@@ -66,10 +66,10 @@ object BrboAstUnitTest {
       TestCase("ITE", createITE, "  if (true)\n    x = 0;\n  else\n    x = 1;"),
       TestCase("Loop", createLoop, "  while (0 < x)\n  {\n    x = 0;\n    x = 1;\n  }"),
       TestCase("Block", createBlock, "  {\n    x = 0;\n    x = 1;\n  }"),
-      TestCase("Use", createUse, "  if (true) R5 = R5 + 1;"),
-      TestCase("Use 2", createUse2, "  if (true) R = R + 2;"),
+      TestCase("Use", createUse, "  R5 = R5 + 1;"),
+      TestCase("Use 2", createUse2, "  R = R + 2;"),
       TestCase("Reset", createReset,
-        """  if (true) {
+        """  {
           |    if (S5 < R5)
           |      S5 = R5;
           |    else
@@ -183,8 +183,8 @@ object BrboAstUnitTest {
         |    R2 = 0;
         |    C2 = C2 + 1;
         |  }
-        |  if (true) R3 = R3 + 100;
-        |  if (true) {
+        |  R3 = R3 + 100;
+        |  {
         |    if (S4 < R4)
         |      S4 = R4;
         |    else

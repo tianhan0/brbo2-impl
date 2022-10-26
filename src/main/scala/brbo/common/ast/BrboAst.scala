@@ -112,9 +112,17 @@ abstract class Command(val uuid: UUID) extends BrboAst with PrintToIR with GetFu
           else " no arguments"
         s"Call function `${callee.identifier}`$argumentsString"
       case use@Use(_, update, condition, _) =>
-        s"if (${condition.printNoOuterBrackets}) use ${use.resourceVariable.name} ${update.printToIR()}"
+        val conditionString = condition match {
+          case Bool(true, _) => ""
+          case _ => s"if (${condition.printNoOuterBrackets}) "
+        }
+        s"${conditionString}use ${use.resourceVariable.name} ${update.printToIR()}"
       case reset@Reset(_, condition, _) =>
-        s"if (${condition.printNoOuterBrackets}) reset ${reset.resourceVariable.name}"
+        val conditionString = condition match {
+          case Bool(true, _) => ""
+          case _ => s"if (${condition.printNoOuterBrackets}) "
+        }
+        s"${conditionString}reset ${reset.resourceVariable.name}"
       case _: Command => printToC(0)
       case _ => throw new Exception()
     }
@@ -520,7 +528,11 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
   override def getFunctionCalls: List[FunctionCallExpr] = update.getFunctionCalls
 
   override def printToCInternal(indent: Int): String = {
-    s"${indentString(indent)}if (${condition.printNoOuterBrackets}) ${assignmentCommand.printToC(0)}"
+    val conditionString = condition match {
+      case Bool(true, _) => ""
+      case _ => s"if (${condition.printNoOuterBrackets}) "
+    }
+    s"${indentString(indent)}$conditionString${assignmentCommand.printToC(0)}"
   }
 
   override def replace(newGroupId: Int): Use = Use(Some(newGroupId), update, condition)
@@ -562,7 +574,11 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
   override def printToCInternal(indent: Int): String = {
-    s"${indentString(indent)}if (${condition.printNoOuterBrackets}) {\n${maxStatement.printToC(indent + DEFAULT_INDENT)}\n${resetCommand.printToC(indent + DEFAULT_INDENT)}\n${counterCommand.printToC(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
+    val conditionString = condition match {
+      case Bool(true, _) => ""
+      case _ => s"if (${condition.printNoOuterBrackets}) "
+    }
+    s"${indentString(indent)}$conditionString{\n${maxStatement.printToC(indent + DEFAULT_INDENT)}\n${resetCommand.printToC(indent + DEFAULT_INDENT)}\n${counterCommand.printToC(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
   }
 
   def replace(newGroupId: Int): Reset = Reset(newGroupId, condition)

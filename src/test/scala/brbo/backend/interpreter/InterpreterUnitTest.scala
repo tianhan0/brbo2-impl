@@ -37,6 +37,16 @@ class InterpreterUnitTest extends AnyFlatSpec {
         StringCompare.ignoreWhitespaces(Interpreter.printState(exitState), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
+
+  "Generating use traces" should "be correct" in {
+    InterpreterUnitTest.useTraceTests.foreach({
+      testCase =>
+        val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
+        val interpreter = new Interpreter(targetProgram.program, debugMode = false)
+        val exitState = interpreter.execute(Nil)
+        StringCompare.ignoreWhitespaces(exitState.trace.useTrace().toString, testCase.expectedOutput, s"${testCase.name} failed")
+    })
+  }
 }
 
 object InterpreterUnitTest {
@@ -382,11 +392,14 @@ object InterpreterUnitTest {
       |    reset(1, x >= 10);
       |    use(1, 200);
       |    reset(1, x > 10);
+      |    use(1, 300);
+      |    reset(1);
       |  }
       |
       |  void use(int x, int cost, boolean condition) {}
       |  void use(int x, int cost) {}
       |  void reset(int x, boolean condition) {}
+      |  void reset(int x) {}
       |}""".stripMargin
 
   val commandTests: List[TestCase] = List(
@@ -599,7 +612,7 @@ object InterpreterUnitTest {
     TestCase("resetTest", resetTest,
       """GoodState$
         |Value: None
-        |Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)
+        |Store: (C1 -> 2, R1 -> 0, S1 -> 500, x -> 10)
         |Trace: [Store: (x -> 10)]
         |       [0 ==> Store: (x -> 10)]
         |       [int C1 = 0; ==> Store: (C1 -> 0, x -> 10)]
@@ -609,7 +622,7 @@ object InterpreterUnitTest {
         |       [int S1 = -2147483648; ==> Store: (C1 -> 0, R1 -> 0, S1 -> -2147483648, x -> 10)]
         |       [true ==> Store: (C1 -> 0, R1 -> 0, S1 -> -2147483648, x -> 10)]
         |       [100 ==> Store: (C1 -> 0, R1 -> 0, S1 -> -2147483648, x -> 10)]
-        |       [if (true) use R1 100 <cost=100> ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
+        |       [use R1 100 <cost=100> ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
         |       [x ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
         |       [10 ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
         |       [(x < 10) ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
@@ -617,7 +630,7 @@ object InterpreterUnitTest {
         |       [if (!((x < 10))) reset R1 ==> Store: (C1 -> 0, R1 -> 100, S1 -> -2147483648, x -> 10)]
         |       [true ==> Store: (C1 -> 1, R1 -> 0, S1 -> 100, x -> 10)]
         |       [200 ==> Store: (C1 -> 1, R1 -> 0, S1 -> 100, x -> 10)]
-        |       [if (true) use R1 200 <cost=200> ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [use R1 200 <cost=200> ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
         |       [x ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
         |       [10 ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
         |       [(x < 10) ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
@@ -626,6 +639,42 @@ object InterpreterUnitTest {
         |       [10 ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
         |       [(x == 10) ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
         |       [!((x == 10)) ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
-        |       [(!((x < 10)) && !((x == 10))) ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]""".stripMargin),
+        |       [(!((x < 10)) && !((x == 10))) ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [true ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [300 ==> Store: (C1 -> 1, R1 -> 200, S1 -> 100, x -> 10)]
+        |       [use R1 300 <cost=300> ==> Store: (C1 -> 1, R1 -> 500, S1 -> 100, x -> 10)]
+        |       [true ==> Store: (C1 -> 1, R1 -> 500, S1 -> 100, x -> 10)]
+        |       [reset R1 ==> Store: (C1 -> 1, R1 -> 500, S1 -> 100, x -> 10)]""".stripMargin),
+  )
+
+  private val useTraceTest =
+    """class Test {
+      |  void main() {
+      |    use(1, 100);
+      |    use(2, 10);
+      |    use(1, 200);
+      |    reset(1);
+      |    reset(2);
+      |    use(2, 11);
+      |    reset(2);
+      |    use(2, 12);
+      |    use(1, 500);
+      |  }
+      |
+      |  void use(int x, int cost) {}
+      |  void reset(int x) {}
+      |}""".stripMargin
+
+  val useTraceTests: List[TestCase] = List(
+    TestCase("useTraceTest", useTraceTest,
+      """Use Trace: use R1 100 (cost=100)
+        |           use R2 10 (cost=10)
+        |           use R1 200 (cost=200)
+        |           reset R1
+        |           reset R2
+        |           use R2 11 (cost=11)
+        |           reset R2
+        |           use R2 12 (cost=12)
+        |           use R1 500 (cost=500)""".stripMargin)
   )
 }
