@@ -120,13 +120,12 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
       case _: Assume => throw new Exception
       case use@Use(_, update, condition, _) =>
         evaluateExpr(InitialState(condition, initialState.store, initialState.trace)) match {
-          case goodState@GoodState(store, _, value) =>
+          case GoodState(store, trace, value) =>
             value match {
               case Some(Bool(b, _)) =>
-                val newTrace = appendToTraceFrom(goodState, Transition(condition))
-                if (!b) GoodState(store, newTrace, None)
+                if (!b) GoodState(store, trace, None)
                 else {
-                  evaluateExpr(InitialState(update, store, newTrace)) match {
+                  evaluateExpr(InitialState(update, store, trace)) match {
                     case GoodState(store, trace, value) =>
                       val cost = value.get match {
                         case Number(n, _) => Some(n)
@@ -144,11 +143,10 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
         }
       case reset@Reset(_, condition, _) =>
         evaluateExpr(InitialState(condition, initialState.store, initialState.trace)) match {
-          case goodState@GoodState(store, _, value) =>
+          case GoodState(store, trace, value) =>
             value match {
               case Some(Bool(b, _)) =>
-                val newTrace = appendToTraceFrom(goodState, Transition(condition))
-                val lastState = GoodState(store, newTrace, None)
+                val lastState = GoodState(store, trace, None)
                 if (!b) lastState
                 else {
                   (store.get(reset.resourceVariable), store.get(reset.starVariable)) match {
@@ -283,29 +281,26 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
         }
       case ITEExpr(condition, thenExpr, elseExpr, _) =>
         evaluateExpr(InitialState(condition, initialState.store, initialState.trace)) match {
-          case goodState@GoodState(store, _, value) =>
+          case GoodState(store, trace, value) =>
             value match {
               case Some(Bool(b, _)) =>
-                val newTrace = appendToTraceFrom(goodState, Transition(condition))
-                if (b) evaluateExpr(InitialState(thenExpr, store, newTrace))
-                else evaluateExpr(InitialState(elseExpr, store, newTrace))
+                if (b) evaluateExpr(InitialState(thenExpr, store, trace))
+                else evaluateExpr(InitialState(elseExpr, store, trace))
               case _ => throw new Exception
             }
           case _ => throw new Exception
         }
       case ArrayRead(array, index, _) =>
         evaluateExpr(InitialState(array, initialState.store, initialState.trace)) match {
-          case goodState@GoodState(store, _, value) =>
+          case GoodState(store, trace, value) =>
             value match {
               case Some(BrboArray(arrayValue, _, _)) =>
-                val newTrace = appendToTraceFrom(goodState, Transition(array))
-                evaluateExpr(InitialState(index, store, newTrace)) match {
-                  case goodState@GoodState(store, _, indexValue) =>
+                evaluateExpr(InitialState(index, store, trace)) match {
+                  case GoodState(store, trace, indexValue) =>
                     indexValue match {
                       case Some(Number(indexValue, _)) =>
-                        val newTrace = appendToTraceFrom(goodState, Transition(index))
                         val value = arrayValue(indexValue).asInstanceOf[BrboValue]
-                        GoodState(store, newTrace, Some(value))
+                        GoodState(store, trace, Some(value))
                       case _ => throw new Exception
                     }
                   case _ => throw new Exception
