@@ -1,9 +1,23 @@
 package brbo.backend.learning
 
 import brbo.backend.interpreter.Interpreter
+import org.apache.commons.io.IOUtils
 import play.api.libs.json.Json
 
+import java.io.{File, PrintWriter}
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.util.concurrent.TimeUnit
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.{Duration, SECONDS}
+
 object TraceClustering {
+  private val CLUSTER_SCRIPT_DIRECTORY = {
+    val separator = File.separator
+    s"${System.getProperty("user.dir")}${separator}src${separator}main${separator}python"
+  }
+  private val CLUSTER_SCRIPT = s"clustering.py"
+
   def distanceMatrix(traces: List[Interpreter.CostTrace], substitutionPenalty: Int): List[List[Int]] = {
     traces.map({
       left =>
@@ -13,9 +27,41 @@ object TraceClustering {
     })
   }
 
-  def matrixToJson(matrix: List[List[Int]]): String = {
-    val jsonObject = Json.obj(("data", matrix))
+  def matrixToJson(distanceMatrix: List[List[Int]]): String = {
+    val jsonObject = Json.obj(("data", distanceMatrix))
     jsonObject.toString()
+  }
+
+  def cluster(matrix: List[List[Int]]): List[Int] = {
+    val inputFile = Files.createTempFile("", ".json")
+    val inputFilePath = inputFile.toAbsolutePath.toString
+    new PrintWriter(inputFilePath) {
+      write(matrixToJson(matrix))
+      close()
+    }
+    val outputFile = Files.createTempFile("", ".json")
+
+    val command = s"python3 $CLUSTER_SCRIPT --input=$inputFilePath --output=$outputFile"
+    val processBuilder: java.lang.ProcessBuilder = new java.lang.ProcessBuilder(command.split(" ").toList.asJava)
+      .directory(new java.io.File(CLUSTER_SCRIPT_DIRECTORY))
+      .redirectErrorStream(true)
+    val process: java.lang.Process = processBuilder.start()
+    if (process.waitFor(Duration(10, SECONDS).toSeconds, TimeUnit.SECONDS)) {
+      val outputFileContents = Files.readString(outputFile)
+      val parsed = Json.parse(outputFileContents)
+      parsed("labels").as[List[Int]]
+    }
+    else {
+      val stdout = {
+        try {
+          IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
+        }
+        catch {
+          case _: Exception => "stdout is empty (Since the process timed out)"
+        }
+      }
+      throw new Exception(s"$CLUSTER_SCRIPT timed out. stdout: $stdout")
+    }
   }
 
   private def distance(left: Interpreter.CostTrace, right: Interpreter.CostTrace, substitutionPenalty: Int): Int = {

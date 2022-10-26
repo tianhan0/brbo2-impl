@@ -23,6 +23,14 @@ class TraceClusteringUnitTest extends AnyFlatSpec {
         StringCompare.ignoreWhitespaces(json, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
+
+  "Clustering a distance matrix" should "work" in {
+    TraceClusteringUnitTest.clusterTests.foreach({
+      testCase =>
+        val labels = TraceClustering.cluster(testCase.input.asInstanceOf[List[List[Int]]])
+        StringCompare.ignoreWhitespaces(labels, testCase.expectedOutput, s"${testCase.name} failed")
+    })
+  }
 }
 
 object TraceClusteringUnitTest {
@@ -68,6 +76,12 @@ object TraceClusteringUnitTest {
 
   val jsonWriteTests: List[TestCase] = {
     val matrix1 = List(List(1, 2), List(3, 4, 5, 6))
-    List(TestCase("matrix1", matrix1, """"""))
+    List(TestCase("matrix1", matrix1, """{"data":[[1,2],[3,4,5,6]]}"""))
+  }
+
+  val clusterTests: List[TestCase] = {
+    val matrix1 = List(List(1, 2), List(3, 4))
+    List(TestCase("matrix1", matrix1, """0
+                                        |0""".stripMargin))
   }
 }
