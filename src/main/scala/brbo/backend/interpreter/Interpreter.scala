@@ -292,8 +292,8 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
         }
       case ArrayRead(array, index, _) =>
         evaluateExpr(InitialState(array, initialState.store, initialState.trace)) match {
-          case GoodState(store, trace, value) =>
-            value match {
+          case GoodState(store, trace, arrayValue) =>
+            arrayValue match {
               case Some(BrboArray(arrayValue, _, _)) =>
                 evaluateExpr(InitialState(index, store, trace)) match {
                   case GoodState(store, trace, indexValue) =>
@@ -309,7 +309,16 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
             }
           case _ => throw new Exception
         }
-      case ArrayLength(array, _) => ???
+      case ArrayLength(array, _) =>
+        evaluateExpr(InitialState(array, initialState.store, initialState.trace)) match {
+          case GoodState(store, trace, arrayValue) =>
+            arrayValue match {
+              case Some(BrboArray(arrayValue, _, _)) =>
+                GoodState(store, trace, Some(Number(arrayValue.length)))
+              case _ => throw new Exception
+            }
+          case _ => throw new Exception
+        }
     }
   }
 

@@ -32,7 +32,7 @@ class InterpreterUnitTest extends AnyFlatSpec {
     InterpreterUnitTest.commandTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
-        val interpreter = new Interpreter(targetProgram.program, debugMode = true)
+        val interpreter = new Interpreter(targetProgram.program, debugMode = false)
         val exitState = interpreter.execute(List(Number(10)))
         StringCompare.ignoreWhitespaces(Interpreter.printState(exitState), testCase.expectedOutput, s"${testCase.name} failed")
     })
@@ -119,6 +119,15 @@ object InterpreterUnitTest {
       |  }
       |
       |  int arrayRead(int[] x, int index) { return 0; }
+      |}""".stripMargin
+
+  private val arrayLengthTest =
+    """class Test {
+      |  void main(int[] x) {
+      |    int length = arrayLength(x);
+      |  }
+      |
+      |  int arrayLength(int[] x) { return 0; }
       |}""".stripMargin
 
   val expressionTests: List[TestCase] = List(
@@ -271,6 +280,13 @@ object InterpreterUnitTest {
         |       [x ==> Store: (element1 -> 101, x -> {101,17})]
         |       [1 ==> Store: (element1 -> 101, x -> {101,17})]
         |       [int element2 = arrayRead(x, 1); ==> Store: (element1 -> 101, element2 -> 17, x -> {101,17})]""".stripMargin),
+    TestCase("arrayLengthTest", arrayLengthTest,
+      """GoodState$
+        |Value: None
+        |Store: (length -> 2, x -> {101,17})
+        |Trace: [Store: (x -> {101,17})]
+        |       [x ==> Store: (x -> {101,17})]
+        |       [int length = arrayLength(x); ==> Store: (length -> 2, x -> {101,17})]""".stripMargin)
   )
 
   private val assignmentTest =
