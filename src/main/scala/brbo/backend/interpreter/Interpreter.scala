@@ -24,9 +24,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
     })
     logger.traceOrError(s"Evaluate function `${brboFunction.identifier}` with initial store $initialStore")
     val initialState = InitialState(brboFunction.bodyWithInitialization, initialStore, lastTrace.add(TraceNode(initialStore, None)))
-    val finalState = evaluateAst(initialState)
-    // TODO: Sanity check
-    finalState
+    evaluateAst(initialState)
   }
 
   def evaluateAst(initialState: InitialState): FlowEndState = {
@@ -127,11 +125,15 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
                 else {
                   evaluateExpr(InitialState(update, store, trace)) match {
                     case GoodState(store, trace, value) =>
-                      val cost = value.get match {
-                        case Number(n, _) => Some(n)
+                      val currentAccumulation = store.get(use.resourceVariable) match {
+                        case Number(n, _) => n
                         case _ => throw new Exception
                       }
-                      val newStore = store.set(use.resourceVariable, value.get)
+                      val (newAccumulation, cost) = value.get match {
+                        case Number(n, _) => (Number(n + currentAccumulation), Some(n))
+                        case _ => throw new Exception
+                      }
+                      val newStore = store.set(use.resourceVariable, newAccumulation)
                       val lastState = GoodState(newStore, trace, None)
                       GoodState(newStore, appendToTraceFrom(lastState, Transition(use, cost)), None)
                     case _ => throw new Exception
