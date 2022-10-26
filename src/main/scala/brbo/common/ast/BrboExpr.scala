@@ -10,21 +10,17 @@ trait BrboValue
 
 abstract class BrboExpr(val typ: BrboType.T, uuid: UUID) extends Command(uuid)
   with GetFunctionCalls with Z3AST with UseDefVariables with UniqueCopy {
-  override def toString: String = print(0)
-
-  def print(indent: Int): String
+  override def toString: String = printToCInternal(0)
 
   def printNoOuterBrackets: String = {
-    val string = print(0)
+    val string = printToCInternal(0)
     if (string.startsWith("(") && string.endsWith(")")) string.substring(1, string.length - 1)
     else string
   }
-
-  override protected def printToCCommand(indent: Int): String = throw new Exception("Unreachable")
 }
 
 case class Identifier(name: String, override val typ: BrboType.T, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(typ, uuid) {
-  override def print(indent: Int): String = {
+  override def printToCInternal(indent: Int): String = {
     s"${indentString(indent)}$name"
   }
 
@@ -55,7 +51,7 @@ case class Identifier(name: String, override val typ: BrboType.T, override val u
 }
 
 case class StringLiteral(value: String, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(STRING, uuid) with BrboValue {
-  override def print(indent: Int): String = {
+  override def printToCInternal(indent: Int): String = {
     s"${indentString(indent)}$value"
   }
 
@@ -78,7 +74,7 @@ case class StringLiteral(value: String, override val uuid: UUID = UUID.randomUUI
 }
 
 case class Bool(b: Boolean, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL, uuid) with BrboValue {
-  override def print(indent: Int): String = {
+  override def printToCInternal(indent: Int): String = {
     s"${indentString(indent)}${b.toString}"
   }
 
@@ -101,7 +97,7 @@ case class Bool(b: Boolean, override val uuid: UUID = UUID.randomUUID()) extends
 }
 
 case class Number(n: Int, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT, uuid) with BrboValue {
-  override def print(indent: Int): String = {
+  override def printToCInternal(indent: Int): String = {
     s"${indentString(indent)}${n.toString}"
   }
 
@@ -124,10 +120,12 @@ case class Number(n: Int, override val uuid: UUID = UUID.randomUUID()) extends B
   }
 }
 
-case class BrboArray(values: List[BrboExpr], innerType: BrboType.T, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(ARRAY(innerType), uuid) with BrboValue {
+case class BrboArray(values: List[BrboExpr], innerType: BrboType.T, override val uuid: UUID = UUID.randomUUID())
+  extends BrboExpr(ARRAY(innerType), uuid) with BrboValue {
   assert(values.forall(v => v.isInstanceOf[BrboValue] && v.typ == innerType))
 
-  override def print(indent: Int): String = s"Array(${values.map(v => v.print(0)).mkString(",")})"
+  override def printToCInternal(indent: Int): String =
+    s"${indentString(indent)}{${values.map(v => v.printToCInternal(0)).mkString(",")}}"
 
   override def sameAs(other: Any): Boolean = {
     other match {
@@ -152,19 +150,22 @@ case class BrboArray(values: List[BrboExpr], innerType: BrboType.T, override val
   override def getDefs: Set[Identifier] = Set()
 }
 
-case class Read(array: BrboExpr, index: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(array.typ.asInstanceOf[BrboType.ARRAY].typ, uuid) {
-  override def print(indent: Int): String = ???
+case class ArrayRead(array: BrboExpr, index: BrboExpr, override val uuid: UUID = UUID.randomUUID())
+  extends BrboExpr(array.typ.asInstanceOf[BrboType.ARRAY].typ, uuid) {
+  override def printToCInternal(indent: Int): String = {
+    s"${indentString(indent)}${PreDefinedFunctions.ArrayRead.name}(${array.printToCInternal(0)}, ${index.printToCInternal(0)})"
+  }
 
   override def sameAs(other: Any): Boolean = {
     other match {
-      case Read(otherArray, otherIndex, _) => array.sameAs(otherArray) && index.sameAs(otherIndex)
+      case ArrayRead(otherArray, otherIndex, _) => array.sameAs(otherArray) && index.sameAs(otherIndex)
       case _ => false
     }
   }
 
   override def toZ3AST(solver: Z3Solver): AST = ???
 
-  override def uniqueCopyExpr: BrboExpr = Read(array, index)
+  override def uniqueCopyExpr: BrboExpr = ArrayRead(array, index)
 
   override def getFunctionCalls: List[FunctionCallExpr] = array.getFunctionCalls ::: index.getFunctionCalls
 
@@ -173,21 +174,21 @@ case class Read(array: BrboExpr, index: BrboExpr, override val uuid: UUID = UUID
   override def getDefs: Set[Identifier] = array.getDefs ++ index.getDefs
 }
 
-case class Length(array: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT, uuid) {
+case class ArrayLength(array: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT, uuid) {
   assert(array.typ.isInstanceOf[BrboType.ARRAY])
 
-  override def print(indent: Int): String = ???
+  override def printToCInternal(indent: Int): String = s"${indentString(indent)}${PreDefinedFunctions.ArrayLength.name}(${array.printToCInternal(0)})"
 
   override def sameAs(other: Any): Boolean = {
     other match {
-      case Length(otherArray, _) => array.sameAs(otherArray)
+      case ArrayLength(otherArray, _) => array.sameAs(otherArray)
       case _ => false
     }
   }
 
   override def toZ3AST(solver: Z3Solver): AST = ???
 
-  override def uniqueCopyExpr: BrboExpr = Length(array)
+  override def uniqueCopyExpr: BrboExpr = ArrayLength(array)
 
   override def getFunctionCalls: List[FunctionCallExpr] = array.getFunctionCalls
 
@@ -200,8 +201,8 @@ case class Addition(left: BrboExpr, right: BrboExpr, override val uuid: UUID = U
   assert(left.typ == INT)
   assert(right.typ == INT)
 
-  override def print(indent: Int): String = {
-    s"${indentString(indent)}(${left.print(0)} + ${right.print(0)})"
+  override def printToCInternal(indent: Int): String = {
+    s"${indentString(indent)}(${left.printToCInternal(0)} + ${right.printToCInternal(0)})"
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
@@ -226,8 +227,8 @@ case class Subtraction(left: BrboExpr, right: BrboExpr, override val uuid: UUID 
   assert(left.typ == INT)
   assert(right.typ == INT)
 
-  override def print(indent: Int): String = {
-    s"${indentString(indent)}(${left.print(0)} - ${right.print(0)})"
+  override def printToCInternal(indent: Int): String = {
+    s"${indentString(indent)}(${left.printToCInternal(0)} - ${right.printToCInternal(0)})"
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
@@ -252,8 +253,8 @@ case class Multiplication(left: BrboExpr, right: BrboExpr, override val uuid: UU
   assert(left.typ == INT)
   assert(right.typ == INT)
 
-  override def print(indent: Int): String = {
-    s"${indentString(indent)}(${left.print(0)} * ${right.print(0)})"
+  override def printToCInternal(indent: Int): String = {
+    s"${indentString(indent)}(${left.printToCInternal(0)} * ${right.printToCInternal(0)})"
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
@@ -277,8 +278,8 @@ case class Multiplication(left: BrboExpr, right: BrboExpr, override val uuid: UU
 case class Negation(expression: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL, uuid) {
   assert(expression.typ == BOOL)
 
-  override def print(indent: Int): String = {
-    s"${indentString(indent)}!(${expression.print(0)})"
+  override def printToCInternal(indent: Int): String = {
+    s"${indentString(indent)}!(${expression.printToCInternal(0)})"
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = expression.getFunctionCalls
@@ -303,8 +304,8 @@ case class LessThan(left: BrboExpr, right: BrboExpr, override val uuid: UUID = U
   assert(left.typ == INT)
   assert(right.typ == INT)
 
-  override def print(indent: Int): String = {
-    s"${indentString(indent)}(${left.print(0)} < ${right.print(0)})"
+  override def printToCInternal(indent: Int): String = {
+    s"${indentString(indent)}(${left.printToCInternal(0)} < ${right.printToCInternal(0)})"
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
@@ -328,7 +329,7 @@ case class LessThan(left: BrboExpr, right: BrboExpr, override val uuid: UUID = U
 case class Equal(left: BrboExpr, right: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(BOOL, uuid) {
   assert(left.typ == right.typ)
 
-  override def print(indent: Int): String = s"${indentString(indent)}(${left.print(0)} == ${right.print(0)})"
+  override def printToCInternal(indent: Int): String = s"${indentString(indent)}(${left.printToCInternal(0)} == ${right.printToCInternal(0)})"
 
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
@@ -352,7 +353,7 @@ case class And(left: BrboExpr, right: BrboExpr, override val uuid: UUID = UUID.r
   assert(left.typ == BOOL)
   assert(right.typ == BOOL)
 
-  override def print(indent: Int): String = s"${indentString(indent)}(${left.print(0)} && ${right.print(0)})"
+  override def printToCInternal(indent: Int): String = s"${indentString(indent)}(${left.printToCInternal(0)} && ${right.printToCInternal(0)})"
 
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
 
@@ -376,7 +377,7 @@ case class Or(left: BrboExpr, right: BrboExpr, override val uuid: UUID = UUID.ra
   assert(left.typ == BOOL)
   assert(right.typ == BOOL)
 
-  override def print(indent: Int): String = s"${indentString(indent)}(${left.print(0)} || ${right.print(0)})"
+  override def printToCInternal(indent: Int): String = s"${indentString(indent)}(${left.printToCInternal(0)} || ${right.printToCInternal(0)})"
 
 
   override def getFunctionCalls: List[FunctionCallExpr] = left.getFunctionCalls ::: right.getFunctionCalls
@@ -399,7 +400,7 @@ case class Or(left: BrboExpr, right: BrboExpr, override val uuid: UUID = UUID.ra
 
 case class FunctionCallExpr(identifier: String, arguments: List[BrboExpr], returnType: BrboType.T, override val uuid: UUID = UUID.randomUUID())
   extends BrboExpr(returnType, uuid) {
-  override def print(indent: Int): String = {
+  override def printToCInternal(indent: Int): String = {
     val argumentsString = arguments.map(argument => argument.printNoOuterBrackets).mkString(", ")
     s"${indentString(indent)}$identifier($argumentsString)"
   }
@@ -433,8 +434,7 @@ case class ITEExpr(condition: BrboExpr, thenExpr: BrboExpr, elseExpr: BrboExpr, 
   assert(condition.typ == BOOL)
   assert(thenExpr.typ == elseExpr.typ)
 
-  override def print(indent: Int): String = s"${indentString(indent)}${condition.print(0)} ? ${thenExpr.print(0)} : ${elseExpr.print(0)}"
-
+  override def printToCInternal(indent: Int): String = s"${indentString(indent)}${condition.printToCInternal(0)} ? ${thenExpr.printToCInternal(0)} : ${elseExpr.printToCInternal(0)}"
 
   override def getFunctionCalls: List[FunctionCallExpr] = condition.getFunctionCalls ::: thenExpr.getFunctionCalls ::: elseExpr.getFunctionCalls
 

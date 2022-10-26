@@ -16,7 +16,7 @@ class BrboExprUnitTest extends AnyFlatSpec {
     BrboExprUnitTest.prettyPrintToCUnitTest.foreach({
       testCase =>
         val expr = testCase.input.asInstanceOf[BrboExpr]
-        StringCompare.compareLiteral(expr.print(0), testCase.expectedOutput, s"${testCase.name} failed!")
+        StringCompare.compareLiteral(expr.printToCInternal(0), testCase.expectedOutput, s"${testCase.name} failed!")
         BrboExprUtils.visit(expr) // Ensure every expression is handled by this pattern matching
     })
   }

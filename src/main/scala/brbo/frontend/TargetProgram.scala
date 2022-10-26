@@ -62,7 +62,7 @@ object TargetProgram {
   private val logger = MyLogger.createLogger(TargetProgram.getClass, debugMode = false)
 
   def toBrboFunction(targetMethod: TargetMethod, allMethods: Set[TargetMethod]): (BrboFunction, List[BoundAssertion]) = {
-    val translate = new Translate(targetMethod.allVariables, allMethods)
+    val translate = new Translate(targetMethod.variables, allMethods)
     val body = translate.toASTInternal(targetMethod.methodTree.getBody) match {
       case Left(command) => Block(List(command))
       case Right(statement) => statement
@@ -72,7 +72,7 @@ object TargetProgram {
     (function, translate.getBoundAssertions)
   }
 
-  private class Translate(allVariables: Map[String, Identifier], allMethods: Set[TargetMethod]) {
+  private class Translate(variables: Map[String, Identifier], allMethods: Set[TargetMethod]) {
     private var boundAssertions: List[BoundAssertion] = Nil
     private var resourceVariables: Set[Int] = Set()
 
@@ -99,16 +99,8 @@ object TargetProgram {
             case _: ContinueTree => Left(Continue())
             case tree: ExpressionStatementTree =>
               toAST(tree.getExpression) match {
-                case Left(value) =>
-                  value match {
-                    case _@FunctionCallExpr(_, _, _, _) => Left(value)
-                    case _ => throw new Exception
-                  }
-                case Right(value) =>
-                  value match {
-                    case command: Command => Left(command)
-                    case _ => throw new Exception
-                  }
+                case Left(value) => Left(value)
+                case Right(value) => Left(value)
               }
             case tree: ReturnTree =>
               val expression = tree.getExpression
@@ -120,7 +112,7 @@ object TargetProgram {
                 }
               }
             case tree: VariableTree =>
-              allVariables.get(tree.getName.toString) match {
+              variables.get(tree.getName.toString) match {
                 case Some(identifier) =>
                   toAST(tree.getInitializer) match {
                     case Left(brboExpr) => Left(VariableDeclaration(identifier, brboExpr))
@@ -205,7 +197,7 @@ object TargetProgram {
           Left(result)
         case tree: ConditionalExpressionTree => throw new Exception(s"Not support conditional expression `$tree`")
         case tree: CompoundAssignmentTree =>
-          allVariables.get(tree.getVariable.toString) match {
+          variables.get(tree.getVariable.toString) match {
             case Some(identifier) =>
               val update: BrboExpr = toAST(tree.getExpression) match {
                 case Left(value) => value
@@ -222,7 +214,7 @@ object TargetProgram {
           }
         case tree: IdentifierTree =>
           val name = tree.getName.toString
-          allVariables.get(name) match {
+          variables.get(name) match {
             case Some(identifier) => Left(identifier)
             case None =>
               PREDEFINED_VARIABLES.get(name) match {
@@ -238,23 +230,10 @@ object TargetProgram {
             case _ => throw new Exception(s"Unsupported literal `$tree`")
           }
         case tree: MethodInvocationTree =>
-          val (functionName, returnType) = {
+          val functionName = {
             val select = tree.getMethodSelect
             assert(select.isInstanceOf[IdentifierTree])
-            val functionName = select.toString
-            PreDefinedFunctions.functions.find({ f => f.javaFunctionName == functionName }) match {
-              case Some(f) =>
-                val returnType = f.name match {
-                  case PreDefinedFunctions.Use.javaFunctionName | PreDefinedFunctions.Reset.javaFunctionName => BrboType.VOID
-                  case _ => f.internalRepresentation.returnType
-                }
-                (f.name, returnType)
-              case None =>
-                allMethods.find(targetMethod => targetMethod.methodName == functionName) match {
-                  case Some(targetMethod) => (functionName, targetMethod.returnType)
-                  case None => throw new Exception(s"Invoking a function that is neither defined nor predefined: `$tree`")
-                }
-            }
+            select.toString
           }
           val arguments = tree.getArguments.asScala.map({
             argument =>
@@ -284,7 +263,20 @@ object TargetProgram {
                   Right(Reset(groupId, condition))
                 case _ => throw new Exception(s"The first argument must be a number in $tree")
               }
-            case _ => Left(FunctionCallExpr(functionName, arguments, returnType))
+            case PreDefinedFunctions.ArrayRead.javaFunctionName =>
+              Left(ArrayRead(arguments.head, arguments(1)))
+            case PreDefinedFunctions.ArrayLength.javaFunctionName =>
+              Left(ArrayLength(arguments.head))
+            case _ =>
+              val returnType = PreDefinedFunctions.functions.find({ f => f.javaFunctionName == functionName }) match {
+                case Some(f) => f.internalRepresentation.returnType
+                case None =>
+                  allMethods.find(targetMethod => targetMethod.methodName == functionName) match {
+                    case Some(targetMethod) => targetMethod.returnType
+                    case None => throw new Exception(s"Invoking a function that is neither defined nor predefined: `$tree`")
+                  }
+              }
+              Left(FunctionCallExpr(functionName, arguments, returnType))
           }
         case tree: ParenthesizedTree => toAST(tree.getExpression)
         case tree: UnaryTree =>

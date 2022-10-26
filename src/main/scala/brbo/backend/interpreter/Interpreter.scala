@@ -398,10 +398,7 @@ object Interpreter {
   case class Transition(command: BrboAst, cost: Option[Int] = None) {
     override def toString: String = {
       val commandString = command match {
-        case brboExpr: BrboExpr => brboExpr.print(0)
-        case use: Use => use.printToIR()
-        case reset: Reset => reset.printToIR()
-        case command: Command => command.printToC(0)
+        case command: Command => command.printToIR()
         case _ => throw new Exception
       }
       cost match {

@@ -1,6 +1,6 @@
 package brbo.frontend
 
-import brbo.common.BrboType.{BOOL, INT, VOID}
+import brbo.common.BrboType._
 import brbo.common.ast.Identifier
 import brbo.common.{BrboType, MyLogger}
 import com.sun.source.tree.{MethodTree, StatementTree, VariableTree}
@@ -22,6 +22,7 @@ case class TargetMethod(methodTree: MethodTree) {
         case "int" => INT
         case "boolean" => BOOL
         case "void" => VOID
+        case "int[]" => ARRAY(INT)
         case _ => throw new Exception(s"Unexpected return type: ${methodTree.getReturnType} (Kind: ${methodTree.getReturnType.getKind})")
       }
     }
@@ -49,5 +50,5 @@ case class TargetMethod(methodTree: MethodTree) {
     }
   logger.trace(s"[Method `${methodTree.getName}`] Local variables: `$localVariables`")
 
-  val allVariables: Map[String, Identifier] = inputVariables ++ localVariables
+  val variables: Map[String, Identifier] = inputVariables ++ localVariables
 }

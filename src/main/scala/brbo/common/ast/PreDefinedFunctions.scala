@@ -5,7 +5,9 @@ import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
 import brbo.frontend.TargetProgram
 
 object PreDefinedFunctions {
-  val ATOMIC_FUNCTIONS_C_DECLARATION: String = List(VerifierError, VerifierNondetInt, Abort).map(f => f.cRepresentation).mkString("\n")
+  val ATOMIC_FUNCTIONS_C_DECLARATION: String =
+    List(VerifierError, VerifierNondetInt, Abort, ArrayRead, ArrayLength)
+      .map(f => f.cRepresentation).mkString("\n")
   val SYMBOLS_MACRO: String = {
     val predefinedVariables = TargetProgram.PREDEFINED_VARIABLES.map({ case (name, value) => s"#define $name $value" }).toList.sorted.mkString("\n")
     s"""#define true 1
@@ -153,10 +155,22 @@ object PreDefinedFunctions {
     override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
   }
 
+  object ArrayRead extends PreDefinedFunction("arrayRead") {
+    override def cRepresentation: String = s"extern int $name(int array, int index);"
+
+    override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
+  }
+
+  object ArrayLength extends PreDefinedFunction("arrayLength") {
+    override def cRepresentation: String = s"extern int $name(int array);"
+
+    override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
+  }
+
   val functions: List[PreDefinedFunction] = List(
     VerifierError, VerifierNondetInt, Abort, Assert, Assume,
     NdInt, NdInt2, NdInt3, NdBool, BoundAssertion, Uninitialize,
-    Use, Reset
+    Use, Reset, ArrayRead, ArrayLength
   )
 
   val functionInternalRepresentations: List[BrboFunction] = {

@@ -134,8 +134,28 @@ object BrboAstUnitTest {
 
   private val arrayInputTest =
     """class Test {
-      |  void main(int[] x, int[][] y) {
+      |  void main(int[] x) {
       |  }
+      |}""".stripMargin
+
+  private val arrayReadTest =
+    """class Test {
+      |  void main(int[] x) {
+      |    arrayRead(x, 0);
+      |    int y = arrayRead(x, 10);
+      |  }
+      |
+      |  int arrayRead(int[] x, int index) { return 0; }
+      |}""".stripMargin
+
+  private val arrayLengthTest =
+    """class Test {
+      |  void main(int[] x) {
+      |    arrayLength(x);
+      |    int y = arrayLength(x);
+      |  }
+      |
+      |  int arrayLength(int[] x) { return 0; }
       |}""".stripMargin
 
   val parsingAstTests: List[TestCase] = List(
@@ -174,9 +194,21 @@ object BrboAstUnitTest {
         |  }
         |}""".stripMargin),
     TestCase("arrayInputTest", arrayInputTest,
-      """void main(int[] x, int[][] y)
+      """void main(int x)
         |{
         |
-        |}""".stripMargin)
+        |}""".stripMargin),
+    TestCase("arrayReadTest", arrayReadTest,
+      """void main(int x)
+        |{
+        |  arrayRead(x, 0);
+        |  int y = arrayRead(x, 10);
+        |}""".stripMargin),
+    TestCase("arrayLengthTest", arrayLengthTest,
+      """void main(int x)
+        |{
+        |  arrayLength(x);
+        |  int y = arrayLength(x);
+        |}""".stripMargin),
   )
 }
