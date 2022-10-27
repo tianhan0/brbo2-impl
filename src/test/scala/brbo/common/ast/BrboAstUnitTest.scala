@@ -235,6 +235,10 @@ object BrboAstUnitTest {
         |  arraySum(x);
         |  int y = arraySum(x);
         |}""".stripMargin),
-    TestCase("upperBoundTest", upperBoundTest, """"""),
+    TestCase("upperBoundTest", upperBoundTest,
+      """void main(int x)
+        |{
+        |  ;
+        |}""".stripMargin),
   )
 }
