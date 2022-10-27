@@ -41,7 +41,7 @@ class BrboAstUnitTest extends AnyFlatSpec {
     })
   }
 
-  "Parsing AST nodes from Java programs" should "be correct" in {
+  "Parsing Java programs into Brbo ASTs" should "be correct" in {
     BrboAstUnitTest.parsingAstTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
@@ -158,6 +158,25 @@ object BrboAstUnitTest {
       |  int arrayLength(int[] x) { return 0; }
       |}""".stripMargin
 
+  private val arraySumTest =
+    """class Test {
+      |  void main(int[] x) {
+      |    arraySum(x);
+      |    int y = arraySum(x);
+      |  }
+      |
+      |  int arraySum(int[] x) { return 0; }
+      |}""".stripMargin
+
+  private val upperBoundTest =
+    """class Test {
+      |  void main(int x) {
+      |    upperBound(0, "tag", x + 1);
+      |  }
+      |
+      |  int upperBound(int group, String index, int bound) { return 0; }
+      |}""".stripMargin
+
   val parsingAstTests: List[TestCase] = List(
     TestCase("useResetTest", useResetTest,
       """void main(int x)
@@ -210,5 +229,12 @@ object BrboAstUnitTest {
         |  arrayLength(x);
         |  int y = arrayLength(x);
         |}""".stripMargin),
+    TestCase("arraySumTest", arraySumTest,
+      """void main(int x)
+        |{
+        |  arraySum(x);
+        |  int y = arraySum(x);
+        |}""".stripMargin),
+    TestCase("upperBoundTest", upperBoundTest, """"""),
   )
 }

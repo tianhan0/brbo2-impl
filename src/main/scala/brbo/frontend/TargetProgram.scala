@@ -2,7 +2,7 @@ package brbo.frontend
 
 import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo, notEqual}
 import brbo.common.ast._
-import brbo.common.{BrboType, MyLogger, PreDefinedFunctions}
+import brbo.common.{BrboType, GhostVariableTyp, GhostVariableUtils, MyLogger, PreDefinedFunctions}
 import brbo.frontend.JavaTreeUtils.isCommand
 import brbo.frontend.TargetProgram.toBrboFunction
 import com.sun.source.tree.Tree.Kind
@@ -244,9 +244,17 @@ object TargetProgram {
           }).toList
           functionName match {
             case PreDefinedFunctions.BoundAssertion.name =>
-              logger.trace(s"Extract bound assertion `${arguments.head}`")
-              boundAssertions = BoundAssertion.parse(arguments.head, arguments(1)) :: boundAssertions
+              boundAssertions = BoundAssertion.parse(tag = arguments.head, expr = arguments(1)) :: boundAssertions
               Right(Skip())
+            case PreDefinedFunctions.UpperBound.name =>
+              arguments.head match {
+                case Number(groupId, _) =>
+                  val resourceVariable = GhostVariableUtils.generateVariable(Some(groupId), GhostVariableTyp.Resource)
+                  boundAssertions =
+                    BoundAssertion.parse(tag = arguments(1), expr = lessThanOrEqualTo(resourceVariable, arguments(2))) :: boundAssertions
+                  Right(Skip())
+                case _ => throw new Exception
+              }
             case PreDefinedFunctions.Use.javaFunctionName =>
               arguments.head match {
                 case Number(groupId, _) =>
@@ -267,6 +275,8 @@ object TargetProgram {
               Left(ArrayRead(arguments.head, arguments(1)))
             case PreDefinedFunctions.ArrayLength.javaFunctionName =>
               Left(ArrayLength(arguments.head))
+            case PreDefinedFunctions.ArraySum.javaFunctionName =>
+              Left(ArraySum(arguments.head))
             case _ =>
               val returnType = PreDefinedFunctions.functions.find({ f => f.javaFunctionName == functionName }) match {
                 case Some(f) => f.internalRepresentation.returnType

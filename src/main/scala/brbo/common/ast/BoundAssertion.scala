@@ -23,14 +23,14 @@ case class BoundAssertion(resourceVariable: String, assertion: BrboExpr, tag: St
 
 object BoundAssertion {
   def parse(tag: BrboExpr, expr: BrboExpr): BoundAssertion = {
-    val allResourceIdentifiers = BrboExprUtils.collectIdentifiers(expr).filter(i => GhostVariableUtils.isGhostVariable(i.name, GhostVariableTyp.Resource))
-    if (allResourceIdentifiers.isEmpty || allResourceIdentifiers.size > 1) {
-      throw new Exception(s"Expect using exactly one resource variable in `$expr`. Found the following resource variables instead: `$allResourceIdentifiers`.")
+    val resourceIdentifiers = BrboExprUtils.collectIdentifiers(expr).filter(i => GhostVariableUtils.isGhostVariable(i.name, GhostVariableTyp.Resource))
+    if (resourceIdentifiers.isEmpty || resourceIdentifiers.size > 1) {
+      throw new Exception(s"Expect using exactly one resource variable in `$expr`. Found the following resource variables instead: `$resourceIdentifiers`.")
     }
     else {
       tag match {
         case StringLiteral(value, _) =>
-          BoundAssertion(allResourceIdentifiers.head.name, expr, value)
+          BoundAssertion(resourceIdentifiers.head.name, expr, value)
         case _ => throw new Exception(s"Expect the tag of the bound assertion to be a string literal: `$tag`.")
       }
     }

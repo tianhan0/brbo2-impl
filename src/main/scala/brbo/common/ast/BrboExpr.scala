@@ -197,6 +197,29 @@ case class ArrayLength(array: BrboExpr, override val uuid: UUID = UUID.randomUUI
   override def getDefs: Set[Identifier] = array.getDefs
 }
 
+case class ArraySum(array: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT, uuid) {
+  assert(array.typ.isInstanceOf[BrboType.ARRAY])
+
+  override def printToCInternal(indent: Int): String = s"${indentString(indent)}${PreDefinedFunctions.ArraySum.name}(${array.printToCInternal(0)})"
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case ArrayLength(otherArray, _) => array.sameAs(otherArray)
+      case _ => false
+    }
+  }
+
+  override def toZ3AST(solver: Z3Solver): AST = ???
+
+  override def uniqueCopyExpr: BrboExpr = ArrayLength(array)
+
+  override def getFunctionCalls: List[FunctionCallExpr] = array.getFunctionCalls
+
+  override def getUses: Set[Identifier] = array.getUses
+
+  override def getDefs: Set[Identifier] = array.getDefs
+}
+
 case class Addition(left: BrboExpr, right: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT, uuid) {
   assert(left.typ == INT)
   assert(right.typ == INT)

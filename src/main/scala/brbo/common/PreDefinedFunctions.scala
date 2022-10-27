@@ -18,9 +18,11 @@ object PreDefinedFunctions {
        |""".stripMargin
   }
 
-  def createAssert(expression: BrboExpr): FunctionCallExpr = FunctionCallExpr(Assert.internalRepresentation.identifier, List(expression), BOOL)
+  def createAssert(expression: BrboExpr): FunctionCallExpr =
+    FunctionCallExpr(Assert.internalRepresentation.identifier, List(expression), BOOL)
 
-  def createAssume(expression: BrboExpr): FunctionCallExpr = FunctionCallExpr(Assume.internalRepresentation.identifier, List(expression), BOOL)
+  def createAssume(expression: BrboExpr): FunctionCallExpr =
+    FunctionCallExpr(Assume.internalRepresentation.identifier, List(expression), BOOL)
 
   class RepresentationNotExist extends Exception
 
@@ -138,6 +140,12 @@ object PreDefinedFunctions {
     override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
   }
 
+  object UpperBound extends PreDefinedFunction("upperBound") {
+    override def cRepresentation: String = throw new RepresentationNotExist
+
+    override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
+  }
+
   object Uninitialize extends PreDefinedFunction("uninitialized") {
     override def cRepresentation: String = throw new RepresentationNotExist
 
@@ -168,10 +176,20 @@ object PreDefinedFunctions {
     override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
   }
 
+  object ArraySum extends PreDefinedFunction("arraySum") {
+    override def cRepresentation: String = throw new RepresentationNotExist
+
+    override def internalRepresentation: BrboFunction = throw new RepresentationNotExist
+  }
+
   val functions: List[PreDefinedFunction] = List(
-    VerifierError, VerifierNondetInt, Abort, Assert, Assume,
-    NdInt, NdInt2, NdInt3, NdBool, BoundAssertion, Uninitialize,
-    Use, Reset, ArrayRead, ArrayLength
+    VerifierError, VerifierNondetInt, Abort, // C functions whose semantics are built into verifiers
+    Assert, Assume,
+    NdInt, NdInt2, NdInt3, NdBool,
+    BoundAssertion, UpperBound,
+    Uninitialize,
+    Use, Reset,
+    ArrayRead, ArrayLength, ArraySum
   )
 
   val functionInternalRepresentations: List[BrboFunction] = {

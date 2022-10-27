@@ -33,13 +33,13 @@ public abstract class Common {
 
     public abstract void boundAssertion(String index, boolean assertion);
 
-    public abstract void upperBound(String index, int bound);
+    public abstract void upperBound(int group, String index, int bound);
 
     public abstract int arrayRead(int[] x, int index);
 
     public abstract int arrayLength(int[] x);
 
-    public abstract int arraySize(int[] x);
+    public abstract int arraySum(int[] x);
 
     public abstract void use(int group, int cost, boolean condition);
 
