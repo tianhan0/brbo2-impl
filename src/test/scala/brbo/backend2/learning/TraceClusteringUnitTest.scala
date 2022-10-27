@@ -36,7 +36,7 @@ class TraceClusteringUnitTest extends AnyFlatSpec {
     TraceClusteringUnitTest.groupSameTraceTests.foreach({
       testCase =>
         val labels = TraceClustering.groupZeroDistanceTraces(traces = testCase.input.asInstanceOf[List[Interpreter.CostTrace]])
-        StringCompare.ignoreWhitespaces(labels, testCase.expectedOutput, s"${testCase.name} failed")
+        StringCompare.ignoreWhitespaces(labels.values, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 

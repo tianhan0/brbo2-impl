@@ -27,16 +27,12 @@ class Driver(arguments: CommandLineArguments, program: BrboProgram) {
     val costTraces: List[CostTrace] = traces.map(t => t.costTrace)
 
     logger.info(s"${STEP_2}Group traces with 0 distance")
-    val groupedCostTraces: Iterable[List[CostTrace]] = TraceClustering.groupZeroDistanceTraces(costTraces)
+    val groupedCostTraces: Map[CostTrace, Set[CostTrace]] = TraceClustering.groupZeroDistanceTraces(costTraces)
     logger.info(s"${STEP_2}Group traces with 0 distance: ${groupedCostTraces.size} groups")
-
-    logger.info(s"${STEP_2}Select representative traces from every group (of 0 distance traces)")
-    val representativeTraces: Map[CostTrace, List[CostTrace]] =
-      TraceClustering.selectRepresentativeCostTraces(groupedCostTraces)
 
     logger.info(s"${STEP_2}Compute a distance matrix")
     val distanceMatrix: List[List[Int]] =
-      TraceClustering.distanceMatrix(representativeTraces.keys.toList, substitutionPenalty = 100)
+      TraceClustering.distanceMatrix(groupedCostTraces.keys.toList, substitutionPenalty = 100)
 
     logger.info(s"${STEP_2}Clustering traces")
     val clusterLabels: List[Int] = TraceClustering.cluster(distanceMatrix, debugMode)

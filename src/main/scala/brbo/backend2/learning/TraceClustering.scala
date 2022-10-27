@@ -2,7 +2,7 @@ package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTrace, Trace}
-import brbo.common.MyLogger
+import brbo.common.{DisjointSet, MyLogger}
 import org.apache.commons.io.IOUtils
 import org.jgrapht.alg.util.UnionFind
 import play.api.libs.json.Json
@@ -54,45 +54,27 @@ object TraceClustering {
     }
   }
 
-  def groupZeroDistanceTraces(traces: List[CostTrace]): Iterable[List[CostTrace]] = {
-    val unionFind = new UnionFind(traces.toSet.asJava)
-    traces.foreach({
-      left =>
-        traces.foreach({
-          right =>
-            val leftRepresentative = unionFind.find(left)
-            val rightRepresentative = unionFind.find(right)
-            if (!unionFind.inSameSet(left, right) &&
-              distance(leftRepresentative, rightRepresentative, substitutionPenalty = 1) == 0)
-              unionFind.union(left, right)
-        })
-    })
-    var map = Map[CostTrace, List[CostTrace]]()
-    traces.foreach({
-      trace =>
-        val representative = unionFind.find(trace)
-        map.get(representative) match {
-          case Some(list) => map = map + (representative -> (trace :: list))
-          case None => map = map + (representative -> List(trace))
-        }
-    })
-    map.values
-  }
+  def groupZeroDistanceTraces(traces: List[CostTrace]): Map[CostTrace, Set[CostTrace]] = {
+    val disjointSet = new DisjointSet[CostTrace](
+      (left, right) => distance(left, right, substitutionPenalty = 1) == 0,
+      betterRepresentative
+    )
+    traces.foreach(t => disjointSet.add(t))
 
-  def selectRepresentativeCostTraces(traces: Iterable[List[CostTrace]]): Map[CostTrace, List[CostTrace]] = {
-    traces.map({
-      list => (selectRepresentativeCostTrace(list), list)
-    }).toMap
+    disjointSet.getMap
   }
 
   def selectRepresentativeCostTrace(traces: List[CostTrace]): CostTrace = {
     traces.sortWith({
-      case (left, right) =>
-        val (diff1, diff2) = distanceInternal(left, right)
-        // If left is {x, y} and right is {y, z, w}, then right is a better candidate because its decomposition
-        // is more easily applicable to left, by treating x as z (or w)
-        diff1.size < diff2.size
-    }).last
+      case (left, right) => betterRepresentative(left, right)
+    }).head
+  }
+
+  private def betterRepresentative(left: CostTrace, right: CostTrace): Boolean = {
+    val (diff1, diff2) = distanceInternal(left, right)
+    // If left is {x, y} and right is {y, z, w}, then right is a better representative because its decomposition
+    // is more easily applicable to left, by treating x as z (or w)
+    diff1.size >= diff2.size
   }
 
   def selectRepresentativeTrace(traces: List[Trace]): Trace = {

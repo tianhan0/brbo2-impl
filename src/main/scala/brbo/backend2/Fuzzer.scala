@@ -32,7 +32,7 @@ object Fuzzer {
   }
 
   def fuzz(brboProgram: BrboProgram, debugMode: Boolean): List[Interpreter.Trace] = {
-    val FUZZING = "Fuzzing: "
+    val FUZZING = s"Fuzzing program ${brboProgram.name}: "
     val interpreter = new Interpreter(brboProgram, debugMode)
     val inputs = MathUtils.crossJoin(brboProgram.mainFunction.parameters.map({
       case Identifier(_, typ, _) => randomValues(typ, maxArrayLength = 10, maxInteger = 1000, possibilities = 5)
@@ -40,7 +40,7 @@ object Fuzzer {
     logger.info(s"${FUZZING}Generated `${inputs.size}` inputs")
     inputs.zipWithIndex.map({
       case (inputValues, index) =>
-        if (index % 1000 == 0) {
+        if (index % 10000 == 0) {
           val percentage = StringFormatUtils.float(index.toDouble / inputs.size * 100, digit = 2)
           logger.info(s"$FUZZING$index / ${inputs.size} ($percentage%)")
         }
