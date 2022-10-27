@@ -3,6 +3,7 @@ package brbo.backend2.learning
 import brbo.backend2.interpreter.Interpreter
 import brbo.common.MyLogger
 import org.apache.commons.io.IOUtils
+import org.jgrapht.alg.util.UnionFind
 import play.api.libs.json.Json
 
 import java.io.{File, PrintWriter}
@@ -20,6 +21,30 @@ object TraceClustering {
   }
   private val CLUSTER_SCRIPT = s"clustering.py"
 
+  def groupSameTraces(traces: List[Interpreter.CostTrace]): Iterable[List[Interpreter.CostTrace]] = {
+    val unionFind = new UnionFind(traces.toSet.asJava)
+    traces.foreach({
+      left => traces.foreach({
+        right =>
+          val leftRepresentative = unionFind.find(left)
+          val rightRepresentative = unionFind.find(right)
+          if (!unionFind.inSameSet(left, right) &&
+            distance(leftRepresentative, rightRepresentative, substitutionPenalty = 1) == 0)
+            unionFind.union(left, right)
+      })
+    })
+    var map = Map[Interpreter.CostTrace, List[Interpreter.CostTrace]]()
+    traces.foreach({
+      trace =>
+        val representative = unionFind.find(trace)
+        map.get(representative) match {
+          case Some(list) => map = map + (representative -> (trace :: list))
+          case None => map = map + (representative -> List(trace))
+        }
+    })
+    map.values
+  }
+
   def distanceMatrix(traces: List[Interpreter.CostTrace], substitutionPenalty: Int): List[List[Int]] = {
     traces.map({
       left =>
@@ -36,6 +61,7 @@ object TraceClustering {
 
   def cluster(matrix: List[List[Int]]): List[Int] = {
     val inputFilePath = Files.createTempFile("", ".json").toAbsolutePath.toString
+    logger.info(s"Write data into $inputFilePath")
     new PrintWriter(inputFilePath) {
       write(matrixToJson(matrix))
       close()
@@ -48,7 +74,8 @@ object TraceClustering {
       .redirectErrorStream(true)
     logger.info(s"Run python cluster script via `$command`")
     val process: java.lang.Process = processBuilder.start()
-    if (process.waitFor(Duration(10, SECONDS).toSeconds, TimeUnit.SECONDS)) {
+    if (process.waitFor(Duration(30, SECONDS).toSeconds, TimeUnit.SECONDS)) {
+      logger.info(s"Read labels from ${outputFile.toAbsolutePath}")
       val outputFileContents = Files.readString(outputFile)
       val parsed = Json.parse(outputFileContents)
       parsed("labels").as[List[Int]]
