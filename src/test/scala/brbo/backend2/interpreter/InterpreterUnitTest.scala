@@ -44,7 +44,7 @@ class InterpreterUnitTest extends AnyFlatSpec {
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
         val interpreter = new Interpreter(targetProgram.program, debugMode = false)
         val exitState = interpreter.execute(Nil)
-        StringCompare.ignoreWhitespaces(exitState.trace.costTrace.toString, testCase.expectedOutput, s"${testCase.name} failed")
+        StringCompare.ignoreWhitespaces(exitState.trace.costTrace.print(), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }

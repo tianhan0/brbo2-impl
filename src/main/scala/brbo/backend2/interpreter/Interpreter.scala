@@ -1,9 +1,9 @@
 package brbo.backend2.interpreter
 
 import brbo.backend2.interpreter.Interpreter._
-import brbo.common.{MyLogger, PreDefinedFunctions}
 import brbo.common.ast.BrboAstUtils.{immediateOuterLoop, immediateParentStatements, nextAst}
 import brbo.common.ast._
+import brbo.common.{MyLogger, PreDefinedFunctions, Print}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.HashMap
@@ -415,7 +415,7 @@ object Interpreter {
 
     override def toString: String = {
       val values = map.map({
-        case (identifier, value) => s"$identifier -> $value"
+        case (identifier, value) => s"$identifier -> ${value.printToIR()}"
       }).toList.sorted.mkString(", ")
       s"Store: ($values)"
     }
@@ -482,7 +482,7 @@ object Interpreter {
    * @param store          The current store
    * @param lastTransition The last transition that was evaluated
    */
-  case class TraceNode(store: Store, lastTransition: Option[Transition]) {
+  case class TraceNode(store: Store, lastTransition: Option[Transition]) extends Print {
     lastTransition match {
       case Some(transition) =>
         transition.command match {
@@ -492,7 +492,7 @@ object Interpreter {
       case None =>
     }
 
-    override def toString: String = {
+    override def print(): String = {
       lastTransition match {
         case Some(lastTransition) =>
           s"${lastTransition.toString} ==> ${store.toString}"
@@ -501,7 +501,7 @@ object Interpreter {
     }
   }
 
-  case class Trace(nodes: List[TraceNode]) {
+  case class Trace(nodes: List[TraceNode]) extends Print {
     val costTrace: CostTrace = {
       val useNodes = nodes.foldLeft(Nil: List[CostTraceNode])({
         case (soFar, node) => node.lastTransition match {
@@ -519,37 +519,37 @@ object Interpreter {
 
     def add(node: TraceNode): Trace = Trace(nodes :+ node)
 
-    override def toString: String = {
+    override def print(): String = {
       val prefix = "Trace: "
       val linePrefix: String = " " * prefix.length
-      val string = printNodes(nodes.map(n => s"[${n.toString}]"), 1, linePrefix, "==>")
+      val string = printNodes(nodes.map(n => s"[${n.print()}]"), 1, linePrefix, "==>")
       s"$prefix$string"
     }
   }
 
   object EmptyTrace extends Trace(Nil) {
-    override def toString: String = "EmptyTrace"
+    override def print(): String = "EmptyTrace"
   }
 
-  abstract class CostTraceNode
+  abstract class CostTraceNode extends Print
 
   case class UseNode(use: Use, cost: Int) extends CostTraceNode {
-    override def toString: String = {
+    override def print(): String = {
       s"${use.printToIR()} (cost=$cost)"
     }
   }
 
   case class ResetNode(reset: Reset) extends CostTraceNode {
-    override def toString: String = {
+    override def print(): String = {
       s"${reset.printToIR()}"
     }
   }
 
-  case class CostTrace(nodes: List[CostTraceNode]) {
-    override def toString: String = {
+  case class CostTrace(nodes: List[CostTraceNode]) extends Print {
+    override def print(): String = {
       val prefix = "Use Trace: "
       val linePrefix: String = " " * prefix.length
-      val string = printNodes(nodes.map(n => n.toString), 1, linePrefix, "->")
+      val string = printNodes(nodes.map(n => n.print()), 1, linePrefix, "->")
       s"$prefix$string"
     }
   }
@@ -557,11 +557,15 @@ object Interpreter {
   def printState(state: State): String = {
     state match {
       case state: InitialState =>
-        s"${InitialState.getClass.getSimpleName}\nCommand: ${state.ast}\n${state.store}\n${state.trace.toString}"
+        s"${InitialState.getClass.getSimpleName}\nCommand: ${state.ast}\n${state.store}\n${state.trace.print()}"
       case state: GoodState =>
-        s"${GoodState.getClass.getSimpleName}\nValue: ${state.value}\n${state.store}\n${state.trace.toString}"
+        val valueString = state.value match {
+          case Some(value) => s"Some(${value.printToIR()})"
+          case None => "None"
+        }
+        s"${GoodState.getClass.getSimpleName}\nValue: $valueString\n${state.store}\n${state.trace.print()}"
       case state: JumpState =>
-        s"${JumpState.getClass.getSimpleName}\n${state.store}\n${state.trace.toString}"
+        s"${JumpState.getClass.getSimpleName}\n${state.store}\n${state.trace.print()}"
       case _ => throw new Exception
     }
   }

@@ -35,8 +35,9 @@ class TraceClusteringUnitTest extends AnyFlatSpec {
   "Grouping same traces" should "be correct" in {
     TraceClusteringUnitTest.groupSameTraceTests.foreach({
       testCase =>
-        val labels = TraceClustering.groupZeroDistanceTraces(traces = testCase.input.asInstanceOf[List[Interpreter.CostTrace]])
-        StringCompare.ignoreWhitespaces(labels.values, testCase.expectedOutput, s"${testCase.name} failed")
+        val clusters = TraceClustering.groupZeroDistanceTraces(traces = testCase.input.asInstanceOf[List[Interpreter.CostTrace]])
+        val string = clusters.values.map(set => set.map(t => t.print()).toList.sorted)
+        StringCompare.ignoreWhitespaces(string, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 
@@ -44,7 +45,7 @@ class TraceClusteringUnitTest extends AnyFlatSpec {
     TraceClusteringUnitTest.selectRepresentativeTraceTests.foreach({
       testCase =>
         val representative = TraceClustering.selectRepresentativeCostTrace(testCase.input.asInstanceOf[List[Interpreter.CostTrace]])
-        StringCompare.ignoreWhitespaces(representative.toString, testCase.expectedOutput, s"${testCase.name} failed")
+        StringCompare.ignoreWhitespaces(representative.print(), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }
@@ -91,11 +92,11 @@ object TraceClusteringUnitTest {
   val groupSameTraceTests: List[TestCase] = List(
     TestCase("traces1", traceList1,
       """List(Use Trace: use R1 1 (cost=1)
+        |           use R1 1 (cost=1)
+        |           use R1 2 (cost=2), Use Trace: use R1 1 (cost=1)
         |           use R1 2 (cost=2)
         |           use R1 1 (cost=1)
-        |           reset R2, Use Trace: use R1 1 (cost=1)
-        |           use R1 1 (cost=1)
-        |           use R1 2 (cost=2))""".stripMargin),
+        |           reset R2)""".stripMargin),
     TestCase("traces2", traceList2,
       """List(Use Trace: use R1 1 (cost=1)
         |           use R1 1 (cost=1)
@@ -144,11 +145,11 @@ object TraceClusteringUnitTest {
     TestCase("traces8", traceList8,
       """List(Use Trace: use R1 1 (cost=1)
         |           use R1 2 (cost=2)
-        |           use R1 3 (cost=3)
-        |           use R1 3 (cost=3)
-        |           use R1 4 (cost=4), Use Trace: use R1 1 (cost=1)
+        |           use R1 3 (cost=3), Use Trace: use R1 1 (cost=1)
         |           use R1 2 (cost=2)
-        |           use R1 3 (cost=3))""".stripMargin),
+        |           use R1 3 (cost=3)
+        |           use R1 3 (cost=3)
+        |           use R1 4 (cost=4))""".stripMargin),
     TestCase("traces9", traceList9,
       """List(Use Trace: use R1 1 (cost=1)
         |           reset R2, Use Trace: use R1 1 (cost=1)
@@ -163,7 +164,6 @@ object TraceClusteringUnitTest {
         |           use R1 4 (cost=4))""".stripMargin),
     TestCase("traces11", traceList11,
       """List(Use Trace: use R1 1 (cost=1)
-        |           reset R2, Use Trace: use R1 1 (cost=1)
         |           reset R2)""".stripMargin),
   )
 

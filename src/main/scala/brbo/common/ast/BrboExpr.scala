@@ -9,7 +9,6 @@ import java.util.UUID
 
 abstract class BrboExpr(val typ: BrboType.T, uuid: UUID) extends Command(uuid)
   with GetFunctionCalls with Z3AST with UseDefVariables with UniqueCopy {
-  override def toString: String = printToCInternal(0)
 
   def printNoOuterBrackets: String = {
     val string = printToCInternal(0)
