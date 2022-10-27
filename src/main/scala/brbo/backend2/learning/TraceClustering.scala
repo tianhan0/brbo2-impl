@@ -21,7 +21,38 @@ object TraceClustering {
   }
   private val CLUSTER_SCRIPT = s"clustering.py"
 
-  def groupSameTraces(traces: List[CostTrace]): Iterable[List[CostTrace]] = {
+  def cluster(distanceMatrix: List[List[Int]], debugMode: Boolean): List[Int] = {
+    val logger = if (debugMode) MyLogger.commonDebugLogger else MyLogger.commonLogger
+    val inputFilePath = Files.createTempFile("", ".json").toAbsolutePath.toString
+    logger.info(s"Write data into $inputFilePath")
+    new PrintWriter(inputFilePath) {
+      val inputFileContent: String = matrixToJsonString(distanceMatrix)
+      logger.traceOrError(s"Input file content: $inputFileContent")
+      write(inputFileContent)
+      close()
+    }
+    val outputFile = Files.createTempFile("", ".json")
+
+    val command = s"python3 $CLUSTER_SCRIPT --input=$inputFilePath --output=$outputFile"
+    val processBuilder: java.lang.ProcessBuilder = new java.lang.ProcessBuilder(command.split(" ").toList.asJava)
+      .directory(new java.io.File(CLUSTER_SCRIPT_DIRECTORY))
+      .redirectErrorStream(true)
+    logger.info(s"Run python cluster script via `$command`")
+    val process: java.lang.Process = processBuilder.start()
+    if (process.waitFor(Duration(30, SECONDS).toSeconds, TimeUnit.SECONDS) && process.exitValue() == 0) {
+      logger.info(s"Read labels from ${outputFile.toAbsolutePath}")
+      val outputFileContents = Files.readString(outputFile)
+      logger.traceOrError(s"Output file content: $outputFileContents")
+      val parsed = Json.parse(outputFileContents)
+      parsed("labels").as[List[Int]]
+    }
+    else {
+      val stdout = IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
+      throw new Exception(s"Failed to execute $CLUSTER_SCRIPT. stdout: $stdout")
+    }
+  }
+
+  def groupZeroDistanceTraces(traces: List[CostTrace]): Iterable[List[CostTrace]] = {
     val unionFind = new UnionFind(traces.toSet.asJava)
     traces.foreach({
       left =>
@@ -48,10 +79,18 @@ object TraceClustering {
 
   def selectRepresentativeTraces(traces: Iterable[List[CostTrace]]): Map[CostTrace, List[CostTrace]] = {
     traces.map({
-      list =>
-        // TODO: Carefully choose the representative trace
-        (list.head, list)
+      list => (selectRepresentativeTrace(list), list)
     }).toMap
+  }
+
+  def selectRepresentativeTrace(traces: List[CostTrace]): CostTrace = {
+    traces.sortWith({
+      case (left, right) =>
+        val (diff1, diff2) = distanceInternal(left, right)
+        // If left is {x, y} and right is {y, z, w}, then right is a better candidate because its decomposition
+        // is more easily applicable to left, by treating x as z (or w)
+        diff1.size < diff2.size
+    }).last
   }
 
   def distanceMatrix(traces: List[CostTrace], substitutionPenalty: Int): List[List[Int]] = {
@@ -63,50 +102,17 @@ object TraceClustering {
     })
   }
 
-  def matrixToJson(distanceMatrix: List[List[Int]]): String = {
+  def matrixToJsonString(distanceMatrix: List[List[Int]]): String = {
     val jsonObject = Json.obj(("data", distanceMatrix))
     jsonObject.toString()
   }
 
-  def cluster(matrix: List[List[Int]], debugMode: Boolean): List[Int] = {
-    val logger = MyLogger.createLogger(TraceClustering.getClass, debugMode)
-    val inputFilePath = Files.createTempFile("", ".json").toAbsolutePath.toString
-    logger.info(s"Write data into $inputFilePath")
-    new PrintWriter(inputFilePath) {
-      val inputFileContent: String = matrixToJson(matrix)
-      logger.traceOrError(s"Input file content: $inputFileContent")
-      write(inputFileContent)
-      close()
-    }
-    val outputFile = Files.createTempFile("", ".json")
-
-    val command = s"python3 $CLUSTER_SCRIPT --input=$inputFilePath --output=$outputFile"
-    val processBuilder: java.lang.ProcessBuilder = new java.lang.ProcessBuilder(command.split(" ").toList.asJava)
-      .directory(new java.io.File(CLUSTER_SCRIPT_DIRECTORY))
-      .redirectErrorStream(true)
-    logger.info(s"Run python cluster script via `$command`")
-    val process: java.lang.Process = processBuilder.start()
-    if (process.waitFor(Duration(30, SECONDS).toSeconds, TimeUnit.SECONDS)) {
-      logger.info(s"Read labels from ${outputFile.toAbsolutePath}")
-      val outputFileContents = Files.readString(outputFile)
-      logger.traceOrError(s"Output file content: $outputFileContents")
-      val parsed = Json.parse(outputFileContents)
-      parsed("labels").as[List[Int]]
-    }
-    else {
-      val stdout = {
-        try {
-          IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
-        }
-        catch {
-          case _: Exception => "stdout is empty (Since the process timed out)"
-        }
-      }
-      throw new Exception(s"$CLUSTER_SCRIPT timed out. stdout: $stdout")
-    }
+  private def distance(left: CostTrace, right: CostTrace, substitutionPenalty: Int): Int = {
+    val (diff1, diff2) = distanceInternal(left, right)
+    Math.min(diff1.size, diff2.size) * substitutionPenalty
   }
 
-  private def distance(left: CostTrace, right: CostTrace, substitutionPenalty: Int): Int = {
+  private def distanceInternal(left: CostTrace, right: CostTrace): (Set[String], Set[String]) = {
     // Since permuting a trace has no cost, we eliminate the orders from traces
     val leftCostTrace: Set[String] = costTraceToSet(left)
     val rightCostTrace: Set[String] = costTraceToSet(right)
@@ -116,7 +122,7 @@ object TraceClustering {
     val diff2 = rightCostTrace.diff(leftCostTrace)
     // For uncommon elements (e.g., {x, y} and {a, b, c}), we first substitute (e.g., x becomes a and y becomes c)
     // and then insert (e.g., insert c)
-    Math.min(diff1.size, diff2.size) * substitutionPenalty
+    (diff1, diff2)
   }
 
   private def costTraceToSet(trace: CostTrace): Set[String] = {

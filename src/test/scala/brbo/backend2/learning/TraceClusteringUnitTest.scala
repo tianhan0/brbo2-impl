@@ -19,7 +19,7 @@ class TraceClusteringUnitTest extends AnyFlatSpec {
   "Writing matrices into JSON" should "be correct" in {
     TraceClusteringUnitTest.jsonWriteTests.foreach({
       testCase =>
-        val json = TraceClustering.matrixToJson(testCase.input.asInstanceOf[List[List[Int]]])
+        val json = TraceClustering.matrixToJsonString(testCase.input.asInstanceOf[List[List[Int]]])
         StringCompare.ignoreWhitespaces(json, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
@@ -35,8 +35,16 @@ class TraceClusteringUnitTest extends AnyFlatSpec {
   "Grouping same traces" should "be correct" in {
     TraceClusteringUnitTest.groupSameTraceTests.foreach({
       testCase =>
-        val labels = TraceClustering.groupSameTraces(traces = testCase.input.asInstanceOf[List[Interpreter.CostTrace]])
+        val labels = TraceClustering.groupZeroDistanceTraces(traces = testCase.input.asInstanceOf[List[Interpreter.CostTrace]])
         StringCompare.ignoreWhitespaces(labels, testCase.expectedOutput, s"${testCase.name} failed")
+    })
+  }
+
+  "Selecting representative traces" should "be correct" in {
+    TraceClusteringUnitTest.selectRepresentativeTraceTests.foreach({
+      testCase =>
+        val representative = TraceClustering.selectRepresentativeTrace(testCase.input.asInstanceOf[List[Interpreter.CostTrace]])
+        StringCompare.ignoreWhitespaces(representative.toString, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }
@@ -169,5 +177,63 @@ object TraceClusteringUnitTest {
     List(TestCase("matrix1", matrix1,
       """0
         |0""".stripMargin))
+  }
+
+  val selectRepresentativeTraceTests: List[TestCase] = {
+    List(
+      TestCase("traceList1", traceList1,
+        """Use Trace: use R1 1 (cost=1)
+          |           use R1 2 (cost=2)
+          |           use R1 1 (cost=1)
+          |           reset R2""".stripMargin),
+      TestCase("traceList2", traceList2,
+        """Use Trace: use R1 1 (cost=1)
+          |           use R1 2 (cost=2)
+          |           use R1 3 (cost=3)""".stripMargin),
+      TestCase("traceList3", traceList3,
+        """Use Trace: use R1 1 (cost=1)
+          |           use R1 2 (cost=2)
+          |           use R1 3 (cost=3)
+          |           use R1 3 (cost=3)
+          |           use R1 4 (cost=4)""".stripMargin),
+      TestCase("traceList4", traceList4,
+        """Use Trace: use R1 1 (cost=1)
+          |           use R1 1 (cost=1)
+          |           use R1 2 (cost=2)""".stripMargin),
+      TestCase("traceList5", traceList5,
+        """Use Trace: use R1 1 (cost=1)
+          |           use R1 2 (cost=2)
+          |           use R1 3 (cost=3)""".stripMargin),
+      TestCase("traceList6", traceList6,
+        """Use Trace: use R1 1 (cost=1)
+          |           use R1 2 (cost=2)
+          |           use R1 3 (cost=3)
+          |           use R1 3 (cost=3)
+          |           use R1 4 (cost=4)""".stripMargin),
+      TestCase("traceList7", traceList7,
+        """Use Trace: use R1 1 (cost=1)
+          |           use R1 2 (cost=2)
+          |           use R1 1 (cost=1)
+          |           reset R2""".stripMargin),
+      TestCase("traceList8", traceList8,
+        """Use Trace: use R1 1 (cost=1)
+          |           use R1 2 (cost=2)
+          |           use R1 3 (cost=3)
+          |           use R1 3 (cost=3)
+          |           use R1 4 (cost=4)""".stripMargin),
+      TestCase("traceList9", traceList9,
+        """Use Trace: use R1 1 (cost=1)
+          |           use R1 2 (cost=2)
+          |           use R1 3 (cost=3)""".stripMargin),
+      TestCase("traceList10", traceList10,
+        """Use Trace: use R1 1 (cost=1)
+          |           use R1 2 (cost=2)
+          |           use R1 3 (cost=3)
+          |           use R1 3 (cost=3)
+          |           use R1 4 (cost=4)""".stripMargin),
+      TestCase("traceList11", traceList11,
+        """Use Trace: use R1 1 (cost=1)
+          |           reset R2""".stripMargin),
+    )
   }
 }
