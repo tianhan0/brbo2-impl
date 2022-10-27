@@ -1,6 +1,7 @@
 package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
+import brbo.backend2.interpreter.Interpreter.CostTrace
 import brbo.common.MyLogger
 import org.apache.commons.io.IOUtils
 import org.jgrapht.alg.util.UnionFind
@@ -14,26 +15,26 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, SECONDS}
 
 object TraceClustering {
-  private val logger = MyLogger.createLogger(TraceClustering.getClass, debugMode = false)
   private val CLUSTER_SCRIPT_DIRECTORY = {
     val separator = File.separator
     s"${System.getProperty("user.dir")}${separator}src${separator}main${separator}python"
   }
   private val CLUSTER_SCRIPT = s"clustering.py"
 
-  def groupSameTraces(traces: List[Interpreter.CostTrace]): Iterable[List[Interpreter.CostTrace]] = {
+  def groupSameTraces(traces: List[CostTrace]): Iterable[List[CostTrace]] = {
     val unionFind = new UnionFind(traces.toSet.asJava)
     traces.foreach({
-      left => traces.foreach({
-        right =>
-          val leftRepresentative = unionFind.find(left)
-          val rightRepresentative = unionFind.find(right)
-          if (!unionFind.inSameSet(left, right) &&
-            distance(leftRepresentative, rightRepresentative, substitutionPenalty = 1) == 0)
-            unionFind.union(left, right)
-      })
+      left =>
+        traces.foreach({
+          right =>
+            val leftRepresentative = unionFind.find(left)
+            val rightRepresentative = unionFind.find(right)
+            if (!unionFind.inSameSet(left, right) &&
+              distance(leftRepresentative, rightRepresentative, substitutionPenalty = 1) == 0)
+              unionFind.union(left, right)
+        })
     })
-    var map = Map[Interpreter.CostTrace, List[Interpreter.CostTrace]]()
+    var map = Map[CostTrace, List[CostTrace]]()
     traces.foreach({
       trace =>
         val representative = unionFind.find(trace)
@@ -45,7 +46,15 @@ object TraceClustering {
     map.values
   }
 
-  def distanceMatrix(traces: List[Interpreter.CostTrace], substitutionPenalty: Int): List[List[Int]] = {
+  def selectRepresentativeTraces(traces: Iterable[List[CostTrace]]): Map[CostTrace, List[CostTrace]] = {
+    traces.map({
+      list =>
+        // TODO: Carefully choose the representative trace
+        (list.head, list)
+    }).toMap
+  }
+
+  def distanceMatrix(traces: List[CostTrace], substitutionPenalty: Int): List[List[Int]] = {
     traces.map({
       left =>
         traces.map({
@@ -59,11 +68,14 @@ object TraceClustering {
     jsonObject.toString()
   }
 
-  def cluster(matrix: List[List[Int]]): List[Int] = {
+  def cluster(matrix: List[List[Int]], debugMode: Boolean): List[Int] = {
+    val logger = MyLogger.createLogger(TraceClustering.getClass, debugMode)
     val inputFilePath = Files.createTempFile("", ".json").toAbsolutePath.toString
     logger.info(s"Write data into $inputFilePath")
     new PrintWriter(inputFilePath) {
-      write(matrixToJson(matrix))
+      val inputFileContent: String = matrixToJson(matrix)
+      logger.traceOrError(s"Input file content: $inputFileContent")
+      write(inputFileContent)
       close()
     }
     val outputFile = Files.createTempFile("", ".json")
@@ -77,6 +89,7 @@ object TraceClustering {
     if (process.waitFor(Duration(30, SECONDS).toSeconds, TimeUnit.SECONDS)) {
       logger.info(s"Read labels from ${outputFile.toAbsolutePath}")
       val outputFileContents = Files.readString(outputFile)
+      logger.traceOrError(s"Output file content: $outputFileContents")
       val parsed = Json.parse(outputFileContents)
       parsed("labels").as[List[Int]]
     }
@@ -93,7 +106,7 @@ object TraceClustering {
     }
   }
 
-  private def distance(left: Interpreter.CostTrace, right: Interpreter.CostTrace, substitutionPenalty: Int): Int = {
+  private def distance(left: CostTrace, right: CostTrace, substitutionPenalty: Int): Int = {
     // Since permuting a trace has no cost, we eliminate the orders from traces
     val leftCostTrace: Set[String] = costTraceToSet(left)
     val rightCostTrace: Set[String] = costTraceToSet(right)
@@ -106,7 +119,7 @@ object TraceClustering {
     Math.min(diff1.size, diff2.size) * substitutionPenalty
   }
 
-  private def costTraceToSet(trace: Interpreter.CostTrace): Set[String] = {
+  private def costTraceToSet(trace: CostTrace): Set[String] = {
     trace.nodes.foldLeft(Set(): Set[String])({
       case (soFar, node) => node match {
         case Interpreter.UseNode(use, _) => soFar + s"${use.printToIR()}${use.uuid}"

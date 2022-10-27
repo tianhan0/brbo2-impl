@@ -27,7 +27,7 @@ class TraceClusteringUnitTest extends AnyFlatSpec {
   "Clustering a distance matrix" should "work" in {
     TraceClusteringUnitTest.clusterTests.foreach({
       testCase =>
-        val labels = TraceClustering.cluster(testCase.input.asInstanceOf[List[List[Int]]])
+        val labels = TraceClustering.cluster(testCase.input.asInstanceOf[List[List[Int]]], debugMode = false)
         StringCompare.ignoreWhitespaces(labels, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
