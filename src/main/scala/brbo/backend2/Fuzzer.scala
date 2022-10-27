@@ -2,6 +2,7 @@ package brbo.backend2
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.common.ast.{Bool, BrboArray, BrboProgram, BrboValue, Identifier, Number}
+import brbo.common.string.StringFormatUtils
 import brbo.common.{BrboType, MathUtils, MyLogger}
 
 object Fuzzer {
@@ -31,13 +32,18 @@ object Fuzzer {
   }
 
   def fuzz(brboProgram: BrboProgram, debugMode: Boolean): List[Interpreter.Trace] = {
+    val FUZZING = "Fuzzing: "
     val interpreter = new Interpreter(brboProgram, debugMode)
     val inputs = MathUtils.crossJoin(brboProgram.mainFunction.parameters.map({
       case Identifier(_, typ, _) => randomValues(typ, maxArrayLength = 10, maxInteger = 1000, possibilities = 5)
     }))
-    logger.info(s"Generated `${inputs.size}` inputs")
-    inputs.map({
-      inputValues =>
+    logger.info(s"${FUZZING}Generated `${inputs.size}` inputs")
+    inputs.zipWithIndex.map({
+      case (inputValues, index) =>
+        if (index % 1000 == 0) {
+          val percentage = StringFormatUtils.float(index.toDouble / inputs.size * 100, digit = 2)
+          logger.info(s"$FUZZING$index / ${inputs.size} ($percentage%)")
+        }
         val endState = interpreter.execute(inputValues)
         endState.trace
     })

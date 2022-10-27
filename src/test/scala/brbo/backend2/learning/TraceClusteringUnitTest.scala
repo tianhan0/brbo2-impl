@@ -43,7 +43,7 @@ class TraceClusteringUnitTest extends AnyFlatSpec {
   "Selecting representative traces" should "be correct" in {
     TraceClusteringUnitTest.selectRepresentativeTraceTests.foreach({
       testCase =>
-        val representative = TraceClustering.selectRepresentativeTrace(testCase.input.asInstanceOf[List[Interpreter.CostTrace]])
+        val representative = TraceClustering.selectRepresentativeCostTrace(testCase.input.asInstanceOf[List[Interpreter.CostTrace]])
         StringCompare.ignoreWhitespaces(representative.toString, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }

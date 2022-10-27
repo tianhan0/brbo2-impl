@@ -1,7 +1,7 @@
 package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
-import brbo.backend2.interpreter.Interpreter.CostTrace
+import brbo.backend2.interpreter.Interpreter.{CostTrace, Trace}
 import brbo.common.MyLogger
 import org.apache.commons.io.IOUtils
 import org.jgrapht.alg.util.UnionFind
@@ -48,7 +48,9 @@ object TraceClustering {
     }
     else {
       val stdout = IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
-      throw new Exception(s"Failed to execute $CLUSTER_SCRIPT. stdout: $stdout")
+      logger.fatal(s"Failed to execute $CLUSTER_SCRIPT. stdout: $stdout")
+      logger.fatal(s"Letting all elements have the same label")
+      List.fill(distanceMatrix.length)(0)
     }
   }
 
@@ -77,13 +79,13 @@ object TraceClustering {
     map.values
   }
 
-  def selectRepresentativeTraces(traces: Iterable[List[CostTrace]]): Map[CostTrace, List[CostTrace]] = {
+  def selectRepresentativeCostTraces(traces: Iterable[List[CostTrace]]): Map[CostTrace, List[CostTrace]] = {
     traces.map({
-      list => (selectRepresentativeTrace(list), list)
+      list => (selectRepresentativeCostTrace(list), list)
     }).toMap
   }
 
-  def selectRepresentativeTrace(traces: List[CostTrace]): CostTrace = {
+  def selectRepresentativeCostTrace(traces: List[CostTrace]): CostTrace = {
     traces.sortWith({
       case (left, right) =>
         val (diff1, diff2) = distanceInternal(left, right)
@@ -91,6 +93,11 @@ object TraceClustering {
         // is more easily applicable to left, by treating x as z (or w)
         diff1.size < diff2.size
     }).last
+  }
+
+  def selectRepresentativeTrace(traces: List[Trace]): Trace = {
+    val selectedCostTrace = selectRepresentativeCostTrace(traces.map(t => t.costTrace))
+    traces.find(t => t.costTrace == selectedCostTrace).get
   }
 
   def distanceMatrix(traces: List[CostTrace], substitutionPenalty: Int): List[List[Int]] = {

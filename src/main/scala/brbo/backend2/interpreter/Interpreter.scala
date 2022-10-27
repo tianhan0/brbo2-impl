@@ -14,7 +14,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
     (brboProgram.mainFunction :: brboProgram.functions).flatMap(f => immediateParentStatements(f.bodyWithInitialization)).toMap
 
   def execute(inputValues: List[BrboValue]): FlowEndState = {
-    logger.info(s"Execute with inputs: ${inputValues.map(v => v.printToIR())}")
+    logger.traceOrError(s"Execute with inputs: ${inputValues.map(v => v.printToIR())}")
     val state = evaluateFunction(brboProgram.mainFunction, inputValues, EmptyTrace)
     // logger.traceOrError(s"Final state: ${printState(state)}")
     state
