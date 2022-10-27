@@ -5,7 +5,7 @@ import brbo.common.BrboType.{BOOL, INT, VOID}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.string.StringCompare
-import brbo.common.{BrboType, MyLogger, Z3Solver}
+import brbo.common.{BrboType, MyLogger, PreDefinedFunctions, Z3Solver}
 import com.microsoft.z3.{AST, BoolExpr, Expr}
 
 import scala.annotation.tailrec

@@ -1,7 +1,7 @@
 package brbo.common.ast
 
 import brbo.common.BrboType.{ARRAY, BOOL, INT, STRING}
-import brbo.common.{BrboType, Z3Solver}
+import brbo.common.{BrboType, PreDefinedFunctions, Z3Solver}
 import com.microsoft.z3.AST
 
 import java.util.UUID

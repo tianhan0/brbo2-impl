@@ -1,4 +1,4 @@
-package brbo.backend.interpreter
+package brbo.backend2.interpreter
 
 import brbo.TestCase
 import brbo.common.BrboType.INT

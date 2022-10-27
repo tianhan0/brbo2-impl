@@ -1,5 +1,6 @@
 package brbo.backend
 
+import brbo.backend2.Fuzzer
 import brbo.common.BrboType
 import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec

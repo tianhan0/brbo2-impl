@@ -1,6 +1,7 @@
-package brbo.backend.learning
+package brbo.backend2.learning
 
-import brbo.backend.interpreter.Interpreter
+import brbo.backend2.interpreter.Interpreter
+import brbo.common.MyLogger
 import org.apache.commons.io.IOUtils
 import play.api.libs.json.Json
 
@@ -12,6 +13,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, SECONDS}
 
 object TraceClustering {
+  private val logger = MyLogger.createLogger(TraceClustering.getClass, debugMode = false)
   private val CLUSTER_SCRIPT_DIRECTORY = {
     val separator = File.separator
     s"${System.getProperty("user.dir")}${separator}src${separator}main${separator}python"
@@ -33,8 +35,7 @@ object TraceClustering {
   }
 
   def cluster(matrix: List[List[Int]]): List[Int] = {
-    val inputFile = Files.createTempFile("", ".json")
-    val inputFilePath = inputFile.toAbsolutePath.toString
+    val inputFilePath = Files.createTempFile("", ".json").toAbsolutePath.toString
     new PrintWriter(inputFilePath) {
       write(matrixToJson(matrix))
       close()
@@ -45,6 +46,7 @@ object TraceClustering {
     val processBuilder: java.lang.ProcessBuilder = new java.lang.ProcessBuilder(command.split(" ").toList.asJava)
       .directory(new java.io.File(CLUSTER_SCRIPT_DIRECTORY))
       .redirectErrorStream(true)
+    logger.info(s"Run python cluster script via `$command`")
     val process: java.lang.Process = processBuilder.start()
     if (process.waitFor(Duration(10, SECONDS).toSeconds, TimeUnit.SECONDS)) {
       val outputFileContents = Files.readString(outputFile)

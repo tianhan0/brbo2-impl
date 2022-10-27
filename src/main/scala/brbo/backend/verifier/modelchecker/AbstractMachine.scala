@@ -6,11 +6,11 @@ import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.modelchecker.AbstractDomainName._
 import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.backend.verifier.modelchecker.Apron._
-import brbo.common.ast.BrboExprUtils.{imply, greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo}
+import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo, imply, lessThanOrEqualTo}
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 import brbo.common.string.StringFormatUtils
-import brbo.common.{CommandLineArguments, MyLogger, Z3Solver}
+import brbo.common.{CommandLineArguments, MyLogger, PreDefinedFunctions, Z3Solver}
 import com.microsoft.z3.AST
 import org.apache.logging.log4j.LogManager
 

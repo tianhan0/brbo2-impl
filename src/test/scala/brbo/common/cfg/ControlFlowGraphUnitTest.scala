@@ -2,6 +2,7 @@ package brbo.common.cfg
 
 import brbo.TestCase
 import brbo.common.BrboType.{INT, VOID}
+import brbo.common.PreDefinedFunctions
 import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
 import brbo.common.ast._
 import brbo.common.string.StringCompare

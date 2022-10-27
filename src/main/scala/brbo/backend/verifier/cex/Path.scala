@@ -4,7 +4,7 @@ import brbo.backend.refiner.PrintPath
 import brbo.common.BrboType.BOOL
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{GhostVariableUtils, MyLogger}
+import brbo.common.{GhostVariableUtils, MyLogger, PreDefinedFunctions}
 
 case class Path(pathNodes: List[CFGNode]) extends Serializable {
   pathNodes.map(pathNode => pathNode.command).foreach({

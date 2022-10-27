@@ -2,7 +2,7 @@ package brbo.frontend
 
 import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo, notEqual}
 import brbo.common.ast._
-import brbo.common.{BrboType, MyLogger}
+import brbo.common.{BrboType, MyLogger, PreDefinedFunctions}
 import brbo.frontend.JavaTreeUtils.isCommand
 import brbo.frontend.TargetProgram.toBrboFunction
 import com.sun.source.tree.Tree.Kind

@@ -3,7 +3,7 @@ package brbo.backend.verifier
 import brbo.TestCase
 import brbo.backend.verifier.cex.Path
 import brbo.common.BrboType._
-import brbo.common.Z3Solver
+import brbo.common.{PreDefinedFunctions, Z3Solver}
 import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode

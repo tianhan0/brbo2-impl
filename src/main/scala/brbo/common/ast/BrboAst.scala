@@ -2,7 +2,7 @@ package brbo.common.ast
 
 import brbo.common.BrboType._
 import brbo.common.GhostVariableTyp._
-import brbo.common.{BrboType, GhostVariableUtils, SameAs}
+import brbo.common.{BrboType, GhostVariableUtils, PreDefinedFunctions, SameAs}
 
 import java.util.UUID
 

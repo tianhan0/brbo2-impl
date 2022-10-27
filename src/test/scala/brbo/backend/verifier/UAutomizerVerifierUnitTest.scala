@@ -3,7 +3,7 @@ package brbo.backend.verifier
 import brbo.TestCase
 import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.common.BrboType.{INT, VOID}
-import brbo.common.CommandLineArguments
+import brbo.common.{CommandLineArguments, PreDefinedFunctions}
 import brbo.common.CommandLineArguments._
 import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
 import brbo.common.ast._

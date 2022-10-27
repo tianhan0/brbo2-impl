@@ -1,7 +1,8 @@
-package brbo.common.ast
+package brbo.common
 
-import brbo.common.BrboType.{BOOL, INT, VOID}
+import brbo.common.BrboType._
 import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
+import brbo.common.ast._
 import brbo.frontend.TargetProgram
 
 object PreDefinedFunctions {

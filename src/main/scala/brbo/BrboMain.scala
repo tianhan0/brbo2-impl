@@ -19,7 +19,7 @@ object BrboMain {
 
   private val BATCH_SIZE = 100
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val arguments = CommandLineArguments.parseArguments(args)
     val logger = MyLogger.createLogger(BrboMain.getClass, debugMode = arguments.getDebugMode)
     logger.info(s"$TOOL_NAME has started.")
@@ -28,15 +28,15 @@ object BrboMain {
     logger.warn(s"We assume each class contains exactly one method named `${TargetProgram.MAIN_FUNCTION}`")
 
     val sourceFiles: List[(File, String)] = {
-      val file = new java.io.File(arguments.getDirectoryToAnalyze)
-      val allFiles: Array[File] = {
+      val files: Array[File] = {
+        val file = new java.io.File(arguments.getDirectoryToAnalyze)
         if (file.isDirectory) FileUtils.listFiles(file, Array("java"), true).asScala.toArray
         else Array(file)
       }
-      val allJavaFilePaths: List[File] = allFiles.filter(_.getName.endsWith(".java")).toList.sortWith({
+      val javaFilePaths: List[File] = files.filter(_.getName.endsWith(".java")).toList.sortWith({
         case (f1, f2) => f1.getAbsolutePath < f2.getAbsolutePath
       })
-      allJavaFilePaths.map({
+      javaFilePaths.map({
         sourceFileLocation =>
           logger.info(s"Read from source file `$sourceFileLocation`")
           (sourceFileLocation, readFromFile(sourceFileLocation.getAbsolutePath))

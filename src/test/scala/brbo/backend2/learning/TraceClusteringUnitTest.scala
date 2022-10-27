@@ -1,8 +1,8 @@
-package brbo.backend.learning
+package brbo.backend2.learning
 
 import brbo.TestCase
-import brbo.backend.interpreter.Interpreter
-import brbo.backend.interpreter.Interpreter.{ResetNode, UseNode}
+import brbo.backend2.interpreter.Interpreter
+import brbo.backend2.interpreter.Interpreter.{ResetNode, UseNode}
 import brbo.common.ast._
 import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
