@@ -8,11 +8,12 @@ public abstract class TemplateEngine extends Common {
         upperBound(0, "less", MAX * arraySum(text) + MAX);
 
         int i = 0;
-        while (i < arrayLength(text)) {
+        while (i + 1 <= arrayLength(text) - 1) {
             use(0, arrayRead(text, i));
             i++;
             arrayRead(text, i);
             i++;
         }
+        // use(0, arrayRead(text, i));
     }
 }

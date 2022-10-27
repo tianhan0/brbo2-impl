@@ -7,7 +7,7 @@ object StringCompare {
     val result = actual == expected
     if (!result) {
       val lineSeparator = s"$dashes\n"
-      println(s"Error message: $message\nActual:\n$actual\n${lineSeparator}Expected:\n$expected\n$lineSeparator")
+      System.err.println(s"Error message: $message\nActual:\n$actual\n${lineSeparator}Expected:\n$expected\n$lineSeparator")
     }
     result
   }
@@ -16,7 +16,7 @@ object StringCompare {
     val result = actual.replaceAll("(?s)\\s+", " ").trim == expected.replaceAll("(?s)\\s+", " ").trim
     if (!result) {
       val lineSeparator = s"$dashes\n"
-      println(s"Error message: $message\nActual:\n$actual\n${lineSeparator}Expected:\n$expected\n$lineSeparator")
+      System.err.println(s"Error message: $message\nActual:\n$actual\n${lineSeparator}Expected:\n$expected\n$lineSeparator")
     }
     result
   }

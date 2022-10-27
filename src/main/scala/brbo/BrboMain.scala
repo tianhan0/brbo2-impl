@@ -1,6 +1,6 @@
 package brbo
 
-import brbo.backend.driver.Driver
+import brbo.backend2.Driver
 import brbo.common.CommandLineArguments.DEFAULT_ASSERTION_TAG
 import brbo.common.cfg.ControlFlowGraph
 import brbo.common.string.StringFormatUtils

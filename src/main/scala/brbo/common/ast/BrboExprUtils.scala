@@ -83,6 +83,9 @@ object BrboExprUtils {
         arguments.flatMap(a => collectIdentifiers(a)).toSet
       case ITEExpr(condition, thenExpr, elseExpr, _) =>
         collectIdentifiers(condition) ++ collectIdentifiers(thenExpr) ++ collectIdentifiers(elseExpr)
+      case ArrayRead(array, index, _) => collectIdentifiers(array) ++ collectIdentifiers(index)
+      case ArrayLength(array, _) => collectIdentifiers(array)
+      case ArraySum(array, _) => collectIdentifiers(array)
     }
   }
 

@@ -7,11 +7,11 @@ import brbo.common.{BrboType, MathUtils, MyLogger}
 object Fuzzer {
   private val logger = MyLogger.createLogger(Fuzzer.getClass, debugMode = false)
 
-  def randomValues(typ: BrboType.T, maxArrayLength: Int, maxInteger: Int, integerPossibilities: Int): List[BrboValue] = {
+  def randomValues(typ: BrboType.T, maxArrayLength: Int, maxInteger: Int, possibilities: Int): List[BrboValue] = {
     typ match {
       case BrboType.INT =>
         val random = new scala.util.Random
-        Range.inclusive(0, integerPossibilities).toList.map(_ => Number(random.nextInt(maxInteger)))
+        Range.inclusive(0, possibilities).toList.map(_ => Number(random.nextInt(maxInteger)))
       case BrboType.BOOL => List(Bool(b = false), Bool(b = true))
       case BrboType.ARRAY(typ) =>
         typ match {
@@ -21,7 +21,7 @@ object Fuzzer {
                 MathUtils.crossJoin(
                   Range(0, length)
                     .toList
-                    .map({ _ => randomValues(BrboType.INT, maxArrayLength, maxInteger, integerPossibilities) })
+                    .map({ _ => randomValues(BrboType.INT, maxArrayLength, maxInteger, possibilities = 1) })
                 ).map(list => BrboArray(list, BrboType.INT))
             })
           case _ => throw new Exception
@@ -30,11 +30,13 @@ object Fuzzer {
     }
   }
 
-  def fuzz(brboProgram: BrboProgram): List[Interpreter.Trace] = {
-    val interpreter = new Interpreter(brboProgram)
-    MathUtils.crossJoin(brboProgram.mainFunction.parameters.map({
-      case Identifier(_, typ, _) => randomValues(typ, maxArrayLength = 10, maxInteger = 1000, integerPossibilities = 5)
-    })).map({
+  def fuzz(brboProgram: BrboProgram, debugMode: Boolean): List[Interpreter.Trace] = {
+    val interpreter = new Interpreter(brboProgram, debugMode)
+    val inputs = MathUtils.crossJoin(brboProgram.mainFunction.parameters.map({
+      case Identifier(_, typ, _) => randomValues(typ, maxArrayLength = 10, maxInteger = 1000, possibilities = 5)
+    }))
+    logger.info(s"Generated `${inputs.size}` inputs")
+    inputs.map({
       inputValues =>
         val endState = interpreter.execute(inputValues)
         endState.trace
