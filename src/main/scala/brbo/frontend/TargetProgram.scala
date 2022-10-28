@@ -2,7 +2,7 @@ package brbo.frontend
 
 import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo, notEqual}
 import brbo.common.ast._
-import brbo.common.{BrboType, GhostVariableTyp, GhostVariableUtils, MyLogger, PreDefinedFunctions}
+import brbo.common.{GhostVariableTyp, GhostVariableUtils, MyLogger, PreDefinedFunctions}
 import brbo.frontend.JavaTreeUtils.isCommand
 import brbo.frontend.TargetProgram.toBrboFunction
 import com.sun.source.tree.Tree.Kind
@@ -195,7 +195,12 @@ object TargetProgram {
             case _ => throw new Exception(s"Unsupported binary tree: `$tree`")
           }
           Left(result)
-        case tree: ConditionalExpressionTree => throw new Exception(s"Not support conditional expression `$tree`")
+        case tree: ConditionalExpressionTree =>
+          (toAST(tree.getCondition), toAST(tree.getTrueExpression), toAST(tree.getFalseExpression)) match {
+            case (Left(c), Left(t), Left(f)) =>
+              Left(ITEExpr(c, t, f))
+            case _ => throw new Exception
+          }
         case tree: CompoundAssignmentTree =>
           variables.get(tree.getVariable.toString) match {
             case Some(identifier) =>
