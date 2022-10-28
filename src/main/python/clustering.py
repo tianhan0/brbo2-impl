@@ -5,9 +5,17 @@ import json
 
 
 def optics(data, max_eps):
-    clustering = OPTICS(min_samples=2, max_eps=max_eps, metric="precomputed").fit(data)
-    return clustering.labels_
+    clustering = OPTICS(
+        min_samples=2,
+        max_eps=max_eps,
+        metric="precomputed",
+        cluster_method="xi",
+        min_cluster_size=1,
+    ).fit(data)
+    # print(clustering.ordering_)
+    # print(clustering.reachability_[clustering.ordering_])
     # print(clustering.cluster_hierarchy_)
+    return clustering.labels_
 
 
 def k_means(data):
@@ -17,8 +25,12 @@ def k_means(data):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Parse arguments for clustering.")
-    parser.add_argument("--input", type=str, help="The input json file to cluster")
-    parser.add_argument("--output", type=str, help="The output json file")
+    parser.add_argument(
+        "--input", type=str, required=True, help="The input json file to cluster"
+    )
+    parser.add_argument(
+        "--output", type=str, required=True, help="The output json file"
+    )
     parser.add_argument(
         "--max-eps",
         type=float,
