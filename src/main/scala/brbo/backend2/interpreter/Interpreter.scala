@@ -14,7 +14,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
     (brboProgram.mainFunction :: brboProgram.functions).flatMap(f => immediateParentStatements(f.bodyWithInitialization)).toMap
 
   def execute(inputValues: List[BrboValue]): FlowEndState = {
-    logger.traceOrError(s"Execute with inputs: ${inputValues.map(v => v.printToIR())}")
+    // logger.traceOrError(s"Execute with inputs: ${inputValues.map(v => v.printToIR())}")
     val state = evaluateFunction(brboProgram.mainFunction, inputValues, EmptyTrace)
     // logger.traceOrError(s"Final state: ${printState(state)}")
     state
@@ -26,7 +26,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
     val initialStore = parameters.zip(inputValues).foldLeft(new Store())({
       case (store, (parameter, inputValue)) => store.set(parameter, inputValue)
     })
-    logger.traceOrError(s"Evaluate function `${brboFunction.identifier}` with initial store $initialStore")
+    // logger.traceOrError(s"Evaluate function `${brboFunction.identifier}` with initial store $initialStore")
     val initialState = InitialState(brboFunction.bodyWithInitialization, initialStore, lastTrace.add(TraceNode(initialStore, None)))
     evaluateAst(initialState)
   }
@@ -345,7 +345,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
 
   private def evaluateFunctionCall(initialState: InitialState,
                                    function: BrboFunction, arguments: List[BrboExpr]): FlowEndState = {
-    logger.traceOrError(s"Evaluate function call: `${function.identifier}` with arguments $arguments")
+    // logger.traceOrError(s"Evaluate function call: `${function.identifier}` with arguments $arguments")
     val (state, argumentValues) = arguments.foldLeft(
       GoodState(initialState.store, initialState.trace, None): FlowEndState,
       Nil: List[BrboValue]
@@ -355,7 +355,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
           case GoodState(store, trace, _) =>
             evaluateExpr(InitialState(argument, store, trace)) match {
               case goodState@GoodState(_, _, value) =>
-                logger.traceOrError(s"Actual argument `$argument` is evaluated as `$value`")
+                // logger.traceOrError(s"Actual argument `$argument` is evaluated as `$value`")
                 (goodState, value.get :: argumentValues)
               case _ => throw new Exception
             }

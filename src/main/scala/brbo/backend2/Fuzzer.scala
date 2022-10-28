@@ -7,6 +7,9 @@ import brbo.common.{BrboType, MathUtils, MyLogger}
 
 object Fuzzer {
   private val logger = MyLogger.createLogger(Fuzzer.getClass, debugMode = false)
+  private val POSSIBILITIES = 3
+  private val MAX_ARRAY_LENGTH = 10
+  private val MAX_INTEGER = 1000
 
   def randomValues(typ: BrboType.T, maxArrayLength: Int, maxInteger: Int, possibilities: Int): List[BrboValue] = {
     typ match {
@@ -35,7 +38,7 @@ object Fuzzer {
     val FUZZING = s"Fuzzing program ${brboProgram.name}: "
     val interpreter = new Interpreter(brboProgram, debugMode)
     val inputs = MathUtils.crossJoin(brboProgram.mainFunction.parameters.map({
-      case Identifier(_, typ, _) => randomValues(typ, maxArrayLength = 10, maxInteger = 1000, possibilities = 5)
+      case Identifier(_, typ, _) => randomValues(typ, maxArrayLength = MAX_ARRAY_LENGTH, maxInteger = MAX_INTEGER, possibilities = POSSIBILITIES)
     }))
     logger.info(s"${FUZZING}Generated `${inputs.size}` inputs")
     inputs.zipWithIndex.map({

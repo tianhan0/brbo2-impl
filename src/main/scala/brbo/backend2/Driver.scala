@@ -9,11 +9,12 @@ import brbo.common.{CommandLineArguments, MyLogger}
 class Driver(arguments: CommandLineArguments, program: BrboProgram) {
   private val debugMode = arguments.getDebugMode
   private val logger = MyLogger.createLogger(classOf[Driver], debugMode)
+  private val SUBSTITUTION_PENALTY = 100
 
   def verify(boundAssertion: BoundAssertion): Unit = {
-    val traces = generateTraces()
-    val clusters = clusterTraces(traces)
-    clusters.foreach(cluster => logger.info(s"$cluster"))
+    val rawTraces = generateTraces()
+    val traces = clusterTraces(rawTraces)
+    traces.foreach(trace => logger.info(s"$trace"))
   }
 
   def generateTraces(): List[Interpreter.Trace] = {
@@ -26,25 +27,33 @@ class Driver(arguments: CommandLineArguments, program: BrboProgram) {
     logger.info(s"${STEP_2}Cluster similar traces: ${traces.length} traces")
     val costTraces: List[CostTrace] = traces.map(t => t.costTrace)
 
-    logger.info(s"${STEP_2}Group traces with 0 distance")
+    logger.info(s"${STEP_2}Group traces with zero distance")
     val groupedCostTraces: Map[CostTrace, Set[CostTrace]] = TraceClustering.groupZeroDistanceTraces(costTraces)
-    logger.info(s"${STEP_2}Group traces with 0 distance: ${groupedCostTraces.size} groups")
+    logger.info(s"${STEP_2}Found ${groupedCostTraces.size} groups of traces")
 
     logger.info(s"${STEP_2}Compute a distance matrix")
     val distanceMatrix: List[List[Int]] =
-      TraceClustering.distanceMatrix(groupedCostTraces.keys.toList, substitutionPenalty = 100)
+      TraceClustering.distanceMatrix(groupedCostTraces.keys.toList, SUBSTITUTION_PENALTY)
 
-    logger.info(s"${STEP_2}Clustering traces")
-    val clusterLabels: List[Int] = Clustering.cluster(distanceMatrix, debugMode)
-    val clusters: Iterable[List[((CostTrace, Trace), Int)]] = costTraces.zip(traces).zip(clusterLabels)
-      .groupBy({ case (_, label) => label }).values
-    logger.info(s"${STEP_2}Clustering traces: ${clusters.size} clusters")
+    logger.info(s"${STEP_2}Cluster traces")
+    val clusterLabels: List[Int] = Clustering.cluster(distanceMatrix, maxEps = Some(10), debugMode)
+
+    val labelMap: Map[Int, List[((CostTrace, Trace), Int)]] =
+      costTraces.zip(traces).zip(clusterLabels).groupBy({ case (_, label) => label })
+    val outlierTraces = labelMap.get(-1) match {
+      case Some(outliers) =>
+        logger.info(s"${STEP_2}Found ${outliers.size} outlier traces")
+        outliers.map({ case ((_, trace), _) => trace })
+      case None => Nil
+    }
+    val clusters: Iterable[List[((CostTrace, Trace), Int)]] = (labelMap - (-1)).values
+    logger.info(s"${STEP_2}Found ${clusters.size} trace clusters")
 
     logger.info(s"${STEP_2}Select representative traces from every cluster")
     clusters.map({
       list =>
-        val traces = list.map({case ((_, trace), _) => trace})
+        val traces = list.map({ case ((_, trace), _) => trace })
         TraceClustering.selectRepresentativeTrace(traces)
-    })
+    }).toList ::: outlierTraces
   }
 }

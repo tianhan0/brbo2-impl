@@ -8,7 +8,7 @@ class ClusteringUnitTest extends AnyFlatSpec {
   "Clustering a distance matrix" should "work" in {
     ClusteringUnitTest.clusterTests.foreach({
       testCase =>
-        val labels = Clustering.cluster(testCase.input.asInstanceOf[List[List[Int]]], debugMode = false)
+        val labels = Clustering.cluster(testCase.input.asInstanceOf[List[List[Int]]], maxEps = None, debugMode = false)
         StringCompare.ignoreWhitespaces(labels, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
