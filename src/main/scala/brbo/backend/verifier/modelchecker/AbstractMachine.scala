@@ -18,7 +18,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
 class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments) {
-  private val logger: MyLogger = MyLogger(LogManager.getLogger(classOf[AbstractMachine]), arguments.getDebugMode)
+  private val logger: MyLogger = MyLogger.createLogger(classOf[AbstractMachine], arguments.getDebugMode)
   private val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
   private val fakeInitialNode = CFGNode(Bool(b = true), function = Some(brboProgram.mainFunction))
   private val manager = arguments.getAbstractDomain match {

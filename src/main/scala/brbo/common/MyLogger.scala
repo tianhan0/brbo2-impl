@@ -2,7 +2,7 @@ package brbo.common
 
 import org.apache.logging.log4j.{LogManager, Logger}
 
-case class MyLogger(logger: Logger, debugMode: Boolean) {
+class MyLogger(logger: Logger, val debugMode: Boolean) {
   def traceOrError(message: String): Unit = {
     if (debugMode) logger.error(message)
     else logger.trace(message)
@@ -29,7 +29,7 @@ case class MyLogger(logger: Logger, debugMode: Boolean) {
 }
 
 object MyLogger {
-  def createLogger[T](clazz: Class[T], debugMode: Boolean): MyLogger = MyLogger(LogManager.getLogger(clazz), debugMode)
+  def createLogger[T](clazz: Class[T], debugMode: Boolean): MyLogger = new MyLogger(LogManager.getLogger(clazz), debugMode)
 
   val commonDebugLogger: MyLogger = createLogger(MyLogger.getClass, debugMode = true)
 

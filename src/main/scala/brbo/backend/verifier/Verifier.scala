@@ -10,7 +10,7 @@ abstract class Verifier {
   val toolDirectory: String
   val TIMEOUT: Int = arguments.getVerifierTimeout // Unit: Seconds
 
-  protected val logger: MyLogger = MyLogger(LogManager.getLogger(classOf[Verifier]), arguments.getDebugMode)
+  protected val logger: MyLogger = MyLogger.createLogger(classOf[Verifier], arguments.getDebugMode)
 
   def verify(program: BrboProgram): VerifierResult
 }
