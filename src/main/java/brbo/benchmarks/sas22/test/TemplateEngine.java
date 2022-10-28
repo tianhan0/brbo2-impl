@@ -11,7 +11,7 @@ public abstract class TemplateEngine extends Common {
         while (i + 1 <= arrayLength(text) - 1) {
             use(0, arrayRead(text, i));
             i++;
-            arrayRead(text, i);
+            // arrayRead(text, i);
             i++;
         }
         // use(0, arrayRead(text, i));
