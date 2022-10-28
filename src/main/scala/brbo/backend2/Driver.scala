@@ -30,6 +30,7 @@ class Driver(arguments: CommandLineArguments, program: BrboProgram) {
     logger.info(s"${STEP_2}Group traces with zero distance")
     val groupedCostTraces: Map[CostTrace, Set[CostTrace]] = TraceClustering.groupZeroDistanceTraces(costTraces)
     logger.info(s"${STEP_2}Found ${groupedCostTraces.size} groups of traces")
+    groupedCostTraces.keys.foreach(t => logger.traceOrError(s"\n${t.print()}"))
 
     logger.info(s"${STEP_2}Compute a distance matrix")
     val distanceMatrix: List[List[Int]] =

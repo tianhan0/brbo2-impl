@@ -503,7 +503,7 @@ object Interpreter {
 
   case class Trace(nodes: List[TraceNode]) extends Print {
     val costTrace: CostTrace = {
-      val useNodes = nodes.foldLeft(Nil: List[CostTraceNode])({
+      val costTraceNodes = nodes.foldLeft(Nil: List[CostTraceNode])({
         case (soFar, node) => node.lastTransition match {
           case Some(lastTransition) =>
             (lastTransition.cost, lastTransition.command) match {
@@ -514,7 +514,7 @@ object Interpreter {
           case None => soFar
         }
       })
-      CostTrace(useNodes.reverse)
+      CostTrace(costTraceNodes.reverse)
     }
 
     def add(node: TraceNode): Trace = Trace(nodes :+ node)
