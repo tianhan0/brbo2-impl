@@ -2,7 +2,7 @@ package brbo.benchmarks.sas22.test;
 
 import brbo.benchmarks.Common;
 
-public abstract class AmortizeAndWorstCase extends Common {
+public abstract class AmortizeAndWorstCase01 extends Common {
     void main(int[] array, int costA) {
         upperBound(0, "most", arraySum(array) + costA * arraySum(array));
         int i = 0;
