@@ -20,7 +20,24 @@ object Clustering {
   private val CLUSTER_SCRIPT = s"clustering.py"
   private val TIMEOUT_IN_SECONDS = 30
 
-  def cluster(distanceMatrix: List[List[Int]], maxEps: Option[Int], debugMode: Boolean): List[Int] = {
+  sealed trait Algorithm {
+    def commandLineOption: String
+  }
+
+  case class Optics(maxEps: Option[Int]) extends Algorithm {
+    def commandLineOption: String = {
+      maxEps match {
+        case Some(maxEps) => s"--algorithm=optics --max-eps=$maxEps"
+        case None => ""
+      }
+    }
+  }
+
+  object KNN extends Algorithm {
+    override def commandLineOption: String = "--algorithm=knn"
+  }
+
+  def cluster(distanceMatrix: List[List[Int]], algorithm: Algorithm, debugMode: Boolean): List[Int] = {
     val logger = if (debugMode) MyLogger.commonDebugLogger else MyLogger.commonLogger
     val inputFilePath = Files.createTempFile("", ".json").toAbsolutePath.toString
     logger.info(s"Write data into $inputFilePath")
@@ -33,11 +50,7 @@ object Clustering {
     val outputFile = Files.createTempFile("", ".json")
 
     val command = {
-      val maxEpsString = maxEps match {
-        case Some(value) => s"--max-eps=$value"
-        case None => ""
-      }
-      s"python3 $CLUSTER_SCRIPT --input=$inputFilePath --output=$outputFile $maxEpsString"
+      s"python3 $CLUSTER_SCRIPT --input=$inputFilePath --output=$outputFile ${algorithm.commandLineOption}"
     }
     val processBuilder: java.lang.ProcessBuilder = new java.lang.ProcessBuilder(command.split(" ").toList.asJava)
       .directory(new java.io.File(CLUSTER_SCRIPT_DIRECTORY))

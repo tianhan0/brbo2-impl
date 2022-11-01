@@ -2,6 +2,7 @@ package brbo.backend2
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTrace, Trace}
+import brbo.backend2.learning.Clustering.Optics
 import brbo.backend2.learning.{Clustering, TraceClustering}
 import brbo.common.ast.{BoundAssertion, BrboProgram}
 import brbo.common.{CommandLineArguments, MyLogger}
@@ -37,7 +38,7 @@ class Driver(arguments: CommandLineArguments, program: BrboProgram) {
       TraceClustering.distanceMatrix(groupedCostTraces.keys.toList, SUBSTITUTION_PENALTY)
 
     logger.info(s"${STEP_2}Cluster traces")
-    val clusterLabels: List[Int] = Clustering.cluster(distanceMatrix, maxEps = Some(10), debugMode)
+    val clusterLabels: List[Int] = Clustering.cluster(distanceMatrix, Optics(Some(10)), debugMode)
 
     val labelMap: Map[Int, List[((CostTrace, Trace), Int)]] =
       costTraces.zip(traces).zip(clusterLabels).groupBy({ case (_, label) => label })

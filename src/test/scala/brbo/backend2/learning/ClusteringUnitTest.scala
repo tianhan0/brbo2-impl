@@ -1,6 +1,7 @@
 package brbo.backend2.learning
 
 import brbo.TestCase
+import brbo.backend2.learning.Clustering.Optics
 import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -8,7 +9,7 @@ class ClusteringUnitTest extends AnyFlatSpec {
   "Clustering a distance matrix" should "work" in {
     ClusteringUnitTest.clusterTests.foreach({
       testCase =>
-        val labels = Clustering.cluster(testCase.input.asInstanceOf[List[List[Int]]], maxEps = None, debugMode = false)
+        val labels = Clustering.cluster(testCase.input.asInstanceOf[List[List[Int]]], Optics(maxEps = None), debugMode = false)
         StringCompare.ignoreWhitespaces(labels, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
