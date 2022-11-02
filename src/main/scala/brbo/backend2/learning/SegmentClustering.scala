@@ -71,7 +71,11 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
 
     // Ignore outliers
     val clusters: List[List[Segment]] =
-      (labelMap - (-1)).values.map(list => list.map({ case (segment, _) => segment })).toList
+      (labelMap - (-1)).values.map(list => list.map({ case (segment, _) => segment }).sortWith({
+        case (segment1, segment2) => segment1.toString < segment2.toString
+      })).toList.sortWith({
+        case (list1, list2) => list1.toString() < list2.toString()
+      })
     logger.info(s"Found ${clusters.size} segment clusters")
     clusters
   }

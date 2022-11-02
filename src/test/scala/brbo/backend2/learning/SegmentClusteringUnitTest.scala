@@ -32,7 +32,12 @@ object SegmentClusteringUnitTest {
 
   def getTrace(program: String, inputs: List[BrboValue]): Trace = {
     val targetProgram = BasicProcessor.getTargetProgram("Test", program).program
-    val interpreter = new Interpreter(targetProgram, debugMode = true)
+    val mainFunctionWithResetPlaceHolders =
+      targetProgram.mainFunction.replaceBodyWithoutInitialization(
+        BrboAstUtils.insertResetPlaceHolder(targetProgram.mainFunction.body).asInstanceOf[Statement]
+      )
+    val targetProgramWithResetPlaceHolders = targetProgram.replaceMainFunction(mainFunctionWithResetPlaceHolders)
+    val interpreter = new Interpreter(targetProgramWithResetPlaceHolders, debugMode = true)
     val flowEndState = interpreter.execute(inputs)
     flowEndState.trace
   }
@@ -107,34 +112,34 @@ object SegmentClusteringUnitTest {
 
   val clusterSimilarSegmentTests: List[TestCase] = List(
     TestCase("loopPhase", (loopPhase, List(Number(4))),
-      """List(use R0 1011 (cost=1011))
-        |List(use R0 2011 (cost=2011))
+      """List(use R0 2011 (cost=2011))
+        |List(use R0 1011 (cost=1011))
         |List(use R0 88 (cost=88), use R0 88 (cost=88))
         |List(use R0 89 (cost=89), use R0 89 (cost=89))""".stripMargin),
     TestCase("amortizeAndWorstCase01", (amortizeAndWorstCase01, List(BrboArray(List(Number(10), Number(4), Number(3)), INT))),
-      """List(use R0 arrayRead(array, i) (cost=4))
+      """List(use R0 arrayRead(array, i) (cost=10))
+        |List(use R0 arrayRead(array, i) (cost=4))
+        |List(use R0 arrayRead(array, i) (cost=3))
         |List(use R0 1011 (cost=1011))
-        |List(use R0 88 (cost=88))
-        |List(use R0 arrayRead(array, i) (cost=10))
-        |List(use R0 arrayRead(array, i) (cost=3))""".stripMargin),
+        |List(use R0 88 (cost=88))""".stripMargin),
     TestCase("amortizeAndWorstCase02", (amortizeAndWorstCase02, List(
       BrboArray(List(Number(10), Number(4), Number(3)), INT),
       Number(3)
     )),
-      """List(use R0 arrayRead(array, j) (cost=4))
+      """List(use R0 arrayRead(array, j) (cost=10))
+        |List(use R0 arrayRead(array, j) (cost=4))
+        |List(use R0 arrayRead(array, j) (cost=3))
         |List(use R0 1011 (cost=1011))
-        |List(use R0 88 (cost=88))
-        |List(use R0 arrayRead(array, j) (cost=10))
-        |List(use R0 arrayRead(array, j) (cost=3))""".stripMargin),
+        |List(use R0 88 (cost=88))""".stripMargin),
     TestCase("amortizeSeparately", (amortizeSeparately, List(
       BrboArray(List(Number(10), Number(4), Number(3)), INT),
       BrboArray(List(Number(7), Number(20), Number(1)), INT),
       Number(3)
     )),
-      """List(use R0 arrayRead(array2, i) (cost=1))
-        |List(use R0 arrayRead(array1, i) (cost=10))
-        |List(use R0 arrayRead(array2, i) (cost=20))
+      """List(use R0 arrayRead(array1, i) (cost=10))
+        |List(use R0 arrayRead(array2, i) (cost=7))
         |List(use R0 arrayRead(array1, i) (cost=4), use R0 arrayRead(array1, i) (cost=3))
-        |List(use R0 arrayRead(array2, i) (cost=7))""".stripMargin),
+        |List(use R0 arrayRead(array2, i) (cost=20))
+        |List(use R0 arrayRead(array2, i) (cost=1))""".stripMargin),
   )
 }
