@@ -600,6 +600,22 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
   }
 }
 
+// This is a place holder that will be replaced with reset commands
+case class ResetPlaceHolder(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
+  override def printToCInternal(indent: Int): String = ???
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = other match {
+    case ResetPlaceHolder(_) => true
+    case _ => false
+  }
+
+  override def getFunctionCalls: List[FunctionCallExpr] = Nil
+}
+
 sealed trait CexPathOnly
 
 case class BeforeFunctionCall(callee: BrboFunction, actualArguments: List[BrboExpr], override val uuid: UUID = UUID.randomUUID())
