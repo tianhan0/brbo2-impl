@@ -26,6 +26,10 @@ libraryDependencies += "org.jgrapht" % "jgrapht-io" % "1.5.1"
 
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.3"
 
+libraryDependencies += "com.google.guava" % "guava" % "31.1-jre"
+
+libraryDependencies += "org.apache.spark" %% "spark-mllib" % "3.3.1" % "provided"
+
 // Add tools.jar such that sbt can find it
 unmanagedJars in Compile ~= {
   uj: Classpath =>
