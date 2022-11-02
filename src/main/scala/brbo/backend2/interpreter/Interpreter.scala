@@ -503,18 +503,23 @@ object Interpreter {
 
   case class Trace(nodes: List[TraceNode]) extends Print {
     val costTrace: CostTrace = {
-      val costTraceNodes = nodes.foldLeft(Nil: List[CostTraceNode])({
-        case (soFar, node) => node.lastTransition match {
-          case Some(lastTransition) =>
-            (lastTransition.cost, lastTransition.command) match {
-              case (Some(cost), use: Use) => UseNode(use, cost) :: soFar
-              case (None, reset: Reset) => ResetNode(reset) :: soFar
-              case _ => soFar
-            }
-          case None => soFar
-        }
-      })
-      CostTrace(costTraceNodes.reverse)
+      val (costTraceNodes, map, reversedMap) =
+        nodes.zipWithIndex.foldLeft((Nil: List[CostTraceNode], Map(): Map[CostTraceNode, Int], Map(): Map[Int, CostTraceNode]))({
+          case ((nodes, map, reversedMap), (node, index)) => node.lastTransition match {
+            case Some(lastTransition) =>
+              (lastTransition.cost, lastTransition.command) match {
+                case (Some(cost), use: Use) =>
+                  val node = UseNode(use, cost)
+                  (node :: nodes, map + (node -> index), reversedMap + (index -> node))
+                case (None, reset: Reset) =>
+                  val node = ResetNode(reset)
+                  (node :: nodes, map + (node -> index), reversedMap + (index -> node))
+                case _ => (nodes, map, reversedMap)
+              }
+            case None => (nodes, map, reversedMap)
+          }
+        })
+      CostTrace(costTraceNodes.reverse, map, reversedMap)
     }
 
     def add(node: TraceNode): Trace = Trace(nodes :+ node)
@@ -531,26 +536,52 @@ object Interpreter {
     override def print(): String = "EmptyTrace"
   }
 
-  abstract class CostTraceNode extends Print
+  abstract class CostTraceNode extends Print {
+    def getGhostCommand: GhostCommand
+  }
 
   case class UseNode(use: Use, cost: Int) extends CostTraceNode {
     override def print(): String = {
       s"${use.printToIR()} (cost=$cost)"
     }
+
+    override def getGhostCommand: GhostCommand = use
   }
 
   case class ResetNode(reset: Reset) extends CostTraceNode {
     override def print(): String = {
       s"${reset.printToIR()}"
     }
+
+    override def getGhostCommand: GhostCommand = reset
   }
 
-  case class CostTrace(nodes: List[CostTraceNode]) extends Print {
+  /**
+   *
+   * @param nodes            Cost trace nodes
+   * @param indexMap         A map from cost trace nodes to the indices of the corresponding transitions
+   *                         in the trace that "backs" this cost trace
+   * @param reversedIndexMap The inverse of indexMap
+   */
+  case class CostTrace(nodes: List[CostTraceNode],
+                       indexMap: Map[CostTraceNode, Int] = Map(),
+                       reversedIndexMap: Map[Int, CostTraceNode] = Map()) extends Print {
     override def print(): String = {
       val prefix = "Use Trace: "
       val linePrefix: String = " " * prefix.length
       val string = printNodes(nodes.map(n => n.print()), 1, linePrefix, "->")
       s"$prefix$string"
+    }
+
+    def ghostCommandAtIndex(index: Int): GhostCommand = reversedIndexMap(index).getGhostCommand
+
+    def costSumAtIndices(indices: List[Int]): Int = {
+      reversedIndexMap.filter({
+        case (index, _) => indices.contains(index)
+      }).map({
+        case (_, UseNode(_, cost)) => cost
+        case _ => 0
+      }).sum
     }
   }
 

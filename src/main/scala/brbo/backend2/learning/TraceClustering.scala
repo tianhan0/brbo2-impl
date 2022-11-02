@@ -3,7 +3,6 @@ package brbo.backend2.learning
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTrace, Trace}
 import brbo.common.DisjointSet
-import play.api.libs.json.Json
 
 object TraceClustering {
   def groupZeroDistanceTraces(traces: List[CostTrace]): Map[CostTrace, Set[CostTrace]] = {
