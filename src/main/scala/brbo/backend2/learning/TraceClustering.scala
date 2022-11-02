@@ -43,11 +43,6 @@ object TraceClustering {
     })
   }
 
-  def matrixToJsonString(distanceMatrix: List[List[Int]]): String = {
-    val jsonObject = Json.obj(("data", distanceMatrix))
-    jsonObject.toString()
-  }
-
   private def distance(left: CostTrace, right: CostTrace, substitutionPenalty: Int): Int = {
     val (diff1, diff2) = distanceInternal(left, right)
     Math.min(diff1.size, diff2.size) * substitutionPenalty

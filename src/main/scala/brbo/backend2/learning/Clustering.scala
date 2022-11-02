@@ -1,6 +1,5 @@
 package brbo.backend2.learning
 
-import brbo.backend2.learning.TraceClustering.matrixToJsonString
 import brbo.common.MyLogger
 import org.apache.commons.io.IOUtils
 import play.api.libs.json.Json
@@ -37,12 +36,28 @@ object Clustering {
     override def commandLineOption: String = "--algorithm=knn"
   }
 
-  def cluster(distanceMatrix: List[List[Int]], algorithm: Algorithm, debugMode: Boolean): List[Int] = {
+  case class KMeans(clusters: Int) extends Algorithm {
+    override def commandLineOption: String = s"--algorithm=kmeans --clusters=$clusters"
+  }
+
+  /**
+   *
+   * @param dataMatrix When the algorithm is Optics, the data is a (n x n) matrix
+   *                   that represents the distances between any two data points
+   *                   for n data points.
+   *                   When the algorithm is KMeans, the data is a (n x m) matrix
+   *                   for n data points to cluster. Each data point is represented
+   *                   by a vector of length m.
+   * @param algorithm  The algorithm to use.
+   * @param debugMode  Whether to print extra logging information.
+   * @return
+   */
+  def cluster(dataMatrix: List[List[Int]], algorithm: Algorithm, debugMode: Boolean): List[Int] = {
     val logger = if (debugMode) MyLogger.commonDebugLogger else MyLogger.commonLogger
     val inputFilePath = Files.createTempFile("", ".json").toAbsolutePath.toString
     logger.info(s"Write data into $inputFilePath")
     new PrintWriter(inputFilePath) {
-      val inputFileContent: String = matrixToJsonString(distanceMatrix)
+      val inputFileContent: String = matrixToJsonString(dataMatrix)
       logger.traceOrError(s"Input file content: $inputFileContent")
       write(inputFileContent)
       close()
@@ -69,7 +84,12 @@ object Clustering {
       val stdout = IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
       logger.fatal(s"Failed to execute $CLUSTER_SCRIPT. stdout: $stdout")
       logger.fatal(s"Letting all elements have the same label")
-      List.fill(distanceMatrix.length)(0)
+      List.fill(dataMatrix.length)(0)
     }
+  }
+
+  def matrixToJsonString(distanceMatrix: List[List[Int]]): String = {
+    val jsonObject = Json.obj(("data", distanceMatrix))
+    jsonObject.toString()
   }
 }

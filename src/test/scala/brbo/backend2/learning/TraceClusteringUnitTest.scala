@@ -16,14 +16,6 @@ class TraceClusteringUnitTest extends AnyFlatSpec {
     })
   }
 
-  "Writing matrices into JSON" should "be correct" in {
-    TraceClusteringUnitTest.jsonWriteTests.foreach({
-      testCase =>
-        val json = TraceClustering.matrixToJsonString(testCase.input.asInstanceOf[List[List[Int]]])
-        StringCompare.ignoreWhitespaces(json, testCase.expectedOutput, s"${testCase.name} failed")
-    })
-  }
-
   "Grouping same traces" should "be correct" in {
     TraceClusteringUnitTest.groupSameTraceTests.foreach({
       testCase =>
@@ -158,11 +150,6 @@ object TraceClusteringUnitTest {
       """List(Use Trace: use R1 1 (cost=1)
         |           reset R2)""".stripMargin),
   )
-
-  val jsonWriteTests: List[TestCase] = {
-    val matrix1 = List(List(1, 2), List(3, 4, 5, 6))
-    List(TestCase("matrix1", matrix1, """{"data":[[1,2],[3,4,5,6]]}"""))
-  }
 
   val selectRepresentativeTraceTests: List[TestCase] = {
     List(
