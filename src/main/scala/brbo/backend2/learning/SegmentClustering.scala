@@ -144,7 +144,6 @@ object SegmentClustering {
 
     def print(costTraceAssociation: CostTraceAssociation): String = {
       costTraceAssociation.costTrace(Some(indices)).map({
-        case Interpreter.ResetNode(reset) => reset.printToIR()
         case Interpreter.UseNode(use, cost) => s"${use.printToIR()} (cost=$cost)"
         case _ => throw new Exception
       }).mkString(", ")

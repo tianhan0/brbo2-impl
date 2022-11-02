@@ -123,6 +123,7 @@ abstract class Command(val uuid: UUID) extends BrboAst with PrintToIR with GetFu
           case _ => s"if (${condition.printNoOuterBrackets}) "
         }
         s"${conditionString}reset ${reset.resourceVariable.name}"
+      case ResetPlaceHolder(_) => s"<resetPlaceHolder>"
       case _: Command => printToC(0)
       case _ => throw new Exception()
     }
@@ -601,7 +602,7 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
 }
 
 // This is a place holder that will be replaced with reset commands
-case class ResetPlaceHolder(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
+case class ResetPlaceHolder(override val uuid: UUID = UUID.randomUUID()) extends GhostCommand(uuid) {
   override def printToCInternal(indent: Int): String = ???
 
   override def getUses: Set[Identifier] = Set()
@@ -614,6 +615,8 @@ case class ResetPlaceHolder(override val uuid: UUID = UUID.randomUUID()) extends
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def replace(newGroupId: Int): GhostCommand = ???
 }
 
 sealed trait CexPathOnly

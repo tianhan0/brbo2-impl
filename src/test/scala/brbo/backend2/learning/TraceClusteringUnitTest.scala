@@ -2,7 +2,7 @@ package brbo.backend2.learning
 
 import brbo.TestCase
 import brbo.backend2.interpreter.Interpreter
-import brbo.backend2.interpreter.Interpreter.{ResetNode, UseNode}
+import brbo.backend2.interpreter.Interpreter._
 import brbo.common.ast._
 import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
@@ -40,13 +40,12 @@ object TraceClusteringUnitTest {
   private val use2 = UseNode(Use(Some(1), Number(2)), 2)
   private val use3 = UseNode(Use(Some(1), Number(3)), 3)
   private val use4 = UseNode(Use(Some(1), Number(4)), 4)
-  private val reset = ResetNode(Reset(2))
 
   private val trace1 = List(use1, use1p, use2)
-  private val trace2 = List(use1p, use2, use1, reset)
+  private val trace2 = List(use1p, use2, use1)
   private val trace3 = List(use1, use2, use3)
   private val trace4 = List(use1, use2, use3, use3, use4)
-  private val trace5 = List(use1, reset)
+  private val trace5 = List(use1)
   private val traceList1 = List(trace1, trace2).map(nodes => Interpreter.CostTrace(nodes))
   private val traceList2 = List(trace1, trace3).map(nodes => Interpreter.CostTrace(nodes))
   private val traceList3 = List(trace1, trace4).map(nodes => Interpreter.CostTrace(nodes))
@@ -79,8 +78,7 @@ object TraceClusteringUnitTest {
         |           use R1 1 (cost=1)
         |           use R1 2 (cost=2), Use Trace: use R1 1 (cost=1)
         |           use R1 2 (cost=2)
-        |           use R1 1 (cost=1)
-        |           reset R2)""".stripMargin),
+        |           use R1 1 (cost=1))""".stripMargin),
     TestCase("traces2", traceList2,
       """List(Use Trace: use R1 1 (cost=1)
         |           use R1 1 (cost=1)
@@ -98,34 +96,29 @@ object TraceClusteringUnitTest {
         |           use R1 3 (cost=3)
         |           use R1 4 (cost=4))""".stripMargin),
     TestCase("traces4", traceList4,
-      """List(Use Trace: use R1 1 (cost=1)
-        |           reset R2, Use Trace: use R1 1 (cost=1)
+      """List(Use Trace: use R1 1 (cost=1), Use Trace: use R1 1 (cost=1)
         |           use R1 1 (cost=1)
         |           use R1 2 (cost=2))""".stripMargin),
     TestCase("traces5", traceList5,
       """List(Use Trace: use R1 1 (cost=1)
         |           use R1 2 (cost=2)
-        |           use R1 1 (cost=1)
-        |           reset R2)
+        |           use R1 1 (cost=1))
         |List(Use Trace: use R1 1 (cost=1)
         |           use R1 2 (cost=2)
         |           use R1 3 (cost=3))""".stripMargin),
     TestCase("traces6", traceList6,
       """List(Use Trace: use R1 1 (cost=1)
         |           use R1 2 (cost=2)
-        |           use R1 1 (cost=1)
-        |           reset R2)
+        |           use R1 1 (cost=1))
         |List(Use Trace: use R1 1 (cost=1)
         |           use R1 2 (cost=2)
         |           use R1 3 (cost=3)
         |           use R1 3 (cost=3)
         |           use R1 4 (cost=4))""".stripMargin),
     TestCase("traces7", traceList7,
-      """List(Use Trace: use R1 1 (cost=1)
-        |           reset R2, Use Trace: use R1 1 (cost=1)
+      """List(Use Trace: use R1 1 (cost=1), Use Trace: use R1 1 (cost=1)
         |           use R1 2 (cost=2)
-        |           use R1 1 (cost=1)
-        |           reset R2)""".stripMargin),
+        |           use R1 1 (cost=1))""".stripMargin),
     TestCase("traces8", traceList8,
       """List(Use Trace: use R1 1 (cost=1)
         |           use R1 2 (cost=2)
@@ -135,20 +128,17 @@ object TraceClusteringUnitTest {
         |           use R1 3 (cost=3)
         |           use R1 4 (cost=4))""".stripMargin),
     TestCase("traces9", traceList9,
-      """List(Use Trace: use R1 1 (cost=1)
-        |           reset R2, Use Trace: use R1 1 (cost=1)
+      """List(Use Trace: use R1 1 (cost=1), Use Trace: use R1 1 (cost=1)
         |           use R1 2 (cost=2)
         |           use R1 3 (cost=3))""".stripMargin),
     TestCase("traces10", traceList10,
-      """List(Use Trace: use R1 1 (cost=1)
-        |           reset R2, Use Trace: use R1 1 (cost=1)
+      """List(Use Trace: use R1 1 (cost=1), Use Trace: use R1 1 (cost=1)
         |           use R1 2 (cost=2)
         |           use R1 3 (cost=3)
         |           use R1 3 (cost=3)
         |           use R1 4 (cost=4))""".stripMargin),
     TestCase("traces11", traceList11,
-      """List(Use Trace: use R1 1 (cost=1)
-        |           reset R2)""".stripMargin),
+      """List(Use Trace: use R1 1 (cost=1))""".stripMargin),
   )
 
   val selectRepresentativeTraceTests: List[TestCase] = {
@@ -156,8 +146,7 @@ object TraceClusteringUnitTest {
       TestCase("traceList1", traceList1,
         """Use Trace: use R1 1 (cost=1)
           |           use R1 2 (cost=2)
-          |           use R1 1 (cost=1)
-          |           reset R2""".stripMargin),
+          |           use R1 1 (cost=1)""".stripMargin),
       TestCase("traceList2", traceList2,
         """Use Trace: use R1 1 (cost=1)
           |           use R1 2 (cost=2)
@@ -185,8 +174,7 @@ object TraceClusteringUnitTest {
       TestCase("traceList7", traceList7,
         """Use Trace: use R1 1 (cost=1)
           |           use R1 2 (cost=2)
-          |           use R1 1 (cost=1)
-          |           reset R2""".stripMargin),
+          |           use R1 1 (cost=1)""".stripMargin),
       TestCase("traceList8", traceList8,
         """Use Trace: use R1 1 (cost=1)
           |           use R1 2 (cost=2)
@@ -204,8 +192,7 @@ object TraceClusteringUnitTest {
           |           use R1 3 (cost=3)
           |           use R1 4 (cost=4)""".stripMargin),
       TestCase("traceList11", traceList11,
-        """Use Trace: use R1 1 (cost=1)
-          |           reset R2""".stripMargin),
+        """Use Trace: use R1 1 (cost=1)""".stripMargin),
     )
   }
 }

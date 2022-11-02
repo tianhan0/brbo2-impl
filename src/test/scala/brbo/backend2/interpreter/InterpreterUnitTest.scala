@@ -670,10 +670,7 @@ object InterpreterUnitTest {
       """Use Trace: use R1 100 (cost=100)
         |           use R2 10 (cost=10)
         |           use R1 200 (cost=200)
-        |           reset R1
-        |           reset R2
         |           use R2 11 (cost=11)
-        |           reset R2
         |           use R2 12 (cost=12)
         |           use R1 500 (cost=500)""".stripMargin)
   )

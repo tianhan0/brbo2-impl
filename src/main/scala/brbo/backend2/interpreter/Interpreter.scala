@@ -513,9 +513,6 @@ object Interpreter {
                 case (Some(cost), use: Use) =>
                   val node = UseNode(use, cost)
                   (map + (node -> index), reversedMap + (index -> node))
-                case (None, reset: Reset) =>
-                  val node = ResetNode(reset)
-                  (map + (node -> index), reversedMap + (index -> node))
                 case _ => (map, reversedMap)
               }
             case None => (map, reversedMap)
@@ -549,14 +546,6 @@ object Interpreter {
     }
 
     override def getGhostCommand: GhostCommand = use
-  }
-
-  case class ResetNode(reset: Reset) extends CostTraceNode {
-    override def print(): String = {
-      s"${reset.printToIR()}"
-    }
-
-    override def getGhostCommand: GhostCommand = reset
   }
 
   case class CostTrace(nodes: List[CostTraceNode]) extends Print {
