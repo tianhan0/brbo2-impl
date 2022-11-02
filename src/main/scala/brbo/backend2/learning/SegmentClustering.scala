@@ -1,6 +1,6 @@
 package brbo.backend2.learning
 
-import brbo.backend2.interpreter.Interpreter.{CostTrace, Trace}
+import brbo.backend2.interpreter.Interpreter.{CostTrace, CostTraceAssociation, Trace}
 import brbo.backend2.learning.Clustering.{Algorithm, KMeans, Optics}
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.MyLogger
@@ -51,7 +51,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
   }
 
   def clusterSimilarSegments(trace: Trace, segmentLength: Int): List[List[Segment]] = {
-    val indices: util.Set[Int] = trace.costTrace.indexMap.values.toSet.asJava
+    val indices: util.Set[Int] = trace.costTraceAssociation.indexMap.values.toSet.asJava
     logger.info(s"Choose segments with sizes of $segmentLength")
     val segments: List[Segment] =
       Sets.combinations(indices, segmentLength)
@@ -92,7 +92,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
   }
 
   def generateInputData(trace: Trace, segments: List[Segment], algorithm: Algorithm): List[List[Int]] = {
-    val segmentToData = new SegmentToData(trace.costTrace, sumWeight, commandWeight)
+    val segmentToData = new SegmentToData(trace.costTraceAssociation, sumWeight, commandWeight)
     algorithm match {
       case Optics(_) =>
         segments.map({
@@ -143,9 +143,9 @@ object SegmentClustering {
       }
     }
 
-    def print(costTrace: CostTrace): String = {
+    def print(costTraceAssociation: CostTraceAssociation): String = {
       indices.map({
-        index => costTrace.ghostCommandAtIndex(index).printToIR()
+        index => costTraceAssociation.ghostCommandAtIndex(index).printToIR()
       }).mkString(", ")
     }
   }
@@ -182,7 +182,7 @@ object SegmentClustering {
     def getGroups: Set[Group] = groups
   }
 
-  class SegmentToData(costTrace: CostTrace, sumWeight: Int, commandWeight: Int) {
+  class SegmentToData(costTraceAssociation: CostTraceAssociation, sumWeight: Int, commandWeight: Int) {
     def difference(left: Segment, right: Segment): Int = {
       sumDifference(left, right) + commandDifference(left, right)
     }
@@ -197,11 +197,11 @@ object SegmentClustering {
       Math.abs(toData(left) - toData(right))
     }
 
-    private def getSum(segment: Segment): Int = costTrace.costSumAtIndices(segment.indices)
+    private def getSum(segment: Segment): Int = costTraceAssociation.costSumAtIndices(segment.indices)
 
     private def commandDifference(left: Segment, right: Segment): Int = {
-      val leftCommands = left.indices.map(index => costTrace.ghostCommandAtIndex(index)).toSet
-      val rightCommands = right.indices.map(index => costTrace.ghostCommandAtIndex(index)).toSet
+      val leftCommands = left.indices.map(index => costTraceAssociation.ghostCommandAtIndex(index)).toSet
+      val rightCommands = right.indices.map(index => costTraceAssociation.ghostCommandAtIndex(index)).toSet
       // A large difference in the commands means the group (that includes the two segments)
       // contains (too) many different commands, which may be too complicated
       leftCommands.diff(rightCommands).size * commandWeight

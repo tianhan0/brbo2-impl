@@ -6,7 +6,7 @@ import brbo.common.ast._
 import brbo.common.{MyLogger, PreDefinedFunctions, Print}
 
 import scala.annotation.tailrec
-import scala.collection.immutable.HashMap
+import scala.collection.immutable.{HashMap, Map}
 
 class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
   protected val logger: MyLogger = MyLogger.createLogger(classOf[Interpreter], debugMode)
@@ -502,7 +502,7 @@ object Interpreter {
   }
 
   case class Trace(nodes: List[TraceNode]) extends Print {
-    val costTrace: CostTrace = {
+    val (costTrace: CostTrace, costTraceAssociation: CostTraceAssociation) = {
       val (costTraceNodes, map, reversedMap) =
         nodes.zipWithIndex.foldLeft((Nil: List[CostTraceNode], Map(): Map[CostTraceNode, Int], Map(): Map[Int, CostTraceNode]))({
           case ((nodes, map, reversedMap), (node, index)) => node.lastTransition match {
@@ -519,7 +519,7 @@ object Interpreter {
             case None => (nodes, map, reversedMap)
           }
         })
-      CostTrace(costTraceNodes.reverse, map, reversedMap)
+      (CostTrace(costTraceNodes.reverse), CostTraceAssociation(this, map, reversedMap))
     }
 
     def add(node: TraceNode): Trace = Trace(nodes :+ node)
@@ -556,23 +556,25 @@ object Interpreter {
     override def getGhostCommand: GhostCommand = reset
   }
 
-  /**
-   *
-   * @param nodes            Cost trace nodes
-   * @param indexMap         A map from cost trace nodes to the indices of the corresponding transitions
-   *                         in the trace that "backs" this cost trace
-   * @param reversedIndexMap The inverse of indexMap
-   */
-  case class CostTrace(nodes: List[CostTraceNode],
-                       indexMap: Map[CostTraceNode, Int] = Map(),
-                       reversedIndexMap: Map[Int, CostTraceNode] = Map()) extends Print {
+  case class CostTrace(nodes: List[CostTraceNode]) extends Print {
     override def print(): String = {
       val prefix = "Use Trace: "
       val linePrefix: String = " " * prefix.length
       val string = printNodes(nodes.map(n => n.print()), 1, linePrefix, "->")
       s"$prefix$string"
     }
+  }
 
+  /**
+   *
+   * @param trace            The trace that this cost trace is associated with
+   * @param indexMap         A map from cost trace nodes to the indices of the corresponding transitions
+   *                         in the trace that "backs" this cost trace
+   * @param reversedIndexMap The inverse of indexMap
+   */
+  case class CostTraceAssociation(trace: Trace,
+                                  indexMap: Map[CostTraceNode, Int],
+                                  reversedIndexMap: Map[Int, CostTraceNode]) {
     def ghostCommandAtIndex(index: Int): GhostCommand = reversedIndexMap(index).getGhostCommand
 
     def costSumAtIndices(indices: List[Int]): Int = {

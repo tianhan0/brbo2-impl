@@ -17,7 +17,7 @@ class SegmentClusteringUnitTest extends AnyFlatSpec {
   private val amortizeSeparatelyProgram = BasicProcessor.getTargetProgram("Test", amortizeSeparately).program
 
   def printSegments(groups: List[List[Segment]], trace: Trace): String = {
-    groups.map(group => group.map(segment => segment.print(trace.costTrace))).mkString("\n")
+    groups.map(group => group.map(segment => segment.print(trace.costTraceAssociation))).mkString("\n")
   }
 
   "Clustering similar segments" should "be correct" in {
