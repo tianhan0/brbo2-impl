@@ -77,8 +77,8 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
     clusters
   }
 
-  // Given a list of potentially overlapping segments, choose a set of
-  // non-overlapping segments based on heuristics
+  // Given a list of potentially overlapping segments, choose sets of
+  // non-overlapping segments
   def findNonOverlappingSegments(segments: List[Segment]): List[Group] = {
     val possibleGroups: List[Group] = segments.foldLeft(Nil: List[Group])({
       case (groups, segment) =>

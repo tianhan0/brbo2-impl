@@ -27,8 +27,7 @@ object ClusteringUnitTest {
   val clusterTests: List[TestCase] = {
     val matrix1 = List(List(1, 2), List(3, 4))
     List(TestCase("matrix1", matrix1,
-      """0
-        |0""".stripMargin))
+      """List(0, 0)""".stripMargin))
   }
 
   val jsonWriteTests: List[TestCase] = {

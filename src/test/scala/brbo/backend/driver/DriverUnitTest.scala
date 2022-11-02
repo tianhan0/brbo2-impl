@@ -12,7 +12,7 @@ import brbo.common.{BrboType, CommandLineArguments}
 import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.scalatest.flatspec.AnyFlatSpec
 
-class DriverUnitTest extends AnyFlatSpec {
+/*class DriverUnitTest extends AnyFlatSpec {
   val arguments = new CommandLineArguments
   arguments.initialize(
     TEST_MODE,
@@ -44,7 +44,7 @@ class DriverUnitTest extends AnyFlatSpec {
         StringCompare.ignoreWhitespaces(driver.verifySelectivelyAmortize(boundAssertion).toString, """TRUE_RESULT""")
     })
   }
-}
+}*/
 
 object DriverUnitTest {
   val testCases: List[TestCase] = {

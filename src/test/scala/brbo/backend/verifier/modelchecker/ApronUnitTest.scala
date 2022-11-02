@@ -8,7 +8,7 @@ import brbo.common.string.StringCompare
 import brbo.common.{BrboType, Z3Solver}
 import org.scalatest.flatspec.AnyFlatSpec
 
-class ApronUnitTest extends AnyFlatSpec {
+/*class ApronUnitTest extends AnyFlatSpec {
   "Translating expressions to Z3 (treating doubles as integers)" should "be correct" in {
     expressionTestsToInt.foreach({
       test =>
@@ -26,7 +26,7 @@ class ApronUnitTest extends AnyFlatSpec {
         StringCompare.ignoreWhitespaces(actual.toString, test.expectedOutput, s"Test `${test.name}` failed!")
     })
   }
-}
+}*/
 
 object ApronUnitTest {
   private val x = Apron.mkVar(index = 0)
