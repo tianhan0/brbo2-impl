@@ -1,12 +1,13 @@
 package brbo.frontend
 
 import brbo.common.BrboType
+import brbo.frontend.TypeUtils.typeTranslation
 import com.sun.source.tree._
 import com.sun.source.util.TreePath
 
 import javax.lang.model.`type`.TypeMirror
 import scala.collection.JavaConverters._
-import scala.collection.immutable.{HashMap, HashSet}
+import scala.collection.immutable.HashSet
 
 object JavaTreeUtils {
   def acceptableTree(tree: StatementTree): Unit = {
@@ -33,11 +34,12 @@ object JavaTreeUtils {
     }
   }
 
-  def getAllInputVariables(methodTree: MethodTree): Map[String, BrboType.T] = {
-    val parameters = methodTree.getParameters.asScala.foldLeft(HashMap[String, TypeMirror]())({
-      (acc, param) => acc + (param.getName.toString -> org.checkerframework.javacutil.TreeUtils.typeOf(param.getType))
-    })
-    TypeUtils.typeMapTranslation(parameters)
+  def getAllInputVariables(methodTree: MethodTree): List[(String, BrboType.T)] = {
+    methodTree.getParameters.asScala.foldLeft(Nil: List[(String, BrboType.T)])({
+      (acc, param) =>
+      val typ = org.checkerframework.javacutil.TreeUtils.typeOf(param.getType)
+        (param.getName.toString, typeTranslation(typ)) :: acc
+    }).reverse
   }
 
   def collectCommands(statement: StatementTree): Set[StatementTree] = {

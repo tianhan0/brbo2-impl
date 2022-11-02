@@ -405,6 +405,7 @@ object Interpreter {
     private var map = new HashMap[String, BrboValue]
 
     def set(variable: Identifier, value: BrboValue): Store = {
+      assert(variable.typ == variable.typ)
       val store = new Store
       store.map = map + (variable.name -> value)
       store
@@ -502,25 +503,26 @@ object Interpreter {
   }
 
   case class Trace(nodes: List[TraceNode]) extends Print {
-    val (costTrace: CostTrace, costTraceAssociation: CostTraceAssociation) = {
-      val (costTraceNodes, map, reversedMap) =
-        nodes.zipWithIndex.foldLeft((Nil: List[CostTraceNode], Map(): Map[CostTraceNode, Int], Map(): Map[Int, CostTraceNode]))({
-          case ((nodes, map, reversedMap), (node, index)) => node.lastTransition match {
+    val costTraceAssociation: CostTraceAssociation = {
+      val (map, reversedMap) =
+        nodes.zipWithIndex.foldLeft((Map(): Map[CostTraceNode, Int], Map(): Map[Int, CostTraceNode]))({
+          case ((map, reversedMap), (node, index)) => node.lastTransition match {
             case Some(lastTransition) =>
               (lastTransition.cost, lastTransition.command) match {
                 case (Some(cost), use: Use) =>
                   val node = UseNode(use, cost)
-                  (node :: nodes, map + (node -> index), reversedMap + (index -> node))
+                  (map + (node -> index), reversedMap + (index -> node))
                 case (None, reset: Reset) =>
                   val node = ResetNode(reset)
-                  (node :: nodes, map + (node -> index), reversedMap + (index -> node))
-                case _ => (nodes, map, reversedMap)
+                  (map + (node -> index), reversedMap + (index -> node))
+                case _ => (map, reversedMap)
               }
-            case None => (nodes, map, reversedMap)
+            case None => (map, reversedMap)
           }
         })
-      (CostTrace(costTraceNodes.reverse), CostTraceAssociation(this, map, reversedMap))
+      CostTraceAssociation(this, map, reversedMap)
     }
+    val costTrace: CostTrace = CostTrace(costTraceAssociation.costTrace(indices = None))
 
     def add(node: TraceNode): Trace = Trace(nodes :+ node)
 
@@ -575,6 +577,18 @@ object Interpreter {
   case class CostTraceAssociation(trace: Trace,
                                   indexMap: Map[CostTraceNode, Int],
                                   reversedIndexMap: Map[Int, CostTraceNode]) {
+    private val subsequence = reversedIndexMap.toList.sortWith({
+      case ((index1, _), (index2, _)) => index1 < index2
+    })
+
+    def costTrace(indices: Option[List[Int]]): List[CostTraceNode] = {
+      val trace = indices match {
+        case Some(indices) => subsequence.filter({ case (index, _) => indices.contains(index) })
+        case None => subsequence
+      }
+      trace.map({ case (_, node) => node })
+    }
+
     def ghostCommandAtIndex(index: Int): GhostCommand = reversedIndexMap(index).getGhostCommand
 
     def costSumAtIndices(indices: List[Int]): Int = {

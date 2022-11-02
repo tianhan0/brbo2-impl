@@ -3,48 +3,49 @@ package brbo.backend2.learning
 import brbo.TestCase
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.Trace
+import brbo.backend2.learning.Clustering.KMeans
 import brbo.backend2.learning.SegmentClustering.Segment
 import brbo.backend2.learning.SegmentClusteringUnitTest._
+import brbo.common.BrboType.INT
 import brbo.common.ast._
 import brbo.common.string.StringCompare
 import brbo.frontend.BasicProcessor
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SegmentClusteringUnitTest extends AnyFlatSpec {
-  private val loopPhaseProgram = BasicProcessor.getTargetProgram("Test", loopPhase).program
-  private val amortizeAndWorstCase01Program = BasicProcessor.getTargetProgram("Test", amortizeAndWorstCase01).program
-  private val amortizeAndWorstCase02Program = BasicProcessor.getTargetProgram("Test", amortizeAndWorstCase02).program
-  private val amortizeSeparatelyProgram = BasicProcessor.getTargetProgram("Test", amortizeSeparately).program
-
-  def printSegments(groups: List[List[Segment]], trace: Trace): String = {
-    groups.map(group => group.map(segment => segment.print(trace.costTraceAssociation))).mkString("\n")
-  }
-
-  "Clustering similar segments" should "be correct" in {
-    val interpreter = new Interpreter(loopPhaseProgram, debugMode = false)
-    val flowEndState = interpreter.execute(List(Number(4)))
-    val segmentClustering = new SegmentClustering(sumWeight = 1000, commandWeight = 10, debugMode = true)
-    val groups = segmentClustering.clusterSimilarSegments(flowEndState.trace, segmentLength = 1)
-    val expectedOutput =
-      """List(use R0 1011)
-        |List(use R0 2011)
-        |List(use R0 88, use R0 88)
-        |List(use R0 89, use R0 89)""".stripMargin
-    StringCompare.ignoreWhitespaces(printSegments(groups, flowEndState.trace), expectedOutput, "loopPhaseProgram failed")
-    // TODO: Test on more programs
+  "Clustering similar segments with KMeans" should "be correct" in {
+    SegmentClusteringUnitTest.clusterSimilarSegmentTests.foreach({
+      testCase =>
+        val (program, inputs) = testCase.input.asInstanceOf[(String, List[BrboValue])]
+        val trace = getTrace(program, inputs)
+        val segmentClustering = new SegmentClustering(sumWeight = 1000, commandWeight = 10, debugMode = false)
+        val groups = segmentClustering.clusterSimilarSegments(trace, segmentLength = 1, KMeans(Some(5)))
+        StringCompare.ignoreWhitespaces(printSegments(groups, trace), testCase.expectedOutput, s"${testCase.name} failed")
+    })
   }
 }
 
 object SegmentClusteringUnitTest {
+  def printSegments(groups: List[List[Segment]], trace: Trace): String = {
+    groups.map(group => group.map(segment => segment.print(trace.costTraceAssociation))).mkString("\n")
+  }
+
+  def getTrace(program: String, inputs: List[BrboValue]): Trace = {
+    val targetProgram = BasicProcessor.getTargetProgram("Test", program).program
+    val interpreter = new Interpreter(targetProgram, debugMode = true)
+    val flowEndState = interpreter.execute(inputs)
+    flowEndState.trace
+  }
+
   private val functionDefinitions =
-    """  void use(int x, int cost, boolean condition) {}
-      |  void use(int x, int cost) {}
-      |  void reset(int x, boolean condition) {}
-      |  void reset(int x) {}
-      |  int arrayRead(int[] x, int index) { return 0; }
-      |  int arrayLength(int[] x) { return 0; }""".stripMargin
+    """  abstract void use(int x, int cost, boolean condition);
+      |  abstract void use(int x, int cost);
+      |  abstract void reset(int x, boolean condition);
+      |  abstract void reset(int x);
+      |  abstract int arrayRead(int[] x, int index);
+      |  abstract int arrayLength(int[] x);""".stripMargin
   private val loopPhase =
-    s"""class Test {
+    s"""abstract class Test {
        |  void main(int n) {
        |    int i = 0;
        |    while (i < n) {
@@ -62,7 +63,7 @@ object SegmentClusteringUnitTest {
        |$functionDefinitions
        |}""".stripMargin
   private val amortizeAndWorstCase01 =
-    s"""class Test {
+    s"""abstract class Test {
        |  void main(int[] array) {
        |    int i = 0;
        |    while (i < arrayLength(array)) {
@@ -75,7 +76,7 @@ object SegmentClusteringUnitTest {
        |$functionDefinitions
        |}""".stripMargin
   private val amortizeAndWorstCase02 =
-    s"""class Test {
+    s"""abstract class Test {
        |  void main(int[] array, int n) {
        |    int i = 0;
        |    while (i < n) {
@@ -92,7 +93,7 @@ object SegmentClusteringUnitTest {
        |$functionDefinitions
        |}""".stripMargin
   private val amortizeSeparately =
-    s"""class Test {
+    s"""abstract class Test {
        |  void main(int[] array1, int[] array2, int n) {
        |    int i = 0;
        |    while (i < n) {
@@ -104,10 +105,36 @@ object SegmentClusteringUnitTest {
        |$functionDefinitions
        |}""".stripMargin
 
-
-  private val list1 = List(1, 1, 2, 2)
-
-  val decomposeTests: List[TestCase] = List(
-    TestCase("list1", (list1, 10), """""")
+  val clusterSimilarSegmentTests: List[TestCase] = List(
+    TestCase("loopPhase", (loopPhase, List(Number(4))),
+      """List(use R0 1011 (cost=1011))
+        |List(use R0 2011 (cost=2011))
+        |List(use R0 88 (cost=88), use R0 88 (cost=88))
+        |List(use R0 89 (cost=89), use R0 89 (cost=89))""".stripMargin),
+    TestCase("amortizeAndWorstCase01", (amortizeAndWorstCase01, List(BrboArray(List(Number(10), Number(4), Number(3)), INT))),
+      """List(use R0 arrayRead(array, i) (cost=4))
+        |List(use R0 1011 (cost=1011))
+        |List(use R0 88 (cost=88))
+        |List(use R0 arrayRead(array, i) (cost=10))
+        |List(use R0 arrayRead(array, i) (cost=3))""".stripMargin),
+    TestCase("amortizeAndWorstCase02", (amortizeAndWorstCase02, List(
+      BrboArray(List(Number(10), Number(4), Number(3)), INT),
+      Number(3)
+    )),
+      """List(use R0 arrayRead(array, j) (cost=4))
+        |List(use R0 1011 (cost=1011))
+        |List(use R0 88 (cost=88))
+        |List(use R0 arrayRead(array, j) (cost=10))
+        |List(use R0 arrayRead(array, j) (cost=3))""".stripMargin),
+    TestCase("amortizeSeparately", (amortizeSeparately, List(
+      BrboArray(List(Number(10), Number(4), Number(3)), INT),
+      BrboArray(List(Number(7), Number(20), Number(1)), INT),
+      Number(3)
+    )),
+      """List(use R0 arrayRead(array2, i) (cost=1))
+        |List(use R0 arrayRead(array1, i) (cost=10))
+        |List(use R0 arrayRead(array2, i) (cost=20))
+        |List(use R0 arrayRead(array1, i) (cost=4), use R0 arrayRead(array1, i) (cost=3))
+        |List(use R0 arrayRead(array2, i) (cost=7))""".stripMargin),
   )
 }

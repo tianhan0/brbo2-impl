@@ -68,7 +68,7 @@ object TargetProgram {
       case Right(statement) => statement
     }
     val function = BrboFunction(targetMethod.methodName, targetMethod.returnType,
-      targetMethod.inputVariables.values.toList, body, translate.getResourceVariables)
+      targetMethod.inputVariables.map({ case (_, identifier) => identifier}), body, translate.getResourceVariables)
     (function, translate.getBoundAssertions)
   }
 

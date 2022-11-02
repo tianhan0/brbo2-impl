@@ -27,7 +27,8 @@ case class TargetMethod(methodTree: MethodTree) {
       }
     }
 
-  val inputVariables: Map[String, Identifier] = JavaTreeUtils.getAllInputVariables(methodTree).map({ case (name, typ) => (name, Identifier(name, typ)) })
+  val inputVariables: List[(String, Identifier)] =
+    JavaTreeUtils.getAllInputVariables(methodTree).map({ case (name, typ) => (name, Identifier(name, typ)) })
   logger.trace(s"[Method `${methodTree.getName}`] Input variables: `$inputVariables`")
 
   val allCommands: Set[StatementTree] = JavaTreeUtils.collectCommands(methodTree.getBody)
@@ -50,5 +51,5 @@ case class TargetMethod(methodTree: MethodTree) {
     }
   logger.trace(s"[Method `${methodTree.getName}`] Local variables: `$localVariables`")
 
-  val variables: Map[String, Identifier] = inputVariables ++ localVariables
+  val variables: Map[String, Identifier] = inputVariables.toMap ++ localVariables
 }

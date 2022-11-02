@@ -1,5 +1,6 @@
 package brbo.backend2.learning
 
+import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTrace, CostTraceAssociation, Trace}
 import brbo.backend2.learning.Clustering.{Algorithm, KMeans, Optics}
 import brbo.backend2.learning.SegmentClustering._
@@ -29,7 +30,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
     val numberOfCosts = trace.costTrace.nodes.size
     var segmentLength = 1
     while (decomposition.getSize < numberOfCosts) {
-      val clusters: List[List[Segment]] = clusterSimilarSegments(trace, segmentLength)
+      val clusters: List[List[Segment]] = clusterSimilarSegments(trace, segmentLength, KMeans(Some(5)))
       logger.info(s"Found ${clusters.size} segment clusters")
 
       var clusterId = 0
@@ -50,7 +51,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
     decomposition
   }
 
-  def clusterSimilarSegments(trace: Trace, segmentLength: Int): List[List[Segment]] = {
+  def clusterSimilarSegments(trace: Trace, segmentLength: Int, algorithm: Algorithm): List[List[Segment]] = {
     val indices: util.Set[Int] = trace.costTraceAssociation.indexMap.values.toSet.asJava
     logger.info(s"Choose segments with sizes of $segmentLength")
     val segments: List[Segment] =
@@ -58,10 +59,8 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
         .asScala.map(subset => Segment(subset.asScala.toList.sorted))
         .toList
 
-    logger.info(s"Cluster segments with similar sums")
-    val kMeans = KMeans(Some(5))
-    val matrix = generateInputData(trace, segments, kMeans)
-    val clusterLabels = Clustering.cluster(matrix, kMeans, debugMode) match {
+    val matrix = generateInputData(trace, segments, algorithm)
+    val clusterLabels = Clustering.cluster(matrix, algorithm, debugMode) match {
       case Some(labels) => labels
       case None =>
         logger.error(s"Failed to find similar segments")
@@ -144,8 +143,10 @@ object SegmentClustering {
     }
 
     def print(costTraceAssociation: CostTraceAssociation): String = {
-      indices.map({
-        index => costTraceAssociation.ghostCommandAtIndex(index).printToIR()
+      costTraceAssociation.costTrace(Some(indices)).map({
+        case Interpreter.ResetNode(reset) => reset.printToIR()
+        case Interpreter.UseNode(use, cost) => s"${use.printToIR()} (cost=$cost)"
+        case _ => throw new Exception
       }).mkString(", ")
     }
   }
