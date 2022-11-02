@@ -507,12 +507,12 @@ case class BranchingHead(override val uuid: UUID = UUID.randomUUID()) extends Co
   }
 }
 
-sealed trait GhostCommand {
+abstract class GhostCommand(uuid: UUID) extends Command(uuid) {
   def replace(newGroupId: Int): GhostCommand
 }
 
 case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Bool(b = true),
-               override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with GhostCommand {
+               override val uuid: UUID = UUID.randomUUID()) extends GhostCommand(uuid) {
   assert(update.typ == BrboType.INT)
   assert(condition.typ == BrboType.BOOL)
 
@@ -555,7 +555,7 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
 }
 
 case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
-                 override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with GhostCommand {
+                 override val uuid: UUID = UUID.randomUUID()) extends GhostCommand(uuid) {
   assert(condition.typ == BrboType.BOOL)
 
   val (resourceVariable: Identifier, starVariable: Identifier, counterVariable: Identifier) =
