@@ -25,9 +25,10 @@ object Clustering {
 
   case class Optics(maxEps: Option[Int]) extends Algorithm {
     def commandLineOption: String = {
+      val algorithm = "--algorithm=optics"
       maxEps match {
-        case Some(maxEps) => s"--algorithm=optics --max-eps=$maxEps"
-        case None => ""
+        case Some(maxEps) => s"$algorithm --max-eps=$maxEps"
+        case None => s"$algorithm"
       }
     }
   }
@@ -36,8 +37,14 @@ object Clustering {
     override def commandLineOption: String = "--algorithm=knn"
   }
 
-  case class KMeans(clusters: Int) extends Algorithm {
-    override def commandLineOption: String = s"--algorithm=kmeans --clusters=$clusters"
+  case class KMeans(clusters: Option[Int]) extends Algorithm {
+    override def commandLineOption: String = {
+      val algorithm = "--algorithm=kmeans"
+      clusters match {
+        case Some(clusters) => s"$algorithm --clusters=$clusters"
+        case None => s"$algorithm"
+      }
+    }
   }
 
   /**
