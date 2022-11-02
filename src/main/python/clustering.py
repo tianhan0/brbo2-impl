@@ -6,6 +6,7 @@ import json
 
 
 def optics(data, max_eps):
+    print(f"Cluster algorithm: OPTICS")
     clustering = OPTICS(
         min_samples=2,
         max_eps=max_eps,
@@ -20,10 +21,15 @@ def optics(data, max_eps):
     return clustering.labels_.tolist()
 
 
-# def k_means(data):
-#     kmeans = KMeans(n_clusters=3, random_state=0).fit(data)
-#     print(f"Labels: {kmeans.labels_}")
-#     return kmeans.labels_
+def k_means(data, n_clusters):
+    print(f"Cluster algorithm: KMeans")
+    if n_clusters:
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+    else:
+        kmeans = KMeans(random_state=0)
+    kmeans.fit(data)
+    print(f"Labels: {kmeans.labels_}")
+    return kmeans.labels_.tolist()
 
 
 def knn(data):
@@ -43,7 +49,7 @@ if __name__ == "__main__":
         "--algorithm",
         type=str,
         default="optics",
-        choices=["optics", "knn"],
+        choices=["optics", "kmeans", "knn"],
         help="The output json file",
     )
     parser.add_argument(
@@ -56,7 +62,12 @@ if __name__ == "__main__":
         "--max-eps",
         type=float,
         default=numpy.inf,
-        help="The maximum distance between two samples for one to be considered as in the neighborhood of the other.",
+        help="OPTICS algorithm: The maximum distance between two samples for one to be considered as in the neighborhood of the other.",
+    )
+    parser.add_argument(
+        "--clusters",
+        type=int,
+        help="K-Means: The number of clusters to form as well as the number of centroids to generate.",
     )
     args = parser.parse_args()
 
@@ -64,13 +75,15 @@ if __name__ == "__main__":
         print(f"Read from {args.input}")
         json_data = json.loads(input_file.read())
         distance_matrix = json_data["data"]
-        print(f"Distance matrix: {distance_matrix}")
+        print(f"Data matrix: {distance_matrix}")
 
         data = numpy.array(distance_matrix, dtype=object)
         if args.algorithm == "optics":
             labels = optics(data, max_eps=args.max_eps)
         elif args.algorithm == "knn":
             labels = knn(data)
+        elif args.algorithm == "kmeans":
+            labels = k_means(data, args.clusters)
         else:
             print(f"Unknown algorithm {args.algorithm}")
             sys.exit(-1)
