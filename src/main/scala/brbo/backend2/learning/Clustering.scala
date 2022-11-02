@@ -59,7 +59,7 @@ object Clustering {
    * @param debugMode  Whether to print extra logging information.
    * @return
    */
-  def cluster(dataMatrix: List[List[Int]], algorithm: Algorithm, debugMode: Boolean): List[Int] = {
+  def cluster(dataMatrix: List[List[Int]], algorithm: Algorithm, debugMode: Boolean): Option[List[Int]] = {
     val logger = if (debugMode) MyLogger.commonDebugLogger else MyLogger.commonLogger
     val inputFilePath = Files.createTempFile("", ".json").toAbsolutePath.toString
     logger.info(s"Write data into $inputFilePath")
@@ -85,13 +85,12 @@ object Clustering {
       val outputFileContents = Files.readString(outputFile)
       logger.traceOrError(s"Output file content: $outputFileContents")
       val parsed = Json.parse(outputFileContents)
-      parsed("labels").as[List[Int]]
+      Some(parsed("labels").as[List[Int]])
     }
     else {
       val stdout = IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
       logger.fatal(s"Failed to execute $CLUSTER_SCRIPT. stdout: $stdout")
-      logger.fatal(s"Letting all elements have the same label")
-      List.fill(dataMatrix.length)(0)
+      None
     }
   }
 

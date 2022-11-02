@@ -2,7 +2,7 @@ package brbo.backend2
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTrace, Trace}
-import brbo.backend2.learning.Clustering.Optics
+import brbo.backend2.learning.Clustering.{CLUSTER_SCRIPT, Optics}
 import brbo.backend2.learning.{Clustering, TraceClustering}
 import brbo.common.ast.{BoundAssertion, BrboProgram}
 import brbo.common.{CommandLineArguments, MyLogger}
@@ -31,14 +31,20 @@ class Driver(arguments: CommandLineArguments, program: BrboProgram) {
     logger.info(s"${STEP_2}Group traces with zero distance")
     val groupedCostTraces: Map[CostTrace, Set[CostTrace]] = TraceClustering.groupZeroDistanceTraces(costTraces)
     logger.info(s"${STEP_2}Found ${groupedCostTraces.size} groups of traces")
-    groupedCostTraces.keys.foreach(t => logger.traceOrError(s"\n${t.print()}"))
+    val representativeCostTraces = groupedCostTraces.keys
+    representativeCostTraces.foreach(t => logger.traceOrError(s"\n${t.print()}"))
 
     logger.info(s"${STEP_2}Compute a distance matrix")
     val distanceMatrix: List[List[Int]] =
-      TraceClustering.distanceMatrix(groupedCostTraces.keys.toList, SUBSTITUTION_PENALTY)
+      TraceClustering.distanceMatrix(representativeCostTraces.toList, SUBSTITUTION_PENALTY)
 
     logger.info(s"${STEP_2}Cluster traces")
-    val clusterLabels: List[Int] = Clustering.cluster(distanceMatrix, Optics(Some(10)), debugMode)
+    val clusterLabels: List[Int] = Clustering.cluster(distanceMatrix, Optics(Some(10)), debugMode) match {
+      case Some(labels) => labels
+      case None =>
+        logger.info(s"Put all traces into the same cluster")
+        List.fill(representativeCostTraces.size)(0)
+    }
 
     val labelMap: Map[Int, List[((CostTrace, Trace), Int)]] =
       costTraces.zip(traces).zip(clusterLabels).groupBy({ case (_, label) => label })
