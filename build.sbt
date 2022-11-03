@@ -30,6 +30,8 @@ libraryDependencies += "com.google.guava" % "guava" % "31.1-jre"
 
 libraryDependencies += "org.apache.spark" %% "spark-mllib" % "3.3.1" % "provided"
 
+libraryDependencies += "tech.tablesaw" % "tablesaw-core" % "0.43.1"
+
 // Add tools.jar such that sbt can find it
 unmanagedJars in Compile ~= {
   uj: Classpath =>
