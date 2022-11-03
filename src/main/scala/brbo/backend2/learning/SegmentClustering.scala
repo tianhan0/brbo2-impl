@@ -1,11 +1,14 @@
 package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
-import brbo.backend2.interpreter.Interpreter.{CostTrace, CostTraceAssociation, Trace}
+import brbo.backend2.interpreter.Interpreter.{CostTrace, CostTraceAssociation, Trace, Transition}
 import brbo.backend2.learning.Clustering.{Algorithm, KMeans, Optics}
+import brbo.backend2.learning.Generalizer.GroupID
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.MyLogger
+import brbo.common.ast.Skip
 import com.google.common.collect.Sets
+import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
 import java.util
 import scala.collection.JavaConverters._
@@ -210,5 +213,33 @@ object SegmentClustering {
       // contains (too) many different commands, which may be too complicated
       leftCommands.diff(rightCommands).size * commandWeight
     }
+  }
+
+  def printDecomposition(trace: Trace, groups: Map[GroupID, Group]): String = {
+    val table: Table = Table.create("")
+    val sortedMap = groups.toList.sortWith({
+      case ((id1, _), (id2, _)) => id1.print() < id2.print()
+    })
+    val commands: List[String] = trace.nodes.map({
+      node =>
+        node.lastTransition match {
+          case Some(Transition(command, _)) => command.printToC(0)
+          case None => "Command not exist"
+        }
+    })
+    table.addColumns(StringColumn.create("Commands", commands: _*))
+    sortedMap.foreach({
+      case (groupID, group) =>
+        val column = IntColumn.create(groupID.print())
+        Range(0, commands.length).foreach({
+          index =>
+            group.segments.indexWhere(segment => segment.indices.contains(index)) match {
+              case -1 => column.appendMissing()
+              case n => column.append(n)
+            }
+        })
+        table.addColumns(column)
+    })
+    table.printAll()
   }
 }

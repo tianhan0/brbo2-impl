@@ -19,6 +19,22 @@ abstract class BrboExpr(val typ: BrboType.T, uuid: UUID) extends Command(uuid)
 
 abstract class BrboValue(override val typ: BrboType.T, override val uuid: UUID) extends BrboExpr(typ, uuid)
 
+case object BottomValue extends BrboValue(INT, UUID.randomUUID()) {
+  override def printToCInternal(indent: Int): String = "<Bottom>"
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = other == this
+
+  override def toZ3AST(solver: Z3Solver): AST = ???
+
+  override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def uniqueCopyExpr: BrboExpr = ???
+}
+
 case class Identifier(name: String, override val typ: BrboType.T, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(typ, uuid) {
   override def printToCInternal(indent: Int): String = {
     s"${indentString(indent)}$name"

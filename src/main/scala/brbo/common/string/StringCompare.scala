@@ -1,7 +1,7 @@
 package brbo.common.string
 
 object StringCompare {
-  private val dashes = "------------------------------------------"
+  private val dashes = "$" * 80
 
   def compareLiteral(actual: String, expected: String, message: String = ""): Boolean = {
     val result = actual == expected
