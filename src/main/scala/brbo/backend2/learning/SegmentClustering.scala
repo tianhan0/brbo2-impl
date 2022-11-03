@@ -156,9 +156,9 @@ object SegmentClustering {
 
   // Segments are sorted and must not overlap
   case class Group(segments: List[Segment]) {
-    def size: Int = segments.map(segment => segment.indices.size).sum
+    val size: Int = segments.map(segment => segment.indices.size).sum
 
-    def indices: List[Int] = segments.flatMap(segment => segment.indices)
+    val indices: List[Int] = segments.flatMap(segment => segment.indices)
 
     def addSegment(segment: Segment): Option[Group] = {
       if (segments.isEmpty)

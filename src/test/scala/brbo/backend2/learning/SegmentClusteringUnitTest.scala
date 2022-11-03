@@ -30,19 +30,22 @@ object SegmentClusteringUnitTest {
     groups.map(group => group.map(segment => segment.print(trace.costTraceAssociation))).mkString("\n")
   }
 
-  def getTrace(program: String, inputs: List[BrboValue]): Trace = {
+  def toBrboProgram(program: String): BrboProgram = {
     val targetProgram = BasicProcessor.getTargetProgram("Test", program).program
     val mainFunctionWithResetPlaceHolders =
       targetProgram.mainFunction.replaceBodyWithoutInitialization(
         BrboAstUtils.insertResetPlaceHolder(targetProgram.mainFunction.body).asInstanceOf[Statement]
       )
-    val targetProgramWithResetPlaceHolders = targetProgram.replaceMainFunction(mainFunctionWithResetPlaceHolders)
-    val interpreter = new Interpreter(targetProgramWithResetPlaceHolders, debugMode = true)
+    targetProgram.replaceMainFunction(mainFunctionWithResetPlaceHolders)
+  }
+
+  def getTrace(program: String, inputs: List[BrboValue]): Trace = {
+    val interpreter = new Interpreter(toBrboProgram(program), debugMode = true)
     val flowEndState = interpreter.execute(inputs)
     flowEndState.trace
   }
 
-  private val functionDefinitions =
+  val functionDefinitions: String =
     """  abstract void use(int x, int cost, boolean condition);
       |  abstract void use(int x, int cost);
       |  abstract void reset(int x, boolean condition);
