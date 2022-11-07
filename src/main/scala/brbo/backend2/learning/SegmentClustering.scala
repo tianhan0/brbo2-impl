@@ -1,12 +1,11 @@
 package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
-import brbo.backend2.interpreter.Interpreter.{CostTrace, CostTraceAssociation, Trace, Transition}
+import brbo.backend2.interpreter.Interpreter.{CostTraceAssociation, Trace, Transition}
 import brbo.backend2.learning.Clustering.{Algorithm, KMeans, Optics}
 import brbo.backend2.learning.Generalizer.GroupID
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.MyLogger
-import brbo.common.ast.Skip
 import com.google.common.collect.Sets
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
@@ -98,7 +97,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
   }
 
   def generateInputData(trace: Trace, segments: List[Segment], algorithm: Algorithm): List[List[Int]] = {
-    val segmentToData = new SegmentToData(trace.costTraceAssociation, sumWeight, commandWeight)
+    val segmentToData = new SegmentToTrainingData(trace.costTraceAssociation, sumWeight, commandWeight)
     algorithm match {
       case Optics(_) =>
         segments.map({
@@ -132,8 +131,11 @@ object SegmentClustering {
 
   case class TraceDecomposition(trace: Trace, decomposition: Decomposition)
 
-  // Indices in the list of costs. Indices are sorted
+  // Indices in the list of costs
   case class Segment(indices: List[Int]) {
+    assert(indices.nonEmpty && indices.sorted == indices,
+      s"Indices must be non-empty and sorted: $indices")
+
     // Indices 1, 2, 4 overlap with 1, 5, 10, because 1 overlaps with 1
     // Indices 1, 2, 4 overlap with 3, 5, because interval [2,4] overlaps with [3,5]
     def overlap(other: Segment): Boolean = {
@@ -155,10 +157,18 @@ object SegmentClustering {
         case _ => throw new Exception
       }).mkString(", ")
     }
+
+    def lessThanOrEqualTo(other: Segment): Boolean = indices.last <= other.indices.head
   }
 
-  // Segments are sorted and must not overlap
   case class Group(segments: List[Segment]) {
+    segments.zipWithIndex.foreach({
+      case (segment, index) =>
+        if (index < segments.length - 1) {
+          assert(segment.indices.last < segments(index + 1).indices.head,
+            s"Segments are sorted and must not overlap: $segment, ${segments(index + 1)}")
+        }
+    })
     val size: Int = segments.map(segment => segment.indices.size).sum
 
     val indices: List[Int] = segments.flatMap(segment => segment.indices)
@@ -189,7 +199,7 @@ object SegmentClustering {
     def getGroups: Set[Group] = groups
   }
 
-  class SegmentToData(costTraceAssociation: CostTraceAssociation, sumWeight: Int, commandWeight: Int) {
+  class SegmentToTrainingData(costTraceAssociation: CostTraceAssociation, sumWeight: Int, commandWeight: Int) {
     def difference(left: Segment, right: Segment): Int = {
       sumDifference(left, right) + commandDifference(left, right)
     }
@@ -227,6 +237,7 @@ object SegmentClustering {
           case None => "Command not exist"
         }
     })
+    table.addColumns(IntColumn.create("Index", Range(0, commands.length): _*))
     table.addColumns(StringColumn.create("Commands", commands: _*))
     sortedMap.foreach({
       case (groupID, group) =>

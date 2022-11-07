@@ -3,8 +3,8 @@ package brbo.backend2.learning
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter._
 import brbo.backend2.learning.SegmentClustering.Group
-import brbo.common.{MyLogger, Print}
 import brbo.common.ast._
+import brbo.common.{MyLogger, Print}
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
 object Generalizer {
@@ -62,13 +62,18 @@ object Generalizer {
     override def labelToString(label: Boolean): String = label.toString
   }
 
-  case class Location(command: Command) extends Print {
-    def print(): String = s"Location(${command.printToIR()})"
+  /**
+   *
+   * @param command The command at this trace location
+   * @param index   The index of the command in the trace where this location is created
+   */
+  case class TraceLocation(command: Command, index: Int) extends Print {
+    def print(): String = s"Location: ${command.printToIR()} (index=$index)"
   }
 
   type ResetTables = Map[GroupID, ResetTable]
 
-  class Tables(tables: Map[Location, Either[UseTable, ResetTables]], features: List[BrboExpr]) extends Print {
+  class Tables(tables: Map[TraceLocation, Either[UseTable, ResetTables]], features: List[BrboExpr]) extends Print {
     def print(): String = {
       val separator1 = "=" * 40
       val separator2 = "*" * 60
@@ -96,7 +101,7 @@ object Generalizer {
 
   class TableGenerationError(message: String) extends Exception
 
-  def evaluateFromInterpreter(interpreter: Interpreter): (BrboExpr, Store) => BrboValue = {
+  def evaluateFunctionFromInterpreter(interpreter: Interpreter): (BrboExpr, Store) => BrboValue = {
     (brboExpr: BrboExpr, store: Store) =>
       try {
         interpreter.evaluateAst(InitialState(brboExpr, store, EmptyTrace)) match {
@@ -128,6 +133,7 @@ object Generalizer {
             val next = group.segments(i + 1)
             next.indices.head - 1
           }
+          // logger.trace(s"begin $begin end $end")
           val allResetPlaceHolders = trace.nodes.zipWithIndex.flatMap({
             case (node, index) =>
               val isResetPlaceHolder = node.lastTransition match {
@@ -154,7 +160,7 @@ object Generalizer {
 
     val featureNames = features.map(e => e.printToIR())
     val groupIDs = groups.keys.toSet
-    var tableMap = Map[Location, Either[UseTable, ResetTables]]()
+    var tableMap = Map[TraceLocation, Either[UseTable, ResetTables]]()
     trace.nodes.zipWithIndex.foreach({
       case (node, index) =>
         node.lastTransition match {
@@ -171,7 +177,7 @@ object Generalizer {
                   case None => NoneGroup
                 }
                 // Find the table and add the row data
-                val location = Location(use)
+                val location = TraceLocation(use, index)
                 val useTable: UseTable = tableMap.get(location) match {
                   case Some(tables) =>
                     tables match {
@@ -197,7 +203,7 @@ object Generalizer {
                 val evaluatedFeatures: List[BrboValue] =
                   features.map(feature => evaluate(feature, node.store))
                 // Find the table and add the row data
-                val location = Location(resetPlaceHolder)
+                val location = TraceLocation(resetPlaceHolder, index)
                 groupIDs.foreach({
                   groupID =>
                     val resetTable: ResetTable = tableMap.get(location) match {
