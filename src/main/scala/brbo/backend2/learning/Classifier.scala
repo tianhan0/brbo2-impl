@@ -10,8 +10,8 @@ import brbo.common.{MyLogger, Print}
 import play.api.libs.json.Json
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
-object Generalizer {
-  private val logger = MyLogger.createLogger(Generalizer.getClass, debugMode = false)
+object Classifier {
+  private val logger = MyLogger.createLogger(Classifier.getClass, debugMode = false)
   // val model: DecisionTreeModel = ???
 
   case class GroupID(value: Int) extends Print {

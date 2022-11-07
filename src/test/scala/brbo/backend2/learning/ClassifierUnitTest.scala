@@ -2,8 +2,8 @@ package brbo.backend2.learning
 
 import brbo.TestCase
 import brbo.backend2.interpreter.Interpreter
-import brbo.backend2.learning.Generalizer.{GroupID, ResetTable, UseTable}
-import brbo.backend2.learning.GeneralizerUnitTest.{generateGroups, loopPhase}
+import brbo.backend2.learning.Classifier.{GroupID, ResetTable, UseTable}
+import brbo.backend2.learning.ClassifierUnitTest.{generateGroups, loopPhase}
 import brbo.backend2.learning.SegmentClustering.{Group, Segment}
 import brbo.backend2.learning.SegmentClusteringUnitTest.functionDefinitions
 import brbo.common.BrboType.INT
@@ -11,16 +11,16 @@ import brbo.common.ast.{Identifier, Number}
 import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
-class GeneralizerUnitTest extends AnyFlatSpec {
+class ClassifierUnitTest extends AnyFlatSpec {
   "Generate tables for classification" should "be correct" in {
     val program = SegmentClusteringUnitTest.toBrboProgram(loopPhase)
     val interpreter = new Interpreter(program)
     val trace = SegmentClusteringUnitTest.getTrace(loopPhase, List(Number(4)))
     val costNodeIndices = trace.costTraceAssociation.reversedIndexMap.keys.toList.sorted
     val groups1 = generateGroups(costNodeIndices, numberOfGroups = 2)
-    val table1 = Generalizer.generateTables(
+    val table1 = Classifier.generateTables(
       trace,
-      Generalizer.evaluateFunctionFromInterpreter(interpreter),
+      Classifier.evaluateFunctionFromInterpreter(interpreter),
       groups1,
       features = List(Identifier("i", INT), Identifier("n", INT)),
       failIfCannotFindResetPlaceHolder = false
@@ -216,9 +216,9 @@ class GeneralizerUnitTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(table1.print(), expected1, "loopPhase failed: Multiple groups")
 
     val groups2 = Map(groups1.head)
-    val table2 = Generalizer.generateTables(
+    val table2 = Classifier.generateTables(
       trace,
-      Generalizer.evaluateFunctionFromInterpreter(interpreter),
+      Classifier.evaluateFunctionFromInterpreter(interpreter),
       groups2,
       features = List(Identifier("i", INT), Identifier("n", INT)),
       failIfCannotFindResetPlaceHolder = false
@@ -391,18 +391,18 @@ class GeneralizerUnitTest extends AnyFlatSpec {
   }
 
   "Learning classifiers from tables" should "be correct" in {
-    GeneralizerUnitTest.classifierTest.foreach({
+    ClassifierUnitTest.classifierTest.foreach({
       testCase =>
         val result = testCase.input match {
-          case table: ResetTable => Generalizer.classify(table, debugMode = false)
-          case table: UseTable => Generalizer.classify(table, debugMode = false)
+          case table: ResetTable => Classifier.classify(table, debugMode = false)
+          case table: UseTable => Classifier.classify(table, debugMode = false)
         }
         StringCompare.ignoreWhitespaces(result.print(indent = 0), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }
 
-object GeneralizerUnitTest {
+object ClassifierUnitTest {
   def generateGroups(indices: List[Int], numberOfGroups: Int): Map[GroupID, Group] = {
     assert(numberOfGroups > 0)
     Range(0, numberOfGroups).map({

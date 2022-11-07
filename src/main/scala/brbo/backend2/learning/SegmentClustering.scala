@@ -2,7 +2,7 @@ package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTraceAssociation, Trace, Transition}
-import brbo.backend2.learning.Generalizer.GroupID
+import brbo.backend2.learning.Classifier.GroupID
 import brbo.backend2.learning.ScriptRunner.{Algorithm, KMeans, Optics}
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.MyLogger
@@ -40,7 +40,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
         val segments = clusters(clusterId)
         logger.info(s"Choose non-overlapping segments from cluster $clusterId")
         val nonOverlappingGroups = findNonOverlappingSegments(segments)
-        val chosenGroup = chooseMaxGroup(nonOverlappingGroups)
+        val chosenGroup = chooseGroup(nonOverlappingGroups)
         val chosenIndices = chosenGroup.indices
         // TODO: Remove segments that contain any of the chosen indices
         clusterId = clusterId + 1
@@ -61,7 +61,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
         .asScala.map(subset => Segment(subset.asScala.toList.sorted))
         .toList
 
-    val matrix = generateInputData(trace, segments, algorithm)
+    val matrix = generateTrainingData(trace, segments, algorithm)
     val clusterLabels = Clustering.cluster(matrix, algorithm, debugMode) match {
       case Some(labels) => labels
       case None =>
@@ -96,7 +96,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
     possibleGroups
   }
 
-  def generateInputData(trace: Trace, segments: List[Segment], algorithm: Algorithm): List[List[Int]] = {
+  def generateTrainingData(trace: Trace, segments: List[Segment], algorithm: Algorithm): List[List[Int]] = {
     val segmentToData = new SegmentToTrainingData(trace.costTraceAssociation, sumWeight, commandWeight)
     algorithm match {
       case Optics(_) =>
@@ -107,14 +107,14 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
             })
         })
       case KMeans(_) =>
-        segments.map(segment => List(segmentToData.toData(segment)))
+        segments.map(segment => List(segmentToData.toTrainingData(segment)))
       case _ => throw new Exception
     }
   }
 }
 
 object SegmentClustering {
-  private def chooseMaxGroup(groups: List[Group]): Group = {
+  private def chooseGroup(groups: List[Group]): Group = {
     var maxGroupSize = 0
     var maxGroupIndex = -1
     groups.zipWithIndex.foreach({
@@ -204,14 +204,14 @@ object SegmentClustering {
       sumDifference(left, right) + commandDifference(left, right)
     }
 
-    def toData(segment: Segment): Int = {
+    def toTrainingData(segment: Segment): Int = {
       getSum(segment) * sumWeight
       // TODO: Output a weighted vector, where the first element is the sum and has the max weight
       //  and the remaining elements represent commands and have much smaller weights
     }
 
     private def sumDifference(left: Segment, right: Segment): Int = {
-      Math.abs(toData(left) - toData(right))
+      Math.abs(toTrainingData(left) - toTrainingData(right))
     }
 
     private def getSum(segment: Segment): Int = costTraceAssociation.costSumAtIndices(segment.indices)
