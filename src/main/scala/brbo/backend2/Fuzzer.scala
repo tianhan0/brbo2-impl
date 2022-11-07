@@ -10,11 +10,12 @@ object Fuzzer {
   private val POSSIBILITIES = 3
   private val MAX_ARRAY_LENGTH = 10
   private val MAX_INTEGER = 1000
+  private val SEED = 62618L
 
   def randomValues(typ: BrboType.T, maxArrayLength: Int, maxInteger: Int, possibilities: Int): List[BrboValue] = {
     typ match {
       case BrboType.INT =>
-        val random = new scala.util.Random
+        val random = new scala.util.Random(seed = SEED)
         Range.inclusive(0, possibilities).toList.map(_ => Number(random.nextInt(maxInteger)))
       case BrboType.BOOL => List(Bool(b = false), Bool(b = true))
       case BrboType.ARRAY(typ) =>
