@@ -1,5 +1,7 @@
 package brbo.backend2.learning
 
+import brbo.common.Print
+import brbo.common.ast.{BrboExpr, BrboExprUtils, Number}
 import play.api.libs.functional.syntax.toFunctionalBuilderOps
 import play.api.libs.json.Reads.{min, _}
 import play.api.libs.json.{JsPath, Json, Reads}
@@ -46,13 +48,34 @@ object DecisionTree {
       val rightString = s"${right.print(indent + 2)} (if feature[$featureID] > $threshold)"
       s"${indentString}InterNode(id=$id, threshold=$threshold, featureID=$featureID)\n$leftString\n$rightString"
     }
+
+    private val isInteger = (threshold % 1) == 0
+
+    def getLeftPredicate(features: List[BrboExpr]): BrboExpr = {
+      BrboExprUtils.lessThanOrEqualTo(features(featureID), Number(threshold.floor.toInt))
+    }
+
+    def getRightPredicate(features: List[BrboExpr]): BrboExpr = {
+      if (isInteger) {
+        BrboExprUtils.greaterThan(features(featureID), Number(threshold.toInt))
+      } else {
+        BrboExprUtils.greaterThanOrEqualTo(features(featureID), Number(threshold.ceil.toInt))
+      }
+    }
   }
 
-  def parse(string: String): TreeNode = {
+  def parse(string: String): TreeClassifier = {
     val parsed = Json.parse(string)
     val leaves = parsed("leaves").as[List[LeafRawNode]]
     val nonLeaves = parsed("non_leaves").as[List[InternalRawNode]]
-    buildTree(leaves, nonLeaves)
+    val classes = parsed("classes").as[List[String]]
+    TreeClassifier(root = buildTree(leaves, nonLeaves), labels = classes)
+  }
+
+  case class TreeClassifier(root: TreeNode, labels: List[String]) extends Print {
+    def print(): String = {
+      s"Labels: $labels\nTree:\n${root.print(indent = 0)}"
+    }
   }
 
   private def buildTree(leaves: List[LeafRawNode], nonLeaves: List[InternalRawNode]): TreeNode = {

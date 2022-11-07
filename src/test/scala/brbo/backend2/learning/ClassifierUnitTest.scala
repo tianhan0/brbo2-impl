@@ -393,11 +393,12 @@ class ClassifierUnitTest extends AnyFlatSpec {
   "Learning classifiers from tables" should "be correct" in {
     ClassifierUnitTest.classifierTest.foreach({
       testCase =>
+        val debugMode = false
         val result = testCase.input match {
-          case table: ResetTable => Classifier.classify(table, debugMode = false)
-          case table: UseTable => Classifier.classify(table, debugMode = false)
+          case table: ResetTable => Classifier.classify(table, debugMode)
+          case table: UseTable => Classifier.classify(table, debugMode)
         }
-        StringCompare.ignoreWhitespaces(result.print(indent = 0), testCase.expectedOutput, s"${testCase.name} failed")
+        StringCompare.ignoreWhitespaces(result.print(), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }
@@ -462,11 +463,15 @@ object ClassifierUnitTest {
 
   val classifierTest: List[TestCase] = List(
     TestCase("useTable", useTable,
-      """InterNode(id=0, threshold=3.5, featureID=1)
+      """Labels: List(GroupID(1), GroupID(2))
+        |Tree:
+        |InterNode(id=0, threshold=3.5, featureID=1)
         |  LeafNode(id=1, classID=0) (if feature[1] <= 3.5)
         |  LeafNode(id=2, classID=1) (if feature[1] > 3.5)""".stripMargin),
     TestCase("resetTable", resetTable,
-      """InterNode(id=0, threshold=1.5, featureID=1)
+      """Labels: List(false, true)
+        |Tree:
+        |InterNode(id=0, threshold=1.5, featureID=1)
         |  LeafNode(id=1, classID=1) (if feature[1] <= 1.5)
         |  InterNode(id=2, threshold=2.5, featureID=1)
         |    LeafNode(id=3, classID=0) (if feature[1] <= 2.5)

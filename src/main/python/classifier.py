@@ -91,7 +91,8 @@ def traverse(classifier, print_tree):
                     "featureID": int(feature[i]),
                 }
             )
-    return {"leaves": leaves, "non_leaves": non_leaves}
+    classes = map(lambda x: str(x), classifier.classes_.tolist())
+    return {"leaves": leaves, "non_leaves": non_leaves, "classes": list(classes)}
 
 
 if __name__ == "__main__":
