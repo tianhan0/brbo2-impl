@@ -11,7 +11,7 @@ def classify(features, label, print_tree):
     if print_tree:
         print(f"Tree:\n{tree.export_text(classifier)}")
         # show(classifier)
-    return traverse(classifier, print_tree = False)
+    return traverse(classifier, print_tree=False)
 
 
 def show(classifier):
@@ -25,6 +25,7 @@ def traverse(classifier, print_tree):
     children_right = classifier.tree_.children_right
     feature = classifier.tree_.feature
     threshold = classifier.tree_.threshold
+    value = classifier.tree_.value
 
     node_depth = numpy.zeros(shape=n_nodes, dtype=numpy.int64)
     is_leaves = numpy.zeros(shape=n_nodes, dtype=bool)
@@ -50,7 +51,8 @@ def traverse(classifier, print_tree):
             "The binary tree structure has {n} nodes and has "
             "the following tree structure:\n".format(n=n_nodes)
         )
-    output = []
+    leaves = []
+    non_leaves = []
     for i in range(n_nodes):
         if is_leaves[i]:
             if print_tree:
@@ -59,7 +61,13 @@ def traverse(classifier, print_tree):
                         space=node_depth[i] * "\t", node=i
                     )
                 )
-            output.append({"nodeID": i})
+            samples = value[i].tolist()
+            non_empty_sample_index = -1
+            for index, sample in enumerate(samples[0]):
+                if sample > 0:
+                    non_empty_sample_index = index
+            assert non_empty_sample_index != -1
+            leaves.append({"nodeID": i, "classID": non_empty_sample_index})
         else:
             if print_tree:
                 print(
@@ -74,7 +82,7 @@ def traverse(classifier, print_tree):
                         right=children_right[i],
                     )
                 )
-            output.append(
+            non_leaves.append(
                 {
                     "nodeID": i,
                     "leftNodeID": int(children_left[i]),
@@ -83,7 +91,7 @@ def traverse(classifier, print_tree):
                     "featureID": int(feature[i]),
                 }
             )
-    return output
+    return {"leaves": leaves, "non_leaves": non_leaves}
 
 
 if __name__ == "__main__":

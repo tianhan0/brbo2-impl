@@ -1,7 +1,8 @@
 package brbo.backend2.learning
 
+import brbo.TestCase
 import brbo.backend2.interpreter.Interpreter
-import brbo.backend2.learning.Generalizer.GroupID
+import brbo.backend2.learning.Generalizer.{GroupID, ResetTable, UseTable}
 import brbo.backend2.learning.GeneralizerUnitTest.{generateGroups, loopPhase}
 import brbo.backend2.learning.SegmentClustering.{Group, Segment}
 import brbo.backend2.learning.SegmentClusteringUnitTest.functionDefinitions
@@ -388,6 +389,17 @@ class GeneralizerUnitTest extends AnyFlatSpec {
 
     // TODO: More tests
   }
+
+  "Learning classifiers from tables" should "be correct" in {
+    GeneralizerUnitTest.classifierTest.foreach({
+      testCase =>
+        val result = testCase.input match {
+          case table: ResetTable => Generalizer.classify(table, debugMode = false)
+          case table: UseTable => Generalizer.classify(table, debugMode = false)
+        }
+        StringCompare.ignoreWhitespaces(result.print(indent = 0), testCase.expectedOutput, s"${testCase.name} failed")
+    })
+  }
 }
 
 object GeneralizerUnitTest {
@@ -421,4 +433,45 @@ object GeneralizerUnitTest {
        |  }
        |$functionDefinitions
        |}""".stripMargin
+
+  private def addUseTableRow(table: UseTable, features: List[Int], label: Int): Unit = {
+    table.addRow(features.map(n => Number(n)), GroupID(label))
+  }
+
+  private def addResetTableRow(table: ResetTable, features: List[Int], label: Boolean): Unit = {
+    table.addRow(features.map(n => Number(n)), label)
+  }
+
+  private val useTable = {
+    val table = new UseTable(List("x", "y"))
+    addUseTableRow(table, features = List(0, 1), label = 1)
+    addUseTableRow(table, features = List(0, 2), label = 1)
+    addUseTableRow(table, features = List(0, 3), label = 1)
+    addUseTableRow(table, features = List(0, 4), label = 2)
+    table
+  }
+
+  private val resetTable = {
+    val table = new ResetTable(List("x", "y"))
+    addResetTableRow(table, features = List(0, 1), label = true)
+    addResetTableRow(table, features = List(0, 2), label = false)
+    addResetTableRow(table, features = List(0, 3), label = true)
+    addResetTableRow(table, features = List(0, 4), label = false)
+    table
+  }
+
+  val classifierTest: List[TestCase] = List(
+    TestCase("useTable", useTable,
+      """InterNode(id=0, threshold=3.5, featureID=1)
+        |  LeafNode(id=1, classID=0) (if feature[1] <= 3.5)
+        |  LeafNode(id=2, classID=1) (if feature[1] > 3.5)""".stripMargin),
+    TestCase("resetTable", resetTable,
+      """InterNode(id=0, threshold=1.5, featureID=1)
+        |  LeafNode(id=1, classID=1) (if feature[1] <= 1.5)
+        |  InterNode(id=2, threshold=2.5, featureID=1)
+        |    LeafNode(id=3, classID=0) (if feature[1] <= 2.5)
+        |    InterNode(id=4, threshold=3.5, featureID=1)
+        |      LeafNode(id=5, classID=1) (if feature[1] <= 3.5)
+        |      LeafNode(id=6, classID=0) (if feature[1] > 3.5) (if feature[1] > 2.5) (if feature[1] > 1.5)""".stripMargin)
+  )
 }

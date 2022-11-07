@@ -2,8 +2,8 @@ package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTraceAssociation, Trace, Transition}
-import brbo.backend2.learning.Clustering.{Algorithm, KMeans, Optics}
 import brbo.backend2.learning.Generalizer.GroupID
+import brbo.backend2.learning.ScriptRunner.{Algorithm, KMeans, Optics}
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.MyLogger
 import com.google.common.collect.Sets

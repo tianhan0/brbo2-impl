@@ -3,7 +3,7 @@ package brbo.backend2.learning
 import brbo.TestCase
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.Trace
-import brbo.backend2.learning.Clustering.KMeans
+import brbo.backend2.learning.ScriptRunner.KMeans
 import brbo.backend2.learning.SegmentClustering.Segment
 import brbo.backend2.learning.SegmentClusteringUnitTest._
 import brbo.common.BrboType.INT

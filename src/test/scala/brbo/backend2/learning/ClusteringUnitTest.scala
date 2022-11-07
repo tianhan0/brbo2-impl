@@ -1,7 +1,7 @@
 package brbo.backend2.learning
 
 import brbo.TestCase
-import brbo.backend2.learning.Clustering.Optics
+import brbo.backend2.learning.ScriptRunner.Optics
 import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -11,14 +11,6 @@ class ClusteringUnitTest extends AnyFlatSpec {
       testCase =>
         val labels = Clustering.cluster(testCase.input.asInstanceOf[List[List[Int]]], Optics(maxEps = None), debugMode = false)
         StringCompare.ignoreWhitespaces(labels, testCase.expectedOutput, s"${testCase.name} failed")
-    })
-  }
-
-  "Writing matrices into JSON" should "be correct" in {
-    ClusteringUnitTest.jsonWriteTests.foreach({
-      testCase =>
-        val json = Clustering.matrixToJsonString(testCase.input.asInstanceOf[List[List[Int]]])
-        StringCompare.ignoreWhitespaces(json, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }

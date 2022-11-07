@@ -2,7 +2,7 @@ package brbo.backend2
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTrace, Trace}
-import brbo.backend2.learning.Clustering.{CLUSTER_SCRIPT, Optics}
+import brbo.backend2.learning.ScriptRunner.Optics
 import brbo.backend2.learning.{Clustering, TraceClustering}
 import brbo.common.ast.{BoundAssertion, BrboProgram}
 import brbo.common.{CommandLineArguments, MyLogger}

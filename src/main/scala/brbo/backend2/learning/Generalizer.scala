@@ -2,9 +2,12 @@ package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter._
+import brbo.backend2.learning.DecisionTree.TreeNode
+import brbo.backend2.learning.ScriptRunner.DecisionTreeLearning
 import brbo.backend2.learning.SegmentClustering.Group
 import brbo.common.ast._
 import brbo.common.{MyLogger, Print}
+import play.api.libs.json.Json
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
 object Generalizer {
@@ -32,6 +35,7 @@ object Generalizer {
     protected def labelToString(label: Label): String
 
     def addRow(data: List[BrboValue], label: Label): Unit = {
+      assert(data.size == featureNames.size)
       // logger.error(s"Add row [${data.map(v => v.printToIR()).mkString(",")}] with label `${labelToString(label)}`")
       val row = table.appendRow()
       data.zipWithIndex.foreach({
@@ -47,7 +51,22 @@ object Generalizer {
 
     def print(): String = table.printAll()
 
-    def toJsonString: String = ???
+    def toJsonString: String = {
+      val features = Range(0, table.rowCount()).map({
+        rowIndex =>
+          val row = table.row(rowIndex)
+          Range(0, featureNames.size).map({
+            columnIndex =>
+              row.getInt(columnIndex)
+          }).toList
+      }).toList
+      val labels = Range(0, table.rowCount()).map({
+        rowIndex =>
+          val row = table.row(rowIndex)
+          row.getString(featureNames.size)
+      }).toList
+      Json.obj(("features", features), ("labels", labels)).toString()
+    }
   }
 
   class UseTable(override protected val featureNames: List[String]) extends BrboTable[GroupID] {
@@ -235,12 +254,25 @@ object Generalizer {
     new Tables(tableMap, features)
   }
 
-  def chooseResetPlaceHolder(holders: Iterable[(ResetPlaceHolder, Int)]): Option[Int] = {
+  private def chooseResetPlaceHolder(holders: Iterable[(ResetPlaceHolder, Int)]): Option[Int] = {
     if (holders.isEmpty)
       None
     else {
       // TODO: Choose more carefully
       Some(holders.head._2)
+    }
+  }
+
+  def classify(resetTable: ResetTable, debugMode: Boolean): TreeNode = classifyInternal(resetTable, debugMode)
+
+  def classify(useTable: UseTable, debugMode: Boolean): TreeNode = classifyInternal(useTable, debugMode)
+
+  private def classifyInternal[Label](table: BrboTable[Label], debugMode: Boolean): TreeNode = {
+    ScriptRunner.run(table.toJsonString, DecisionTreeLearning(printTree = false), debugMode) match {
+      case Some(output) =>
+        if (debugMode) logger.debug(s"Classification output: $output")
+        DecisionTree.parse(output)
+      case None => throw new Exception
     }
   }
 }
