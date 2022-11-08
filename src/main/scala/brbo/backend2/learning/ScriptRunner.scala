@@ -25,9 +25,21 @@ object ScriptRunner {
     def scriptName: String
   }
 
-  case class Optics(maxEps: Option[Int]) extends Algorithm {
+  abstract class Metric {
+    def print(): String
+  }
+
+  object Precomputed extends Metric {
+    override def print(): String = "precomputed"
+  }
+
+  object Euclidean extends Metric {
+    override def print(): String = "euclidean"
+  }
+
+  case class Optics(maxEps: Option[Int], metric: Metric) extends Algorithm {
     def commandLineOption: String = {
-      val algorithm = "--algorithm=optics"
+      val algorithm = s"--algorithm=optics --metric=${metric.print()}"
       maxEps match {
         case Some(maxEps) => s"$algorithm --max-eps=$maxEps"
         case None => s"$algorithm"

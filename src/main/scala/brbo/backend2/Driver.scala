@@ -2,7 +2,7 @@ package brbo.backend2
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTrace, Trace}
-import brbo.backend2.learning.ScriptRunner.Optics
+import brbo.backend2.learning.ScriptRunner.{Algorithm, Optics, Precomputed}
 import brbo.backend2.learning.{Clustering, TraceClustering}
 import brbo.common.ast.{BoundAssertion, BrboProgram}
 import brbo.common.{CommandLineArguments, MyLogger}
@@ -39,7 +39,8 @@ class Driver(arguments: CommandLineArguments, program: BrboProgram) {
       TraceClustering.distanceMatrix(representativeCostTraces.toList, SUBSTITUTION_PENALTY)
 
     logger.info(s"${STEP_2}Cluster traces")
-    val clusterLabels: List[Int] = Clustering.cluster(distanceMatrix, Optics(Some(10)), debugMode) match {
+    val traceClusteringAlgorithm: Algorithm = Optics(Some(10), metric = Precomputed)
+    val clusterLabels: List[Int] = Clustering.cluster(distanceMatrix, traceClusteringAlgorithm, debugMode) match {
       case Some(labels) => labels
       case None =>
         logger.info(s"Put all traces into the same cluster")
@@ -48,11 +49,17 @@ class Driver(arguments: CommandLineArguments, program: BrboProgram) {
 
     val labelMap: Map[Int, List[((CostTrace, Trace), Int)]] =
       costTraces.zip(traces).zip(clusterLabels).groupBy({ case (_, label) => label })
-    val outlierTraces = labelMap.get(-1) match {
-      case Some(outliers) =>
-        logger.info(s"${STEP_2}Found ${outliers.size} outlier traces")
-        outliers.map({ case ((_, trace), _) => trace })
-      case None => Nil
+    val outlierTraces = {
+      traceClusteringAlgorithm match {
+        case _: Optics =>
+          labelMap.get(-1) match {
+            case Some(outliers) =>
+              logger.info(s"${STEP_2}Found ${outliers.size} outlier traces")
+              outliers.map({ case ((_, trace), _) => trace })
+            case None => Nil
+          }
+        case _ => Nil
+      }
     }
     val clusters: Iterable[List[((CostTrace, Trace), Int)]] = (labelMap - (-1)).values
     logger.info(s"${STEP_2}Found ${clusters.size} trace clusters")

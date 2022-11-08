@@ -3,7 +3,7 @@ package brbo.backend2.learning
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTraceAssociation, Trace}
 import brbo.backend2.learning.Classifier.{GroupID, evaluateFunctionFromInterpreter}
-import brbo.backend2.learning.ScriptRunner.{Algorithm, KMeans, Optics}
+import brbo.backend2.learning.ScriptRunner._
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.BrboType.INT
 import brbo.common.MyLogger
@@ -84,12 +84,16 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
         logger.error(s"Failed to find similar segments")
         return Nil
     }
-    val labelMap: Map[Int, List[(Segment, Int)]] =
-      segments.zip(clusterLabels).groupBy({ case (_, label) => label })
+    val labelMap: Map[Int, List[(Segment, Int)]] = {
+      val labelMap = segments.zip(clusterLabels).groupBy({ case (_, label) => label })
+      algorithm match {
+        case _: Optics => labelMap - (-1) // Ignore outliers
+        case _ => labelMap
+      }
+    }
 
-    // Ignore outliers
     val clusters: List[List[Segment]] =
-      (labelMap - (-1)).values.map(list => list.map({ case (segment, _) => segment }).sortWith({
+      labelMap.values.map(list => list.map({ case (segment, _) => segment }).sortWith({
         case (segment1, segment2) => segment1.toString < segment2.toString
       })).toList.sortWith({
         case (list1, list2) => list1.toString() < list2.toString()
@@ -115,14 +119,12 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
   def generateTrainingData(trace: Trace, segments: List[Segment], algorithm: Algorithm): List[List[Int]] = {
     val segmentToData = new SegmentToTrainingData(trace.costTraceAssociation, sumWeight, commandWeight)
     algorithm match {
-      case Optics(_) =>
+      case Optics(_, Precomputed) =>
         segments.map({
           left =>
-            segments.map({
-              right => segmentToData.difference(left, right)
-            })
+            segments.map({ right => segmentToData.difference(left, right) })
         })
-      case KMeans(_) =>
+      case KMeans(_) | Optics(_, Euclidean) =>
         segments.map(segment => List(segmentToData.toTrainingData(segment)))
       case _ => throw new Exception
     }

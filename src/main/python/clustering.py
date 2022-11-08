@@ -5,12 +5,12 @@ import argparse
 import json
 
 
-def optics(data, max_eps):
+def optics(data, max_eps, metric):
     print(f"Cluster algorithm: OPTICS")
     clustering = OPTICS(
         min_samples=2,
         max_eps=max_eps,
-        metric="precomputed",
+        metric=metric,
         cluster_method="xi",
         min_cluster_size=1,
     ).fit(data)
@@ -69,6 +69,12 @@ if __name__ == "__main__":
         type=int,
         help="K-Means: The number of clusters to form as well as the number of centroids to generate.",
     )
+    parser.add_argument(
+        "--metric",
+        type=str,
+        default="precomputed",
+        help="OPTICS algorithm: How to compute the distance between data points."
+    )
     args = parser.parse_args()
 
     with open(args.input, "r") as input_file:
@@ -79,7 +85,7 @@ if __name__ == "__main__":
 
         data = numpy.array(distance_matrix, dtype=object)
         if args.algorithm == "optics":
-            labels = optics(data, max_eps=args.max_eps)
+            labels = optics(data, max_eps=args.max_eps, metric=args.metric)
         elif args.algorithm == "knn":
             labels = knn(data)
         elif args.algorithm == "kmeans":
