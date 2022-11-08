@@ -2,7 +2,7 @@ package brbo.backend2.learning
 
 import brbo.TestCase
 import brbo.backend2.interpreter.Interpreter
-import brbo.backend2.learning.Classifier.{GroupID, ResetTable, UseTable}
+import brbo.backend2.learning.Classifier.{BrboTable, GroupID, ResetLabel, ResetTable, UseLabel, UseTable, evaluateFunctionFromInterpreter}
 import brbo.backend2.learning.ClassifierUnitTest.{generateGroups, loopPhase}
 import brbo.backend2.learning.SegmentClustering.{Group, Segment}
 import brbo.backend2.learning.SegmentClusteringUnitTest.functionDefinitions
@@ -112,7 +112,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val expected1 =
       """Tables:
         |Features: i, n
-        |Location: <resetPlaceHolder> (index=13) ->
+        |TraceLocation: <resetPlaceHolder> (index=13) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -124,7 +124,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 0  |  4  |  false  |
         |************************************************************
         |
-        |Location: <resetPlaceHolder> (index=28) ->
+        |TraceLocation: <resetPlaceHolder> (index=28) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -136,7 +136,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 1  |  4  |  false  |
         |************************************************************
         |
-        |Location: <resetPlaceHolder> (index=43) ->
+        |TraceLocation: <resetPlaceHolder> (index=43) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -148,7 +148,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 2  |  4  |   true  |
         |************************************************************
         |
-        |Location: <resetPlaceHolder> (index=58) ->
+        |TraceLocation: <resetPlaceHolder> (index=58) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -160,7 +160,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 3  |  4  |  false  |
         |************************************************************
         |
-        |Location: <resetPlaceHolder> (index=7) ->
+        |TraceLocation: <resetPlaceHolder> (index=7) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -172,42 +172,42 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |    |  4  |  false  |
         |************************************************************
         |
-        |Location: use R0 1011 (index=35) ->
+        |TraceLocation: use R0 1011 (index=35) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
         | 1  |  4  |  GroupID(1)  |
         |************************************************************
         |
-        |Location: use R0 1011 (index=50) ->
+        |TraceLocation: use R0 1011 (index=50) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
         | 2  |  4  |  GroupID(0)  |
         |************************************************************
         |
-        |Location: use R0 1011 (index=65) ->
+        |TraceLocation: use R0 1011 (index=65) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
         | 3  |  4  |  GroupID(1)  |
         |************************************************************
         |
-        |Location: use R0 2011 (index=20) ->
+        |TraceLocation: use R0 2011 (index=20) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
         | 0  |  4  |  GroupID(0)  |
         |************************************************************
         |
-        |Location: use R0 88 (index=75) ->
+        |TraceLocation: use R0 88 (index=75) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
         | 4  |  4  |  GroupID(1)  |
         |************************************************************
         |
-        |Location: use R0 89 (index=78) ->
+        |TraceLocation: use R0 89 (index=78) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
@@ -309,77 +309,77 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val expected2 =
       """Tables:
         |Features: i, n
-        |Location: <resetPlaceHolder> (index=13) ->
+        |TraceLocation: <resetPlaceHolder> (index=13) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 0  |  4  |  false  |
         |************************************************************
         |
-        |Location: <resetPlaceHolder> (index=28) ->
+        |TraceLocation: <resetPlaceHolder> (index=28) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 1  |  4  |   true  |
         |************************************************************
         |
-        |Location: <resetPlaceHolder> (index=43) ->
+        |TraceLocation: <resetPlaceHolder> (index=43) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 2  |  4  |  false  |
         |************************************************************
         |
-        |Location: <resetPlaceHolder> (index=58) ->
+        |TraceLocation: <resetPlaceHolder> (index=58) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 3  |  4  |   true  |
         |************************************************************
         |
-        |Location: <resetPlaceHolder> (index=7) ->
+        |TraceLocation: <resetPlaceHolder> (index=7) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         |    |  4  |  false  |
         |************************************************************
         |
-        |Location: use R0 1011 (index=35) ->
+        |TraceLocation: use R0 1011 (index=35) ->
         |Use table:
         | i  |  n  |    Label    |
         |-------------------------
         | 1  |  4  |  NoneGroup  |
         |************************************************************
         |
-        |Location: use R0 1011 (index=50) ->
+        |TraceLocation: use R0 1011 (index=50) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
         | 2  |  4  |  GroupID(0)  |
         |************************************************************
         |
-        |Location: use R0 1011 (index=65) ->
+        |TraceLocation: use R0 1011 (index=65) ->
         |Use table:
         | i  |  n  |    Label    |
         |-------------------------
         | 3  |  4  |  NoneGroup  |
         |************************************************************
         |
-        |Location: use R0 2011 (index=20) ->
+        |TraceLocation: use R0 2011 (index=20) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
         | 0  |  4  |  GroupID(0)  |
         |************************************************************
         |
-        |Location: use R0 88 (index=75) ->
+        |TraceLocation: use R0 88 (index=75) ->
         |Use table:
         | i  |  n  |    Label    |
         |-------------------------
         | 4  |  4  |  NoneGroup  |
         |************************************************************
         |
-        |Location: use R0 89 (index=78) ->
+        |TraceLocation: use R0 89 (index=78) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
@@ -394,12 +394,55 @@ class ClassifierUnitTest extends AnyFlatSpec {
     ClassifierUnitTest.classifierTest.foreach({
       testCase =>
         val debugMode = false
-        val result = testCase.input match {
-          case table: ResetTable => Classifier.classify(table, debugMode)
-          case table: UseTable => Classifier.classify(table, debugMode)
+        val (result: Classifier.ClassifierResult, featureNames) = {
+          val table = testCase.input.asInstanceOf[BrboTable]
+          (Classifier.classify(table, debugMode), table.featureNames)
         }
-        StringCompare.ignoreWhitespaces(result.print(), testCase.expectedOutput, s"${testCase.name} failed")
+        StringCompare.ignoreWhitespaces(result.classifier.print(featureNames), testCase.expectedOutput, s"${testCase.name} failed")
     })
+  }
+
+  "Deciding if traces satisfy the bounds under the given decompositions" should "be correct" in {
+    val interpreter = {
+      val program = SegmentClusteringUnitTest.toBrboProgram(loopPhase)
+      new Interpreter(program)
+    }
+    val trace = SegmentClusteringUnitTest.getTrace(loopPhase, List(Number(4)))
+    val groups = {
+      val costNodeIndices = trace.costTraceAssociation.reversedIndexMap.keys.toList.sorted
+      generateGroups(costNodeIndices, numberOfGroups = 2)
+    }
+    val features = List(Identifier("i", INT), Identifier("n", INT))
+    val tables = Classifier.generateTables(
+      trace,
+      Classifier.evaluateFunctionFromInterpreter(interpreter),
+      groups,
+      features,
+      failIfCannotFindResetPlaceHolder = false
+    )
+    val classifierResults = tables.toProgramTables.runClassifier(debugMode = false)
+    val invalidBound = Number(2000)
+    val resultFalse = Classifier.satisfyBound(
+      invalidBound,
+      trace,
+      evaluateFunctionFromInterpreter(interpreter),
+      features,
+      classifierResults,
+      debugMode = false
+    )
+    StringCompare.ignoreWhitespaces(resultFalse.toString, "false", "Expected to not satisfy the bound")
+    // println(SegmentClustering.printDecomposition(trace, groups))
+
+    val validBound = Number(6000)
+    val resultTrue = Classifier.satisfyBound(
+      validBound,
+      trace,
+      evaluateFunctionFromInterpreter(interpreter),
+      features = List(Identifier("i", INT), Identifier("n", INT)),
+      classifierResults,
+      debugMode = false
+    )
+    StringCompare.ignoreWhitespaces(resultTrue.toString, "true", "Expected to satisfy the bound")
   }
 }
 
@@ -436,11 +479,11 @@ object ClassifierUnitTest {
        |}""".stripMargin
 
   private def addUseTableRow(table: UseTable, features: List[Int], label: Int): Unit = {
-    table.addRow(features.map(n => Number(n)), GroupID(label))
+    table.addRow(features.map(n => Number(n)), UseLabel(GroupID(label)))
   }
 
   private def addResetTableRow(table: ResetTable, features: List[Int], label: Boolean): Unit = {
-    table.addRow(features.map(n => Number(n)), label)
+    table.addRow(features.map(n => Number(n)), ResetLabel(label))
   }
 
   private val useTable = {
@@ -463,20 +506,20 @@ object ClassifierUnitTest {
 
   val classifierTest: List[TestCase] = List(
     TestCase("useTable", useTable,
-      """Labels: List(GroupID(1), GroupID(2))
+      """Labels: List(Label(GroupID(1)), Label(GroupID(2)))
         |Tree:
         |InterNode(id=0, threshold=3.5, featureID=1)
-        |  LeafNode(id=1, classID=0) (if feature[1] <= 3.5)
-        |  LeafNode(id=2, classID=1) (if feature[1] > 3.5)""".stripMargin),
+        |  LeafNode(id=1, classID=GroupID(1)) (if y <= 3.5)
+        |  LeafNode(id=2, classID=GroupID(2)) (if y > 3.5)""".stripMargin),
     TestCase("resetTable", resetTable,
-      """Labels: List(false, true)
+      """Labels: List(Label(false), Label(true))
         |Tree:
         |InterNode(id=0, threshold=1.5, featureID=1)
-        |  LeafNode(id=1, classID=1) (if feature[1] <= 1.5)
+        |  LeafNode(id=1, classID=true) (if y <= 1.5)
         |  InterNode(id=2, threshold=2.5, featureID=1)
-        |    LeafNode(id=3, classID=0) (if feature[1] <= 2.5)
+        |    LeafNode(id=3, classID=false) (if y <= 2.5)
         |    InterNode(id=4, threshold=3.5, featureID=1)
-        |      LeafNode(id=5, classID=1) (if feature[1] <= 3.5)
-        |      LeafNode(id=6, classID=0) (if feature[1] > 3.5) (if feature[1] > 2.5) (if feature[1] > 1.5)""".stripMargin)
+        |      LeafNode(id=5, classID=true) (if y <= 3.5)
+        |      LeafNode(id=6, classID=false) (if y > 3.5) (if y > 2.5) (if y > 1.5)""".stripMargin)
   )
 }

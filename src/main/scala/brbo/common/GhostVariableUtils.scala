@@ -13,14 +13,17 @@ object GhostVariableUtils {
   private val resourceVariablePattern = (resourceVariablePrefix + """\d*""").r
   private val starVariablePattern = (starVariablePrefix + """\d*""").r
   private val counterVariablePattern = (counterVariablePrefix + """\d*""").r
+  val resourceInitialValue: Int = 0
+  val starInitialValue: Int = Int.MinValue
+  val counterInitialValue: Int = 0
 
   def initialValue(identifier: String): Int = {
     if (isGhostVariable(identifier, Resource))
-      0
+      resourceInitialValue
     else if (isGhostVariable(identifier, Star))
-      Int.MinValue
+      starInitialValue
     else if (isGhostVariable(identifier, Counter))
-      0
+      counterInitialValue
     else throw new Exception
   }
 

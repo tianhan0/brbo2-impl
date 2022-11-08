@@ -4,6 +4,7 @@ import brbo.backend2.interpreter.Interpreter._
 import brbo.common.ast.BrboAstUtils.{immediateOuterLoop, immediateParentStatements, nextAst}
 import brbo.common.ast._
 import brbo.common.{MyLogger, PreDefinedFunctions, Print}
+import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.{HashMap, Map}
@@ -529,6 +530,20 @@ object Interpreter {
       val linePrefix: String = " " * prefix.length
       val string = printNodes(nodes.map(n => s"[${n.print()}]"), 1, linePrefix, "==>")
       s"$prefix$string"
+    }
+
+    def toTable(): Table = {
+      val table: Table = Table.create("")
+      val commands: List[String] = nodes.map({
+        node =>
+          node.lastTransition match {
+            case Some(Transition(command, _)) => command.printToC(0)
+            case None => "Command not exist"
+          }
+      })
+      table.addColumns(IntColumn.create("Index", Range(0, commands.length): _*))
+      table.addColumns(StringColumn.create("Commands", commands: _*))
+      table
     }
   }
 

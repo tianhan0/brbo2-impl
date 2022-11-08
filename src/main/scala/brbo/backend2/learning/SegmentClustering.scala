@@ -226,23 +226,14 @@ object SegmentClustering {
   }
 
   def printDecomposition(trace: Trace, groups: Map[GroupID, Group]): String = {
-    val table: Table = Table.create("")
+    val table: Table =  trace.toTable()
     val sortedMap = groups.toList.sortWith({
       case ((id1, _), (id2, _)) => id1.print() < id2.print()
     })
-    val commands: List[String] = trace.nodes.map({
-      node =>
-        node.lastTransition match {
-          case Some(Transition(command, _)) => command.printToC(0)
-          case None => "Command not exist"
-        }
-    })
-    table.addColumns(IntColumn.create("Index", Range(0, commands.length): _*))
-    table.addColumns(StringColumn.create("Commands", commands: _*))
     sortedMap.foreach({
       case (groupID, group) =>
         val column = IntColumn.create(groupID.print())
-        Range(0, commands.length).foreach({
+        Range(0, table.rowCount()).foreach({
           index =>
             group.segments.indexWhere(segment => segment.indices.contains(index)) match {
               case -1 => column.appendMissing()

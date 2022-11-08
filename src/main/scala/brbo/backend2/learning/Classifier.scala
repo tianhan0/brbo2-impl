@@ -2,9 +2,10 @@ package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter._
-import brbo.backend2.learning.DecisionTree.TreeNode
+import brbo.backend2.learning.DecisionTree.TreeClassifier
 import brbo.backend2.learning.ScriptRunner.DecisionTreeLearning
 import brbo.backend2.learning.SegmentClustering.Group
+import brbo.common.GhostVariableUtils.{counterInitialValue, resourceInitialValue, starInitialValue}
 import brbo.common.ast._
 import brbo.common.{MyLogger, Print}
 import play.api.libs.json.Json
@@ -12,7 +13,6 @@ import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
 object Classifier {
   private val logger = MyLogger.createLogger(Classifier.getClass, debugMode = false)
-  // val model: DecisionTreeModel = ???
 
   case class GroupID(value: Int) extends Print {
     def print(): String = toString
@@ -22,17 +22,44 @@ object Classifier {
     override def print(): String = "NoneGroup"
   }
 
-  abstract class BrboTable[Label] extends Print {
+  object AllGroups extends GroupID(-4127) {
+    override def print(): String = "AllGroups"
+  }
+
+  abstract class Label {
+    def print(): String
+  }
+
+  case class UseLabel(groupID: GroupID) extends Label {
+    override def print(): String = groupID.print()
+  }
+
+  case class ResetLabel(b: Boolean) extends Label {
+    override def print(): String = b.toString
+  }
+
+  def useLabelFromString(label: String): GroupID = {
+    if (label == NoneGroup.print()) {
+      NoneGroup
+    } else {
+      val prefix = "GroupID("
+      val suffix = ")"
+      val id = label.stripPrefix(prefix).stripSuffix(suffix).toInt
+      GroupID(id)
+    }
+  }
+
+  def resetLabelFromString(label: String): Boolean = label.toBoolean
+
+  abstract class BrboTable extends Print {
     protected val tableName: String
 
     protected val table: Table = Table.create(tableName)
 
-    protected val featureNames: List[String]
+    val featureNames: List[String]
 
     featureNames.foreach(featureName => table.addColumns(IntColumn.create(featureName)))
     table.addColumns(StringColumn.create("Label"))
-
-    protected def labelToString(label: Label): String
 
     def addRow(data: List[BrboValue], label: Label): Unit = {
       assert(data.size == featureNames.size)
@@ -46,7 +73,7 @@ object Classifier {
             case _ => throw new Exception
           }
       })
-      row.setString(data.size, labelToString(label))
+      row.setString(data.size, label.print())
     }
 
     def print(): String = table.printAll()
@@ -67,18 +94,35 @@ object Classifier {
       }).toList
       Json.obj(("features", features), ("labels", labels)).toString()
     }
+
+    def append(other: BrboTable): Unit = {
+      val otherTable = other.table
+      Range(0, otherTable.rowCount()).foreach({
+        rowIndex => table.addRow(rowIndex, otherTable)
+      })
+    }
+
+    def copy(): BrboTable
   }
 
-  class UseTable(override protected val featureNames: List[String]) extends BrboTable[GroupID] {
+  class UseTable(override val featureNames: List[String]) extends BrboTable {
     val tableName = "UseTable"
 
-    override def labelToString(label: GroupID): String = label.print()
+    override def copy(): UseTable = {
+      val newTable = new UseTable(featureNames)
+      newTable.append(this)
+      newTable
+    }
   }
 
-  class ResetTable(override protected val featureNames: List[String]) extends BrboTable[Boolean] {
+  class ResetTable(override val featureNames: List[String]) extends BrboTable {
     val tableName = "ResetTable"
 
-    override def labelToString(label: Boolean): String = label.toString
+    override def copy(): ResetTable = {
+      val newTable = new ResetTable(featureNames)
+      newTable.append(this)
+      newTable
+    }
   }
 
   /**
@@ -87,35 +131,119 @@ object Classifier {
    * @param index   The index of the command in the trace where this location is created
    */
   case class TraceLocation(command: Command, index: Int) extends Print {
-    def print(): String = s"Location: ${command.printToIR()} (index=$index)"
+    def print(): String = s"TraceLocation: ${command.printToIR()} (index=$index)"
   }
 
-  type ResetTables = Map[GroupID, ResetTable]
+  case class ProgramLocation(command: Command) extends Print {
+    def print(): String = s"ProgramLocation: ${command.printToIR()}"
+  }
 
-  class Tables(tables: Map[TraceLocation, Either[UseTable, ResetTables]], features: List[BrboExpr]) extends Print {
+  type BrboTables = Map[GroupID, BrboTable]
+
+  // A mapping from a location in a trace to a table for the previous store -- the store right before the location
+  class TraceTables(tables: Map[TraceLocation, BrboTables], features: List[BrboExpr]) extends Print {
     def print(): String = {
       val separator1 = "=" * 40
       val separator2 = "*" * 60
       val featuresString = features.map(e => e.printToIR()).mkString(", ")
       val tablesString = tables.map({
         case (location, tables) =>
-          val tablesString = tables match {
-            case Left(useTable) => s"Use table:\n${useTable.print()}"
-            case Right(resetTables) =>
-              resetTables.map({
-                case (id, resetTable) => s"Reset table: ${id.print()} ->\n${resetTable.print()}"
-              }).toList.sorted.mkString(s"\n$separator1\n")
-          }
+          val tablesString = tables.map({
+            case (id, table) =>
+              table match {
+                case table: UseTable => s"Use table:\n${table.print()}"
+                case table: ResetTable => s"Reset table: ${id.print()} ->\n${table.print()}"
+                case _ => throw new Exception
+              }
+          }).toList.sorted.mkString(s"\n$separator1\n")
           s"${location.print()} ->\n$tablesString"
       }).toList.sorted.mkString(s"\n$separator2\n\n")
       s"Tables:\nFeatures: $featuresString\n$tablesString"
     }
+
+    def toProgramTables: ProgramTables = {
+      val map = tables.groupBy({ case (location, _) => location.command }).map({
+        case (command, map: Map[TraceLocation, BrboTables]) =>
+          val location = ProgramLocation(command)
+          var summaryTables: Map[GroupID, BrboTable] = Map()
+
+          def update(groupID: GroupID, table: BrboTable): Unit = {
+            summaryTables.get(groupID) match {
+              case Some(summaryTable) => summaryTable.append(table)
+              case None =>
+                val summaryTable = table.copy()
+                summaryTables = summaryTables + (groupID -> summaryTable)
+            }
+          }
+
+          map.values.foreach({
+            tables =>
+              tables.foreach({
+                case (groupID: GroupID, table: BrboTable) =>
+                  table match {
+                    case table: ResetTable => update(groupID, table)
+                    case table: UseTable =>
+                      // Merge all use tables into a single table
+                      update(AllGroups, table)
+                    case _ => throw new Exception
+                  }
+              })
+          })
+          (location, summaryTables)
+      })
+      new ProgramTables(map, features)
+    }
   }
 
-  abstract class Result
+  // A mapping from a program location (i.e., a command) to a table for any of its previous store
+  class ProgramTables(tables: Map[ProgramLocation, BrboTables], features: List[BrboExpr]) {
+    val featureNames: List[String] = features.map(e => e.printToIR())
+    def runClassifier(debugMode: Boolean): Map[ProgramLocation, ClassifierResults] = {
+      val results = tables.map({
+        case (location, tables) =>
+          val results = tables.map({
+            case (groupID, table) => (groupID, classify(table, debugMode))
+          })
+          (location, results)
+      })
+      if (debugMode)
+        println(Classifier.printClassifierResultsMap(results))
+      results
+    }
+  }
 
-  class UseResult(decisionTree: Any) extends Result {
+  abstract class ClassifierResult(val classifier: TreeClassifier) {
+    def print(): String
+  }
+
+  case class UseResult(table: UseTable, override val classifier: TreeClassifier) extends ClassifierResult(classifier) {
     def generateGhostCommands(table: UseTable, features: List[BrboExpr]): Map[BrboExpr, GhostCommand] = ???
+
+    def print(): String = s"UseResult: ${classifier.print(table.featureNames)}"
+  }
+
+  case class ResetResult(table: ResetTable, override val classifier: TreeClassifier) extends ClassifierResult(classifier) {
+    def print(): String = s"ResetResult: ${classifier.print(table.featureNames)}"
+  }
+
+  type ClassifierResults = Map[GroupID, ClassifierResult]
+
+  def printClassifierResults(results: ClassifierResults): String = {
+    results.map({
+      case (groupID, result) =>
+        s"${groupID.print()} -> ${result.print()}"
+    }).mkString("\n")
+  }
+
+  def printClassifierResultsMap(results: Map[ProgramLocation, ClassifierResults]): String = {
+    results.map({
+      case (location, results) =>
+        val resultsString = results.map({
+          case (groupID, result) =>
+            s"${groupID.print()} -> ${result.print()}"
+        }).mkString("\n")
+        s"Classifier at ${location.print()}:\n$resultsString"
+    }).mkString("\n\n")
   }
 
   class TableGenerationError(message: String) extends Exception
@@ -137,7 +265,7 @@ object Classifier {
                      evaluate: (BrboExpr, Store) => BrboValue,
                      groups: Map[GroupID, Group],
                      features: List[BrboExpr],
-                     failIfCannotFindResetPlaceHolder: Boolean): Tables = {
+                     failIfCannotFindResetPlaceHolder: Boolean): TraceTables = {
     // From group IDs to the trace node indices into which resets need to be placed
     val resetPlaceHolderMap: Map[GroupID, Set[Int]] = groups.map({
       case (groupID, group) =>
@@ -179,7 +307,7 @@ object Classifier {
 
     val featureNames = features.map(e => e.printToIR())
     val groupIDs = groups.keys.toSet
-    var tableMap = Map[TraceLocation, Either[UseTable, ResetTables]]()
+    var traceTableMap = Map[TraceLocation, BrboTables]()
     trace.nodes.zipWithIndex.foreach({
       case (node, index) =>
         node.lastTransition match {
@@ -187,28 +315,32 @@ object Classifier {
             command match {
               case use: Use =>
                 // Prepare the row data
+                val lastStore = trace.nodes(index - 1).store
                 val evaluatedFeatures: List[BrboValue] =
-                  features.map(feature => evaluate(feature, node.store))
-                val label: GroupID = groups.find({
+                  features.map(feature => evaluate(feature, lastStore))
+                val groupID: GroupID = groups.find({
                   case (_, group) => group.indices.contains(index)
                 }) match {
                   case Some((groupID, _)) => groupID
                   case None => NoneGroup
                 }
                 // Find the table and add the row data
-                val location = TraceLocation(use, index)
-                val useTable: UseTable = tableMap.get(location) match {
+                val traceLocation = TraceLocation(use, index)
+                val useTable: UseTable = traceTableMap.get(traceLocation) match {
                   case Some(tables) =>
-                    tables match {
-                      case Left(useTable) => useTable
-                      case Right(_) => throw new Exception
+                    tables.get(groupID) match {
+                      case Some(table) => table.asInstanceOf[UseTable]
+                      case None =>
+                        val useTable = new UseTable(featureNames)
+                        traceTableMap = traceTableMap + (traceLocation -> (tables + (groupID -> useTable)))
+                        useTable
                     }
                   case None =>
                     val useTable = new UseTable(featureNames)
-                    tableMap = tableMap + (location -> Left(useTable))
+                    traceTableMap = traceTableMap + (traceLocation -> Map(groupID -> useTable))
                     useTable
                 }
-                useTable.addRow(evaluatedFeatures, label)
+                useTable.addRow(evaluatedFeatures, UseLabel(groupID))
               case resetPlaceHolder: ResetPlaceHolder =>
                 // Prepare row data: Labels
                 val groupsToReset: Set[GroupID] = groupIDs.filter({
@@ -219,39 +351,35 @@ object Classifier {
                     }
                 })
                 // Prepare row data: Features
+                val lastStore = trace.nodes(index - 1).store
                 val evaluatedFeatures: List[BrboValue] =
-                  features.map(feature => evaluate(feature, node.store))
+                  features.map(feature => evaluate(feature, lastStore))
                 // Find the table and add the row data
-                val location = TraceLocation(resetPlaceHolder, index)
+                val traceLocation = TraceLocation(resetPlaceHolder, index)
                 groupIDs.foreach({
                   groupID =>
-                    val resetTable: ResetTable = tableMap.get(location) match {
+                    val resetTable: ResetTable = traceTableMap.get(traceLocation) match {
                       case Some(tables) =>
-                        tables match {
-                          case Left(_) => throw new Exception
-                          case Right(map) =>
-                            map.get(groupID) match {
-                              case Some(table) => table
-                              case None =>
-                                val resetTable = new ResetTable(featureNames)
-                                tableMap = tableMap + (location -> Right(map + (groupID -> resetTable)))
-                                resetTable
-                            }
+                        tables.get(groupID) match {
+                          case Some(table) => table.asInstanceOf[ResetTable]
+                          case None =>
+                            val resetTable = new ResetTable(featureNames)
+                            traceTableMap = traceTableMap + (traceLocation -> (tables + (groupID -> resetTable)))
+                            resetTable
                         }
                       case None =>
                         val resetTable = new ResetTable(featureNames)
-                        tableMap = tableMap + (location -> Right(Map(groupID -> resetTable)))
+                        traceTableMap = traceTableMap + (traceLocation -> Map(groupID -> resetTable))
                         resetTable
                     }
-                    resetTable.addRow(evaluatedFeatures, groupsToReset.contains(groupID))
+                    resetTable.addRow(evaluatedFeatures, ResetLabel(groupsToReset.contains(groupID)))
                 })
               case _ =>
             }
           case None =>
         }
     })
-
-    new Tables(tableMap, features)
+    new TraceTables(traceTableMap, features)
   }
 
   private def chooseResetPlaceHolder(holders: Iterable[(ResetPlaceHolder, Int)]): Option[Int] = {
@@ -263,16 +391,130 @@ object Classifier {
     }
   }
 
-  def classify(resetTable: ResetTable, debugMode: Boolean): TreeNode = classifyInternal(resetTable, debugMode)
+  def classify(table: BrboTable, debugMode: Boolean): ClassifierResult = {
+    val classifier = classifyInternal(table, debugMode)
+    table match {
+      case table: ResetTable => ResetResult(table, classifier)
+      case table: UseTable => UseResult(table, classifier)
+      case _ => throw new Exception
+    }
+  }
 
-  def classify(useTable: UseTable, debugMode: Boolean): TreeNode = classifyInternal(useTable, debugMode)
-
-  private def classifyInternal[Label](table: BrboTable[Label], debugMode: Boolean): TreeNode = {
+  private def classifyInternal(table: BrboTable, debugMode: Boolean): TreeClassifier = {
     ScriptRunner.run(table.toJsonString, DecisionTreeLearning(printTree = false), debugMode) match {
       case Some(output) =>
         if (debugMode) logger.debug(s"Classification output: $output")
         DecisionTree.parse(output)
       case None => throw new Exception
     }
+  }
+
+  // Interpret the trace with the given classifier, to see if at some point
+  // the cost approximation goes beyond the given bound
+  def satisfyBound(boundExpression: BrboExpr,
+                   trace: Trace,
+                   evaluate: (BrboExpr, Store) => BrboValue,
+                   features: List[BrboExpr],
+                   classifierResults: Map[ProgramLocation, ClassifierResults],
+                   debugMode: Boolean): Boolean = {
+    if (trace.nodes.size <= 1)
+      return true
+    val bound: Int = evaluate(boundExpression, trace.nodes.head.store) match {
+      case Number(n, _) => n
+      case _ => throw new Exception
+    }
+    var resources: Map[GroupID, Int] = Map()
+    var counters: Map[GroupID, Int] = Map()
+    var stars: Map[GroupID, Int] = Map()
+
+    def initialize(groupID: GroupID): Unit = {
+      if (!counters.contains(groupID))
+        counters = counters + (groupID -> counterInitialValue)
+      if (!stars.contains(groupID))
+        stars = stars + (groupID -> starInitialValue)
+      if (!resources.contains(groupID))
+        resources = resources + (groupID -> resourceInitialValue)
+    }
+
+    def printState(): String = {
+      s"resources: $resources\ncounters: $counters\nstars: $stars"
+    }
+
+    if (debugMode) logger.error(s"# of nodes: ${trace.nodes.size}")
+    trace.nodes.zipWithIndex.foreach({
+      case (TraceNode(store, _), index) =>
+        if (debugMode) logger.error(s"Index $index")
+        if (index == trace.nodes.size - 1)
+          return true // Managed to reach the final store without violating the bound
+        val nextCommand = trace.nodes(index + 1).lastTransition.get.command
+        val location = ProgramLocation(nextCommand.asInstanceOf[Command])
+        classifierResults.get(location) match {
+          case Some(classifierResults) =>
+            if (debugMode) logger.error(s"${location.print()} ===> ${printClassifierResults(classifierResults)}")
+            nextCommand match {
+              case use: Use =>
+                val label = classifierResults(AllGroups).classifier.classify(store, evaluate, features)
+                val groupID = useLabelFromString(label.name)
+                initialize(groupID)
+                if (debugMode) logger.error(s"${use.printToIR()} is decomposed into $groupID")
+                if (debugMode) logger.error(s"Before:\n${printState()}")
+                evaluate(use.condition, store) match {
+                  case Bool(b, _) =>
+                    if (b && groupID != NoneGroup) {
+                      evaluate(use.update, store) match {
+                        case Number(update, _) =>
+                          val resource = resources(groupID)
+                          resources = resources + (groupID -> (resource + update))
+                        case _ => throw new Exception
+                      }
+                    }
+                  case _ => throw new Exception
+                }
+                if (debugMode) logger.error(s"After:\n${printState()}")
+              case resetPlaceHolder: ResetPlaceHolder =>
+                classifierResults.foreach({
+                  case (groupID, classifierResult) =>
+                    initialize(groupID)
+                    val toReset = {
+                      val label = classifierResult.classifier.classify(store, evaluate, features)
+                      resetLabelFromString(label.name)
+                    }
+                    if (debugMode) logger.error(s"${resetPlaceHolder.printToIR()} is decomposed into $groupID")
+                    if (debugMode) logger.error(s"Before:\n${printState()}")
+                    if (toReset) {
+                      val star = stars(groupID)
+                      val counter = counters(groupID)
+                      val resource = resources(groupID)
+                      stars = stars + (groupID -> Math.max(resource, star))
+                      counters = counters + (groupID -> counter)
+                      resources = resources + (groupID -> 0)
+                    }
+                    if (debugMode) logger.error(s"After:\n${printState()}")
+                })
+              case _ => throw new Exception
+            }
+            if (exceedBound(bound, resources, counters, stars)) {
+              logger.info(s"Bound $bound is violated under state:\n${printState()} for the following trace decomposition:\n${trace.toTable().printAll()}")
+              return false
+            }
+          case None =>
+            if (debugMode) logger.error(s"${location.print()} does not have a classifier result")
+        }
+      case _ =>
+    })
+    throw new Exception("unreachable")
+  }
+
+  private def exceedBound(bound: Int,
+                          resources: Map[GroupID, Int],
+                          counters: Map[GroupID, Int],
+                          stars: Map[GroupID, Int]): Boolean = {
+    val approximation = resources.map({
+      case (groupID, resource) =>
+        val counter = counters(groupID)
+        val star = stars(groupID)
+        resource + star * counter
+    }).sum
+    approximation > bound
   }
 }

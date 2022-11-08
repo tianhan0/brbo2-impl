@@ -1,11 +1,13 @@
 package brbo.backend2.learning
 
+import brbo.backend2.interpreter.Interpreter.Store
 import brbo.common.Print
-import brbo.common.ast.{BrboExpr, BrboExprUtils, Number}
+import brbo.common.ast.{Bool, BrboExpr, BrboExprUtils, BrboValue, Number}
 import play.api.libs.functional.syntax.toFunctionalBuilderOps
 import play.api.libs.json.Reads.{min, _}
 import play.api.libs.json.{JsPath, Json, Reads}
 
+import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
 object DecisionTree {
@@ -30,12 +32,21 @@ object DecisionTree {
 
   abstract class TreeNode(val id: Int) {
     def print(indent: Int): String
+
+    def print(indent: Int, featureNames: List[String], classNames: List[String]): String
   }
 
   case class LeafNode(override val id: Int, classID: Int) extends TreeNode(id) {
     def print(indent: Int): String = {
       val indentString = " " * indent
       s"${indentString}LeafNode(id=$id, classID=$classID)"
+    }
+
+    def print(indent: Int, featureNames: List[String], classNames: List[String]): String = {
+      {
+        val indentString = " " * indent
+        s"${indentString}LeafNode(id=$id, classID=${classNames(classID)})"
+      }
     }
   }
 
@@ -49,18 +60,16 @@ object DecisionTree {
       s"${indentString}InterNode(id=$id, threshold=$threshold, featureID=$featureID)\n$leftString\n$rightString"
     }
 
-    private val isInteger = (threshold % 1) == 0
-
-    def getLeftPredicate(features: List[BrboExpr]): BrboExpr = {
-      BrboExprUtils.lessThanOrEqualTo(features(featureID), Number(threshold.floor.toInt))
+    def print(indent: Int, featureNames: List[String], classNames: List[String]): String = {
+      val indentString = " " * indent
+      val featureString = if (featureNames.nonEmpty) featureNames(featureID) else s"feature[$featureID]"
+      val leftString = s"${left.print(indent + 2, featureNames, classNames)} (if $featureString <= $threshold)"
+      val rightString = s"${right.print(indent + 2, featureNames, classNames)} (if $featureString > $threshold)"
+      s"${indentString}InterNode(id=$id, threshold=$threshold, featureID=$featureID)\n$leftString\n$rightString"
     }
 
-    def getRightPredicate(features: List[BrboExpr]): BrboExpr = {
-      if (isInteger) {
-        BrboExprUtils.greaterThan(features(featureID), Number(threshold.toInt))
-      } else {
-        BrboExprUtils.greaterThanOrEqualTo(features(featureID), Number(threshold.ceil.toInt))
-      }
+    def getPredicate(features: List[BrboExpr]): BrboExpr = {
+      BrboExprUtils.lessThanOrEqualTo(features(featureID), Number(threshold.floor.toInt))
     }
   }
 
@@ -68,13 +77,39 @@ object DecisionTree {
     val parsed = Json.parse(string)
     val leaves = parsed("leaves").as[List[LeafRawNode]]
     val nonLeaves = parsed("non_leaves").as[List[InternalRawNode]]
-    val classes = parsed("classes").as[List[String]]
-    TreeClassifier(root = buildTree(leaves, nonLeaves), labels = classes)
+    val classes = parsed("classes").as[List[String]].map(name => Label(name))
+    new TreeClassifier(root = buildTree(leaves, nonLeaves), labels = classes)
   }
 
-  case class TreeClassifier(root: TreeNode, labels: List[String]) extends Print {
-    def print(): String = {
-      s"Labels: $labels\nTree:\n${root.print(indent = 0)}"
+  case class Label(name: String)
+
+  class TreeClassifier(root: TreeNode, labels: List[Label]) {
+    private val classNames = labels.map(l => l.name)
+    def print(featureNames: List[String]): String = {
+      s"Labels: $labels\nTree:\n${root.print(indent = 0, featureNames, classNames)}"
+    }
+
+    def classify(store: Store,
+                 evaluate: (BrboExpr, Store) => BrboValue,
+                 features: List[BrboExpr]): Label =
+      classifyInternal(root, store, evaluate, features)
+
+    @tailrec
+    private def classifyInternal(node: TreeNode,
+                         store: Store,
+                         evaluate: (BrboExpr, Store) => BrboValue,
+                         features: List[BrboExpr]): Label = {
+      node match {
+        case node: InternalNode =>
+          evaluate(node.getPredicate(features), store) match {
+            case Bool(b, _) =>
+              if (b) classifyInternal(node.left, store, evaluate, features)
+              else classifyInternal(node.right, store, evaluate, features)
+            case _ => throw new Exception()
+          }
+        case LeafNode(_, classID) => labels(classID)
+        case _ => throw new Exception
+      }
     }
   }
 
