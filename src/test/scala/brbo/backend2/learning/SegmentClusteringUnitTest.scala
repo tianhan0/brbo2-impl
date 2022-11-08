@@ -18,8 +18,8 @@ class SegmentClusteringUnitTest extends AnyFlatSpec {
       testCase =>
         val (program, inputs) = testCase.input.asInstanceOf[(String, List[BrboValue])]
         val trace = getTrace(program, inputs)
-        val segmentClustering = new SegmentClustering(sumWeight = 1000, commandWeight = 10, debugMode = false)
-        val groups = segmentClustering.clusterSimilarSegments(trace, segmentLength = 1, KMeans(Some(5)), excludeIndices = Set())
+        val segmentClustering = new SegmentClustering(sumWeight = 1000, commandWeight = 10, debugMode = false, algorithm = KMeans(clusters = Some(5)))
+        val groups = segmentClustering.clusterSimilarSegments(trace, segmentLength = 1, excludeIndices = Set())
         StringCompare.ignoreWhitespaces(printSegments(groups, trace), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
@@ -27,7 +27,7 @@ class SegmentClusteringUnitTest extends AnyFlatSpec {
 
 object SegmentClusteringUnitTest {
   def printSegments(groups: List[List[Segment]], trace: Trace): String = {
-    groups.map(group => group.map(segment => segment.print(trace.costTraceAssociation))).mkString("\n")
+    groups.map(group => group.map(segment => segment.print(trace))).mkString("\n")
   }
 
   def toBrboProgram(program: String): BrboProgram = {
@@ -116,24 +116,24 @@ object SegmentClusteringUnitTest {
   val clusterSimilarSegmentTests: List[TestCase] = List(
     TestCase("loopPhase", (loopPhase, List(Number(4))),
       """List(use R0 2011 (cost=2011))
-        |List(use R0 1011 (cost=1011))
+        |List(use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011))
         |List(use R0 88 (cost=88), use R0 88 (cost=88))
         |List(use R0 89 (cost=89), use R0 89 (cost=89))""".stripMargin),
     TestCase("amortizeAndWorstCase01", (amortizeAndWorstCase01, List(BrboArray(List(Number(10), Number(4), Number(3)), INT))),
       """List(use R0 arrayRead(array, i) (cost=10))
+        |List(use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011))
         |List(use R0 arrayRead(array, i) (cost=4))
         |List(use R0 arrayRead(array, i) (cost=3))
-        |List(use R0 1011 (cost=1011))
         |List(use R0 88 (cost=88))""".stripMargin),
     TestCase("amortizeAndWorstCase02", (amortizeAndWorstCase02, List(
       BrboArray(List(Number(10), Number(4), Number(3)), INT),
       Number(3)
     )),
-      """List(use R0 arrayRead(array, j) (cost=10))
-        |List(use R0 arrayRead(array, j) (cost=4))
-        |List(use R0 arrayRead(array, j) (cost=3))
-        |List(use R0 1011 (cost=1011))
-        |List(use R0 88 (cost=88))""".stripMargin),
+      """List(use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011))
+        |List(use R0 arrayRead(array, j) (cost=3), use R0 arrayRead(array, j) (cost=3), use R0 arrayRead(array, j) (cost=3))
+        |List(use R0 88 (cost=88), use R0 88 (cost=88), use R0 88 (cost=88))
+        |List(use R0 arrayRead(array, j) (cost=10), use R0 arrayRead(array, j) (cost=10), use R0 arrayRead(array, j) (cost=10))
+        |List(use R0 arrayRead(array, j) (cost=4), use R0 arrayRead(array, j) (cost=4), use R0 arrayRead(array, j) (cost=4))""".stripMargin),
     TestCase("amortizeSeparately", (amortizeSeparately, List(
       BrboArray(List(Number(10), Number(4), Number(3)), INT),
       BrboArray(List(Number(7), Number(20), Number(1)), INT),

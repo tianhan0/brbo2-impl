@@ -4,7 +4,7 @@ import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter._
 import brbo.backend2.learning.DecisionTree.TreeClassifier
 import brbo.backend2.learning.ScriptRunner.DecisionTreeLearning
-import brbo.backend2.learning.SegmentClustering.Group
+import brbo.backend2.learning.SegmentClustering.{Group, Segment, printGroups}
 import brbo.common.GhostVariableUtils.{counterInitialValue, resourceInitialValue, starInitialValue}
 import brbo.common.ast._
 import brbo.common.{MyLogger, Print}
@@ -26,6 +26,10 @@ object Classifier {
     override def print(): String = "AllGroups"
   }
 
+  object TestGroup extends GroupID(-182827172) {
+    override def print(): String = "TestGroup"
+  }
+
   abstract class Label {
     def print(): String
   }
@@ -41,6 +45,8 @@ object Classifier {
   private def useLabelFromString(label: String): GroupID = {
     if (label == NoneGroup.print()) {
       NoneGroup
+    } else if (label == TestGroup.print()) {
+      TestGroup
     } else {
       val prefix = "GroupID("
       val suffix = ")"
@@ -242,7 +248,7 @@ object Classifier {
             case (groupID, result) =>
               s"${groupID.print()} -> ${result.print()}"
           }).mkString("\n")
-          s"Classifier at ${location.print()}:\n$resultsString"
+          s"Classifier at <${location.print()}>:\n$resultsString"
       }).mkString("\n\n")
       s"ClassifierResultsMap (Features: $featureString)\n$resultsString"
     }
@@ -410,22 +416,13 @@ object Classifier {
     }
   }
 
-  // Interpret the trace with the given classifier, to see if at some point
-  // the cost approximation goes beyond the given bound
-  def satisfyBound(boundExpression: BrboExpr,
-                   trace: Trace,
-                   evaluate: (BrboExpr, Store) => BrboValue,
-                   classifierResultsMap: ClassifierResultsMap,
-                   debugMode: Boolean): Boolean = {
-    if (trace.nodes.size <= 1)
-      return true
-    val bound: Int = evaluate(boundExpression, trace.nodes.head.store) match {
-      case Number(n, _) => n
-      case _ => throw new Exception
-    }
-    var resources: Map[GroupID, Int] = Map()
-    var counters: Map[GroupID, Int] = Map()
-    var stars: Map[GroupID, Int] = Map()
+  class GhostStore {
+    private var resources: Map[GroupID, Int] = Map()
+    private var counters: Map[GroupID, Int] = Map()
+    private var stars: Map[GroupID, Int] = Map()
+    private var segments: Map[GroupID, List[Segment]] = Map()
+
+    def getSegments: Map[GroupID, List[Segment]] = segments
 
     def initialize(groupID: GroupID): Unit = {
       if (!counters.contains(groupID))
@@ -436,66 +433,173 @@ object Classifier {
         resources = resources + (groupID -> resourceInitialValue)
     }
 
-    def printState(): String = {
-      s"resources: $resources\ncounters: $counters\nstars: $stars"
+    def print(): String = {
+      val segmentsString = segments.map({
+        case (groupID, segments) => s"$groupID -> ${segments.toString()}"
+      }).mkString("\n")
+      s"GhostState\nresources: $resources\ncounters: $counters\nstars: $stars\nsegments:\n$segmentsString"
     }
+
+    def reset(groupID: GroupID): Unit = {
+      updateStar(groupID)
+      resetResource(groupID)
+      incrementCounter(groupID)
+      val segmentList: List[Segment] = segments.get(groupID) match {
+        case Some(list) => list
+        case None => Nil
+      }
+      segments = segments + (groupID -> (segmentList :+ Segment(indices = Nil)))
+    }
+
+    private def incrementCounter(groupID: GroupID): Unit = {
+      val current = counters(groupID)
+      counters = counters + (groupID -> (current + 1))
+    }
+
+    private def updateStar(groupID: GroupID): Unit = {
+      val current = stars(groupID)
+      val resource = resources(groupID)
+      stars = stars + (groupID -> Math.max(resource, current))
+    }
+
+    private def resetResource(groupID: GroupID): Unit = {
+      resources = resources + (groupID -> 0)
+    }
+
+    def use(groupID: GroupID, n: Int, traceNodeIndex: Int): Unit = {
+      val current = resources(groupID)
+      resources = resources + (groupID -> (current + n))
+      val segmentList: List[Segment] = segments.get(groupID) match {
+        case Some(segmentList) =>
+          val segment = segmentList.last.add(traceNodeIndex)
+          segmentList.slice(0, segmentList.length - 1) :+ segment
+        case None => List(Segment(List(traceNodeIndex)))
+      }
+      segments = segments + (groupID -> segmentList)
+    }
+
+    def exceedBound(bound: Option[Int]): Boolean = {
+      bound match {
+        case Some(bound) =>
+          val approximation = resources.map({
+            case (groupID, resource) =>
+              val counter = counters(groupID)
+              val star = stars(groupID)
+              resource + star * counter
+          }).sum
+          approximation > bound
+        case None => false
+      }
+    }
+  }
+
+  class ClassifierApplication(ghostStore: GhostStore, trace: Trace, debugMode: Boolean) {
+    private val logger = MyLogger.createLogger(classOf[ClassifierApplication], debugMode)
+
+    def areActualSegmentCostsSimilar(segmentClustering: SegmentClustering): Boolean = {
+      // logger.traceOrError(s"${ghostStore.print()}")
+      val expectedDecomposition: List[List[Segment]] = ghostStore.getSegments.values.toList.map({
+        list => list.sortWith({ case (s1, s2) => s1.lessThanOrEqualTo(s2) })
+      })
+      logger.traceOrError(s"Expected $expectedDecomposition")
+      val segments: List[Segment] = expectedDecomposition.flatten
+      val actualDecomposition: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segments).map({
+        list => list.sortWith({ case (s1, s2) => s1.lessThanOrEqualTo(s2) })
+      })
+      logger.traceOrError(s"Actual $actualDecomposition")
+      val expected = expectedDecomposition.map(list => Group(list))
+      val actual = actualDecomposition.map(list => Group(list))
+      // logger.traceOrError(s"Actual groups ${printGroups(actual, trace)}")
+      // logger.traceOrError(s"Expected groups ${printGroups(expected, trace)}")
+      actual.forall({
+        actualGroup =>
+          val result = expected.exists(expectedGroup => expectedGroup.includes(actualGroup))
+          if (!result)
+            logger.traceOrError(s"Actual group ${actualGroup.print(trace)} is not included in the expected groups" +
+              s"\n${printGroups(expected, trace)}")
+          result
+      })
+    }
+  }
+
+  class BoundCheckClassifierApplication(val exceedBound: Boolean,
+                                        ghostStore: GhostStore,
+                                        trace: Trace,
+                                        debugMode: Boolean) extends ClassifierApplication(ghostStore, trace, debugMode)
+
+  // Interpret the trace with the given classifier, to see if at some point
+  // the cost approximation goes beyond the given bound
+  def applyClassifiers(boundExpression: Option[BrboExpr],
+                       trace: Trace,
+                       evaluate: (BrboExpr, Store) => BrboValue,
+                       classifierResultsMap: ClassifierResultsMap,
+                       debugMode: Boolean): ClassifierApplication = {
+    val checkBound = boundExpression.isDefined
+    val bound: Option[Int] = boundExpression match {
+      case Some(boundExpression) =>
+        evaluate(boundExpression, trace.nodes.head.store) match {
+          case Number(n, _) => Some(n)
+          case _ => throw new Exception
+        }
+      case None => None
+    }
+    val ghostStore = new GhostStore
 
     if (debugMode) logger.error(s"# of nodes: ${trace.nodes.size}")
     trace.nodes.zipWithIndex.foreach({
       case (TraceNode(store, _), index) =>
         if (debugMode) logger.error(s"Index $index")
-        if (index == trace.nodes.size - 1)
-          return true // Managed to reach the final store without violating the bound
-        val nextCommand = trace.nodes(index + 1).lastTransition.get.command
-        val location = ProgramLocation(nextCommand.asInstanceOf[Command])
+        if (index == trace.nodes.size - 1) {
+          if (checkBound) {
+            // Managed to reach the final store without violating the bound
+            return new BoundCheckClassifierApplication(exceedBound = false, ghostStore, trace, debugMode)
+          } else {
+            return new ClassifierApplication(ghostStore, trace, debugMode)
+          }
+        }
+        val nextCommandIndex = index + 1
+        val nextCommand = trace.nodes(nextCommandIndex).lastTransition.get.command.asInstanceOf[Command]
+        val location = ProgramLocation(nextCommand)
         classifierResultsMap.results.get(location) match {
           case Some(classifierResults) =>
-            if (debugMode) logger.error(s"${location.print()} ===> ${printClassifierResults(classifierResults)}")
+            if (debugMode) logger.error(s"${location.print()} classifier result:\n${printClassifierResults(classifierResults)}")
             nextCommand match {
               case use: Use =>
                 val label = classifierResults(AllGroups).classifier.classify(store, evaluate, classifierResultsMap.features)
                 val groupID = useLabelFromString(label.name)
-                initialize(groupID)
+                ghostStore.initialize(groupID)
                 if (debugMode) logger.error(s"${use.printToIR()} is decomposed into $groupID")
-                if (debugMode) logger.error(s"Before:\n${printState()}")
+                if (debugMode) logger.error(s"Before:\n${ghostStore.print()}")
                 evaluate(use.condition, store) match {
                   case Bool(b, _) =>
                     if (b && groupID != NoneGroup) {
                       evaluate(use.update, store) match {
-                        case Number(update, _) =>
-                          val resource = resources(groupID)
-                          resources = resources + (groupID -> (resource + update))
+                        case Number(update, _) => ghostStore.use(groupID, update, traceNodeIndex = nextCommandIndex)
                         case _ => throw new Exception
                       }
                     }
                   case _ => throw new Exception
                 }
-                if (debugMode) logger.error(s"After:\n${printState()}")
+                if (debugMode) logger.error(s"After:\n${ghostStore.print()}")
               case resetPlaceHolder: ResetPlaceHolder =>
                 classifierResults.foreach({
                   case (groupID, classifierResult) =>
-                    initialize(groupID)
+                    ghostStore.initialize(groupID)
+                    if (debugMode) logger.error(s"${resetPlaceHolder.printToIR()} is decomposed into $groupID")
+                    if (debugMode) logger.error(s"Before:\n${ghostStore.print()}")
                     val toReset = {
                       val label = classifierResult.classifier.classify(store, evaluate, classifierResultsMap.features)
                       resetLabelFromString(label.name)
                     }
-                    if (debugMode) logger.error(s"${resetPlaceHolder.printToIR()} is decomposed into $groupID")
-                    if (debugMode) logger.error(s"Before:\n${printState()}")
-                    if (toReset) {
-                      val star = stars(groupID)
-                      val counter = counters(groupID)
-                      val resource = resources(groupID)
-                      stars = stars + (groupID -> Math.max(resource, star))
-                      counters = counters + (groupID -> counter)
-                      resources = resources + (groupID -> 0)
-                    }
-                    if (debugMode) logger.error(s"After:\n${printState()}")
+                    if (toReset) ghostStore.reset(groupID)
+                    if (debugMode) logger.error(s"After:\n${ghostStore.print()}")
                 })
               case _ => throw new Exception
             }
-            if (exceedBound(bound, resources, counters, stars)) {
-              logger.info(s"Bound $bound is violated under state:\n${printState()} for the following trace decomposition:\n${trace.toTable.printAll()}")
-              return false
+            if (checkBound && ghostStore.exceedBound(bound)) {
+              // Early return
+              logger.info(s"Bound $bound is violated under state:\n${ghostStore.print()} for the following trace decomposition:\n${trace.toTable.printAll()}")
+              return new BoundCheckClassifierApplication(exceedBound = true, ghostStore, trace, debugMode)
             }
           case None =>
             if (debugMode) logger.error(s"${location.print()} does not have a classifier result")
@@ -503,18 +607,5 @@ object Classifier {
       case _ =>
     })
     throw new Exception("unreachable")
-  }
-
-  private def exceedBound(bound: Int,
-                          resources: Map[GroupID, Int],
-                          counters: Map[GroupID, Int],
-                          stars: Map[GroupID, Int]): Boolean = {
-    val approximation = resources.map({
-      case (groupID, resource) =>
-        val counter = counters(groupID)
-        val star = stars(groupID)
-        resource + star * counter
-    }).sum
-    approximation > bound
   }
 }

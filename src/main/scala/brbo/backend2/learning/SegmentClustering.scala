@@ -2,12 +2,12 @@ package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTraceAssociation, Trace}
-import brbo.backend2.learning.Classifier.{GroupID, evaluateFunctionFromInterpreter}
+import brbo.backend2.learning.Classifier.{GroupID, TestGroup, evaluateFunctionFromInterpreter}
 import brbo.backend2.learning.ScriptRunner._
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.BrboType.INT
 import brbo.common.MyLogger
-import brbo.common.ast.{BrboExpr, Identifier}
+import brbo.common.ast.Identifier
 import com.google.common.collect.Sets
 import tech.tablesaw.api.{IntColumn, Table}
 
@@ -21,19 +21,16 @@ import scala.collection.JavaConverters._
  * @param debugMode     Whether to print more information.
  */
 class SegmentClustering(sumWeight: Int, commandWeight: Int,
-                        debugMode: Boolean) {
+                        debugMode: Boolean, val algorithm: Algorithm) {
   private val logger = MyLogger.createLogger(classOf[SegmentClustering], debugMode)
 
-  def decompose(trace: Trace, similarTraces: Iterable[Trace],
-                interpreter: Interpreter, boundExpression: BrboExpr,
-                debugMode: Boolean): TraceDecomposition = {
-    val segmentClusteringAlgorithm = KMeans(clusters = Some(5))
+  def decompose(trace: Trace, similarTraces: Iterable[Trace], interpreter: Interpreter): TraceDecomposition = {
     val decomposition = new TraceDecomposition(trace)
     var segmentLength = 1
     var excludeIndices: Set[Int] = Set()
     var madeProgress = true
     while (decomposition.getSize < trace.costTrace.nodes.size) {
-      val clusters: List[List[Segment]] = clusterSimilarSegments(trace, segmentLength, segmentClusteringAlgorithm, excludeIndices)
+      val clusters: List[List[Segment]] = clusterSimilarSegments(trace, segmentLength, excludeIndices)
       logger.info(s"Found ${clusters.size} segment clusters")
       var clusterId = 0
       while (madeProgress && clusterId < clusters.size) {
@@ -45,7 +42,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
         if (cluster.size > 1) {
           logger.info(s"Choose non-overlapping segments from cluster $clusterId")
           val nonOverlappingGroups = findNonOverlappingSegments(cluster)
-          val generalizableGroups = chooseGeneralizableGroups(nonOverlappingGroups, similarTraces, interpreter, boundExpression)
+          val generalizableGroups = chooseGeneralizableGroups(nonOverlappingGroups, similarTraces, interpreter)
           chooseGroup(generalizableGroups) match {
             case Some(chosenGroup) =>
               // Remove indices that have been grouped
@@ -62,26 +59,57 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
     }
     // All remaining indices are put into a single segment for amortization
     val lastGroup = {
-      val remainingIndices = trace.costTraceAssociation.indexMap.values.toSet.diff(excludeIndices).toList.sorted
+      val remainingIndices = trace.costTraceAssociation.indexMap.keys.toSet.diff(excludeIndices).toList.sorted
       Group(List(Segment(remainingIndices)))
     }
     decomposition.addGroup(lastGroup)
     decomposition
   }
 
-  def clusterSimilarSegments(trace: Trace, segmentLength: Int, algorithm: Algorithm, excludeIndices: Set[Int]): List[List[Segment]] = {
-    val indices: util.Set[Int] = trace.costTraceAssociation.indexMap.values.toSet.diff(excludeIndices).asJava
-    logger.info(s"Choose segments with sizes of $segmentLength")
+  def clusterSimilarSegments(trace: Trace, segmentLength: Int, excludeIndices: Set[Int]): List[List[Segment]] = {
+    val indices: util.Set[Int] = trace.costTraceAssociation.indexMap.keys.toSet.diff(excludeIndices).asJava
+    logger.traceOrError(s"Choose segments with sizes of $segmentLength among indices $indices")
     val segments: List[Segment] =
       Sets.combinations(indices, segmentLength)
         .asScala.map(subset => Segment(subset.asScala.toList.sorted))
         .toList
+    clusterSimilarSegments(trace, segments)
+  }
 
-    val matrix = generateTrainingData(trace, segments, algorithm)
+  // Given a list of potentially overlapping segments, choose sets of
+  // non-overlapping segments
+  def findNonOverlappingSegments(segments: List[Segment]): List[Group] = {
+    val possibleGroups: List[Group] = segments.foldLeft(Nil: List[Group])({
+      case (groups, segment) =>
+        groups.find(group => group.addSegment(segment).isDefined) match {
+          case Some(group) => group.addSegment(segment).get :: groups
+          case None => Group(List(segment)) :: groups
+        }
+    })
+    println(s"Found $possibleGroups possible groups (or non-overlapping sets of segments)")
+    possibleGroups
+  }
+
+  def generateTrainingData(trace: Trace, segments: List[Segment]): List[List[Int]] = {
+    val segmentToData = new SegmentToTrainingData(trace.costTraceAssociation, sumWeight, commandWeight)
+    algorithm match {
+      case Optics(_, Precomputed) =>
+        segments.map({
+          left =>
+            segments.map({ right => segmentToData.difference(left, right) })
+        })
+      case KMeans(_) | Optics(_, Euclidean) =>
+        segments.map(segment => List(segmentToData.toTrainingData(segment)))
+      case _ => throw new Exception
+    }
+  }
+
+  def clusterSimilarSegments(trace: Trace, segments: List[Segment]): List[List[Segment]] = {
+    val matrix = generateTrainingData(trace, segments)
     val clusterLabels = Clustering.cluster(matrix, algorithm, debugMode) match {
       case Some(labels) => labels
       case None =>
-        logger.error(s"Failed to find similar segments")
+        logger.fatal(s"Failed to find similar segments")
         return Nil
     }
     val labelMap: Map[Int, List[(Segment, Int)]] = {
@@ -102,40 +130,8 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
     clusters
   }
 
-  // Given a list of potentially overlapping segments, choose sets of
-  // non-overlapping segments
-  def findNonOverlappingSegments(segments: List[Segment]): List[Group] = {
-    val possibleGroups: List[Group] = segments.foldLeft(Nil: List[Group])({
-      case (groups, segment) =>
-        groups.find(group => group.addSegment(segment).isDefined) match {
-          case Some(group) => group.addSegment(segment).get :: groups
-          case None => Group(List(segment)) :: groups
-        }
-    })
-    println(s"Found $possibleGroups possible groups (or non-overlapping sets of segments)")
-    possibleGroups
-  }
-
-  def generateTrainingData(trace: Trace, segments: List[Segment], algorithm: Algorithm): List[List[Int]] = {
-    val segmentToData = new SegmentToTrainingData(trace.costTraceAssociation, sumWeight, commandWeight)
-    algorithm match {
-      case Optics(_, Precomputed) =>
-        segments.map({
-          left =>
-            segments.map({ right => segmentToData.difference(left, right) })
-        })
-      case KMeans(_) | Optics(_, Euclidean) =>
-        segments.map(segment => List(segmentToData.toTrainingData(segment)))
-      case _ => throw new Exception
-    }
-  }
-}
-
-object SegmentClustering {
-  private val logger = MyLogger.createLogger(SegmentClustering.getClass, debugMode = false)
-
-  private def chooseGeneralizableGroups(groups: List[Group], similarTraces: Iterable[Trace],
-                                        interpreter: Interpreter, boundExpression: BrboExpr): List[Group] = {
+  def chooseGeneralizableGroups(groups: List[Group],
+                                similarTraces: Iterable[Trace], interpreter: Interpreter): List[Group] = {
     groups.filter({
       group =>
         similarTraces.forall({
@@ -143,21 +139,26 @@ object SegmentClustering {
             val tables = Classifier.generateTables(
               trace,
               Classifier.evaluateFunctionFromInterpreter(interpreter),
-              Map(GroupID(421) -> group),
+              Map(TestGroup -> group),
               features = List(Identifier("i", INT), Identifier("n", INT)),
               failIfCannotFindResetPlaceHolder = false
             )
-            val classifierResults = tables.toProgramTables.runClassifier(debugMode = false)
-            Classifier.satisfyBound(
-              boundExpression,
+            val classifierResults = tables.toProgramTables.runClassifier(debugMode)
+            val applicationResult = Classifier.applyClassifiers(
+              boundExpression = None,
               trace,
               evaluateFunctionFromInterpreter(interpreter),
               classifierResults,
-              debugMode = false
+              debugMode
             )
+            applicationResult.areActualSegmentCostsSimilar(this)
         })
     })
   }
+}
+
+object SegmentClustering {
+  private val logger = MyLogger.createLogger(SegmentClustering.getClass, debugMode = false)
 
   private def chooseGroup(groups: List[Group]): Option[Group] = {
     // TODO: Carefully choose a group
@@ -179,8 +180,9 @@ object SegmentClustering {
 
   // Indices in the list of costs
   case class Segment(indices: List[Int]) {
-    assert(indices.nonEmpty && indices.sorted == indices,
-      s"Indices must be non-empty and sorted: $indices")
+    assert(indices.sorted == indices, s"Indices must be sorted: $indices")
+    val head: Option[Int] = indices.headOption
+    val last: Option[Int] = indices.lastOption
 
     // Indices 1, 2, 4 overlap with 1, 5, 10, because 1 overlaps with 1
     // Indices 1, 2, 4 overlap with 3, 5, because interval [2,4] overlaps with [3,5]
@@ -197,27 +199,60 @@ object SegmentClustering {
       }
     }
 
-    def print(costTraceAssociation: CostTraceAssociation): String = {
-      costTraceAssociation.costTrace(Some(indices)).map({
+    def print(trace: Trace): String = {
+      trace.costTraceAssociation.costTrace(Some(indices)).map({
         case Interpreter.UseNode(use, cost) => s"${use.printToIR()} (cost=$cost)"
         case _ => throw new Exception
       }).mkString(", ")
     }
 
-    def lessThanOrEqualTo(other: Segment): Boolean = indices.last <= other.indices.head
+    def lessThanOrEqualTo(other: Segment): Boolean = {
+      (indices.isEmpty, other.indices.isEmpty) match {
+        case (true, true) => true
+        case (true, false) => true
+        case (false, true) => false
+        case (false, false) => indices.last <= other.indices.head
+      }
+    }
+
+    def includes(other: Segment): Boolean = other.indices.toSet.subsetOf(this.indices.toSet)
+
+    def add(index: Int): Segment = Segment(indices :+ index)
   }
 
   case class Group(segments: List[Segment]) {
     segments.zipWithIndex.foreach({
       case (segment, index) =>
         if (index < segments.length - 1) {
-          assert(segment.indices.last < segments(index + 1).indices.head,
-            s"Segments are sorted and must not overlap: $segment, ${segments(index + 1)}")
+          val current = segment
+          val next = segments(index + 1)
+          assert(current.lessThanOrEqualTo(next),
+            s"Segments are sorted and must not overlap: $current, $next")
         }
     })
     val size: Int = segments.map(segment => segment.indices.size).sum
 
     val indices: List[Int] = segments.flatMap(segment => segment.indices)
+
+    val head: Option[Int] = {
+      if (segments.isEmpty) None
+      else {
+        segments.indexWhere(s => s.head.isDefined) match {
+          case -1 => None
+          case index => segments(index).head
+        }
+      }
+    }
+
+    val last: Option[Int] = {
+      if (segments.isEmpty) None
+      else {
+        segments.lastIndexWhere(s => s.last.isDefined) match {
+          case -1 => None
+          case index => segments(index).last
+        }
+      }
+    }
 
     def addSegment(segment: Segment): Option[Group] = {
       if (segments.isEmpty)
@@ -229,6 +264,34 @@ object SegmentClustering {
           Some(Group(segments :+ segment))
       }
     }
+
+    def lessThanOrEqualTo(other: Group): Boolean = {
+      (this.head, other.head) match {
+        case (Some(thisHead), Some(otherHead)) => thisHead <= otherHead
+        case (Some(_), None) => false
+        case (None, Some(_)) => true
+        case (None, None) => true
+      }
+    }
+
+    def removeEmptySegments(): Group = Group(segments.filter(s => s.indices.nonEmpty))
+
+    def includes(other: Group): Boolean = {
+      val thisRemovedEmptySegments = removeEmptySegments()
+      val otherRemovedEmptySegments = other.removeEmptySegments()
+      otherRemovedEmptySegments.segments.forall({
+        otherSegment =>
+          thisRemovedEmptySegments.segments.exists(thisSegment => thisSegment.includes(otherSegment))
+      })
+    }
+
+    def print(trace: Trace): String = {
+      removeEmptySegments().segments.map({ segment => segment.print(trace) }).mkString("; ")
+    }
+  }
+
+  def printGroups(groups: Iterable[Group], trace: Trace): String = {
+    groups.map(g => g.print(trace)).mkString("\n")
   }
 
   class TraceDecomposition(trace: Trace) {

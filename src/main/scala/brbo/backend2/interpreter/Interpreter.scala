@@ -506,20 +506,20 @@ object Interpreter {
 
   case class Trace(nodes: List[TraceNode]) extends Print {
     val costTraceAssociation: CostTraceAssociation = {
-      val (map, reversedMap) =
-        nodes.zipWithIndex.foldLeft((Map(): Map[CostTraceNode, Int], Map(): Map[Int, CostTraceNode]))({
-          case ((map, reversedMap), (node, index)) => node.lastTransition match {
+      val indexMap =
+        nodes.zipWithIndex.foldLeft(Map(): Map[Int, CostTraceNode])({
+          case (indexMap, (node, index)) => node.lastTransition match {
             case Some(lastTransition) =>
               (lastTransition.cost, lastTransition.command) match {
                 case (Some(cost), use: Use) =>
                   val node = UseNode(use, cost)
-                  (map + (node -> index), reversedMap + (index -> node))
-                case _ => (map, reversedMap)
+                  indexMap + (index -> node)
+                case _ => indexMap
               }
-            case None => (map, reversedMap)
+            case None => indexMap
           }
         })
-      CostTraceAssociation(this, map, reversedMap)
+      CostTraceAssociation(this, indexMap)
     }
     val costTrace: CostTrace = CostTrace(costTraceAssociation.costTrace(indices = None))
 
@@ -574,15 +574,12 @@ object Interpreter {
 
   /**
    *
-   * @param trace            The trace that this cost trace is associated with
-   * @param indexMap         A map from cost trace nodes to the indices of the corresponding transitions
-   *                         in the trace that "backs" this cost trace
-   * @param reversedIndexMap The inverse of indexMap
+   * @param trace    The trace that this cost trace is associated with
+   * @param indexMap A map from indices of the trace to the cost trace nodes
    */
   case class CostTraceAssociation(trace: Trace,
-                                  indexMap: Map[CostTraceNode, Int],
-                                  reversedIndexMap: Map[Int, CostTraceNode]) {
-    private val subsequence = reversedIndexMap.toList.sortWith({
+                                  indexMap: Map[Int, CostTraceNode]) {
+    private val subsequence = indexMap.toList.sortWith({
       case ((index1, _), (index2, _)) => index1 < index2
     })
 
@@ -594,10 +591,10 @@ object Interpreter {
       trace.map({ case (_, node) => node })
     }
 
-    def ghostCommandAtIndex(index: Int): GhostCommand = reversedIndexMap(index).getGhostCommand
+    def ghostCommandAtIndex(index: Int): GhostCommand = indexMap(index).getGhostCommand
 
     def costSumAtIndices(indices: List[Int]): Int = {
-      reversedIndexMap.filter({
+      indexMap.filter({
         case (index, _) => indices.contains(index)
       }).map({
         case (_, UseNode(_, cost)) => cost

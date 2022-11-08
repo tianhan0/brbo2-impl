@@ -2,8 +2,10 @@ package brbo.backend2.learning
 
 import brbo.TestCase
 import brbo.backend2.interpreter.Interpreter
+import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.backend2.learning.Classifier._
-import brbo.backend2.learning.ClassifierUnitTest.{generateGroups, loopPhase}
+import brbo.backend2.learning.ClassifierUnitTest.loopPhase
+import brbo.backend2.learning.ScriptRunner.{Euclidean, Optics}
 import brbo.backend2.learning.SegmentClustering.{Group, Segment}
 import brbo.backend2.learning.SegmentClusteringUnitTest.functionDefinitions
 import brbo.common.BrboType.INT
@@ -13,11 +15,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class ClassifierUnitTest extends AnyFlatSpec {
   "Generate tables for classification" should "be correct" in {
-    val program = SegmentClusteringUnitTest.toBrboProgram(loopPhase)
-    val interpreter = new Interpreter(program)
+    val interpreter = ClassifierUnitTest.toInterpreter(loopPhase)
     val trace = SegmentClusteringUnitTest.getTrace(loopPhase, List(Number(4)))
-    val costNodeIndices = trace.costTraceAssociation.reversedIndexMap.keys.toList.sorted
-    val groups1 = generateGroups(costNodeIndices, numberOfGroups = 2)
+    val groups1 = ClassifierUnitTest.generateGroups(trace, numberOfGroups = 2)
     val table1 = Classifier.generateTables(
       trace,
       Classifier.evaluateFunctionFromInterpreter(interpreter),
@@ -403,15 +403,9 @@ class ClassifierUnitTest extends AnyFlatSpec {
   }
 
   "Deciding if traces satisfy the bounds under the given decompositions" should "be correct" in {
-    val interpreter = {
-      val program = SegmentClusteringUnitTest.toBrboProgram(loopPhase)
-      new Interpreter(program)
-    }
+    val interpreter = ClassifierUnitTest.toInterpreter(loopPhase)
     val trace = SegmentClusteringUnitTest.getTrace(loopPhase, List(Number(4)))
-    val groups = {
-      val costNodeIndices = trace.costTraceAssociation.reversedIndexMap.keys.toList.sorted
-      generateGroups(costNodeIndices, numberOfGroups = 2)
-    }
+    val groups = ClassifierUnitTest.generateGroups(trace, numberOfGroups = 2)
     val tables = Classifier.generateTables(
       trace,
       Classifier.evaluateFunctionFromInterpreter(interpreter),
@@ -421,30 +415,53 @@ class ClassifierUnitTest extends AnyFlatSpec {
     )
     val classifierResults = tables.toProgramTables.runClassifier(debugMode = false)
     val invalidBound = Number(2000)
-    val resultFalse = Classifier.satisfyBound(
-      invalidBound,
+    val resultFalse = Classifier.applyClassifiers(
+      Some(invalidBound),
       trace,
       evaluateFunctionFromInterpreter(interpreter),
       classifierResults,
       debugMode = false
-    )
-    StringCompare.ignoreWhitespaces(resultFalse.toString, "false", "Expected to not satisfy the bound")
+    ).asInstanceOf[BoundCheckClassifierApplication].exceedBound
+    StringCompare.ignoreWhitespaces(resultFalse.toString, "true", "Expected to not satisfy the bound")
     // println(SegmentClustering.printDecomposition(trace, groups))
 
-    val validBound = Number(6000)
-    val resultTrue = Classifier.satisfyBound(
-      validBound,
+    val validBound = Number(8000)
+    val resultTrue = Classifier.applyClassifiers(
+      Some(validBound),
       trace,
       evaluateFunctionFromInterpreter(interpreter),
       classifierResults,
       debugMode = false
-    )
-    StringCompare.ignoreWhitespaces(resultTrue.toString, "true", "Expected to satisfy the bound")
+    ).asInstanceOf[BoundCheckClassifierApplication].exceedBound
+    StringCompare.ignoreWhitespaces(resultTrue.toString, "false", "Expected to satisfy the bound")
+  }
+
+  "Deciding if applying classifiers to a trace leads to segments with similar costs" should "be correct" in {
+    val interpreter = ClassifierUnitTest.toInterpreter(loopPhase)
+    val trace = SegmentClusteringUnitTest.getTrace(loopPhase, List(Number(10)))
+    val algorithm = Optics(maxEps = Some(0.8), metric = Euclidean)
+    val segmentClustering = new SegmentClustering(sumWeight = 1, commandWeight = 0, debugMode = false, algorithm)
+    val clusters: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, 1, excludeIndices = Set())
+    val group = Group(clusters.head.sortWith({ case (s1, s2) => s1.lessThanOrEqualTo(s2) }))
+    val result = segmentClustering.chooseGeneralizableGroups(List(group), similarTraces = List(trace), interpreter)
+    val resultString = result.map(g => g.print(trace)).mkString("\n")
+    StringCompare.ignoreWhitespaces(resultString, """use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011)""", "failed")
   }
 }
 
 object ClassifierUnitTest {
-  def generateGroups(indices: List[Int], numberOfGroups: Int): Map[GroupID, Group] = {
+
+  def toInterpreter(source: String): Interpreter = {
+    val program = SegmentClusteringUnitTest.toBrboProgram(source)
+    new Interpreter(program)
+  }
+
+  def generateGroups(trace: Trace, numberOfGroups: Int): Map[GroupID, Group] = {
+    val costNodeIndices = trace.costTraceAssociation.indexMap.keys.toList.sorted
+    generateGroups(costNodeIndices, numberOfGroups)
+  }
+
+  private def generateGroups(indices: List[Int], numberOfGroups: Int): Map[GroupID, Group] = {
     assert(numberOfGroups > 0)
     Range(0, numberOfGroups).map({
       groupID =>

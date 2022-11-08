@@ -12,7 +12,7 @@ def optics(data, max_eps, metric):
         max_eps=max_eps,
         metric=metric,
         cluster_method="xi",
-        min_cluster_size=1,
+        # min_cluster_size=1,  # Do not specify this
     ).fit(data)
     print(f"Ordering: {clustering.ordering_}")
     print(f"Reachability: {clustering.reachability_[clustering.ordering_]}")

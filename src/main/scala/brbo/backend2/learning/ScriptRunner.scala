@@ -37,7 +37,7 @@ object ScriptRunner {
     override def print(): String = "euclidean"
   }
 
-  case class Optics(maxEps: Option[Int], metric: Metric) extends Algorithm {
+  case class Optics(maxEps: Option[Double], metric: Metric) extends Algorithm {
     def commandLineOption: String = {
       val algorithm = s"--algorithm=optics --metric=${metric.print()}"
       maxEps match {
