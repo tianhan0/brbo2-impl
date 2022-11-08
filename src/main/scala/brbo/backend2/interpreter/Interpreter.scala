@@ -532,7 +532,7 @@ object Interpreter {
       s"$prefix$string"
     }
 
-    def toTable(): Table = {
+    def toTable: Table = {
       val table: Table = Table.create("")
       val commands: List[String] = nodes.map({
         node =>

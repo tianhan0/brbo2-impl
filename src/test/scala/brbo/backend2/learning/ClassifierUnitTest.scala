@@ -2,7 +2,7 @@ package brbo.backend2.learning
 
 import brbo.TestCase
 import brbo.backend2.interpreter.Interpreter
-import brbo.backend2.learning.Classifier.{BrboTable, GroupID, ResetLabel, ResetTable, UseLabel, UseTable, evaluateFunctionFromInterpreter}
+import brbo.backend2.learning.Classifier._
 import brbo.backend2.learning.ClassifierUnitTest.{generateGroups, loopPhase}
 import brbo.backend2.learning.SegmentClustering.{Group, Segment}
 import brbo.backend2.learning.SegmentClusteringUnitTest.functionDefinitions
@@ -412,12 +412,11 @@ class ClassifierUnitTest extends AnyFlatSpec {
       val costNodeIndices = trace.costTraceAssociation.reversedIndexMap.keys.toList.sorted
       generateGroups(costNodeIndices, numberOfGroups = 2)
     }
-    val features = List(Identifier("i", INT), Identifier("n", INT))
     val tables = Classifier.generateTables(
       trace,
       Classifier.evaluateFunctionFromInterpreter(interpreter),
       groups,
-      features,
+      features = List(Identifier("i", INT), Identifier("n", INT)),
       failIfCannotFindResetPlaceHolder = false
     )
     val classifierResults = tables.toProgramTables.runClassifier(debugMode = false)
@@ -426,7 +425,6 @@ class ClassifierUnitTest extends AnyFlatSpec {
       invalidBound,
       trace,
       evaluateFunctionFromInterpreter(interpreter),
-      features,
       classifierResults,
       debugMode = false
     )
@@ -438,7 +436,6 @@ class ClassifierUnitTest extends AnyFlatSpec {
       validBound,
       trace,
       evaluateFunctionFromInterpreter(interpreter),
-      features = List(Identifier("i", INT), Identifier("n", INT)),
       classifierResults,
       debugMode = false
     )
@@ -487,7 +484,7 @@ object ClassifierUnitTest {
   }
 
   private val useTable = {
-    val table = new UseTable(List("x", "y"))
+    val table = new UseTable(List(Identifier("x", INT), Identifier("y", INT)))
     addUseTableRow(table, features = List(0, 1), label = 1)
     addUseTableRow(table, features = List(0, 2), label = 1)
     addUseTableRow(table, features = List(0, 3), label = 1)
@@ -496,7 +493,7 @@ object ClassifierUnitTest {
   }
 
   private val resetTable = {
-    val table = new ResetTable(List("x", "y"))
+    val table = new ResetTable(List(Identifier("x", INT), Identifier("y", INT)))
     addResetTableRow(table, features = List(0, 1), label = true)
     addResetTableRow(table, features = List(0, 2), label = false)
     addResetTableRow(table, features = List(0, 3), label = true)

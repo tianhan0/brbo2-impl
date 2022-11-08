@@ -226,7 +226,7 @@ object SegmentClustering {
   }
 
   def printDecomposition(trace: Trace, groups: Map[GroupID, Group]): String = {
-    val table: Table =  trace.toTable()
+    val table: Table =  trace.toTable
     val sortedMap = groups.toList.sortWith({
       case ((id1, _), (id2, _)) => id1.print() < id2.print()
     })

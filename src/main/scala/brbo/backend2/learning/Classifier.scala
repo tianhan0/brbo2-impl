@@ -51,13 +51,12 @@ object Classifier {
 
   def resetLabelFromString(label: String): Boolean = label.toBoolean
 
-  abstract class BrboTable extends Print {
+  abstract class BrboTable(val features: List[BrboExpr]) extends Print {
     protected val tableName: String
 
     protected val table: Table = Table.create(tableName)
 
-    val featureNames: List[String]
-
+    val featureNames: List[String] = features.map(f => f.printToIR())
     featureNames.foreach(featureName => table.addColumns(IntColumn.create(featureName)))
     table.addColumns(StringColumn.create("Label"))
 
@@ -105,21 +104,21 @@ object Classifier {
     def copy(): BrboTable
   }
 
-  class UseTable(override val featureNames: List[String]) extends BrboTable {
+  class UseTable(override val features: List[BrboExpr]) extends BrboTable(features) {
     val tableName = "UseTable"
 
     override def copy(): UseTable = {
-      val newTable = new UseTable(featureNames)
+      val newTable = new UseTable(features)
       newTable.append(this)
       newTable
     }
   }
 
-  class ResetTable(override val featureNames: List[String]) extends BrboTable {
+  class ResetTable(override val features: List[BrboExpr]) extends BrboTable(features) {
     val tableName = "ResetTable"
 
     override def copy(): ResetTable = {
-      val newTable = new ResetTable(featureNames)
+      val newTable = new ResetTable(features)
       newTable.append(this)
       newTable
     }
@@ -141,7 +140,7 @@ object Classifier {
   type BrboTables = Map[GroupID, BrboTable]
 
   // A mapping from a location in a trace to a table for the previous store -- the store right before the location
-  class TraceTables(tables: Map[TraceLocation, BrboTables], features: List[BrboExpr]) extends Print {
+  class TraceTables(tables: Map[TraceLocation, BrboTables], features: List[BrboExpr]) {
     def print(): String = {
       val separator1 = "=" * 40
       val separator2 = "*" * 60
@@ -197,8 +196,7 @@ object Classifier {
 
   // A mapping from a program location (i.e., a command) to a table for any of its previous store
   class ProgramTables(tables: Map[ProgramLocation, BrboTables], features: List[BrboExpr]) {
-    val featureNames: List[String] = features.map(e => e.printToIR())
-    def runClassifier(debugMode: Boolean): Map[ProgramLocation, ClassifierResults] = {
+    def runClassifier(debugMode: Boolean): ClassifierResultsMap = {
       val results = tables.map({
         case (location, tables) =>
           val results = tables.map({
@@ -206,9 +204,9 @@ object Classifier {
           })
           (location, results)
       })
-      if (debugMode)
-        println(Classifier.printClassifierResultsMap(results))
-      results
+      val map = ClassifierResultsMap(results, features)
+      if (debugMode) println(map.print())
+      map
     }
   }
 
@@ -235,15 +233,19 @@ object Classifier {
     }).mkString("\n")
   }
 
-  def printClassifierResultsMap(results: Map[ProgramLocation, ClassifierResults]): String = {
-    results.map({
-      case (location, results) =>
-        val resultsString = results.map({
-          case (groupID, result) =>
-            s"${groupID.print()} -> ${result.print()}"
-        }).mkString("\n")
-        s"Classifier at ${location.print()}:\n$resultsString"
-    }).mkString("\n\n")
+  case class ClassifierResultsMap(results: Map[ProgramLocation, ClassifierResults], features: List[BrboExpr]) {
+    def print(): String = {
+      val featureString = features.map(f => f.printToIR())
+      val resultsString = results.map({
+        case (location, results) =>
+          val resultsString = results.map({
+            case (groupID, result) =>
+              s"${groupID.print()} -> ${result.print()}"
+          }).mkString("\n")
+          s"Classifier at ${location.print()}:\n$resultsString"
+      }).mkString("\n\n")
+      s"ClassifierResultsMap (Features: $featureString)\n$resultsString"
+    }
   }
 
   class TableGenerationError(message: String) extends Exception
@@ -305,7 +307,6 @@ object Classifier {
         (groupID, resetPlaceHolderIndices)
     })
 
-    val featureNames = features.map(e => e.printToIR())
     val groupIDs = groups.keys.toSet
     var traceTableMap = Map[TraceLocation, BrboTables]()
     trace.nodes.zipWithIndex.foreach({
@@ -331,12 +332,12 @@ object Classifier {
                     tables.get(groupID) match {
                       case Some(table) => table.asInstanceOf[UseTable]
                       case None =>
-                        val useTable = new UseTable(featureNames)
+                        val useTable = new UseTable(features)
                         traceTableMap = traceTableMap + (traceLocation -> (tables + (groupID -> useTable)))
                         useTable
                     }
                   case None =>
-                    val useTable = new UseTable(featureNames)
+                    val useTable = new UseTable(features)
                     traceTableMap = traceTableMap + (traceLocation -> Map(groupID -> useTable))
                     useTable
                 }
@@ -363,12 +364,12 @@ object Classifier {
                         tables.get(groupID) match {
                           case Some(table) => table.asInstanceOf[ResetTable]
                           case None =>
-                            val resetTable = new ResetTable(featureNames)
+                            val resetTable = new ResetTable(features)
                             traceTableMap = traceTableMap + (traceLocation -> (tables + (groupID -> resetTable)))
                             resetTable
                         }
                       case None =>
-                        val resetTable = new ResetTable(featureNames)
+                        val resetTable = new ResetTable(features)
                         traceTableMap = traceTableMap + (traceLocation -> Map(groupID -> resetTable))
                         resetTable
                     }
@@ -414,8 +415,7 @@ object Classifier {
   def satisfyBound(boundExpression: BrboExpr,
                    trace: Trace,
                    evaluate: (BrboExpr, Store) => BrboValue,
-                   features: List[BrboExpr],
-                   classifierResults: Map[ProgramLocation, ClassifierResults],
+                   classifierResultsMap: ClassifierResultsMap,
                    debugMode: Boolean): Boolean = {
     if (trace.nodes.size <= 1)
       return true
@@ -448,12 +448,12 @@ object Classifier {
           return true // Managed to reach the final store without violating the bound
         val nextCommand = trace.nodes(index + 1).lastTransition.get.command
         val location = ProgramLocation(nextCommand.asInstanceOf[Command])
-        classifierResults.get(location) match {
+        classifierResultsMap.results.get(location) match {
           case Some(classifierResults) =>
             if (debugMode) logger.error(s"${location.print()} ===> ${printClassifierResults(classifierResults)}")
             nextCommand match {
               case use: Use =>
-                val label = classifierResults(AllGroups).classifier.classify(store, evaluate, features)
+                val label = classifierResults(AllGroups).classifier.classify(store, evaluate, classifierResultsMap.features)
                 val groupID = useLabelFromString(label.name)
                 initialize(groupID)
                 if (debugMode) logger.error(s"${use.printToIR()} is decomposed into $groupID")
@@ -476,7 +476,7 @@ object Classifier {
                   case (groupID, classifierResult) =>
                     initialize(groupID)
                     val toReset = {
-                      val label = classifierResult.classifier.classify(store, evaluate, features)
+                      val label = classifierResult.classifier.classify(store, evaluate, classifierResultsMap.features)
                       resetLabelFromString(label.name)
                     }
                     if (debugMode) logger.error(s"${resetPlaceHolder.printToIR()} is decomposed into $groupID")
@@ -494,7 +494,7 @@ object Classifier {
               case _ => throw new Exception
             }
             if (exceedBound(bound, resources, counters, stars)) {
-              logger.info(s"Bound $bound is violated under state:\n${printState()} for the following trace decomposition:\n${trace.toTable().printAll()}")
+              logger.info(s"Bound $bound is violated under state:\n${printState()} for the following trace decomposition:\n${trace.toTable.printAll()}")
               return false
             }
           case None =>
