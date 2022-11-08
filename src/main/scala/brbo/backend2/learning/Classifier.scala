@@ -38,7 +38,7 @@ object Classifier {
     override def print(): String = b.toString
   }
 
-  def useLabelFromString(label: String): GroupID = {
+  private def useLabelFromString(label: String): GroupID = {
     if (label == NoneGroup.print()) {
       NoneGroup
     } else {
@@ -49,7 +49,7 @@ object Classifier {
     }
   }
 
-  def resetLabelFromString(label: String): Boolean = label.toBoolean
+  private def resetLabelFromString(label: String): Boolean = label.toBoolean
 
   abstract class BrboTable(val features: List[BrboExpr]) extends Print {
     protected val tableName: String
@@ -205,7 +205,7 @@ object Classifier {
           (location, results)
       })
       val map = ClassifierResultsMap(results, features)
-      if (debugMode) println(map.print())
+      if (debugMode) logger.error(map.print())
       map
     }
   }
