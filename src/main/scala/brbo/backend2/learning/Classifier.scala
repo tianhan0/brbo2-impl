@@ -206,7 +206,7 @@ object Classifier {
 
   // A mapping from a program location (i.e., a command) to a table for any of its previous store
   class ProgramTables(tables: Map[ProgramLocation, BrboTables], features: List[BrboExpr]) {
-    def runClassifier(debugMode: Boolean): ClassifierResultsMap = {
+    def generateClassifiers(debugMode: Boolean): ClassifierResultsMap = {
       val futures = Future.traverse(tables)({
         case (location, tables) =>
           Future {
@@ -228,8 +228,6 @@ object Classifier {
   }
 
   case class UseResult(table: UseTable, override val classifier: TreeClassifier) extends ClassifierResult(classifier) {
-    def generateGhostCommands: Map[BrboExpr, GhostCommand] = ???
-
     def print(): String = s"UseResult: ${classifier.print(table.featureNames)}"
   }
 
@@ -260,8 +258,8 @@ object Classifier {
       s"ClassifierResultsMap (Features: $featureString)\n$resultsString"
     }
 
-    def toTransformation: Map[Command, BrboAst] = {
-      var transforms: Map[Command, BrboAst] = Map()
+    def toTransformation: Map[BrboAst, BrboAst] = {
+      var transforms: Map[BrboAst, BrboAst] = Map()
       results.foreach({
         case (location, results) =>
           location.command match {

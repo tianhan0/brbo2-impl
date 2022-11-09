@@ -76,8 +76,6 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
     s"${BrboType.toCString(returnType)} $identifier($parametersString) \n${bodyWithInitialization.printToC(0)}"
   }
 
-  val isAmortized: Boolean = groupIds.isEmpty
-
   def replaceBodyWithoutInitialization(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody, groupIds)
 
   def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, body, newGroupIds)
@@ -93,6 +91,16 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
           otherBodyNoInitialization.sameAs(body) && otherGroupIds == groupIds
       case _ => false
     }
+  }
+
+  def nonGhostVariables(): List[Identifier] = {
+    val variables = BrboAstUtils.collectCommands(body).flatMap({
+      case VariableDeclaration(identifier, _, _) => Some(identifier)
+      case _ => None
+    }).toList ::: parameters
+    variables.sortWith({
+      case (v1, v2) => v1.printToIR() <= v2.printToIR()
+    })
   }
 }
 

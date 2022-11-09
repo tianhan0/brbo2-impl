@@ -6,10 +6,9 @@ import brbo.common.string.StringFormatUtils
 import brbo.common.{BrboType, MathUtils, MyLogger}
 
 object Fuzzer {
-  private val logger = MyLogger.createLogger(Fuzzer.getClass, debugMode = false)
-  private val POSSIBILITIES = 3
+  val SAMPLES = 3
   private val MAX_ARRAY_LENGTH = 10
-  private val MAX_INTEGER = 1000
+  private val MAX_INTEGER = 100
   private val SEED = 62618L
 
   def randomValues(typ: BrboType.T, maxArrayLength: Int, maxInteger: Int, possibilities: Int): List[BrboValue] = {
@@ -35,11 +34,12 @@ object Fuzzer {
     }
   }
 
-  def fuzz(brboProgram: BrboProgram, debugMode: Boolean): List[Interpreter.Trace] = {
+  def fuzz(brboProgram: BrboProgram, debugMode: Boolean, samples: Int): List[Interpreter.Trace] = {
+    val logger = MyLogger.createLogger(Fuzzer.getClass, debugMode)
     val FUZZING = s"Fuzzing program ${brboProgram.name}: "
     val interpreter = new Interpreter(brboProgram, debugMode)
     val inputs = MathUtils.crossJoin(brboProgram.mainFunction.parameters.map({
-      case Identifier(_, typ, _) => randomValues(typ, maxArrayLength = MAX_ARRAY_LENGTH, maxInteger = MAX_INTEGER, possibilities = POSSIBILITIES)
+      case Identifier(_, typ, _) => randomValues(typ, maxArrayLength = MAX_ARRAY_LENGTH, maxInteger = MAX_INTEGER, samples)
     }))
     logger.info(s"${FUZZING}Generated `${inputs.size}` inputs")
     inputs.zipWithIndex.map({
@@ -48,7 +48,9 @@ object Fuzzer {
           val percentage = StringFormatUtils.float(index.toDouble / inputs.size * 100, digit = 2)
           logger.info(s"$FUZZING$index / ${inputs.size} ($percentage%)")
         }
+        logger.traceOrError(s"Inputs: ${inputValues.map(v => v.printToIR())}")
         val endState = interpreter.execute(inputValues)
+        // logger.traceOrError(s"Trace:\n${endState.trace.toTable.printAll()}")
         endState.trace
     })
   }

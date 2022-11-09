@@ -31,9 +31,10 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
     var madeProgress = true
     while (decomposition.getSize < trace.costTrace.nodes.size) {
       val clusters: List[List[Segment]] = clusterSimilarSegments(trace, segmentLength, excludeIndices)
-      logger.info(s"Found ${clusters.size} segment clusters")
+      logger.info(s"Found ${clusters.size} segment clusters (segment length: $segmentLength)")
       var clusterId = 0
       while (madeProgress && clusterId < clusters.size) {
+        logger.info(s"Visit cluster $clusterId")
         madeProgress = false
         // Remove segments that contain indices that have been grouped
         val cluster = clusters(clusterId).filter({
@@ -143,7 +144,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
               features = List(Identifier("i", INT), Identifier("n", INT)),
               failIfCannotFindResetPlaceHolder = false
             )
-            val classifierResults = tables.toProgramTables.runClassifier(debugMode)
+            val classifierResults = tables.toProgramTables.generateClassifiers(debugMode)
             val applicationResult = Classifier.applyClassifiers(
               boundExpression = None,
               trace,

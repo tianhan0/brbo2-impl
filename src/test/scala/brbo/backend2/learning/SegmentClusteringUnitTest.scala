@@ -1,6 +1,7 @@
 package brbo.backend2.learning
 
 import brbo.TestCase
+import brbo.backend2.Driver
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.backend2.learning.ScriptRunner.KMeans
@@ -32,11 +33,7 @@ object SegmentClusteringUnitTest {
 
   def toBrboProgram(program: String): BrboProgram = {
     val targetProgram = BasicProcessor.getTargetProgram("Test", program).program
-    val mainFunctionWithResetPlaceHolders =
-      targetProgram.mainFunction.replaceBodyWithoutInitialization(
-        BrboAstUtils.insertResetPlaceHolder(targetProgram.mainFunction.body).asInstanceOf[Statement]
-      )
-    targetProgram.replaceMainFunction(mainFunctionWithResetPlaceHolders)
+    Driver.insertResetPlaceHolders(targetProgram)
   }
 
   def getTrace(program: String, inputs: List[BrboValue]): Trace = {

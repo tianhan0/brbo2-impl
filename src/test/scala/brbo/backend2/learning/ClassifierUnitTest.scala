@@ -9,7 +9,7 @@ import brbo.backend2.learning.ScriptRunner.{Euclidean, Optics}
 import brbo.backend2.learning.SegmentClustering.{Group, Segment}
 import brbo.backend2.learning.SegmentClusteringUnitTest.functionDefinitions
 import brbo.common.BrboType.INT
-import brbo.common.ast.{Identifier, Number}
+import brbo.common.ast.{Command, Identifier, Number}
 import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -413,7 +413,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
       features = List(Identifier("i", INT), Identifier("n", INT)),
       failIfCannotFindResetPlaceHolder = false
     )
-    val classifierResults = tables.toProgramTables.runClassifier(debugMode = false)
+    val classifierResults = tables.toProgramTables.generateClassifiers(debugMode = false)
     val invalidBound = Number(2000)
     val resultFalse = Classifier.applyClassifiers(
       Some(invalidBound),
@@ -463,10 +463,10 @@ class ClassifierUnitTest extends AnyFlatSpec {
       features = List(Identifier("i", INT), Identifier("n", INT)),
       failIfCannotFindResetPlaceHolder = false
     )
-    val classifierResults = tables.toProgramTables.runClassifier(debugMode = false)
+    val classifierResults = tables.toProgramTables.generateClassifiers(debugMode = false)
     val transformation = classifierResults.toTransformation.map({
       case (command, ast) =>
-        s"Transform ${command.printToIR()} into:\n${ast.printToC(0)}"
+        s"Transform ${command.asInstanceOf[Command].printToIR()} into:\n${ast.printToC(0)}"
     }).toList.sorted.mkString("\n\n")
     StringCompare.ignoreWhitespaces(
       transformation,

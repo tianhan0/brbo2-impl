@@ -51,6 +51,27 @@ object BrboAstUtils {
     }
   }
 
+  def replaceAst(body: BrboAst, replaces: Map[BrboAst, BrboAst]): BrboAst = {
+    replaces.get(body) match {
+      case Some(newAst) => newAst
+      case None =>
+        body match {
+          case command: Command => command
+          case statement: Statement =>
+            statement match {
+              case Block(asts, _) =>
+                Block(asts.map(ast => replaceAst(ast, replaces)))
+              case ITE(condition, thenAst, elseAst, _) =>
+                ITE(condition, replaceAst(thenAst, replaces), replaceAst(elseAst, replaces))
+              case Loop(condition, loopBody, _) =>
+                Loop(condition, replaceAst(loopBody, replaces))
+              case _ => throw new Exception
+            }
+          case _ => throw new Exception
+        }
+    }
+  }
+
   def immediateParentStatements(currentNode: BrboAst, parent: Option[Statement] = None): Map[BrboAst, Statement] = {
     val currentMap: Map[BrboAst, Statement] = parent match {
       case Some(value) => Map(currentNode -> value)
