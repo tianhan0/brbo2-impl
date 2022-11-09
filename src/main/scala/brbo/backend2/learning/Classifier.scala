@@ -11,6 +11,10 @@ import brbo.common.{MyLogger, Print}
 import play.api.libs.json.Json
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+
 object Classifier {
   private val logger = MyLogger.createLogger(Classifier.getClass, debugMode = false)
 
@@ -203,13 +207,16 @@ object Classifier {
   // A mapping from a program location (i.e., a command) to a table for any of its previous store
   class ProgramTables(tables: Map[ProgramLocation, BrboTables], features: List[BrboExpr]) {
     def runClassifier(debugMode: Boolean): ClassifierResultsMap = {
-      val results = tables.map({
+      val futures = Future.traverse(tables)({
         case (location, tables) =>
-          val results = tables.map({
-            case (groupID, table) => (groupID, classify(table, debugMode))
-          })
-          (location, results)
+          Future {
+            val results = tables.map({
+              case (groupID, table) => (groupID, classify(table, debugMode))
+            })
+            (location, results)
+          }
       })
+      val results = Await.result(futures, Duration.Inf).toMap
       val map = ClassifierResultsMap(results, features)
       if (debugMode) logger.error(map.print())
       map
