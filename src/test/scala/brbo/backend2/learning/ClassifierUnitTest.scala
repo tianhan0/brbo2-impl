@@ -445,7 +445,69 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val group = Group(clusters.head.sortWith({ case (s1, s2) => s1.lessThanOrEqualTo(s2) }))
     val result = segmentClustering.chooseGeneralizableGroups(List(group), similarTraces = List(trace), interpreter)
     val resultString = result.map(g => g.print(trace)).mkString("\n")
-    StringCompare.ignoreWhitespaces(resultString, """use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011)""", "failed")
+    StringCompare.ignoreWhitespaces(
+      resultString,
+      """use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011)""",
+      "failed"
+    )
+  }
+
+  "Generating program transformations from classifiers" should "be correct" in {
+    val interpreter = ClassifierUnitTest.toInterpreter(loopPhase)
+    val trace = SegmentClusteringUnitTest.getTrace(loopPhase, List(Number(4)))
+    val groups = ClassifierUnitTest.generateGroups(trace, numberOfGroups = 2)
+    val tables = Classifier.generateTables(
+      trace,
+      Classifier.evaluateFunctionFromInterpreter(interpreter),
+      groups,
+      features = List(Identifier("i", INT), Identifier("n", INT)),
+      failIfCannotFindResetPlaceHolder = false
+    )
+    val classifierResults = tables.toProgramTables.runClassifier(debugMode = false)
+    val transformation = classifierResults.toTransformation.map({
+      case (command, ast) =>
+        s"Transform ${command.printToIR()} into:\n${ast.printToC(0)}"
+    }).toList.sorted.mkString("\n\n")
+    StringCompare.ignoreWhitespaces(
+      transformation,
+      """Transform <resetPlaceHolder> into:
+        |;
+        |
+        |Transform <resetPlaceHolder> into:
+        |if ((i < 1) || (i == 1))
+        |  ;
+        |else
+        |if ((i < 2) || (i == 2))
+        |  {
+        |    if (S1 < R1)
+        |      S1 = R1;
+        |    else
+        |      ;
+        |    R1 = 0;
+        |    C1 = C1 + 1;
+        |  }
+        |else
+        |  ;
+        |
+        |Transform use R0 1011 into:
+        |if ((i < 1) || (i == 1))
+        |  R1 = R1 + 1011;
+        |else
+        |if ((i < 2) || (i == 2))
+        |  R0 = R0 + 1011;
+        |else
+        |  R1 = R1 + 1011;
+        |
+        |Transform use R0 2011 into:
+        |R0 = R0 + 2011;
+        |
+        |Transform use R0 88 into:
+        |R1 = R1 + 88;
+        |
+        |Transform use R0 89 into:
+        |R0 = R0 + 89;""".stripMargin,
+      "failed"
+    )
   }
 }
 

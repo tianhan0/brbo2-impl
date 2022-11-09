@@ -2,7 +2,7 @@ package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter._
-import brbo.backend2.learning.DecisionTree.TreeClassifier
+import brbo.backend2.learning.DecisionTree.{ResetLeaf, TreeClassifier, UseLeaf}
 import brbo.backend2.learning.ScriptRunner.DecisionTreeLearning
 import brbo.backend2.learning.SegmentClustering.{Group, Segment, printGroups}
 import brbo.common.GhostVariableUtils.{counterInitialValue, resourceInitialValue, starInitialValue}
@@ -42,7 +42,7 @@ object Classifier {
     override def print(): String = b.toString
   }
 
-  private def useLabelFromString(label: String): GroupID = {
+  def useLabelFromString(label: String): GroupID = {
     if (label == NoneGroup.print()) {
       NoneGroup
     } else if (label == TestGroup.print()) {
@@ -55,9 +55,9 @@ object Classifier {
     }
   }
 
-  private def resetLabelFromString(label: String): Boolean = label.toBoolean
+  def resetLabelFromString(label: String): Boolean = label.toBoolean
 
-  abstract class BrboTable(val features: List[BrboExpr]) extends Print {
+  abstract class BrboTable(features: List[BrboExpr]) extends Print {
     protected val tableName: String
 
     protected val table: Table = Table.create(tableName)
@@ -110,7 +110,7 @@ object Classifier {
     def copy(): BrboTable
   }
 
-  class UseTable(override val features: List[BrboExpr]) extends BrboTable(features) {
+  class UseTable(features: List[BrboExpr]) extends BrboTable(features) {
     val tableName = "UseTable"
 
     override def copy(): UseTable = {
@@ -120,7 +120,7 @@ object Classifier {
     }
   }
 
-  class ResetTable(override val features: List[BrboExpr]) extends BrboTable(features) {
+  class ResetTable(features: List[BrboExpr]) extends BrboTable(features) {
     val tableName = "ResetTable"
 
     override def copy(): ResetTable = {
@@ -221,7 +221,7 @@ object Classifier {
   }
 
   case class UseResult(table: UseTable, override val classifier: TreeClassifier) extends ClassifierResult(classifier) {
-    def generateGhostCommands(table: UseTable, features: List[BrboExpr]): Map[BrboExpr, GhostCommand] = ???
+    def generateGhostCommands: Map[BrboExpr, GhostCommand] = ???
 
     def print(): String = s"UseResult: ${classifier.print(table.featureNames)}"
   }
@@ -251,6 +251,32 @@ object Classifier {
           s"Classifier at <${location.print()}>:\n$resultsString"
       }).mkString("\n\n")
       s"ClassifierResultsMap (Features: $featureString)\n$resultsString"
+    }
+
+    def toTransformation: Map[Command, BrboAst] = {
+      var transforms: Map[Command, BrboAst] = Map()
+      results.foreach({
+        case (location, results) =>
+          location.command match {
+            case use: Use =>
+              results.get(AllGroups) match {
+                case Some(UseResult(_, classifier)) =>
+                  val ast = classifier.toAst(features, UseLeaf(use.update))
+                  transforms = transforms + (use -> ast)
+                case None =>
+                case _ => throw new Exception
+              }
+            case resetPlaceHolder: ResetPlaceHolder =>
+              results.foreach({
+                case (groupID, ResetResult(_, classifier)) =>
+                  val ast = classifier.toAst(features, ResetLeaf(groupID))
+                  transforms = transforms + (resetPlaceHolder -> ast)
+                case _ => throw new Exception
+              })
+            case _ => throw new Exception
+          }
+      })
+      transforms
     }
   }
 

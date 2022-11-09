@@ -1,8 +1,8 @@
 package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter.Store
-import brbo.common.Print
-import brbo.common.ast.{Bool, BrboExpr, BrboExprUtils, BrboValue, Number}
+import brbo.backend2.learning.Classifier.GroupID
+import brbo.common.ast._
 import play.api.libs.functional.syntax.toFunctionalBuilderOps
 import play.api.libs.json.Reads.{min, _}
 import play.api.libs.json.{JsPath, Json, Reads}
@@ -31,21 +31,32 @@ object DecisionTree {
     ) (InternalRawNode.apply _)
 
   abstract class TreeNode(val id: Int) {
-    def print(indent: Int): String
-
     def print(indent: Int, featureNames: List[String], classNames: List[String]): String
+
+    def toAst(features: List[BrboExpr], classes: List[Label], leafType: LeafType): BrboAst
   }
 
   case class LeafNode(override val id: Int, classID: Int) extends TreeNode(id) {
-    def print(indent: Int): String = {
-      val indentString = " " * indent
-      s"${indentString}LeafNode(id=$id, classID=$classID)"
-    }
-
     def print(indent: Int, featureNames: List[String], classNames: List[String]): String = {
       {
         val indentString = " " * indent
         s"${indentString}LeafNode(id=$id, classID=${classNames(classID)})"
+      }
+    }
+
+    def toAst(features: List[BrboExpr], classes: List[Label], leafType: LeafType): BrboAst = {
+      val className = classes(classID).name
+      leafType match {
+        case ResetLeaf(groupID) =>
+          if (Classifier.resetLabelFromString(className)) {
+            Reset(groupID.value)
+          } else {
+            Skip()
+          }
+        case UseLeaf(update) =>
+          val groupID = Classifier.useLabelFromString(className).value
+          Use(Some(groupID), update)
+        case _ => throw new Exception
       }
     }
   }
@@ -53,19 +64,17 @@ object DecisionTree {
   case class InternalNode(override val id: Int, left: TreeNode, right: TreeNode, threshold: Float, featureID: Int) extends TreeNode(id) {
     override def toString: String = s"InterNode(id=$id, left=$left, right=$right, threshold=$threshold, featureID=$featureID)"
 
-    def print(indent: Int): String = {
-      val indentString = " " * indent
-      val leftString = s"${left.print(indent + 2)} (if feature[$featureID] <= $threshold)"
-      val rightString = s"${right.print(indent + 2)} (if feature[$featureID] > $threshold)"
-      s"${indentString}InterNode(id=$id, threshold=$threshold, featureID=$featureID)\n$leftString\n$rightString"
-    }
-
     def print(indent: Int, featureNames: List[String], classNames: List[String]): String = {
       val indentString = " " * indent
       val featureString = if (featureNames.nonEmpty) featureNames(featureID) else s"feature[$featureID]"
       val leftString = s"${left.print(indent + 2, featureNames, classNames)} (if $featureString <= $threshold)"
       val rightString = s"${right.print(indent + 2, featureNames, classNames)} (if $featureString > $threshold)"
       s"${indentString}InterNode(id=$id, threshold=$threshold, featureID=$featureID)\n$leftString\n$rightString"
+    }
+
+    def toAst(features: List[BrboExpr], classes: List[Label], leafType: LeafType): BrboAst = {
+      val predicate = getPredicate(features)
+      ITE(predicate, left.toAst(features, classes, leafType), right.toAst(features, classes, leafType))
     }
 
     def getPredicate(features: List[BrboExpr]): BrboExpr = {
@@ -83,11 +92,20 @@ object DecisionTree {
 
   case class Label(name: String)
 
+  class LeafType
+
+  case class UseLeaf(update: BrboExpr) extends LeafType
+
+  case class ResetLeaf(groupID: GroupID) extends LeafType
+
   class TreeClassifier(root: TreeNode, labels: List[Label]) {
     private val classNames = labels.map(l => l.name)
+
     def print(featureNames: List[String]): String = {
       s"Labels: $labels\nTree:\n${root.print(indent = 0, featureNames, classNames)}"
     }
+
+    def toAst(features: List[BrboExpr], leafType: LeafType): BrboAst = root.toAst(features, labels, leafType)
 
     def classify(store: Store,
                  evaluate: (BrboExpr, Store) => BrboValue,
@@ -96,9 +114,9 @@ object DecisionTree {
 
     @tailrec
     private def classifyInternal(node: TreeNode,
-                         store: Store,
-                         evaluate: (BrboExpr, Store) => BrboValue,
-                         features: List[BrboExpr]): Label = {
+                                 store: Store,
+                                 evaluate: (BrboExpr, Store) => BrboValue,
+                                 features: List[BrboExpr]): Label = {
       node match {
         case node: InternalNode =>
           evaluate(node.getPredicate(features), store) match {
