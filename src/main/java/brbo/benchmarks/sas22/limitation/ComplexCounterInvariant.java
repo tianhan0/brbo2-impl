@@ -4,7 +4,7 @@ import brbo.benchmarks.Common;
 
 public abstract class ComplexCounterInvariant extends Common {
     void main(int n) {
-        upperBound(0, "most", 2 * n);
+        // upperBound(0, "most", 2 * n);
         int i = 0;
         while (i < n) {
             use(0, 1);

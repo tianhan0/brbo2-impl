@@ -8,7 +8,7 @@ public abstract class Test01 extends Common {
       return;
     }
     int R = 0;
-    boundAssertion("most", R <= n * a || R <= n * b);
+    // boundAssertion("most", R <= n * a || R <= n * b);
 
     int i = 0;
     while (i < n) {

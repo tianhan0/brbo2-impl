@@ -4,7 +4,7 @@ import brbo.benchmarks.Common;
 
 public abstract class SubsequenceDifferentDecomposition extends Common {
     void main(int costA, int costB, int costC, int n) {
-        upperBound(0, "most", (costA >= costB ? costA : costB) + 2 * costA);
+        // upperBound(0, "most", (costA >= costB ? costA : costB) + 2 * costA);
         int e = costB;
         if (n > 0)
             e = costA;
