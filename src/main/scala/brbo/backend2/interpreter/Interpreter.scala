@@ -274,7 +274,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
               case PreDefinedFunctions.VerifierError.name | PreDefinedFunctions.Abort.name =>
                 throw new BadStateException(initialState.store, appendToTraceFrom(initialState, lastTransition))
               case PreDefinedFunctions.VerifierNondetInt.name | PreDefinedFunctions.NdInt.name =>
-                val random = new scala.util.Random
+                val random = new scala.util.Random(seed = initialState.store.toString.hashCode())
                 GoodState(initialState.store, appendToTraceFrom(initialState, lastTransition), Some(Number(random.nextInt())))
               case PreDefinedFunctions.NdInt2.name =>
                 evaluateExpr(InitialState(arguments.head, initialState.store, initialState.trace)) match {
@@ -286,7 +286,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
                           // throw new BadStateException(store, appendToTraceFrom(lastState, lastTransition))
                           GoodState(store, appendToTraceFrom(lastState, lastTransition), Some(Number(-1)))
                         } else {
-                          val random = new scala.util.Random
+                          val random = new scala.util.Random(seed = lowerBound + upperBound)
                           GoodState(store, appendToTraceFrom(lastState, lastTransition), Some(Number(lowerBound + random.nextInt(upperBound + 1))))
                         }
                       case _ => throw new Exception
@@ -294,7 +294,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
                   case _ => throw new Exception
                 }
               case PreDefinedFunctions.NdBool.name =>
-                val random = new scala.util.Random
+                val random = new scala.util.Random(seed = initialState.store.toString.hashCode())
                 GoodState(initialState.store, appendToTraceFrom(initialState, lastTransition), Some(Bool(random.nextBoolean())))
               case PreDefinedFunctions.Assume.name => throw new Exception
               case PreDefinedFunctions.BoundAssertion.name => throw new Exception
