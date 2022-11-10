@@ -2,7 +2,7 @@ package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTraceAssociation, Trace}
-import brbo.backend2.learning.Classifier.{GroupID, PrintGroup, GeneralityTestGroup, evaluateFunctionFromInterpreter}
+import brbo.backend2.learning.Classifier.{GeneralityTestGroup, GroupID, PrintGroup, evaluateFunctionFromInterpreter}
 import brbo.backend2.learning.ScriptRunner._
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.BrboType.INT
@@ -13,6 +13,9 @@ import tech.tablesaw.api.{IntColumn, Table}
 
 import java.util
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 /**
  *
@@ -156,33 +159,40 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
           case None => true
         }
     })
-    groups.zipWithIndex.filter({
+
+    val futures = Future.traverse(groups.zipWithIndex)({
       case (group, groupIndex) =>
-        sampledSimilarTraces.forall({
-          case (trace, traceIndex) =>
-            logger.info(s"Test the generality of $groupIndex-th group on $traceIndex-th trace")
-            logger.traceOrError(s"Test group: ${group.printSegments()}")
-            val tables = Classifier.generateTables(
-              trace,
-              Classifier.evaluateFunctionFromInterpreter(interpreter),
-              Map(GeneralityTestGroup -> group),
-              features = List(Identifier("i", INT), Identifier("n", INT)),
-              failIfCannotFindResetPlaceHolder = false
-            )
-            val classifierResults = tables.toProgramTables.generateClassifiers(debugMode)
-            val applicationResult = Classifier.applyClassifiers(
-              boundExpression = None,
-              trace,
-              evaluateFunctionFromInterpreter(interpreter),
-              classifierResults,
-              debugMode
-            )
-            val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
-            logger.info(s"Tested the generality of $groupIndex-th group on $traceIndex-th trace: $areSimilar")
-            logger.traceOrError(s"Test group on trace:\n${printDecomposition(trace, Map(PrintGroup -> group))}")
-            areSimilar
-        })
-    }).map({ case (group, _) => group })
+        Future {
+          sampledSimilarTraces.forall({
+            case (trace, traceIndex) =>
+              logger.info(s"Test the generality of $groupIndex-th group on $traceIndex-th trace")
+              logger.traceOrError(s"Test group: ${group.printSegments()}")
+              val tables = Classifier.generateTables(
+                trace,
+                Classifier.evaluateFunctionFromInterpreter(interpreter),
+                Map(GeneralityTestGroup -> group),
+                features = List(Identifier("i", INT), Identifier("n", INT)),
+                failIfCannotFindResetPlaceHolder = false
+              )
+              val classifierResults = tables.toProgramTables.generateClassifiers(debugMode)
+              val applicationResult = Classifier.applyClassifiers(
+                boundExpression = None,
+                trace,
+                evaluateFunctionFromInterpreter(interpreter),
+                classifierResults,
+                debugMode
+              )
+              val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
+              logger.info(s"Tested the generality of $groupIndex-th group on $traceIndex-th trace: $areSimilar")
+              logger.traceOrError(s"Test group on trace:\n${printDecomposition(trace, Map(PrintGroup -> group))}")
+              areSimilar
+          })
+        }
+    })
+    val result = Await.result(futures, Duration.Inf)
+    groups.zip(result).flatMap({
+      case (group, areSimilar) => if (areSimilar) Some(group) else None
+    })
   }
 }
 
