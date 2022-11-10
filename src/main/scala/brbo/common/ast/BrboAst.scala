@@ -3,6 +3,7 @@ package brbo.common.ast
 import brbo.common.BrboType._
 import brbo.common.GhostVariableTyp._
 import brbo.common.{BrboType, GhostVariableUtils, PreDefinedFunctions, SameAs}
+import brbo.frontend.TargetProgram
 
 import java.util.UUID
 
@@ -14,6 +15,15 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
   override def printToC(indent: Int): String = {
     val functionsString = (functions :+ mainFunction).map(function => function.printToC(indent)).mkString("\n")
     s"${PreDefinedFunctions.ATOMIC_FUNCTIONS_C_DECLARATION}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
+  }
+
+  def printToJava(): String = {
+    val functionsString = (functions :+ mainFunction).filterNot({
+      function => PreDefinedFunctions.functions.exists(predefined => predefined.name == function.identifier)
+    }).map(function => function.printToC(indent = 2)).mkString("\n")
+    s"""abstract class ${name.stripSuffix(s".${TargetProgram.MAIN_FUNCTION}")} extends Common {
+       |$functionsString
+       |}""".stripMargin
   }
 
   def toIR(indent: Int = 0): String = {
@@ -73,7 +83,8 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
 
   override def printToC(indent: Int): String = {
     val parametersString = parameters.map(pair => s"${pair.typeNamePairInC()}").mkString(", ")
-    s"${BrboType.toCString(returnType)} $identifier($parametersString) \n${bodyWithInitialization.printToC(0)}"
+    val indentString = " " * indent
+    s"$indentString${BrboType.toCString(returnType)} $identifier($parametersString) \n${bodyWithInitialization.printToC(indent)}"
   }
 
   def replaceBodyWithoutInitialization(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody, groupIds)
@@ -99,7 +110,7 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
       case _ => None
     }).toList ::: parameters
     variables.sortWith({
-      case (v1, v2) => v1.printToIR() <= v2.printToIR()
+      case (v1, v2) => v1.printToIR() < v2.printToIR()
     })
   }
 }

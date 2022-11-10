@@ -49,7 +49,7 @@ case class TargetProgram(fullQualifiedClassName: String,
   val program: BrboProgram = {
     val (mainFunction, boundAssertions) = toBrboFunction(mainMethod, allMethods)
     val otherFunctions = (allMethods - mainMethod).filter(m => m.methodName != "<init>").map(m => toBrboFunction(m, allMethods)._1).toList
-    BrboProgram(s"$fullQualifiedClassName.${mainMethod.methodName}", mainFunction, boundAssertions,
+    BrboProgram(s"$className.${mainMethod.methodName}", mainFunction, boundAssertions,
       PreDefinedFunctions.functionInternalRepresentations ::: otherFunctions)
   }
 }

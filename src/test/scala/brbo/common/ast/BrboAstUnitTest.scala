@@ -48,6 +48,14 @@ class BrboAstUnitTest extends AnyFlatSpec {
         StringCompare.ignoreWhitespaces(targetProgram.program.mainFunction.printToC(0), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
+
+  "Printing a program to Java" should "be correct" in {
+    BrboAstUnitTest.printToJavaTests.foreach({
+      testCase =>
+        val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
+        StringCompare.ignoreWhitespaces(targetProgram.program.printToJava(), testCase.expectedOutput, s"${testCase.name} failed")
+    })
+  }
 }
 
 object BrboAstUnitTest {
@@ -70,8 +78,8 @@ object BrboAstUnitTest {
       TestCase("Use 2", createUse2, "  R = R + 2;"),
       TestCase("Reset", createReset,
         """  {
-          |    if (S5 < R5)
-          |      S5 = R5;
+          |    if (D5 < R5)
+          |      D5 = R5;
           |    else
           |      ;
           |    R5 = 0;
@@ -185,18 +193,18 @@ object BrboAstUnitTest {
         |  int C2 = 0;
         |  int C3 = 0;
         |  int C4 = 0;
+        |  int D1 = -2147483648;
+        |  int D2 = -2147483648;
+        |  int D3 = -2147483648;
+        |  int D4 = -2147483648;
         |  int R1 = 0;
         |  int R2 = 0;
         |  int R3 = 0;
         |  int R4 = 0;
-        |  int S1 = -2147483648;
-        |  int S2 = -2147483648;
-        |  int S3 = -2147483648;
-        |  int S4 = -2147483648;
         |  if (!((x < 10)) && !((x == 10))) R1 = R1 + 10;
         |  if (x < 10) {
-        |    if (S2 < R2)
-        |      S2 = R2;
+        |    if (D2 < R2)
+        |      D2 = R2;
         |    else
         |      ;
         |    R2 = 0;
@@ -204,8 +212,8 @@ object BrboAstUnitTest {
         |  }
         |  R3 = R3 + 100;
         |  {
-        |    if (S4 < R4)
-        |      S4 = R4;
+        |    if (D4 < R4)
+        |      D4 = R4;
         |    else
         |      ;
         |    R4 = 0;
@@ -240,5 +248,81 @@ object BrboAstUnitTest {
         |{
         |  ;
         |}""".stripMargin),
+  )
+
+  private val printToJavaTest1 =
+    """abstract class Test {
+      |  void main(int x, int[] array) {
+      |    use(1, 10, x > 10);
+      |    reset(2, x < 10);
+      |    use(3, 100);
+      |    reset(4);
+      |    // int a1 = arrayRead(array, 0);
+      |    // int a2 = arraySum(array);
+      |    // int a3 = arrayLength(array);
+      |    int a4 = ndInt();
+      |    int a5 = ndInt2(12, 34);
+      |    boolean a6 = ndBool();
+      |    mostPreciseBound(x > 10);
+      |    lessPreciseBound(x < 10);
+      |  }
+      |
+      |  void use(int x, int cost, boolean condition) {}
+      |  void use(int x, int cost) {}
+      |  void reset(int x, boolean condition) {}
+      |  void reset(int x) {}
+      |  // int arrayRead(int[] x, int index) { return 0; }
+      |  // int arraySum(int[] x) { return 0; }
+      |  // int arrayLength(int[] x) { return 0; }
+      |  public abstract int ndInt();
+      |  public abstract int ndInt2(int lower, int upper);
+      |  public abstract boolean ndBool();
+      |  public abstract void mostPreciseBound(boolean assertion);
+      |  public abstract void lessPreciseBound(boolean assertion);
+      |}""".stripMargin
+
+  val printToJavaTests: List[TestCase] = List(
+    TestCase("printToJavaTest1", printToJavaTest1,
+      """abstract class Test extends Common {
+        |  void main(int x, int array)
+        |  {
+        |    int C1 = 0;
+        |    int C2 = 0;
+        |    int C3 = 0;
+        |    int C4 = 0;
+        |    int D1 = -2147483648;
+        |    int D2 = -2147483648;
+        |    int D3 = -2147483648;
+        |    int D4 = -2147483648;
+        |    int R1 = 0;
+        |    int R2 = 0;
+        |    int R3 = 0;
+        |    int R4 = 0;
+        |    if (!((x < 10)) && !((x == 10))) R1 = R1 + 10;
+        |    if (x < 10) {
+        |      if (D2 < R2)
+        |        D2 = R2;
+        |      else
+        |        ;
+        |      R2 = 0;
+        |      C2 = C2 + 1;
+        |    }
+        |    R3 = R3 + 100;
+        |    {
+        |      if (D4 < R4)
+        |        D4 = R4;
+        |      else
+        |        ;
+        |      R4 = 0;
+        |      C4 = C4 + 1;
+        |    }
+        |    int a4 = ndInt();
+        |    int a5 = ndInt2(12, 34);
+        |    int a6 = ndBool();
+        |    mostPreciseBound(!((x < 10)) && !((x == 10)));
+        |    lessPreciseBound(x < 10);
+        |  }
+        |}
+        |""".stripMargin)
   )
 }
