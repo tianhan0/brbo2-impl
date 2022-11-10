@@ -2,6 +2,7 @@ package brbo.backend2
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.Trace
+import brbo.backend2.learning.SegmentClustering.printSegments
 import brbo.backend2.learning.{Classifier, SegmentClustering, TracePartition}
 import brbo.common.ast._
 import brbo.common.{BrboType, GhostVariableUtils, MyLogger, NewCommandLineArguments}
@@ -43,11 +44,11 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
 
   private def decomposeTrace(trace: Trace, index: Int, similarTraces: Iterable[Trace]): BrboProgram = {
     logger.info(s"Step 3.1: Decompose $index-th representative trace")
-    logger.traceOrError(s"Step 3.1: Trace:\n${trace.toTable.printAll()}")
+    logger.traceOrError(s"Step 3.1: Trace:\n${trace.toTable()._1.printAll()}")
     val decomposition = segmentClustering.decompose(trace, similarTraces, interpreter)
     val groups = decomposition.getGroups
     val groupsString = groups.map({
-      case (groupID, group) => s"$groupID: ${group.printSegments()}"
+      case (groupID, group) => s"$groupID: ${printSegments(group.segments)}"
     }).mkString("\n")
     logger.traceOrError(s"Selected decomposition:\n$groupsString\n${SegmentClustering.printDecomposition(trace, groups)}")
     logger.info(s"Step 3.2: Generate tables for training classifiers")
@@ -68,8 +69,21 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
       case (oldAst, newAst) =>
         logger.traceOrError(s"${oldAst.asInstanceOf[Command].printToIR()} -> ${newAst.printToC(0)}")
     })
+    val ghostVariableIDs = {
+      transformation.flatMap({
+        case (_, ast1) =>
+          BrboAstUtils.collectCommands(ast1).flatMap({
+            case use: Use => use.groupId
+            case reset: Reset => Some(reset.groupId)
+            case _ => None
+          })
+      })
+    }
     val newBody = BrboAstUtils.replaceAst(instrumentedProgram.mainFunction.body, transformation)
-    val newMain = instrumentedProgram.mainFunction.replaceBodyWithoutInitialization(newBody.asInstanceOf[Statement])
+    val newMain = {
+      val main = instrumentedProgram.mainFunction
+      BrboFunction(main.identifier, main.returnType, main.parameters, newBody.asInstanceOf[Statement], ghostVariableIDs.toSet)
+    }
     instrumentedProgram.replaceMainFunction(newMain)
   }
 }

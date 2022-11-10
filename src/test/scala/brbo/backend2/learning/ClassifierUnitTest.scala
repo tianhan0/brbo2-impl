@@ -26,93 +26,33 @@ class ClassifierUnitTest extends AnyFlatSpec {
       failIfCannotFindResetPlaceHolder = false
     )
     val decompositionExpected1 =
-      """Index  |           Commands            |  Segment IDs in GroupID(0)  |  Segment IDs in GroupID(1)  |
-        |-----------------------------------------------------------------------------------------------------
-        |     0  |            Command not exist  |                             |                             |
-        |     1  |                          0;   |                             |                             |
-        |     2  |                 int C0 = 0;   |                             |                             |
-        |     3  |                -2147483648;   |                             |                             |
-        |     4  |       int D0 = -2147483648;   |                             |                             |
-        |     5  |                          0;   |                             |                             |
-        |     6  |                 int R0 = 0;   |                             |                             |
-        |     7  |          <resetPlaceHolder>   |                             |                             |
-        |     8  |                          0;   |                             |                             |
-        |     9  |                  int i = 0;   |                             |                             |
-        |    10  |                          i;   |                             |                             |
-        |    11  |                          n;   |                             |                             |
-        |    12  |                    (i < n);   |                             |                             |
-        |    13  |          <resetPlaceHolder>   |                             |                             |
-        |    14  |                          i;   |                             |                             |
-        |    15  |                          0;   |                             |                             |
-        |    16  |                   (i == 0);   |                             |                             |
-        |    17  |                !((i == 0));   |                             |                             |
-        |    18  |                       true;   |                             |                             |
-        |    19  |                       2011;   |                             |                             |
-        |    20  |  R0 = R0 + 2011; (cost=2011)  |                          0  |                             |
-        |    21  |                          i;   |                             |                             |
-        |    22  |                          1;   |                             |                             |
-        |    23  |                    (i + 1);   |                             |                             |
-        |    24  |                  i = i + 1;   |                             |                             |
-        |    25  |                          i;   |                             |                             |
-        |    26  |                          n;   |                             |                             |
-        |    27  |                    (i < n);   |                             |                             |
-        |    28  |          <resetPlaceHolder>   |                             |                             |
-        |    29  |                          i;   |                             |                             |
-        |    30  |                          0;   |                             |                             |
-        |    31  |                   (i == 0);   |                             |                             |
-        |    32  |                !((i == 0));   |                             |                             |
-        |    33  |                       true;   |                             |                             |
-        |    34  |                       1011;   |                             |                             |
-        |    35  |  R0 = R0 + 1011; (cost=1011)  |                             |                          0  |
-        |    36  |                          i;   |                             |                             |
-        |    37  |                          1;   |                             |                             |
-        |    38  |                    (i + 1);   |                             |                             |
-        |    39  |                  i = i + 1;   |                             |                             |
-        |    40  |                          i;   |                             |                             |
-        |    41  |                          n;   |                             |                             |
-        |    42  |                    (i < n);   |                             |                             |
-        |    43  |          <resetPlaceHolder>   |                             |                             |
-        |    44  |                          i;   |                             |                             |
-        |    45  |                          0;   |                             |                             |
-        |    46  |                   (i == 0);   |                             |                             |
-        |    47  |                !((i == 0));   |                             |                             |
-        |    48  |                       true;   |                             |                             |
-        |    49  |                       1011;   |                             |                             |
-        |    50  |  R0 = R0 + 1011; (cost=1011)  |                          1  |                             |
-        |    51  |                          i;   |                             |                             |
-        |    52  |                          1;   |                             |                             |
-        |    53  |                    (i + 1);   |                             |                             |
-        |    54  |                  i = i + 1;   |                             |                             |
-        |    55  |                          i;   |                             |                             |
-        |    56  |                          n;   |                             |                             |
-        |    57  |                    (i < n);   |                             |                             |
-        |    58  |          <resetPlaceHolder>   |                             |                             |
-        |    59  |                          i;   |                             |                             |
-        |    60  |                          0;   |                             |                             |
-        |    61  |                   (i == 0);   |                             |                             |
-        |    62  |                !((i == 0));   |                             |                             |
-        |    63  |                       true;   |                             |                             |
-        |    64  |                       1011;   |                             |                             |
-        |    65  |  R0 = R0 + 1011; (cost=1011)  |                             |                          1  |
-        |    66  |                          i;   |                             |                             |
-        |    67  |                          1;   |                             |                             |
-        |    68  |                    (i + 1);   |                             |                             |
-        |    69  |                  i = i + 1;   |                             |                             |
-        |    70  |                          i;   |                             |                             |
-        |    71  |                          n;   |                             |                             |
-        |    72  |                    (i < n);   |                             |                             |
-        |    73  |                       true;   |                             |                             |
-        |    74  |                         88;   |                             |                             |
-        |    75  |      R0 = R0 + 88; (cost=88)  |                             |                          2  |
-        |    76  |                       true;   |                             |                             |
-        |    77  |                         89;   |                             |                             |
-        |    78  |      R0 = R0 + 89; (cost=89)  |                          2  |                             |""".stripMargin
+      """Index  |        Commands         |  Costs  |  SegmentIDs in GroupID(0)  |  SegmentIDs in GroupID(1)  |
+        |-------------------------------------------------------------------------------------------------------
+        |     2  |            int C0 = 0;  |         |                            |                            |
+        |     4  |  int D0 = -2147483648;  |         |                            |                            |
+        |     6  |            int R0 = 0;  |         |                            |                            |
+        |     7  |    resetPlaceHolder();  |         |                            |                            |
+        |     9  |             int i = 0;  |         |                            |                            |
+        |    13  |    resetPlaceHolder();  |         |                            |                            |
+        |    20  |        R0 = R0 + 2011;  |   2011  |                         0  |                            |
+        |    24  |             i = i + 1;  |         |                            |                            |
+        |    28  |    resetPlaceHolder();  |         |                            |                            |
+        |    35  |        R0 = R0 + 1011;  |   1011  |                            |                         0  |
+        |    39  |             i = i + 1;  |         |                            |                            |
+        |    43  |    resetPlaceHolder();  |         |                            |                            |
+        |    50  |        R0 = R0 + 1011;  |   1011  |                         1  |                            |
+        |    54  |             i = i + 1;  |         |                            |                            |
+        |    58  |    resetPlaceHolder();  |         |                            |                            |
+        |    65  |        R0 = R0 + 1011;  |   1011  |                            |                         1  |
+        |    69  |             i = i + 1;  |         |                            |                            |
+        |    75  |          R0 = R0 + 88;  |     88  |                            |                         2  |
+        |    78  |          R0 = R0 + 89;  |     89  |                         2  |                            |""".stripMargin
     StringCompare.ignoreWhitespaces(SegmentClustering.printDecomposition(trace, groups1), decompositionExpected1, "decomposition 1 failed")
 
     val expected1 =
       """Tables:
         |Features: i, n
-        |TraceLocation: <resetPlaceHolder> (index=13) ->
+        |TraceLocation: resetPlaceHolder(); (index=13) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -124,7 +64,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 0  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: <resetPlaceHolder> (index=28) ->
+        |TraceLocation: resetPlaceHolder(); (index=28) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -136,7 +76,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 1  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: <resetPlaceHolder> (index=43) ->
+        |TraceLocation: resetPlaceHolder(); (index=43) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -148,7 +88,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 2  |  4  |   true  |
         |************************************************************
         |
-        |TraceLocation: <resetPlaceHolder> (index=58) ->
+        |TraceLocation: resetPlaceHolder(); (index=58) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -160,7 +100,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 3  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: <resetPlaceHolder> (index=7) ->
+        |TraceLocation: resetPlaceHolder(); (index=7) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -224,120 +164,60 @@ class ClassifierUnitTest extends AnyFlatSpec {
       failIfCannotFindResetPlaceHolder = false
     )
     val decompositionExpected2 =
-      """Index  |           Commands            |  Segment IDs in GroupID(0)  |
-        |-----------------------------------------------------------------------
-        |     0  |            Command not exist  |                             |
-        |     1  |                          0;   |                             |
-        |     2  |                 int C0 = 0;   |                             |
-        |     3  |                -2147483648;   |                             |
-        |     4  |       int D0 = -2147483648;   |                             |
-        |     5  |                          0;   |                             |
-        |     6  |                 int R0 = 0;   |                             |
-        |     7  |          <resetPlaceHolder>   |                             |
-        |     8  |                          0;   |                             |
-        |     9  |                  int i = 0;   |                             |
-        |    10  |                          i;   |                             |
-        |    11  |                          n;   |                             |
-        |    12  |                    (i < n);   |                             |
-        |    13  |          <resetPlaceHolder>   |                             |
-        |    14  |                          i;   |                             |
-        |    15  |                          0;   |                             |
-        |    16  |                   (i == 0);   |                             |
-        |    17  |                !((i == 0));   |                             |
-        |    18  |                       true;   |                             |
-        |    19  |                       2011;   |                             |
-        |    20  |  R0 = R0 + 2011; (cost=2011)  |                          0  |
-        |    21  |                          i;   |                             |
-        |    22  |                          1;   |                             |
-        |    23  |                    (i + 1);   |                             |
-        |    24  |                  i = i + 1;   |                             |
-        |    25  |                          i;   |                             |
-        |    26  |                          n;   |                             |
-        |    27  |                    (i < n);   |                             |
-        |    28  |          <resetPlaceHolder>   |                             |
-        |    29  |                          i;   |                             |
-        |    30  |                          0;   |                             |
-        |    31  |                   (i == 0);   |                             |
-        |    32  |                !((i == 0));   |                             |
-        |    33  |                       true;   |                             |
-        |    34  |                       1011;   |                             |
-        |    35  |  R0 = R0 + 1011; (cost=1011)  |                             |
-        |    36  |                          i;   |                             |
-        |    37  |                          1;   |                             |
-        |    38  |                    (i + 1);   |                             |
-        |    39  |                  i = i + 1;   |                             |
-        |    40  |                          i;   |                             |
-        |    41  |                          n;   |                             |
-        |    42  |                    (i < n);   |                             |
-        |    43  |          <resetPlaceHolder>   |                             |
-        |    44  |                          i;   |                             |
-        |    45  |                          0;   |                             |
-        |    46  |                   (i == 0);   |                             |
-        |    47  |                !((i == 0));   |                             |
-        |    48  |                       true;   |                             |
-        |    49  |                       1011;   |                             |
-        |    50  |  R0 = R0 + 1011; (cost=1011)  |                          1  |
-        |    51  |                          i;   |                             |
-        |    52  |                          1;   |                             |
-        |    53  |                    (i + 1);   |                             |
-        |    54  |                  i = i + 1;   |                             |
-        |    55  |                          i;   |                             |
-        |    56  |                          n;   |                             |
-        |    57  |                    (i < n);   |                             |
-        |    58  |          <resetPlaceHolder>   |                             |
-        |    59  |                          i;   |                             |
-        |    60  |                          0;   |                             |
-        |    61  |                   (i == 0);   |                             |
-        |    62  |                !((i == 0));   |                             |
-        |    63  |                       true;   |                             |
-        |    64  |                       1011;   |                             |
-        |    65  |  R0 = R0 + 1011; (cost=1011)  |                             |
-        |    66  |                          i;   |                             |
-        |    67  |                          1;   |                             |
-        |    68  |                    (i + 1);   |                             |
-        |    69  |                  i = i + 1;   |                             |
-        |    70  |                          i;   |                             |
-        |    71  |                          n;   |                             |
-        |    72  |                    (i < n);   |                             |
-        |    73  |                       true;   |                             |
-        |    74  |                         88;   |                             |
-        |    75  |      R0 = R0 + 88; (cost=88)  |                             |
-        |    76  |                       true;   |                             |
-        |    77  |                         89;   |                             |
-        |    78  |      R0 = R0 + 89; (cost=89)  |                          2  |""".stripMargin
+      """Index  |        Commands         |  Costs  |  SegmentIDs in GroupID(0)  |
+        |--------------------------------------------------------------------------
+        |     2  |            int C0 = 0;  |         |                            |
+        |     4  |  int D0 = -2147483648;  |         |                            |
+        |     6  |            int R0 = 0;  |         |                            |
+        |     7  |    resetPlaceHolder();  |         |                            |
+        |     9  |             int i = 0;  |         |                            |
+        |    13  |    resetPlaceHolder();  |         |                            |
+        |    20  |        R0 = R0 + 2011;  |   2011  |                         0  |
+        |    24  |             i = i + 1;  |         |                            |
+        |    28  |    resetPlaceHolder();  |         |                            |
+        |    35  |        R0 = R0 + 1011;  |   1011  |                            |
+        |    39  |             i = i + 1;  |         |                            |
+        |    43  |    resetPlaceHolder();  |         |                            |
+        |    50  |        R0 = R0 + 1011;  |   1011  |                         1  |
+        |    54  |             i = i + 1;  |         |                            |
+        |    58  |    resetPlaceHolder();  |         |                            |
+        |    65  |        R0 = R0 + 1011;  |   1011  |                            |
+        |    69  |             i = i + 1;  |         |                            |
+        |    75  |          R0 = R0 + 88;  |     88  |                            |
+        |    78  |          R0 = R0 + 89;  |     89  |                         2  |""".stripMargin
     StringCompare.ignoreWhitespaces(SegmentClustering.printDecomposition(trace, groups2), decompositionExpected2, "decomposition 2 failed")
     val expected2 =
       """Tables:
         |Features: i, n
-        |TraceLocation: <resetPlaceHolder> (index=13) ->
+        |TraceLocation: resetPlaceHolder(); (index=13) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 0  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: <resetPlaceHolder> (index=28) ->
+        |TraceLocation: resetPlaceHolder(); (index=28) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 1  |  4  |   true  |
         |************************************************************
         |
-        |TraceLocation: <resetPlaceHolder> (index=43) ->
+        |TraceLocation: resetPlaceHolder(); (index=43) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 2  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: <resetPlaceHolder> (index=58) ->
+        |TraceLocation: resetPlaceHolder(); (index=58) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 3  |  4  |   true  |
         |************************************************************
         |
-        |TraceLocation: <resetPlaceHolder> (index=7) ->
+        |TraceLocation: resetPlaceHolder(); (index=7) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -443,7 +323,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val segmentClustering = new SegmentClustering(sumWeight = 1, commandWeight = 0, debugMode = false, algorithm)
     val clusters: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, 1, excludeIndices = Set())
     val group = Group(clusters.head.sortWith({ case (s1, s2) => s1.lessThan(s2) }))
-    val result = segmentClustering.chooseGeneralizableGroups(List(group), similarTraces = List(trace), interpreter, sampleEveryKTrace = None)
+    val result = segmentClustering.chooseGeneralizableGroups(List(group), similarTraces = List(trace), interpreter, sampleKTraces = None)
     val resultString = result.map(g => g.print(trace)).mkString("\n")
     StringCompare.ignoreWhitespaces(
       resultString,
@@ -470,10 +350,10 @@ class ClassifierUnitTest extends AnyFlatSpec {
     }).toList.sorted.mkString("\n\n")
     StringCompare.ignoreWhitespaces(
       transformation,
-      """Transform <resetPlaceHolder> into:
+      """Transform resetPlaceHolder(); into:
         |;
         |
-        |Transform <resetPlaceHolder> into:
+        |Transform resetPlaceHolder(); into:
         |{
         |  if ((i < 1) || (i == 1))
         |    ;

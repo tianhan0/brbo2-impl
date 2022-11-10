@@ -234,6 +234,14 @@ object PreDefinedFunctions {
     def returnType: BrboType.T = BrboType.VOID
   }
 
+  object ResetPlaceHolder extends PreDefinedFunction("resetPlaceHolder") {
+    override def cStringRepresentation: String = throw new RepresentationNotExist
+
+    override def cRepresentation: BrboFunction = throw new RepresentationNotExist
+
+    def returnType: BrboType.T = BrboType.VOID
+  }
+
   val functions: List[PreDefinedFunction] = List(
     VerifierError, VerifierNondetInt, Abort, // C functions whose semantics are built into verifiers
     Assert, Assume,
@@ -242,7 +250,8 @@ object PreDefinedFunctions {
     Uninitialize,
     Use, Reset,
     ArrayRead, ArrayLength, ArraySum,
-    MostPreciseBound, LessPreciseBound
+    MostPreciseBound, LessPreciseBound,
+    ResetPlaceHolder
   )
 
   val functionInternalRepresentations: List[BrboFunction] = {

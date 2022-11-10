@@ -15,10 +15,14 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
     (brboProgram.mainFunction :: brboProgram.functions).flatMap(f => immediateParentStatements(f.bodyWithInitialization)).toMap
 
   def execute(inputValues: List[BrboValue]): FlowEndState = {
-    // logger.traceOrError(s"Execute with inputs: ${inputValues.map(v => v.printToIR())}")
-    val state = evaluateFunction(brboProgram.mainFunction, inputValues, EmptyTrace)
-    // logger.traceOrError(s"Final state: ${printState(state)}")
-    state
+    try {
+      // logger.traceOrError(s"Execute with inputs: ${inputValues.map(v => v.printToIR())}")
+      val state = evaluateFunction(brboProgram.mainFunction, inputValues, EmptyTrace)
+      // logger.traceOrError(s"Final state: ${printState(state)}")
+      state
+    } catch {
+      case TraceTooLongException(lastState) => lastState
+    }
   }
 
   def evaluateFunction(brboFunction: BrboFunction, inputValues: List[BrboValue], lastTrace: Trace): FlowEndState = {
@@ -299,6 +303,8 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
               case PreDefinedFunctions.Assume.name => throw new Exception
               case PreDefinedFunctions.BoundAssertion.name => throw new Exception
               case PreDefinedFunctions.Uninitialize.name => throw new Exception
+              case PreDefinedFunctions.MostPreciseBound.name | PreDefinedFunctions.LessPreciseBound.name =>
+                GoodState(initialState.store, appendToTraceFrom(initialState, lastTransition), None)
               case _ =>
                 evaluateFunctionCall(initialState, specialFunction.cRepresentation, arguments)
             }
@@ -424,6 +430,8 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
 }
 
 object Interpreter {
+  private val MAXIMUM_TRACE_LENGTH = 400
+
   class Store {
     private var map = new HashMap[String, BrboValue]
 
@@ -483,7 +491,10 @@ object Interpreter {
 
   case class GoodState(override val store: Store,
                        override val trace: Trace,
-                       value: Option[BrboValue]) extends FlowEndState(store, trace)
+                       value: Option[BrboValue]) extends FlowEndState(store, trace) {
+    if (trace.nodes.length >= MAXIMUM_TRACE_LENGTH)
+      throw new TraceTooLongException(this)
+  }
 
   sealed trait Jump
 
@@ -502,7 +513,14 @@ object Interpreter {
   class BadStateException(val store: Store, val trace: Trace) extends Exception {
     override def toString: String = {
       val superString = super.toString
-      s"$superString\n${trace.toTable.printAll()}"
+      s"$superString\n${trace.toTable()._1.printAll()}"
+    }
+  }
+
+  case class TraceTooLongException(flowEndState: FlowEndState) extends Exception {
+    override def toString: String = {
+      val superString = super.toString
+      s"$superString\n${flowEndState.trace.toTable()._1.printAll()}"
     }
   }
 
@@ -558,23 +576,41 @@ object Interpreter {
       s"$prefix$string"
     }
 
-    def toTable: Table = {
+    def toTable(commandMaxLength: Int = 30): (Table, Map[Int, Int]) = {
       val table: Table = Table.create("")
-      val commands: List[String] = nodes.map({
-        node =>
+      // From the indices in the shortened table to the actual indices
+      var indexMap: Map[Int, Int] = Map()
+      var commands: List[String] = Nil
+      var costs: List[String] = Nil
+      var actualIndices: List[Int] = Nil
+      nodes.zipWithIndex.foreach({
+        case (node, actualIndex) =>
           node.lastTransition match {
+            case Some(Transition(_: BrboExpr, _)) =>
             case Some(Transition(command, cost)) =>
-              val costString = cost match {
-                case Some(value) => s"(cost=$value)"
-                case None => ""
+              val commandString = {
+                val commandString = command.printToC(0)
+                if (commandString.length > commandMaxLength) s"${commandString.slice(0, commandMaxLength)}..."
+                else commandString
               }
-              s"${command.printToC(0)} $costString"
-            case None => "Command not exist"
+              val costString = {
+                cost match {
+                  case Some(value) => s"$value"
+                  case None => ""
+                }
+              }
+              indexMap = indexMap + (commands.length -> actualIndex)
+              actualIndices = actualIndices :+ actualIndex
+              commands = commands :+ commandString
+              costs = costs :+ costString
+            case _ =>
           }
       })
-      table.addColumns(IntColumn.create("Index", Range(0, commands.length): _*))
+      // table.addColumns(IntColumn.create("Index", Range(0, commands.length): _*))
+      table.addColumns(IntColumn.create("Index", actualIndices: _*))
       table.addColumns(StringColumn.create("Commands", commands: _*))
-      table
+      table.addColumns(StringColumn.create("Costs", costs: _*))
+      (table, indexMap)
     }
   }
 

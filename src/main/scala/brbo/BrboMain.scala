@@ -73,7 +73,7 @@ object BrboMain {
       case ((sourceFile: File, sourceFileContents: String), index) =>
         val fileIndex = index + batchIndex * BATCH_SIZE
         val progress: Double = fileIndex.toDouble / totalFiles * 100
-        logger.info(s"Verify `$fileIndex`-th input file. Progress: ${StringFormatUtils.float(progress, 2)}%")
+        logger.info(s"Process `$fileIndex`-th input file. Progress: ${StringFormatUtils.float(progress, 2)}%")
         analyze(logger, sourceFile, sourceFileContents, arguments)
       // TODO: Store results into csv files
     })

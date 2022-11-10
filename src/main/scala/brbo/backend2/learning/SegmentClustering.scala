@@ -9,7 +9,7 @@ import brbo.common.BrboType.INT
 import brbo.common.MyLogger
 import brbo.common.ast.Identifier
 import com.google.common.collect.Sets
-import tech.tablesaw.api.{IntColumn, Table}
+import tech.tablesaw.api.IntColumn
 
 import java.util
 import scala.collection.JavaConverters._
@@ -34,7 +34,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
     var madeProgress = true
     while (madeProgress && decomposition.getSize < trace.costTrace.nodes.size) {
       madeProgress = false
-      logger.info(s"Cluster segments with length $segmentLength)")
+      logger.info(s"Cluster segments with length $segmentLength")
       val clusters: List[List[Segment]] = clusterSimilarSegments(trace, segmentLength, excludeIndices)
       var clusterId = 0
       while (clusterId < clusters.size) {
@@ -42,17 +42,17 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
         val cluster = clusters(clusterId).filter({
           segment => segment.indices.toSet.intersect(excludeIndices).isEmpty
         })
-        logger.info(s"Visit $clusterId-th cluster: $cluster")
+        logger.info(s"Visit $clusterId-th cluster: ${printSegments(cluster)}")
         if (cluster.size > 1) {
           logger.info(s"Choose non-overlapping segments from cluster $clusterId")
           val nonOverlappingGroups = findNonOverlappingSegments(cluster)
-          val generalizableGroups = chooseGeneralizableGroups(nonOverlappingGroups, similarTraces, interpreter, sampleEveryKTrace = Some(10000))
+          val generalizableGroups = chooseGeneralizableGroups(nonOverlappingGroups, similarTraces, interpreter, sampleKTraces = Some(5))
           chooseGroup(generalizableGroups) match {
             case Some(chosenGroup) =>
               decomposition.addGroup(chosenGroup)
               // Remove indices that have been grouped
               val chosenIndices = chosenGroup.indices
-              logger.traceOrError(s"Chosen group: ${chosenGroup.printSegments()}")
+              logger.traceOrError(s"Chosen group: ${printSegments(chosenGroup.segments)}")
               logger.traceOrError(s"Chosen group on trace:\n${printDecomposition(trace, Map(PrintGroup -> chosenGroup))}")
               excludeIndices = excludeIndices ++ chosenIndices
               madeProgress = true
@@ -151,14 +151,16 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
   def chooseGeneralizableGroups(groups: List[Group],
                                 similarTraces: Iterable[Trace],
                                 interpreter: Interpreter,
-                                sampleEveryKTrace: Option[Int]): List[Group] = {
-    val sampledSimilarTraces = similarTraces.zipWithIndex.filter({
-      case (_, index) =>
-        sampleEveryKTrace match {
-          case Some(value) => index % value == 0
-          case None => true
-        }
-    })
+                                sampleKTraces: Option[Int]): List[Group] = {
+    val sampledSimilarTraces = {
+      sampleKTraces match {
+        case Some(sampleKTraces) =>
+          similarTraces.zipWithIndex.groupBy({ case (_, index) => index % sampleKTraces }).map({
+            case (_, list) => list.last
+          })
+        case None => similarTraces.zipWithIndex
+      }
+    }
 
     val futures = Future.traverse(groups.zipWithIndex)({
       case (group, groupIndex) =>
@@ -166,14 +168,15 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
           sampledSimilarTraces.forall({
             case (trace, traceIndex) =>
               logger.info(s"Test the generality of $groupIndex-th group on $traceIndex-th trace")
-              logger.traceOrError(s"Test group: ${group.printSegments()}")
+              logger.traceOrError(s"Test group: ${printSegments(group.segments)}")
               val tables = Classifier.generateTables(
                 trace,
                 Classifier.evaluateFunctionFromInterpreter(interpreter),
                 Map(GeneralityTestGroup -> group),
                 features = List(Identifier("i", INT), Identifier("n", INT)),
-                failIfCannotFindResetPlaceHolder = false
+                failIfCannotFindResetPlaceHolder = true
               )
+              // logger.traceOrError(s"Generated table: ${tables.print()}")
               val classifierResults = tables.toProgramTables.generateClassifiers(debugMode)
               val applicationResult = Classifier.applyClassifiers(
                 boundExpression = None,
@@ -184,7 +187,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
               )
               val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
               logger.info(s"Tested the generality of $groupIndex-th group on $traceIndex-th trace: $areSimilar")
-              logger.traceOrError(s"Test group on trace:\n${printDecomposition(trace, Map(PrintGroup -> group))}")
+              logger.traceOrError(s"Tested group on trace:\n${trace.toTable()._1.printAll()}")
               areSimilar
           })
         }
@@ -329,14 +332,14 @@ object SegmentClustering {
     def print(trace: Trace): String = {
       removeEmptySegments().segments.map({ segment => segment.print(trace) }).mkString("; ")
     }
-
-    def printSegments(): String = {
-      segments.map(segment => segment.printAsSet()).mkString(", ")
-    }
   }
 
   def printGroups(groups: Iterable[Group], trace: Trace): String = {
     groups.map(g => g.print(trace)).mkString("\n")
+  }
+
+  def printSegments(segments: Iterable[Segment]): String = {
+    segments.map(segment => segment.printAsSet()).mkString(", ")
   }
 
   class TraceDecomposition(trace: Trace) {
@@ -383,16 +386,17 @@ object SegmentClustering {
   }
 
   def printDecomposition(trace: Trace, groups: Map[GroupID, Group]): String = {
-    val table: Table = trace.toTable
+    val (table, indexMap) = trace.toTable()
     val sortedMap = groups.toList.sortWith({
       case ((id1, _), (id2, _)) => id1.print() < id2.print()
     })
     sortedMap.foreach({
       case (groupID, group) =>
-        val column = IntColumn.create(s"Segment IDs in ${groupID.print()}")
+        val column = IntColumn.create(s"SegmentIDs in ${groupID.print()}")
         Range(0, table.rowCount()).foreach({
           index =>
-            group.segments.indexWhere(segment => segment.indices.contains(index)) match {
+            val originalIndex = indexMap(index)
+            group.segments.indexWhere(segment => segment.indices.contains(originalIndex)) match {
               case -1 => column.appendMissing()
               case n => column.append(n)
             }

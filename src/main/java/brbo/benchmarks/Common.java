@@ -40,4 +40,6 @@ public abstract class Common {
     public abstract void mostPreciseBound(boolean assertion);
 
     public abstract void lessPreciseBound(boolean assertion);
+
+    public abstract void resetPlaceHolder();
 }

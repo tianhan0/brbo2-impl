@@ -6,6 +6,7 @@ import brbo.common.MyLogger
 object TracePartition {
   private val logger = MyLogger.createLogger(TracePartition.getClass, debugMode = false)
   private val numberOfTraces = 1
+
   def selectRepresentatives(traces: Iterable[Trace]): Map[Trace, Iterable[Trace]] = {
     val sorted = traces.toList.sortWith({
       case (trace1, trace2) => trace1.nodes.length < trace2.nodes.length
@@ -19,7 +20,8 @@ object TracePartition {
       indexRange.map({
         index =>
           // Pairs of traces and similar traces
-          (sorted(index), sorted.slice(index, sorted.length))
+          val similarTraces = if (index + 1 >= sorted.length) Nil else sorted.slice(index + 1, sorted.length)
+          (sorted(index), similarTraces)
       }).toMap
     }
   }

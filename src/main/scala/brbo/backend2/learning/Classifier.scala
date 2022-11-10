@@ -4,7 +4,7 @@ import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter._
 import brbo.backend2.learning.DecisionTree.{ResetLeaf, TreeClassifier, UseLeaf}
 import brbo.backend2.learning.ScriptRunner.DecisionTreeLearning
-import brbo.backend2.learning.SegmentClustering.{Group, Segment, printGroups}
+import brbo.backend2.learning.SegmentClustering.{Group, Segment, printGroups, printSegments}
 import brbo.common.GhostVariableUtils.{counterInitialValue, resourceInitialValue, starInitialValue}
 import brbo.common.ast._
 import brbo.common.{MyLogger, Print}
@@ -321,6 +321,7 @@ object Classifier {
                      groups: Map[GroupID, Group],
                      features: List[BrboExpr],
                      failIfCannotFindResetPlaceHolder: Boolean): TraceTables = {
+    val nodesWithIndex = trace.nodes.zipWithIndex
     // From group IDs to the trace node indices into which resets need to be placed
     val resetPlaceHolderMap: Map[GroupID, Set[Int]] = groups.map({
       case (groupID, group) =>
@@ -336,11 +337,11 @@ object Classifier {
             next.indices.head - 1
           }
           // logger.trace(s"begin $begin end $end")
-          val allResetPlaceHolders = trace.nodes.zipWithIndex.flatMap({
+          val allResetPlaceHolders = nodesWithIndex.flatMap({
             case (node, index) =>
               val isResetPlaceHolder = node.lastTransition match {
                 case Some(Transition(command, _)) => command.isInstanceOf[ResetPlaceHolder]
-                case None => false
+                case _ => false
               }
               if (isResetPlaceHolder && begin <= index && index <= end)
                 Some((node.lastTransition.get.command.asInstanceOf[ResetPlaceHolder], index))
@@ -352,8 +353,7 @@ object Classifier {
             case None =>
               val errorMessage = s"Failed to find a reset place holder between Group ${groupID.value}'s $i and ${i + 1} segment"
               // logger.trace(errorMessage)
-              if (failIfCannotFindResetPlaceHolder)
-                throw new TableGenerationError(errorMessage)
+              if (failIfCannotFindResetPlaceHolder) throw new TableGenerationError(errorMessage)
           }
           i = i + 1
         }
@@ -482,9 +482,13 @@ object Classifier {
 
     def print(): String = {
       val segmentsString = segments.map({
-        case (groupID, segments) => s"$groupID -> ${segments.toString()}"
+        case (groupID, segments) => s"${groupID.print()} -> ${printSegments(segments)}"
       }).mkString("\n")
-      s"GhostState\nresources: $resources\ncounters: $counters\nstars: $stars\nsegments:\n$segmentsString"
+      s"GhostState\nresources: ${printMap(resources)}\ncounters: ${printMap(counters)}\nstars: ${printMap(stars)}\nsegments:\n$segmentsString"
+    }
+
+    private def printMap(map: Map[GroupID, Int]): String = {
+      map.map({ case (id, value) => s"${id.print()} -> $value"}).mkString(", ")
     }
 
     def reset(groupID: GroupID): Unit = {
@@ -551,13 +555,13 @@ object Classifier {
       val expectedDecomposition: List[List[Segment]] = ghostStore.getSegments.values.toList.map({
         list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
       })
-      logger.traceOrError(s"Expected:\n${print(expectedDecomposition)}")
+      logger.traceOrError(s"Expected segment clusters:\n${print(expectedDecomposition)}")
       val segments: List[Segment] = expectedDecomposition.flatten
-      // logger.traceOrError(s"${ghostStore.print()}")
+      logger.traceOrError(s"${ghostStore.print()}")
       val actualDecomposition: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segments).map({
         list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
       })
-      logger.traceOrError(s"Actual:\n${print(actualDecomposition)}")
+      logger.traceOrError(s"Actual segment clusters:\n${print(actualDecomposition)}")
       val expected = expectedDecomposition.map(list => Group(list))
       val actual = actualDecomposition.map(list => Group(list))
       if (expected.nonEmpty && actual.isEmpty)
@@ -598,10 +602,9 @@ object Classifier {
     }
     val ghostStore = new GhostStore
 
-    // if (debugMode) logger.error(s"# of nodes: ${trace.nodes.size}")
+    if (debugMode) logger.error(s"# of nodes: ${trace.nodes.size}")
     trace.nodes.zipWithIndex.foreach({
       case (TraceNode(store, _), index) =>
-        // if (debugMode) logger.error(s"Index $index")
         if (index == trace.nodes.size - 1) {
           if (checkBound) {
             // Managed to reach the final store without violating the bound
@@ -621,8 +624,8 @@ object Classifier {
                 val label = classifierResults(AllGroups).classifier.classify(store, evaluate, classifierResultsMap.features)
                 val groupID = useLabelFromString(label.name)
                 ghostStore.initialize(groupID)
-                // if (debugMode) logger.error(s"${use.printToIR()} is decomposed into $groupID")
-                // if (debugMode) logger.error(s"Before:\n${ghostStore.print()}")
+                if (debugMode) logger.error(s"[Index $index] ${use.printToIR()} is decomposed into ${groupID.print()}")
+                val beforeString = ghostStore.print()
                 evaluate(use.condition, store) match {
                   case Bool(b, _) =>
                     if (b && groupID != NoneGroup) {
@@ -633,29 +636,37 @@ object Classifier {
                     }
                   case _ => throw new Exception
                 }
-              // if (debugMode) logger.error(s"After:\n${ghostStore.print()}")
+                val afterString = ghostStore.print()
+                if (debugMode && beforeString != afterString) {
+                  logger.error(s"Before:\n$beforeString")
+                  logger.error(s"After:\n$afterString")
+                }
               case resetPlaceHolder: ResetPlaceHolder =>
                 classifierResults.foreach({
                   case (groupID, classifierResult) =>
                     ghostStore.initialize(groupID)
-                    // if (debugMode) logger.error(s"${resetPlaceHolder.printToIR()} is decomposed into $groupID")
-                    // if (debugMode) logger.error(s"Before:\n${ghostStore.print()}")
+                    if (debugMode) logger.error(s"[Index $index] ${resetPlaceHolder.printToIR()} is decomposed into ${groupID.print()}")
+                    val beforeString = ghostStore.print()
                     val toReset = {
                       val label = classifierResult.classifier.classify(store, evaluate, classifierResultsMap.features)
                       resetLabelFromString(label.name)
                     }
                     if (toReset) ghostStore.reset(groupID)
-                  // if (debugMode) logger.error(s"After:\n${ghostStore.print()}")
+                    val afterString = ghostStore.print()
+                    if (debugMode && beforeString != afterString) {
+                      logger.error(s"Before:\n$beforeString")
+                      logger.error(s"After:\n$afterString")
+                    }
                 })
               case _ => throw new Exception
             }
             if (checkBound && ghostStore.exceedBound(bound)) {
               // Early return
-              logger.info(s"Bound $bound is violated under state:\n${ghostStore.print()} for the following trace decomposition:\n${trace.toTable.printAll()}")
+              logger.info(s"Bound $bound is violated under state:\n${ghostStore.print()} for the following trace decomposition:\n${trace.toTable()._1.printAll()}")
               return new BoundCheckClassifierApplication(exceedBound = true, ghostStore, trace, debugMode)
             }
           case None =>
-          // if (debugMode) logger.error(s"${location.print()} does not have a classifier result")
+            // if (debugMode) logger.error(s"${location.print()} does not have a classifier result")
         }
       case _ =>
     })
