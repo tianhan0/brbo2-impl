@@ -537,7 +537,12 @@ object Interpreter {
       val commands: List[String] = nodes.map({
         node =>
           node.lastTransition match {
-            case Some(Transition(command, _)) => command.printToC(0)
+            case Some(Transition(command, cost)) =>
+              val costString = cost match {
+                case Some(value) => s"(cost=$value)"
+                case None => ""
+              }
+              s"${command.printToC(0)} $costString"
             case None => "Command not exist"
           }
       })

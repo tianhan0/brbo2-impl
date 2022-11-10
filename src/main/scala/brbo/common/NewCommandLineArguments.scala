@@ -25,7 +25,7 @@ class NewCommandLineArguments extends Serializable {
     usage = "The cluster algorithm to use. Choose from `optics` or `kmeans`.")
   private var algorithm: String = "optics"
 
-  @Option(name = "--parameters", aliases = Array("-p"),
+  @Option(name = "--parameter", aliases = Array("-p"),
     usage = "The parameter of the algorithm. For `optics`, the parameter is `max-eps`. For `kmeans`, the parameter is the number of clusters.")
   private var algorithmParameter: Double = -1
 
