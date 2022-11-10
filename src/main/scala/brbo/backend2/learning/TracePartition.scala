@@ -11,7 +11,9 @@ object TracePartition {
     val sorted = traces.toList.sortWith({
       case (trace1, trace2) => trace1.nodes.length < trace2.nodes.length
     })
-    val chosenIndex = (sorted.length * 0.8).toInt
+    // It is best to choose a trace that starts to show patterns (compared with shorter traces, such that
+    // the pattern is generalizable), but is not too long (to avoid over-fitting)
+    val chosenIndex = (sorted.length * 0.5).toInt
     val indexRange = Range.inclusive(chosenIndex, chosenIndex + numberOfTraces - 1).intersect(Range(0, sorted.length))
     logger.info(s"Assume all traces are similar")
     logger.info(s"Choose traces within range $indexRange from ${sorted.length} traces")
@@ -21,6 +23,7 @@ object TracePartition {
         index =>
           // Pairs of traces and similar traces
           val similarTraces = if (index + 1 >= sorted.length) Nil else sorted.slice(index + 1, sorted.length)
+          // val similarTraces = traces.toSet - sorted(index)
           (sorted(index), similarTraces)
       }).toMap
     }

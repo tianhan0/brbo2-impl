@@ -12,7 +12,7 @@ import scala.concurrent.{Await, Future}
 object Fuzzer {
   val SAMPLES = 3
   private val MAX_ARRAY_LENGTH = 5
-  private val MAX_INTEGER = 100
+  private val MAX_INTEGER = 30 // No need to be a huge number. Just need to let the costs vary.
 
   private def randomInteger(samples: Int, maxInteger: Int, seed: Int): List[BrboValue] = {
     val random = new scala.util.Random(seed)
@@ -62,7 +62,7 @@ object Fuzzer {
 
   def fuzz(brboProgram: BrboProgram, debugMode: Boolean, samples: Int): List[Interpreter.Trace] = {
     val logger = MyLogger.createLogger(Fuzzer.getClass, debugMode)
-    val FUZZING = s"Fuzzing program ${brboProgram.name}: "
+    val FUZZING = s"Fuzzing: ${brboProgram.name}: "
     val interpreter = new Interpreter(brboProgram, debugMode)
     val inputs = MathUtils.crossJoin(brboProgram.mainFunction.parameters.map({
       case Identifier(_, typ, _) => randomValues(typ, samples, maxArrayLength = MAX_ARRAY_LENGTH, maxInteger = MAX_INTEGER)
@@ -72,7 +72,7 @@ object Fuzzer {
     val futures = Future.traverse(inputs.zipWithIndex)({
       case (inputValues, index) =>
         Future {
-          if (index % 500 == 0) {
+          if (index % 50 == 0) {
             val percentage = StringFormatUtils.float(index.toDouble / inputs.size * 100, digit = 2)
             logger.info(s"$FUZZING$index / ${inputs.size} ($percentage%)")
             logger.info(s"Inputs: ${inputValues.map(v => v.printToIR())}")
