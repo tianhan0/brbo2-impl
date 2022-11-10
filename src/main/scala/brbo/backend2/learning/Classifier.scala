@@ -263,7 +263,7 @@ object Classifier {
     }
 
     def toTransformation: Map[BrboAst, BrboAst] = {
-      var transforms: Map[BrboAst, BrboAst] = Map()
+      var transforms: Map[BrboAst, List[BrboAst]] = Map()
       results.foreach({
         case (location, results) =>
           location.command match {
@@ -271,7 +271,8 @@ object Classifier {
               results.get(AllGroups) match {
                 case Some(UseResult(_, classifier)) =>
                   val ast = classifier.toAst(features, UseLeaf(use.update))
-                  transforms = transforms + (use -> ast)
+                  assert(!transforms.contains(use))
+                  transforms = transforms + (use -> List(ast))
                 case None =>
                 case _ => throw new Exception
               }
@@ -279,13 +280,24 @@ object Classifier {
               results.foreach({
                 case (groupID, ResetResult(_, classifier)) =>
                   val ast = classifier.toAst(features, ResetLeaf(groupID))
-                  transforms = transforms + (resetPlaceHolder -> ast)
+                  val newList = transforms.get(resetPlaceHolder) match {
+                    case Some(list) =>
+                      if (ast.isInstanceOf[Skip]) list
+                      else ast :: list
+                    case None => List(ast)
+                  }
+                  transforms = transforms + (resetPlaceHolder -> newList)
                 case _ => throw new Exception
               })
             case _ => throw new Exception
           }
       })
-      transforms
+      transforms.map({
+        case (command, asts) =>
+          if (asts.size == 1) (command, asts.head)
+          else if (asts.size > 1) (command, Block(asts))
+          else throw new Exception
+      })
     }
   }
 
@@ -621,7 +633,7 @@ object Classifier {
                     }
                   case _ => throw new Exception
                 }
-                // if (debugMode) logger.error(s"After:\n${ghostStore.print()}")
+              // if (debugMode) logger.error(s"After:\n${ghostStore.print()}")
               case resetPlaceHolder: ResetPlaceHolder =>
                 classifierResults.foreach({
                   case (groupID, classifierResult) =>

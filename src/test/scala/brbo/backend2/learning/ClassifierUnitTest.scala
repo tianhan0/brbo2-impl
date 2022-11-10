@@ -474,20 +474,46 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |;
         |
         |Transform <resetPlaceHolder> into:
-        |if ((i < 1) || (i == 1))
-        |  ;
-        |else
-        |if ((i < 2) || (i == 2))
-        |  {
-        |    if (D1 < R1)
-        |      D1 = R1;
-        |    else
-        |      ;
-        |    R1 = 0;
-        |    C1 = C1 + 1;
-        |  }
-        |else
-        |  ;
+        |{
+        |  if ((i < 1) || (i == 1))
+        |    ;
+        |  else
+        |  if ((i < 2) || (i == 2))
+        |    {
+        |      if (D1 < R1)
+        |        D1 = R1;
+        |      else
+        |        ;
+        |      R1 = 0;
+        |      C1 = C1 + 1;
+        |    }
+        |  else
+        |    ;
+        |  if ((i < 0) || (i == 0))
+        |    ;
+        |  else
+        |  if ((i < 1) || (i == 1))
+        |    {
+        |      if (D0 < R0)
+        |        D0 = R0;
+        |      else
+        |        ;
+        |      R0 = 0;
+        |      C0 = C0 + 1;
+        |    }
+        |  else
+        |  if ((i < 2) || (i == 2))
+        |    ;
+        |  else
+        |    {
+        |      if (D0 < R0)
+        |        D0 = R0;
+        |      else
+        |        ;
+        |      R0 = 0;
+        |      C0 = C0 + 1;
+        |    }
+        |}
         |
         |Transform use R0 1011 into:
         |if ((i < 1) || (i == 1))

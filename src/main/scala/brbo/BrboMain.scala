@@ -107,14 +107,14 @@ object BrboMain {
       val decomposedProgram = driver.decompose()
       val outputPath = {
         val parent = FilenameUtils.getBaseName(Paths.get(sourceFilePath).getParent.toAbsolutePath.toString)
-        val outputPath = Paths.get(OUTPUT_DIRECTORY, "decomposed", parent, s"${FilenameUtils.getBaseName(sourceFilePath)}_decomposed.java")
+        val outputPath = Paths.get(OUTPUT_DIRECTORY, "decomposed", parent, s"${FilenameUtils.getBaseName(sourceFilePath)}.java")
         Files.deleteIfExists(outputPath)
         Files.createDirectories(outputPath.getParent)
         Files.createFile(outputPath)
         outputPath
       }
       val fileWriter = new FileWriter(outputPath.toAbsolutePath.toString)
-      fileWriter.write(decomposedProgram.printToC(0))
+      fileWriter.write(decomposedProgram.printToJava())
       fileWriter.close()
     }
     else {

@@ -3,8 +3,8 @@ package brbo.backend2
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.backend2.learning.{Classifier, SegmentClustering, TracePartition}
-import brbo.common.ast.{BrboAst, BrboAstUtils, BrboProgram, Statement}
-import brbo.common.{BrboType, MyLogger, NewCommandLineArguments}
+import brbo.common.ast._
+import brbo.common.{BrboType, GhostVariableUtils, MyLogger, NewCommandLineArguments}
 
 class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
   private val debugMode = arguments.getDebugMode
@@ -15,7 +15,8 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
   private val classifierFeatures = instrumentedProgram.mainFunction.nonGhostVariables().filter({
     variable =>
       variable.typ match {
-        case BrboType.INT | BrboType.BOOL => true
+        case BrboType.BOOL => true
+        case BrboType.INT => !GhostVariableUtils.isGhostVariable(variable.name)
         case BrboType.ARRAY(_) => false
         case _ => false
       }
@@ -62,6 +63,11 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
     val classifierResults = tables.toProgramTables.generateClassifiers(debugMode)
     logger.info(s"Step 3.4: Generate program transformations")
     val transformation: Map[BrboAst, BrboAst] = classifierResults.toTransformation
+    logger.traceOrError(s"Step 3.4: See below for a mapping from existing ASTs to new ASTs")
+    transformation.foreach({
+      case (oldAst, newAst) =>
+        logger.traceOrError(s"${oldAst.asInstanceOf[Command].printToIR()} -> ${newAst.printToC(0)}")
+    })
     val newBody = BrboAstUtils.replaceAst(instrumentedProgram.mainFunction.body, transformation)
     val newMain = instrumentedProgram.mainFunction.replaceBodyWithoutInitialization(newBody.asInstanceOf[Statement])
     instrumentedProgram.replaceMainFunction(newMain)
