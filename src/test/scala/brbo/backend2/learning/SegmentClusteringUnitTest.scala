@@ -24,6 +24,14 @@ class SegmentClusteringUnitTest extends AnyFlatSpec {
         StringCompare.ignoreWhitespaces(printSegments(groups, trace), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
+
+  "Deciding the overlapping between segments" should "be correct" in {
+    SegmentClusteringUnitTest.segmentOverlapTest.foreach({
+      testCase =>
+        val (s1, s2) = testCase.input.asInstanceOf[(Segment, Segment)]
+        StringCompare.ignoreWhitespaces(s1.notOverlap(s2).toString, testCase.expectedOutput, s"${testCase.name} failed")
+    })
+  }
 }
 
 object SegmentClusteringUnitTest {
@@ -142,4 +150,19 @@ object SegmentClusteringUnitTest {
         |List(use R0 arrayRead(array2, i) (cost=20))
         |List(use R0 arrayRead(array2, i) (cost=1))""".stripMargin),
   )
+
+  val segmentOverlapTest: List[TestCase] = {
+    val s1 = Segment(List(100, 145))
+    val s2 = Segment(List(103, 142))
+    val s3 = Segment(List(99, 100))
+    val s4 = Segment(List(90, 140))
+    List(
+      TestCase("Test 01", (s1, s2), "false"),
+      TestCase("Test 02", (s1, s3), "false"),
+      TestCase("Test 03", (s1, s4), "false"),
+      TestCase("Test 04", (s2, s3), "true"),
+      TestCase("Test 05", (s2, s4), "false"),
+      TestCase("Test 06", (s3, s4), "false"),
+    )
+  }
 }

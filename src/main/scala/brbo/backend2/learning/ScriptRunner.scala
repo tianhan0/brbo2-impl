@@ -79,9 +79,9 @@ object ScriptRunner {
   def run(inputFileContent: String, algorithm: Algorithm, debugMode: Boolean): Option[String] = {
     val logger = if (debugMode) MyLogger.commonDebugLogger else MyLogger.commonLogger
     val inputFilePath = Files.createTempFile("", ".json").toAbsolutePath.toString
-    logger.info(s"Write data into $inputFilePath")
+    // logger.traceOrError(s"Write data into $inputFilePath")
     new PrintWriter(inputFilePath) {
-      logger.traceOrError(s"Input file content: $inputFileContent")
+      // logger.traceOrError(s"Input file content: $inputFileContent")
       write(inputFileContent)
       close()
     }
@@ -93,17 +93,17 @@ object ScriptRunner {
     val processBuilder: java.lang.ProcessBuilder = new java.lang.ProcessBuilder(command.split(" ").toList.asJava)
       .directory(new java.io.File(OUTPUT_DIRECTORY))
       .redirectErrorStream(true)
-    logger.info(s"Run python clustering script via `$command`")
     val process: java.lang.Process = processBuilder.start()
     if (process.waitFor(Duration(TIMEOUT_IN_SECONDS, SECONDS).toSeconds, TimeUnit.SECONDS)
       && process.exitValue() == 0) {
-      logger.info(s"Read labels from ${outputFile.toAbsolutePath}")
+      // logger.traceOrError(s"Read labels from ${outputFile.toAbsolutePath}")
       val outputFileContents = Files.readString(outputFile)
-      logger.traceOrError(s"Output file content: $outputFileContents")
+      // logger.traceOrError(s"Output file content: $outputFileContents")
       Some(outputFileContents)
     }
     else {
       val stdout = IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
+      logger.fatal(s"Ran python clustering script via `$command`")
       logger.fatal(s"Failed to execute ${algorithm.scriptName}. stdout: $stdout")
       None
     }

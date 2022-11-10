@@ -54,8 +54,12 @@ object DecisionTree {
             Skip()
           }
         case UseLeaf(update) =>
-          val groupID = Classifier.useLabelFromString(className).value
-          Use(Some(groupID), update)
+          Classifier.useLabelFromString(className) match {
+            case Classifier.AllGroups => throw new Exception
+            case Classifier.NoneGroup => Skip()
+            case Classifier.GeneralityTestGroup => throw new Exception
+            case Classifier.GroupID(groupID) => Use(Some(groupID), update)
+          }
         case _ => throw new Exception
       }
     }

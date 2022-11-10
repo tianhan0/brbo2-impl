@@ -5,16 +5,22 @@ import brbo.common.MyLogger
 
 object TracePartition {
   private val logger = MyLogger.createLogger(TracePartition.getClass, debugMode = false)
-  private val beforeAndAfter = 1
-  def selectRepresentatives(traces: Iterable[Trace]): List[Trace] = {
+  private val numberOfTraces = 1
+  def selectRepresentatives(traces: Iterable[Trace]): Map[Trace, Iterable[Trace]] = {
     val sorted = traces.toList.sortWith({
       case (trace1, trace2) => trace1.nodes.length <= trace2.nodes.length
     })
     val chosenIndex = (sorted.length * 0.8).toInt
-    val indexRange = Range.inclusive(chosenIndex - beforeAndAfter, chosenIndex + beforeAndAfter).intersect(Range(0, sorted.length))
+    val indexRange = Range.inclusive(chosenIndex, chosenIndex + numberOfTraces - 1).intersect(Range(0, sorted.length))
     logger.info(s"Assume all traces are similar")
-    logger.info(s"Choose traces within range $indexRange")
-    if (indexRange.isEmpty) Nil
-    else sorted.slice(indexRange.head, indexRange.last)
+    logger.info(s"Choose traces within range $indexRange from ${sorted.length} traces")
+    if (indexRange.isEmpty) Map()
+    else {
+      indexRange.map({
+        index =>
+          // Pairs of traces and similar traces
+          (sorted(index), sorted.slice(index, sorted.length))
+      }).toMap
+    }
   }
 }

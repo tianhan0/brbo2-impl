@@ -17,6 +17,7 @@ object Clustering {
    * @return
    */
   def cluster(dataMatrix: List[List[Int]], algorithm: Algorithm, debugMode: Boolean): Option[List[Int]] = {
+    if (dataMatrix.size <= 1) return None
     val inputFileContent: String = Json.obj(("data", dataMatrix)).toString()
     ScriptRunner.run(inputFileContent, algorithm, debugMode) match {
       case Some(outputFileContents) =>

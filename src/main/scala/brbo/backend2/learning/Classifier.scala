@@ -30,8 +30,12 @@ object Classifier {
     override def print(): String = "AllGroups"
   }
 
-  object TestGroup extends GroupID(-182827172) {
-    override def print(): String = "TestGroup"
+  object GeneralityTestGroup extends GroupID(-182827172) {
+    override def print(): String = "GeneralityTestGroup"
+  }
+
+  object PrintGroup extends GroupID(-23123) {
+    override def print(): String = "PrintGroup"
   }
 
   abstract class Label {
@@ -49,8 +53,8 @@ object Classifier {
   def useLabelFromString(label: String): GroupID = {
     if (label == NoneGroup.print()) {
       NoneGroup
-    } else if (label == TestGroup.print()) {
-      TestGroup
+    } else if (label == GeneralityTestGroup.print()) {
+      GeneralityTestGroup
     } else {
       val prefix = "GroupID("
       val suffix = ")"
@@ -79,7 +83,7 @@ object Classifier {
           value match {
             case Number(n, _) => row.setInt(index, n)
             case BottomValue => row.setMissing(index)
-            case _ => throw new Exception
+            case _ => throw new Exception(s"Unexpected value ${value.printToIR()}")
           }
       })
       row.setString(data.size, label.print())
@@ -218,7 +222,7 @@ object Classifier {
       })
       val results = Await.result(futures, Duration.Inf).toMap
       val map = ClassifierResultsMap(results, features)
-      if (debugMode) logger.error(map.print())
+      // if (debugMode) logger.error(s"Generated classifiers: ${map.print()}")
       map
     }
   }
@@ -441,7 +445,7 @@ object Classifier {
   private def classifyInternal(table: BrboTable, debugMode: Boolean): TreeClassifier = {
     ScriptRunner.run(table.toJsonString, DecisionTreeLearning(printTree = false), debugMode) match {
       case Some(output) =>
-        if (debugMode) logger.debug(s"Classification output: $output")
+        // if (debugMode) logger.debug(s"Classification output: $output")
         DecisionTree.parse(output)
       case None => throw new Exception
     }
@@ -527,19 +531,25 @@ object Classifier {
   class ClassifierApplication(ghostStore: GhostStore, trace: Trace, debugMode: Boolean) {
     private val logger = MyLogger.createLogger(classOf[ClassifierApplication], debugMode)
 
+    private def print(groupsOfSegments: List[List[Segment]]): String = {
+      groupsOfSegments.map(segments => segments.map(s => s.printAsSet()).mkString(", ")).mkString("\n")
+    }
+
     def areActualSegmentCostsSimilar(segmentClustering: SegmentClustering): Boolean = {
-      // logger.traceOrError(s"${ghostStore.print()}")
       val expectedDecomposition: List[List[Segment]] = ghostStore.getSegments.values.toList.map({
         list => list.sortWith({ case (s1, s2) => s1.lessThanOrEqualTo(s2) })
       })
-      logger.traceOrError(s"Expected $expectedDecomposition")
+      logger.traceOrError(s"Expected:\n${print(expectedDecomposition)}")
       val segments: List[Segment] = expectedDecomposition.flatten
+      // logger.traceOrError(s"${ghostStore.print()}")
       val actualDecomposition: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segments).map({
         list => list.sortWith({ case (s1, s2) => s1.lessThanOrEqualTo(s2) })
       })
-      logger.traceOrError(s"Actual $actualDecomposition")
+      logger.traceOrError(s"Actual:\n${print(actualDecomposition)}")
       val expected = expectedDecomposition.map(list => Group(list))
       val actual = actualDecomposition.map(list => Group(list))
+      if (expected.nonEmpty && actual.isEmpty)
+        return false // calling forall on an empty list returns true
       // logger.traceOrError(s"Actual groups ${printGroups(actual, trace)}")
       // logger.traceOrError(s"Expected groups ${printGroups(expected, trace)}")
       actual.forall({
@@ -576,10 +586,10 @@ object Classifier {
     }
     val ghostStore = new GhostStore
 
-    if (debugMode) logger.error(s"# of nodes: ${trace.nodes.size}")
+    // if (debugMode) logger.error(s"# of nodes: ${trace.nodes.size}")
     trace.nodes.zipWithIndex.foreach({
       case (TraceNode(store, _), index) =>
-        if (debugMode) logger.error(s"Index $index")
+        // if (debugMode) logger.error(s"Index $index")
         if (index == trace.nodes.size - 1) {
           if (checkBound) {
             // Managed to reach the final store without violating the bound
@@ -593,14 +603,14 @@ object Classifier {
         val location = ProgramLocation(nextCommand)
         classifierResultsMap.results.get(location) match {
           case Some(classifierResults) =>
-            if (debugMode) logger.error(s"${location.print()} classifier result:\n${printClassifierResults(classifierResults)}")
+            // if (debugMode) logger.error(s"${location.print()} classifier result:\n${printClassifierResults(classifierResults)}")
             nextCommand match {
               case use: Use =>
                 val label = classifierResults(AllGroups).classifier.classify(store, evaluate, classifierResultsMap.features)
                 val groupID = useLabelFromString(label.name)
                 ghostStore.initialize(groupID)
-                if (debugMode) logger.error(s"${use.printToIR()} is decomposed into $groupID")
-                if (debugMode) logger.error(s"Before:\n${ghostStore.print()}")
+                // if (debugMode) logger.error(s"${use.printToIR()} is decomposed into $groupID")
+                // if (debugMode) logger.error(s"Before:\n${ghostStore.print()}")
                 evaluate(use.condition, store) match {
                   case Bool(b, _) =>
                     if (b && groupID != NoneGroup) {
@@ -611,19 +621,19 @@ object Classifier {
                     }
                   case _ => throw new Exception
                 }
-                if (debugMode) logger.error(s"After:\n${ghostStore.print()}")
+                // if (debugMode) logger.error(s"After:\n${ghostStore.print()}")
               case resetPlaceHolder: ResetPlaceHolder =>
                 classifierResults.foreach({
                   case (groupID, classifierResult) =>
                     ghostStore.initialize(groupID)
-                    if (debugMode) logger.error(s"${resetPlaceHolder.printToIR()} is decomposed into $groupID")
-                    if (debugMode) logger.error(s"Before:\n${ghostStore.print()}")
+                    // if (debugMode) logger.error(s"${resetPlaceHolder.printToIR()} is decomposed into $groupID")
+                    // if (debugMode) logger.error(s"Before:\n${ghostStore.print()}")
                     val toReset = {
                       val label = classifierResult.classifier.classify(store, evaluate, classifierResultsMap.features)
                       resetLabelFromString(label.name)
                     }
                     if (toReset) ghostStore.reset(groupID)
-                    if (debugMode) logger.error(s"After:\n${ghostStore.print()}")
+                  // if (debugMode) logger.error(s"After:\n${ghostStore.print()}")
                 })
               case _ => throw new Exception
             }
@@ -633,7 +643,7 @@ object Classifier {
               return new BoundCheckClassifierApplication(exceedBound = true, ghostStore, trace, debugMode)
             }
           case None =>
-            if (debugMode) logger.error(s"${location.print()} does not have a classifier result")
+          // if (debugMode) logger.error(s"${location.print()} does not have a classifier result")
         }
       case _ =>
     })
