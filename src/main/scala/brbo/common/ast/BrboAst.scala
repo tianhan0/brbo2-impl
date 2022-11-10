@@ -20,7 +20,7 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
   def printToJava(): String = {
     val functionsString = (functions :+ mainFunction).filterNot({
       function => PreDefinedFunctions.functions.exists(predefined => predefined.name == function.identifier)
-    }).map(function => function.printToC(indent = 2)).mkString("\n")
+    }).map(function => function.printToJava(indent = 2)).mkString("\n")
     s"""abstract class ${name.stripSuffix(s".${TargetProgram.MAIN_FUNCTION}")} extends Common {
        |$functionsString
        |}""".stripMargin
@@ -70,7 +70,7 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
                         body: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
   extends PrintToC with SameAs with Serializable {
   val ghostVariableInitializations: List[Command] = groupIds.flatMap({
-    groupId => GhostVariableUtils.declareVariables(groupId)
+    groupId => GhostVariableUtils.declareVariables(groupId, legacy = false)
   }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
   val approximatedResourceUsage: BrboExpr = GhostVariableUtils.approximatedResourceUsage(groupIds)
 
@@ -83,6 +83,20 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
 
   override def printToC(indent: Int): String = {
     val parametersString = parameters.map(pair => s"${pair.typeNamePairInC()}").mkString(", ")
+    val indentString = " " * indent
+    s"$indentString${BrboType.toCString(returnType)} $identifier($parametersString) \n${bodyWithInitialization.printToC(indent)}"
+  }
+
+  def printToJava(indent: Int): String = {
+    val parametersString = parameters.map(pair => s"${pair.typeNamePairInC()}").mkString(", ")
+    val ghostVariableInitializations: List[Command] = groupIds.flatMap({
+      groupId => GhostVariableUtils.declareVariables(groupId, legacy = true)
+    }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
+    val bodyWithInitialization = body match {
+      case Block(asts, _) => Block(ghostVariableInitializations ::: asts)
+      case ITE(_, _, _, _) | Loop(_, _, _) => Block(ghostVariableInitializations :+ body)
+      case _ => throw new Exception
+    }
     val indentString = " " * indent
     s"$indentString${BrboType.toCString(returnType)} $identifier($parametersString) \n${bodyWithInitialization.printToC(indent)}"
   }

@@ -50,11 +50,11 @@ object GhostVariableUtils {
     Addition(resourceVariable, Multiplication(starVariable, counterVariable))
   }
 
-  def declareVariables(groupId: Int): List[Command] = {
+  def declareVariables(groupId: Int, legacy: Boolean): List[Command] = {
     val (resource: Identifier, star: Identifier, counter: Identifier) = GhostVariableUtils.generateVariables(Some(groupId))
     val declaration1 = VariableDeclaration(resource, Number(initialValue(resource.name)))
-    val declaration2 = VariableDeclaration(star, Number(initialValue(star.name)))
-    val declaration3 = VariableDeclaration(counter, Number(initialValue(counter.name)))
+    val declaration2 = VariableDeclaration(star, Number(if (legacy) 0 else initialValue(star.name)))
+    val declaration3 = VariableDeclaration(counter, Number(if (legacy) -1 else initialValue(counter.name)))
     List(declaration1, declaration2, declaration3)
   }
 

@@ -286,14 +286,14 @@ object BrboAstUnitTest {
       """abstract class Test extends Common {
         |  void main(int x, int array)
         |  {
-        |    int C1 = 0;
-        |    int C2 = 0;
-        |    int C3 = 0;
-        |    int C4 = 0;
-        |    int D1 = -2147483648;
-        |    int D2 = -2147483648;
-        |    int D3 = -2147483648;
-        |    int D4 = -2147483648;
+        |    int C1 = -1;
+        |    int C2 = -1;
+        |    int C3 = -1;
+        |    int C4 = -1;
+        |    int D1 = 0;
+        |    int D2 = 0;
+        |    int D3 = 0;
+        |    int D4 = 0;
         |    int R1 = 0;
         |    int R2 = 0;
         |    int R3 = 0;
