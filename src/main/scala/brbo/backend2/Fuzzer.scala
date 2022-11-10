@@ -5,6 +5,10 @@ import brbo.common.ast.{Bool, BrboArray, BrboProgram, BrboValue, Identifier, Num
 import brbo.common.string.StringFormatUtils
 import brbo.common.{BrboType, MathUtils, MyLogger}
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+
 object Fuzzer {
   val SAMPLES = 3
   private val MAX_ARRAY_LENGTH = 5
@@ -64,17 +68,21 @@ object Fuzzer {
       case Identifier(_, typ, _) => randomValues(typ, samples, maxArrayLength = MAX_ARRAY_LENGTH, maxInteger = MAX_INTEGER)
     }))
     logger.info(s"${FUZZING}Generated `${inputs.size}` inputs")
-    inputs.zipWithIndex.map({
+
+    val futures = Future.traverse(inputs.zipWithIndex)({
       case (inputValues, index) =>
-        if (index % 500 == 0) {
-          val percentage = StringFormatUtils.float(index.toDouble / inputs.size * 100, digit = 2)
-          logger.info(s"$FUZZING$index / ${inputs.size} ($percentage%)")
-          logger.info(s"Inputs: ${inputValues.map(v => v.printToIR())}")
+        Future {
+          if (index % 500 == 0) {
+            val percentage = StringFormatUtils.float(index.toDouble / inputs.size * 100, digit = 2)
+            logger.info(s"$FUZZING$index / ${inputs.size} ($percentage%)")
+            logger.info(s"Inputs: ${inputValues.map(v => v.printToIR())}")
+          }
+          logger.traceOrError(s"Inputs: ${inputValues.map(v => v.printToIR())}")
+          val endState = interpreter.execute(inputValues)
+          // logger.traceOrError(s"Trace:\n${endState.trace.toTable.printAll()}")
+          endState.trace
         }
-        logger.traceOrError(s"Inputs: ${inputValues.map(v => v.printToIR())}")
-        val endState = interpreter.execute(inputValues)
-        // logger.traceOrError(s"Trace:\n${endState.trace.toTable.printAll()}")
-        endState.trace
     })
+    Await.result(futures, Duration.Inf)
   }
 }
