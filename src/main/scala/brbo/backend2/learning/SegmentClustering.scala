@@ -187,7 +187,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
               )
               val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
               logger.info(s"Tested the generality of $groupIndex-th group on $traceIndex-th trace: $areSimilar")
-              logger.traceOrError(s"Tested group on trace:\n${trace.toTable()._1.printAll()}")
+              logger.traceOrError(s"Tested group on trace:\n${trace.toTable(printStores = false)._1.printAll()}")
               areSimilar
           })
         }
@@ -386,7 +386,7 @@ object SegmentClustering {
   }
 
   def printDecomposition(trace: Trace, groups: Map[GroupID, Group]): String = {
-    val (table, indexMap) = trace.toTable()
+    val (table, indexMap) = trace.toTable(printStores = false)
     val sortedMap = groups.toList.sortWith({
       case ((id1, _), (id2, _)) => id1.print() < id2.print()
     })

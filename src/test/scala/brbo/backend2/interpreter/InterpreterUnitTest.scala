@@ -142,7 +142,7 @@ object InterpreterUnitTest {
 
   val expressionTests: List[TestCase] = List(
     TestCase("ArithmeticTest", arithmeticTest,
-      """GoodState$
+      """GoodState
         |Value: Some(20)
         |Store: (x -> 10)
         |Trace: [Store: (x -> 10)]
@@ -165,7 +165,7 @@ object InterpreterUnitTest {
         |       [x ==> Store: (x -> 20)]
         |       [return x; ==> Store: (x -> 20)]""".stripMargin),
     TestCase("negationTest", negationTest,
-      """GoodState$
+      """GoodState
         |Value: Some(true)
         |Store: (x -> 10)
         |Trace: [Store: (x -> 10)]
@@ -180,7 +180,7 @@ object InterpreterUnitTest {
         |       [b ==> Store: (b -> true)]
         |       [return b; ==> Store: (b -> true)]""".stripMargin),
     TestCase("greaterThanTest", greaterThanTest,
-      """GoodState$
+      """GoodState
         |Value: Some(false)
         |Store: (x -> 10)
         |Trace: [Store: (x -> 10)]
@@ -209,7 +209,7 @@ object InterpreterUnitTest {
         |       [b ==> Store: (b -> false)]
         |       [return b; ==> Store: (b -> false)]""".stripMargin),
     TestCase("lessThanTest", lessThanTest,
-      """GoodState$
+      """GoodState
         |Value: Some(false)
         |Store: (x -> 10)
         |Trace: [Store: (x -> 10)]
@@ -226,7 +226,7 @@ object InterpreterUnitTest {
         |       [b ==> Store: (b -> false)]
         |       [return b; ==> Store: (b -> false)]""".stripMargin),
     TestCase("equalTest", equalTest,
-      """GoodState$
+      """GoodState
         |Value: Some(false)
         |Store: (x -> 10)
         |Trace: [Store: (x -> 10)]
@@ -243,7 +243,7 @@ object InterpreterUnitTest {
         |       [b ==> Store: (b -> false)]
         |       [return b; ==> Store: (b -> false)]""".stripMargin),
     TestCase("andTest", andTest,
-      """GoodState$
+      """GoodState
         |Value: Some(true)
         |Store: (x -> 10)
         |Trace: [Store: (x -> 10)]
@@ -260,7 +260,7 @@ object InterpreterUnitTest {
         |       [b ==> Store: (b -> true)]
         |       [return b; ==> Store: (b -> true)]""".stripMargin),
     TestCase("orTest", orTest,
-      """GoodState$
+      """GoodState
         |Value: Some(false)
         |Store: (x -> 10)
         |Trace: [Store: (x -> 10)]
@@ -280,7 +280,7 @@ object InterpreterUnitTest {
 
   val arrayTests: List[TestCase] = List(
     TestCase("arrayReadTest", arrayReadTest,
-      """GoodState$
+      """GoodState
         |Value: None
         |Store: (element1 -> 101, element2 -> 17, x -> {101,17})
         |Trace: [Store: (x -> {101,17})]
@@ -291,7 +291,7 @@ object InterpreterUnitTest {
         |       [1 ==> Store: (element1 -> 101, x -> {101,17})]
         |       [int element2 = arrayRead(x, 1); ==> Store: (element1 -> 101, element2 -> 17, x -> {101,17})]""".stripMargin),
     TestCase("arrayLengthTest", arrayLengthTest,
-      """GoodState$
+      """GoodState
         |Value: None
         |Store: (length -> 2, x -> {101,17})
         |Trace: [Store: (x -> {101,17})]
@@ -316,6 +316,7 @@ object InterpreterUnitTest {
       |        break;
       |      i++;
       |    }
+      |    i = 10000;
       |  }
       |}""".stripMargin
 
@@ -330,6 +331,7 @@ object InterpreterUnitTest {
       |      }
       |      i = 0;
       |    }
+      |    i = 10000;
       |  }
       |}""".stripMargin
 
@@ -404,7 +406,7 @@ object InterpreterUnitTest {
 
   val commandTests: List[TestCase] = List(
     TestCase("assignmentTest", assignmentTest,
-      """GoodState$
+      """GoodState
         |Value: None
         |Store: (x -> 10, y -> 110)
         |Trace: [Store: (x -> 10)]
@@ -415,8 +417,9 @@ object InterpreterUnitTest {
         |       [(y + 100) ==> Store: (x -> 10, y -> 10)]
         |       [y = y + 100; ==> Store: (x -> 10, y -> 110)]""".stripMargin),
     TestCase("loopBreakTest", loopBreakTest,
-      """JumpState$
-        |Store: (i -> 2, x -> 10)
+      """GoodState
+        |Value: None
+        |Store: (i -> 10000, x -> 10)
         |Trace: [Store: (x -> 10)]
         |       [0 ==> Store: (x -> 10)]
         |       [int i = 0; ==> Store: (i -> 0, x -> 10)]
@@ -446,11 +449,13 @@ object InterpreterUnitTest {
         |       [i ==> Store: (i -> 2, x -> 10)]
         |       [2 ==> Store: (i -> 2, x -> 10)]
         |       [(i == 2) ==> Store: (i -> 2, x -> 10)]
-        |       [break; ==> Store: (i -> 2, x -> 10)]""".stripMargin),
+        |       [break; ==> Store: (i -> 2, x -> 10)]
+        |       [10000 ==> Store: (i -> 2, x -> 10)]
+        |       [i = 10000; ==> Store: (i -> 10000, x -> 10)]""".stripMargin),
     TestCase("loopContinueTest", loopContinueTest,
-      """GoodState$
+      """GoodState
         |Value: None
-        |Store: (i -> 3, x -> 10)
+        |Store: (i -> 10000, x -> 10)
         |Trace: [Store: (x -> 10)]
         |       [0 ==> Store: (x -> 10)]
         |       [int i = 0; ==> Store: (i -> 0, x -> 10)]
@@ -490,17 +495,10 @@ object InterpreterUnitTest {
         |       [i ==> Store: (i -> 3, x -> 10)]
         |       [3 ==> Store: (i -> 3, x -> 10)]
         |       [(i < 3) ==> Store: (i -> 3, x -> 10)]
-        |       [i ==> Store: (i -> 3, x -> 10)]
-        |       [3 ==> Store: (i -> 3, x -> 10)]
-        |       [(i < 3) ==> Store: (i -> 3, x -> 10)]
-        |       [i ==> Store: (i -> 3, x -> 10)]
-        |       [3 ==> Store: (i -> 3, x -> 10)]
-        |       [(i < 3) ==> Store: (i -> 3, x -> 10)]
-        |       [i ==> Store: (i -> 3, x -> 10)]
-        |       [3 ==> Store: (i -> 3, x -> 10)]
-        |       [(i < 3) ==> Store: (i -> 3, x -> 10)]""".stripMargin),
+        |       [10000 ==> Store: (i -> 3, x -> 10)]
+        |       [i = 10000; ==> Store: (i -> 10000, x -> 10)]""".stripMargin),
     TestCase("blockTest", blockTest,
-      """GoodState$
+      """GoodState
         |Value: None
         |Store: (a -> 10, b -> 20, c -> 120, x -> 10)
         |Trace: [Store: (x -> 10)]
@@ -515,7 +513,7 @@ object InterpreterUnitTest {
         |       [(b + 100) ==> Store: (a -> 10, b -> 20, x -> 10)]
         |       [int c = b + 100; ==> Store: (a -> 10, b -> 20, c -> 120, x -> 10)]""".stripMargin),
     TestCase("iteTest", iteTest,
-      """GoodState$
+      """GoodState
         |Value: None
         |Store: (a -> 1000, x -> 10)
         |Trace: [Store: (x -> 10)]
@@ -535,7 +533,7 @@ object InterpreterUnitTest {
         |       [(a + 1000) ==> Store: (a -> 0, x -> 10)]
         |       [a = a + 1000; ==> Store: (a -> 1000, x -> 10)]""".stripMargin),
     TestCase("loopTest", loopTest,
-      """GoodState$
+      """GoodState
         |Value: None
         |Store: (i -> 4, x -> 10)
         |Trace: [Store: (x -> 10)]
@@ -573,7 +571,7 @@ object InterpreterUnitTest {
         |       [4 ==> Store: (i -> 4, x -> 10)]
         |       [(i < 4) ==> Store: (i -> 4, x -> 10)]""".stripMargin),
     TestCase("returnTest", returnTest,
-      """GoodState$
+      """GoodState
         |Value: None
         |Store: (i -> 11, x -> 10)
         |Trace: [Store: (x -> 10)]
@@ -584,7 +582,7 @@ object InterpreterUnitTest {
         |       [(i + 1) ==> Store: (i -> 10, x -> 10)]
         |       [i = i + 1; ==> Store: (i -> 11, x -> 10)]""".stripMargin),
     TestCase("useTest", useTest,
-      """GoodState$
+      """GoodState
         |Value: None
         |Store: (C1 -> 0, D1 -> -2147483648, R1 -> 100, x -> 10)
         |Trace: [Store: (x -> 10)]
@@ -610,7 +608,7 @@ object InterpreterUnitTest {
         |       [100 ==> Store: (C1 -> 0, D1 -> -2147483648, R1 -> 0, x -> 10)]
         |       [if (!((x < 10))) use R1 100 <cost=100> ==> Store: (C1 -> 0, D1 -> -2147483648, R1 -> 100, x -> 10)]""".stripMargin),
     TestCase("resetTest", resetTest,
-      """GoodState$
+      """GoodState
         |Value: None
         |Store: (C1 -> 2, D1 -> 500, R1 -> 0, x -> 10)
         |Trace: [Store: (x -> 10)]

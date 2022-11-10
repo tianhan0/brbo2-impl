@@ -662,7 +662,7 @@ object Classifier {
             }
             if (checkBound && ghostStore.exceedBound(bound)) {
               // Early return
-              logger.info(s"Bound $bound is violated under state:\n${ghostStore.print()} for the following trace decomposition:\n${trace.toTable()._1.printAll()}")
+              logger.info(s"Bound $bound is violated under state:\n${ghostStore.print()} for the following trace decomposition:\n${trace.toTable(printStores = true)._1.printAll()}")
               return new BoundCheckClassifierApplication(exceedBound = true, ghostStore, trace, debugMode)
             }
           case None =>

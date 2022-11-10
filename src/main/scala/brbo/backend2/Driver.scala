@@ -44,7 +44,7 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
 
   private def decomposeTrace(trace: Trace, index: Int, similarTraces: Iterable[Trace]): BrboProgram = {
     logger.info(s"Step 3.1: Decompose $index-th representative trace")
-    logger.traceOrError(s"Step 3.1: Trace:\n${trace.toTable()._1.printAll()}")
+    logger.traceOrError(s"Step 3.1: Trace:\n${trace.toTable(printStores = true, omitExpressions = false)._1.printAll()}")
     val decomposition = segmentClustering.decompose(trace, similarTraces, interpreter)
     val groups = decomposition.getGroups
     val groupsString = groups.map({

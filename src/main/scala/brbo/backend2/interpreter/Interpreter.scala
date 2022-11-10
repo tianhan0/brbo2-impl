@@ -1,7 +1,7 @@
 package brbo.backend2.interpreter
 
 import brbo.backend2.interpreter.Interpreter._
-import brbo.common.ast.BrboAstUtils.{immediateOuterLoop, immediateParentStatements, nextAst}
+import brbo.common.ast.BrboAstUtils.immediateParentStatements
 import brbo.common.ast._
 import brbo.common.{MyLogger, PreDefinedFunctions, Print}
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
@@ -37,6 +37,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
   }
 
   def evaluateAst(initialState: InitialState): FlowEndState = {
+    // println(s"evaluateAst ${printState(initialState)}")
     initialState.ast match {
       case _: BrboExpr => evaluateExpr(initialState)
       case _: Command => evaluateCommand(initialState)
@@ -48,24 +49,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
             while (i < asts.length) {
               state match {
                 case JumpState(store, trace, jump) =>
-                  val lastAst = asts(i - 1)
-                  // logger.traceOrError(s"${lastAst.printToC(0)} ${printState(state)}")
-                  val loop = immediateOuterLoop(lastAst, parentStatements) match {
-                    case Some(loop) => loop
-                    case None => throw new Exception
-                  }
-                  jump match {
-                    case Interpreter.BreakJump =>
-                      nextAst(loop, parentStatements) match {
-                        case Some(nextAst) =>
-                          // logger.traceOrError(s"Next ast: ${nextAst.printToC(0)}")
-                          return evaluateAst(InitialState(nextAst, store, trace))
-                        case None => GoodState(store, trace, None)
-                      }
-                    case Interpreter.ContinueJump =>
-                      // logger.traceOrError(s"Next ast: ${loop.printToC(0)}")
-                      return evaluateAst(InitialState(loop, store, trace))
-                  }
+                  return state
                 case GoodState(store, trace, _) =>
                   state = evaluateAst(InitialState(asts(i), store, trace))
                 case _ => throw new Exception
@@ -89,8 +73,20 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
               case GoodState(store, trace, value) =>
                 value match {
                   case Some(Bool(b, _)) =>
-                    val block = Block(List(loopBody, loop))
-                    if (b) evaluateAst(InitialState(block, store, trace))
+                    if (b) {
+                      evaluateAst(InitialState(loopBody, store, trace)) match {
+                        case GoodState(store, trace, _) =>
+                          evaluateAst(InitialState(loop, store, trace))
+                        case JumpState(store, trace, jump) =>
+                          jump match {
+                            case Interpreter.BreakJump =>
+                              GoodState(store, trace, value)
+                            case Interpreter.ContinueJump =>
+                              evaluateAst(InitialState(loop, store, trace))
+                          }
+                        case _ => throw new Exception
+                      }
+                    }
                     else GoodState(store, trace, None)
                   case _ => throw new Exception
                 }
@@ -104,6 +100,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
 
   @tailrec
   private def evaluateCommand(initialState: InitialState): FlowEndState = {
+    // println(s"evaluateAst ${printState(initialState)}")
     val ast = initialState.ast
     ast match {
       case _: CFGOnly | _: CexPathOnly => throw new Exception()
@@ -287,11 +284,12 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
                       case lastState@GoodState(store, _, Some(Number(upperBound, _))) =>
                         if (upperBound < lowerBound) {
                           // logger.error(s"Calling ${PreDefinedFunctions.NdInt2.name} with (lower: $lowerBound, upper: $upperBound)")
-                          // throw new BadStateException(store, appendToTraceFrom(lastState, lastTransition))
-                          GoodState(store, appendToTraceFrom(lastState, lastTransition), Some(Number(-1)))
+                          throw new BadStateException(store, appendToTraceFrom(lastState, lastTransition))
+                          // GoodState(store, appendToTraceFrom(lastState, lastTransition), Some(Number(-1)))
                         } else {
                           val random = new scala.util.Random(seed = lowerBound + upperBound)
-                          GoodState(store, appendToTraceFrom(lastState, lastTransition), Some(Number(lowerBound + random.nextInt(upperBound + 1))))
+                          val value = Number(lowerBound + random.nextInt(upperBound - lowerBound + 1))
+                          GoodState(store, appendToTraceFrom(lastState, lastTransition), Some(value))
                         }
                       case _ => throw new Exception
                     }
@@ -430,7 +428,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
 }
 
 object Interpreter {
-  private val MAXIMUM_TRACE_LENGTH = 400
+  private val MAXIMUM_TRACE_LENGTH = 1000
 
   class Store {
     private var map = new HashMap[String, BrboValue]
@@ -442,8 +440,10 @@ object Interpreter {
       store
     }
 
-    def get(variable: Identifier): BrboValue = map.getOrElse(variable.name,
-      throw new Exception(s"Variable `$variable` is not defined in ${this.toString}"))
+    def get(variable: Identifier): BrboValue = get(variable.name)
+
+    def get(variable: String): BrboValue = map.getOrElse(variable,
+      throw new VariableNotFoundException(s"Variable `$variable` is not defined in ${this.toString}"))
 
     override def toString: String = {
       val values = map.map({
@@ -451,7 +451,11 @@ object Interpreter {
       }).toList.sorted.mkString(", ")
       s"Store: ($values)"
     }
+
+    def getVariables: List[String] = map.keys.toList.sorted
   }
+
+  class VariableNotFoundException(message: String) extends Exception
 
   /**
    *
@@ -486,14 +490,15 @@ object Interpreter {
    * @param store The store where the execution begins
    * @param trace The trace from the initial state to the current (non-terminal) state
    */
-  abstract class FlowBeginState(val store: Store,
+  abstract class FlowBeginState(val ast: BrboAst,
+                                val store: Store,
                                 val trace: Trace) extends State
 
   case class GoodState(override val store: Store,
                        override val trace: Trace,
                        value: Option[BrboValue]) extends FlowEndState(store, trace) {
     if (trace.nodes.length >= MAXIMUM_TRACE_LENGTH)
-      throw new TraceTooLongException(this)
+      throw TraceTooLongException(this)
   }
 
   sealed trait Jump
@@ -506,21 +511,21 @@ object Interpreter {
                        override val trace: Trace,
                        jump: Jump) extends FlowEndState(store, trace)
 
-  case class InitialState(ast: BrboAst,
+  case class InitialState(override val ast: BrboAst,
                           override val store: Store,
-                          override val trace: Trace) extends FlowBeginState(store, trace)
+                          override val trace: Trace) extends FlowBeginState(ast, store, trace)
 
   class BadStateException(val store: Store, val trace: Trace) extends Exception {
     override def toString: String = {
       val superString = super.toString
-      s"$superString\n${trace.toTable()._1.printAll()}"
+      s"$superString\n${trace.toTable(printStores = true)._1.printAll()}"
     }
   }
 
   case class TraceTooLongException(flowEndState: FlowEndState) extends Exception {
     override def toString: String = {
       val superString = super.toString
-      s"$superString\n${flowEndState.trace.toTable()._1.printAll()}"
+      s"$superString\n${flowEndState.trace.toTable(printStores = true)._1.printAll()}"
     }
   }
 
@@ -576,33 +581,60 @@ object Interpreter {
       s"$prefix$string"
     }
 
-    def toTable(commandMaxLength: Int = 30): (Table, Map[Int, Int]) = {
+    def getVariables: List[String] = nodes.flatMap(node => node.store.getVariables).distinct.sorted
+
+    def toTable(printStores: Boolean, omitExpressions: Boolean = true, commandMaxLength: Int = 30): (Table, Map[Int, Int]) = {
       val table: Table = Table.create("")
       // From the indices in the shortened table to the actual indices
       var indexMap: Map[Int, Int] = Map()
       var commands: List[String] = Nil
       var costs: List[String] = Nil
       var actualIndices: List[Int] = Nil
+      var values: Map[String, List[String]] = Map()
+      val variables = getVariables
       nodes.zipWithIndex.foreach({
         case (node, actualIndex) =>
           node.lastTransition match {
-            case Some(Transition(_: BrboExpr, _)) =>
             case Some(Transition(command, cost)) =>
-              val commandString = {
-                val commandString = command.printToC(0)
-                if (commandString.length > commandMaxLength) s"${commandString.slice(0, commandMaxLength)}..."
-                else commandString
-              }
-              val costString = {
-                cost match {
-                  case Some(value) => s"$value"
-                  case None => ""
+              if (omitExpressions && command.isInstanceOf[BrboExpr]) ()
+              else {
+                val commandString = {
+                  val commandString = command.printToC(0)
+                  if (commandString.length > commandMaxLength) s"${commandString.slice(0, commandMaxLength)}..."
+                  else commandString
+                }
+                val costString = {
+                  cost match {
+                    case Some(value) => s"$value"
+                    case None => ""
+                  }
+                }
+                indexMap = indexMap + (commands.length -> actualIndex)
+                actualIndices = actualIndices :+ actualIndex
+                commands = commands :+ commandString
+                costs = costs :+ costString
+                if (printStores) {
+                  variables.foreach({
+                    variable =>
+                      val value = {
+                        try {
+                          node.store.get(variable) match {
+                            case Number(n, _) => n.toString
+                            case Bool(b, _) => b.toString
+                            case _ => throw new Exception
+                          }
+                        } catch {
+                          case _: VariableNotFoundException => ""
+                        }
+                      }
+                      val list = values.get(variable) match {
+                        case Some(list) => list
+                        case None => Nil
+                      }
+                      values = values + (variable -> (list :+ value))
+                  })
                 }
               }
-              indexMap = indexMap + (commands.length -> actualIndex)
-              actualIndices = actualIndices :+ actualIndex
-              commands = commands :+ commandString
-              costs = costs :+ costString
             case _ =>
           }
       })
@@ -610,6 +642,10 @@ object Interpreter {
       table.addColumns(IntColumn.create("Index", actualIndices: _*))
       table.addColumns(StringColumn.create("Commands", commands: _*))
       table.addColumns(StringColumn.create("Costs", costs: _*))
+      values.toList.sortWith({ case (p1, p2) => p1._1 < p2._1 }).foreach({
+        case (identifier, values) =>
+          table.addColumns(StringColumn.create(identifier, values: _*))
+      })
       (table, indexMap)
     }
   }
@@ -672,16 +708,16 @@ object Interpreter {
 
   def printState(state: State): String = {
     state match {
-      case state: InitialState =>
-        s"${InitialState.getClass.getSimpleName}\nCommand: ${state.ast}\n${state.store}\n${state.trace.print()}"
+      case state: FlowBeginState =>
+        s"${state.getClass.getSimpleName}\nCommand: ${state.ast}\n${state.store}\n${state.trace.print()}"
       case state: GoodState =>
         val valueString = state.value match {
           case Some(value) => s"Some(${value.printToIR()})"
           case None => "None"
         }
-        s"${GoodState.getClass.getSimpleName}\nValue: $valueString\n${state.store}\n${state.trace.print()}"
+        s"${state.getClass.getSimpleName}\nValue: $valueString\n${state.store}\n${state.trace.print()}"
       case state: JumpState =>
-        s"${JumpState.getClass.getSimpleName}\n${state.store}\n${state.trace.print()}"
+        s"${state.getClass.getSimpleName}\n${state.store}\n${state.trace.print()}"
       case _ => throw new Exception
     }
   }
