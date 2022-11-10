@@ -46,13 +46,13 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
         if (cluster.size > 1) {
           logger.info(s"Choose non-overlapping segments from cluster $clusterId")
           val nonOverlappingGroups = findNonOverlappingSegments(cluster)
-          val generalizableGroups = chooseGeneralizableGroups(nonOverlappingGroups, similarTraces, interpreter, sampleKTraces = Some(5))
+          val generalizableGroups = chooseGeneralizableGroups(nonOverlappingGroups, similarTraces, interpreter, sampleKTraces = Some(2))
           chooseGroup(generalizableGroups) match {
             case Some(chosenGroup) =>
               decomposition.addGroup(chosenGroup)
               // Remove indices that have been grouped
               val chosenIndices = chosenGroup.indices
-              logger.traceOrError(s"Chosen group: ${printSegments(chosenGroup.segments)}")
+              logger.info(s"Chosen group: ${printSegments(chosenGroup.segments)}")
               logger.traceOrError(s"Chosen group on trace:\n${printDecomposition(trace, Map(PrintGroup -> chosenGroup))}")
               excludeIndices = excludeIndices ++ chosenIndices
               madeProgress = true
@@ -168,7 +168,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
           sampledSimilarTraces.forall({
             case (trace, traceIndex) =>
               logger.info(s"Test the generality of $groupIndex-th group on $traceIndex-th trace")
-              logger.traceOrError(s"Test group: ${printSegments(group.segments)}")
+              logger.info(s"Test group: ${printSegments(group.segments)}")
               val tables = Classifier.generateTables(
                 trace,
                 Classifier.evaluateFunctionFromInterpreter(interpreter),
@@ -187,7 +187,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
               )
               val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
               logger.info(s"Tested the generality of $groupIndex-th group on $traceIndex-th trace: $areSimilar")
-              logger.traceOrError(s"Tested group on trace:\n${trace.toTable(printStores = false)._1.printAll()}")
+              logger.info(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
               areSimilar
           })
         }
@@ -339,7 +339,7 @@ object SegmentClustering {
   }
 
   def printSegments(segments: Iterable[Segment]): String = {
-    segments.map(segment => segment.printAsSet()).mkString(", ")
+    segments.map(segment => segment.printAsSet()).toList.sorted.mkString(", ")
   }
 
   class TraceDecomposition(trace: Trace) {
@@ -386,7 +386,7 @@ object SegmentClustering {
   }
 
   def printDecomposition(trace: Trace, groups: Map[GroupID, Group]): String = {
-    val (table, indexMap) = trace.toTable(printStores = false)
+    val (table, indexMap) = trace.toTable(printStores = false, onlyGhostCommand = true)
     val sortedMap = groups.toList.sortWith({
       case ((id1, _), (id2, _)) => id1.print() < id2.print()
     })

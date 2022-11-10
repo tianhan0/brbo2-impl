@@ -428,7 +428,7 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
 }
 
 object Interpreter {
-  private val MAXIMUM_TRACE_LENGTH = 1000
+  private val MAXIMUM_TRACE_LENGTH = -1 // -1 means no constraint
 
   class Store {
     private var map = new HashMap[String, BrboValue]
@@ -497,7 +497,7 @@ object Interpreter {
   case class GoodState(override val store: Store,
                        override val trace: Trace,
                        value: Option[BrboValue]) extends FlowEndState(store, trace) {
-    if (trace.nodes.length >= MAXIMUM_TRACE_LENGTH)
+    if (MAXIMUM_TRACE_LENGTH >= 0 && trace.nodes.length >= MAXIMUM_TRACE_LENGTH)
       throw TraceTooLongException(this)
   }
 
@@ -518,14 +518,14 @@ object Interpreter {
   class BadStateException(val store: Store, val trace: Trace) extends Exception {
     override def toString: String = {
       val superString = super.toString
-      s"$superString\n${trace.toTable(printStores = true)._1.printAll()}"
+      s"$superString\n${trace.toTable(printStores = true, onlyGhostCommand = false)._1.printAll()}"
     }
   }
 
   case class TraceTooLongException(flowEndState: FlowEndState) extends Exception {
     override def toString: String = {
       val superString = super.toString
-      s"$superString\n${flowEndState.trace.toTable(printStores = true)._1.printAll()}"
+      s"$superString\n${flowEndState.trace.toTable(printStores = true, onlyGhostCommand = false)._1.printAll()}"
     }
   }
 
@@ -583,7 +583,8 @@ object Interpreter {
 
     def getVariables: List[String] = nodes.flatMap(node => node.store.getVariables).distinct.sorted
 
-    def toTable(printStores: Boolean, omitExpressions: Boolean = true, commandMaxLength: Int = 30): (Table, Map[Int, Int]) = {
+    def toTable(printStores: Boolean, onlyGhostCommand: Boolean,
+                omitExpressions: Boolean = true, commandMaxLength: Int = 30): (Table, Map[Int, Int]) = {
       val table: Table = Table.create("")
       // From the indices in the shortened table to the actual indices
       var indexMap: Map[Int, Int] = Map()
@@ -598,41 +599,43 @@ object Interpreter {
             case Some(Transition(command, cost)) =>
               if (omitExpressions && command.isInstanceOf[BrboExpr]) ()
               else {
-                val commandString = {
-                  val commandString = command.printToC(0)
-                  if (commandString.length > commandMaxLength) s"${commandString.slice(0, commandMaxLength)}..."
-                  else commandString
-                }
-                val costString = {
-                  cost match {
-                    case Some(value) => s"$value"
-                    case None => ""
+                if (command.isInstanceOf[GhostCommand] || !onlyGhostCommand) {
+                  val commandString = {
+                    val commandString = command.printToC(0)
+                    if (commandString.length > commandMaxLength) s"${commandString.slice(0, commandMaxLength)}..."
+                    else commandString
                   }
-                }
-                indexMap = indexMap + (commands.length -> actualIndex)
-                actualIndices = actualIndices :+ actualIndex
-                commands = commands :+ commandString
-                costs = costs :+ costString
-                if (printStores) {
-                  variables.foreach({
-                    variable =>
-                      val value = {
-                        try {
-                          node.store.get(variable) match {
-                            case Number(n, _) => n.toString
-                            case Bool(b, _) => b.toString
-                            case _ => throw new Exception
+                  val costString = {
+                    cost match {
+                      case Some(value) => s"$value"
+                      case None => ""
+                    }
+                  }
+                  indexMap = indexMap + (commands.length -> actualIndex)
+                  actualIndices = actualIndices :+ actualIndex
+                  commands = commands :+ commandString
+                  costs = costs :+ costString
+                  if (printStores) {
+                    variables.foreach({
+                      variable =>
+                        val value = {
+                          try {
+                            node.store.get(variable) match {
+                              case Number(n, _) => n.toString
+                              case Bool(b, _) => b.toString
+                              case _ => throw new Exception
+                            }
+                          } catch {
+                            case _: VariableNotFoundException => ""
                           }
-                        } catch {
-                          case _: VariableNotFoundException => ""
                         }
-                      }
-                      val list = values.get(variable) match {
-                        case Some(list) => list
-                        case None => Nil
-                      }
-                      values = values + (variable -> (list :+ value))
-                  })
+                        val list = values.get(variable) match {
+                          case Some(list) => list
+                          case None => Nil
+                        }
+                        values = values + (variable -> (list :+ value))
+                    })
+                  }
                 }
               }
             case _ =>

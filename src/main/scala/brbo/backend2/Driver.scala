@@ -44,13 +44,18 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
 
   private def decomposeTrace(trace: Trace, index: Int, similarTraces: Iterable[Trace]): BrboProgram = {
     logger.info(s"Step 3.1: Decompose $index-th representative trace")
-    logger.traceOrError(s"Step 3.1: Trace:\n${trace.toTable(printStores = true, omitExpressions = false)._1.printAll()}")
+    val representativeTraceString =
+      if (debugMode)
+        trace.toTable(printStores = true, omitExpressions = false, onlyGhostCommand = false)._1.printAll()
+      else
+        trace.toTable(printStores = false, omitExpressions = true, onlyGhostCommand = true)._1.printAll()
+    logger.info(s"Step 3.1: Trace:\n$representativeTraceString")
     val decomposition = segmentClustering.decompose(trace, similarTraces, interpreter)
     val groups = decomposition.getGroups
     val groupsString = groups.map({
       case (groupID, group) => s"$groupID: ${printSegments(group.segments)}"
     }).mkString("\n")
-    logger.traceOrError(s"Selected decomposition:\n$groupsString\n${SegmentClustering.printDecomposition(trace, groups)}")
+    logger.info(s"Step 3.1: Selected decomposition:\n$groupsString\n${SegmentClustering.printDecomposition(trace, groups)}")
     logger.info(s"Step 3.2: Generate tables for training classifiers")
     val tables = Classifier.generateTables(
       trace,
@@ -64,10 +69,10 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
     val classifierResults = tables.toProgramTables.generateClassifiers(debugMode)
     logger.info(s"Step 3.4: Generate program transformations")
     val transformation: Map[BrboAst, BrboAst] = classifierResults.toTransformation
-    logger.traceOrError(s"Step 3.4: See below for a mapping from existing ASTs to new ASTs")
+    logger.info(s"Step 3.4: See below for a mapping from existing ASTs to new ASTs")
     transformation.foreach({
       case (oldAst, newAst) =>
-        logger.traceOrError(s"${oldAst.asInstanceOf[Command].printToIR()} -> ${newAst.printToC(0)}")
+        logger.info(s"${oldAst.asInstanceOf[Command].printToIR()} -> ${newAst.printToC(0)}")
     })
     val ghostVariableIDs = {
       transformation.flatMap({
