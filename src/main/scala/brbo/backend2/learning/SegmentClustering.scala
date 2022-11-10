@@ -2,7 +2,7 @@ package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTraceAssociation, Trace}
-import brbo.backend2.learning.Classifier.{GeneralityTestGroup, GroupID, PrintGroup, evaluateFunctionFromInterpreter}
+import brbo.backend2.learning.Classifier._
 import brbo.backend2.learning.ScriptRunner._
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.BrboType.INT
@@ -46,7 +46,13 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
         if (cluster.size > 1) {
           logger.info(s"Choose non-overlapping segments from cluster $clusterId")
           val nonOverlappingGroups = findNonOverlappingSegments(cluster)
-          val generalizableGroups = chooseGeneralizableGroups(nonOverlappingGroups, similarTraces, interpreter, sampleKTraces = Some(2))
+          val generalizableGroups = chooseGeneralizableGroups(
+            nonOverlappingGroups,
+            testTrace = trace,
+            similarTraces,
+            interpreter,
+            sampleKTraces = Some(2)
+          )
           chooseGroup(generalizableGroups) match {
             case Some(chosenGroup) =>
               decomposition.addGroup(chosenGroup)
@@ -149,6 +155,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
   }
 
   def chooseGeneralizableGroups(groups: List[Group],
+                                testTrace: Trace,
                                 similarTraces: Iterable[Trace],
                                 interpreter: Interpreter,
                                 sampleKTraces: Option[Int]): List[Group] = {
@@ -165,12 +172,10 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
     val futures = Future.traverse(groups.zipWithIndex)({
       case (group, groupIndex) =>
         Future {
-          sampledSimilarTraces.forall({
-            case (trace, traceIndex) =>
-              logger.info(s"Test the generality of $groupIndex-th group on $traceIndex-th trace")
-              logger.info(s"Test group: ${printSegments(group.segments)}")
+          val classifierResults =
+            try {
               val tables = Classifier.generateTables(
-                trace,
+                testTrace,
                 Classifier.evaluateFunctionFromInterpreter(interpreter),
                 Map(GeneralityTestGroup -> group),
                 features = List(Identifier("i", INT), Identifier("n", INT)),
@@ -178,17 +183,32 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
               )
               // logger.traceOrError(s"Generated table: ${tables.print()}")
               val classifierResults = tables.toProgramTables.generateClassifiers(debugMode)
-              val applicationResult = Classifier.applyClassifiers(
-                boundExpression = None,
-                trace,
-                evaluateFunctionFromInterpreter(interpreter),
-                classifierResults,
-                debugMode
-              )
-              val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
-              logger.info(s"Tested the generality of $groupIndex-th group on $traceIndex-th trace: $areSimilar")
-              logger.info(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
-              areSimilar
+              Some(classifierResults)
+            } catch {
+              case TableGenerationError(message) =>
+                logger.info(message)
+                None
+            }
+
+          sampledSimilarTraces.forall({
+            case (trace, traceIndex) =>
+              logger.info(s"Test the generality of $groupIndex-th group on $traceIndex-th trace")
+              logger.info(s"Test group: ${printSegments(group.segments)}")
+              classifierResults match {
+                case Some(classifierResults) =>
+                  val applicationResult = Classifier.applyClassifiers(
+                    boundExpression = None,
+                    trace,
+                    evaluateFunctionFromInterpreter(interpreter),
+                    classifierResults,
+                    debugMode
+                  )
+                  val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
+                  logger.info(s"Tested the generality of $groupIndex-th group on $traceIndex-th trace: $areSimilar")
+                  logger.info(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
+                  areSimilar
+                case None => false
+              }
           })
         }
     })

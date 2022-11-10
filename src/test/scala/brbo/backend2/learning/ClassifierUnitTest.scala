@@ -26,27 +26,19 @@ class ClassifierUnitTest extends AnyFlatSpec {
       failIfCannotFindResetPlaceHolder = false
     )
     val decompositionExpected1 =
-      """Index  |        Commands         |  Costs  |  SegmentIDs in GroupID(0)  |  SegmentIDs in GroupID(1)  |
-        |-------------------------------------------------------------------------------------------------------
-        |     2  |            int C0 = 0;  |         |                            |                            |
-        |     4  |  int D0 = -2147483648;  |         |                            |                            |
-        |     6  |            int R0 = 0;  |         |                            |                            |
-        |     7  |    resetPlaceHolder();  |         |                            |                            |
-        |     9  |             int i = 0;  |         |                            |                            |
-        |    13  |    resetPlaceHolder();  |         |                            |                            |
-        |    20  |        R0 = R0 + 2011;  |   2011  |                         0  |                            |
-        |    24  |             i = i + 1;  |         |                            |                            |
-        |    28  |    resetPlaceHolder();  |         |                            |                            |
-        |    35  |        R0 = R0 + 1011;  |   1011  |                            |                         0  |
-        |    39  |             i = i + 1;  |         |                            |                            |
-        |    43  |    resetPlaceHolder();  |         |                            |                            |
-        |    50  |        R0 = R0 + 1011;  |   1011  |                         1  |                            |
-        |    54  |             i = i + 1;  |         |                            |                            |
-        |    58  |    resetPlaceHolder();  |         |                            |                            |
-        |    65  |        R0 = R0 + 1011;  |   1011  |                            |                         1  |
-        |    69  |             i = i + 1;  |         |                            |                            |
-        |    75  |          R0 = R0 + 88;  |     88  |                            |                         2  |
-        |    78  |          R0 = R0 + 89;  |     89  |                         2  |                            |""".stripMargin
+      """Index  |       Commands        |  Costs  |  SegmentIDs in GroupID(0)  |  SegmentIDs in GroupID(1)  |
+        |-----------------------------------------------------------------------------------------------------
+        |     7  |  resetPlaceHolder();  |         |                            |                            |
+        |    13  |  resetPlaceHolder();  |         |                            |                            |
+        |    20  |      R0 = R0 + 2011;  |   2011  |                         0  |                            |
+        |    28  |  resetPlaceHolder();  |         |                            |                            |
+        |    35  |      R0 = R0 + 1011;  |   1011  |                            |                         0  |
+        |    43  |  resetPlaceHolder();  |         |                            |                            |
+        |    50  |      R0 = R0 + 1011;  |   1011  |                         1  |                            |
+        |    58  |  resetPlaceHolder();  |         |                            |                            |
+        |    65  |      R0 = R0 + 1011;  |   1011  |                            |                         1  |
+        |    75  |        R0 = R0 + 88;  |     88  |                            |                         2  |
+        |    78  |        R0 = R0 + 89;  |     89  |                         2  |                            |""".stripMargin
     StringCompare.ignoreWhitespaces(SegmentClustering.printDecomposition(trace, groups1), decompositionExpected1, "decomposition 1 failed")
 
     val expected1 =
@@ -164,27 +156,19 @@ class ClassifierUnitTest extends AnyFlatSpec {
       failIfCannotFindResetPlaceHolder = false
     )
     val decompositionExpected2 =
-      """Index  |        Commands         |  Costs  |  SegmentIDs in GroupID(0)  |
-        |--------------------------------------------------------------------------
-        |     2  |            int C0 = 0;  |         |                            |
-        |     4  |  int D0 = -2147483648;  |         |                            |
-        |     6  |            int R0 = 0;  |         |                            |
-        |     7  |    resetPlaceHolder();  |         |                            |
-        |     9  |             int i = 0;  |         |                            |
-        |    13  |    resetPlaceHolder();  |         |                            |
-        |    20  |        R0 = R0 + 2011;  |   2011  |                         0  |
-        |    24  |             i = i + 1;  |         |                            |
-        |    28  |    resetPlaceHolder();  |         |                            |
-        |    35  |        R0 = R0 + 1011;  |   1011  |                            |
-        |    39  |             i = i + 1;  |         |                            |
-        |    43  |    resetPlaceHolder();  |         |                            |
-        |    50  |        R0 = R0 + 1011;  |   1011  |                         1  |
-        |    54  |             i = i + 1;  |         |                            |
-        |    58  |    resetPlaceHolder();  |         |                            |
-        |    65  |        R0 = R0 + 1011;  |   1011  |                            |
-        |    69  |             i = i + 1;  |         |                            |
-        |    75  |          R0 = R0 + 88;  |     88  |                            |
-        |    78  |          R0 = R0 + 89;  |     89  |                         2  |""".stripMargin
+      """Index  |       Commands        |  Costs  |  SegmentIDs in GroupID(0)  |
+        |------------------------------------------------------------------------
+        |     7  |  resetPlaceHolder();  |         |                            |
+        |    13  |  resetPlaceHolder();  |         |                            |
+        |    20  |      R0 = R0 + 2011;  |   2011  |                         0  |
+        |    28  |  resetPlaceHolder();  |         |                            |
+        |    35  |      R0 = R0 + 1011;  |   1011  |                            |
+        |    43  |  resetPlaceHolder();  |         |                            |
+        |    50  |      R0 = R0 + 1011;  |   1011  |                         1  |
+        |    58  |  resetPlaceHolder();  |         |                            |
+        |    65  |      R0 = R0 + 1011;  |   1011  |                            |
+        |    75  |        R0 = R0 + 88;  |     88  |                            |
+        |    78  |        R0 = R0 + 89;  |     89  |                         2  |""".stripMargin
     StringCompare.ignoreWhitespaces(SegmentClustering.printDecomposition(trace, groups2), decompositionExpected2, "decomposition 2 failed")
     val expected2 =
       """Tables:
@@ -323,7 +307,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val segmentClustering = new SegmentClustering(sumWeight = 1, commandWeight = 0, debugMode = false, algorithm)
     val clusters: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, 1, excludeIndices = Set())
     val group = Group(clusters.head.sortWith({ case (s1, s2) => s1.lessThan(s2) }))
-    val result = segmentClustering.chooseGeneralizableGroups(List(group), similarTraces = List(trace), interpreter, sampleKTraces = None)
+    val result = segmentClustering.chooseGeneralizableGroups(List(group), testTrace = trace, similarTraces = List(trace), interpreter, sampleKTraces = None)
     val resultString = result.map(g => g.print(trace)).mkString("\n")
     StringCompare.ignoreWhitespaces(
       resultString,

@@ -4,7 +4,7 @@ import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter._
 import brbo.backend2.learning.DecisionTree.{ResetLeaf, TreeClassifier, UseLeaf}
 import brbo.backend2.learning.ScriptRunner.DecisionTreeLearning
-import brbo.backend2.learning.SegmentClustering.{Group, Segment, printGroups, printSegments}
+import brbo.backend2.learning.SegmentClustering.{Group, Segment, printDecomposition, printGroups, printSegments}
 import brbo.common.GhostVariableUtils.{counterInitialValue, resourceInitialValue, starInitialValue}
 import brbo.common.ast._
 import brbo.common.{MyLogger, Print}
@@ -301,7 +301,7 @@ object Classifier {
     }
   }
 
-  class TableGenerationError(message: String) extends Exception
+  case class TableGenerationError(message: String) extends Exception
 
   def evaluateFunctionFromInterpreter(interpreter: Interpreter): (BrboExpr, Store) => BrboValue = {
     (brboExpr: BrboExpr, store: Store) =>
@@ -351,9 +351,9 @@ object Classifier {
           chooseResetPlaceHolder(allResetPlaceHolders) match {
             case Some(index) => resetPlaceHolderIndices = resetPlaceHolderIndices + index
             case None =>
-              val errorMessage = s"Failed to find a reset place holder between Group ${groupID.value}'s $i and ${i + 1} segment"
-              // logger.trace(errorMessage)
-              if (failIfCannotFindResetPlaceHolder) throw new TableGenerationError(errorMessage)
+              val errorMessage = s"Failed to find a reset place holder between " +
+                s"${groupID.print()}'s $i and ${i + 1} segment\n${printDecomposition(trace, groups)}"
+              if (failIfCannotFindResetPlaceHolder) throw TableGenerationError(errorMessage)
           }
           i = i + 1
         }
@@ -488,7 +488,7 @@ object Classifier {
     }
 
     private def printMap(map: Map[GroupID, Int]): String = {
-      map.map({ case (id, value) => s"${id.print()} -> $value"}).mkString(", ")
+      map.map({ case (id, value) => s"${id.print()} -> $value" }).mkString(", ")
     }
 
     def reset(groupID: GroupID): Unit = {
@@ -662,11 +662,12 @@ object Classifier {
             }
             if (checkBound && ghostStore.exceedBound(bound)) {
               // Early return
-              logger.info(s"Bound $bound is violated under state:\n${ghostStore.print()} for the following trace decomposition:\n${trace.toTable(printStores = true, onlyGhostCommand = false)._1.printAll()}")
+              logger.info(s"Bound $bound is violated under state:\n${ghostStore.print()} for the following " +
+                s"trace decomposition:\n${trace.toTable(printStores = true, onlyGhostCommand = false)._1.printAll()}")
               return new BoundCheckClassifierApplication(exceedBound = true, ghostStore, trace, debugMode)
             }
           case None =>
-            // if (debugMode) logger.error(s"${location.print()} does not have a classifier result")
+          // if (debugMode) logger.error(s"${location.print()} does not have a classifier result")
         }
       case _ =>
     })
