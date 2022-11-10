@@ -21,6 +21,7 @@ public abstract class AmortizeAndWorstCase01 extends Common {
         for (int it0 = array, entry0 = ndInt2(1, it0); it0 > 0; it0 -= entry0, entry0 = ndInt2(1, it0)) {
             R = R + entry0;
             R = R + costA;
+            i++;
         }
         // Amortize the first use and apply the worst-case reasoning on the second use
     }
