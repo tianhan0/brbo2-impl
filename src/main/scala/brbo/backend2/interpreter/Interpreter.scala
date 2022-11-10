@@ -273,13 +273,34 @@ class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
             specialFunction.name match {
               case PreDefinedFunctions.VerifierError.name | PreDefinedFunctions.Abort.name =>
                 throw new BadStateException(initialState.store, appendToTraceFrom(initialState, lastTransition))
-              case PreDefinedFunctions.VerifierNondetInt.name =>
+              case PreDefinedFunctions.VerifierNondetInt.name | PreDefinedFunctions.NdInt.name =>
                 val random = new scala.util.Random
                 GoodState(initialState.store, appendToTraceFrom(initialState, lastTransition), Some(Number(random.nextInt())))
+              case PreDefinedFunctions.NdInt2.name =>
+                evaluateExpr(InitialState(arguments.head, initialState.store, initialState.trace)) match {
+                  case GoodState(store, trace, Some(Number(lowerBound, _))) =>
+                    evaluateExpr(InitialState(arguments(1), store, trace)) match {
+                      case lastState@GoodState(store, _, Some(Number(upperBound, _))) =>
+                        if (upperBound < lowerBound) {
+                          // logger.error(s"Calling ${PreDefinedFunctions.NdInt2.name} with (lower: $lowerBound, upper: $upperBound)")
+                          // throw new BadStateException(store, appendToTraceFrom(lastState, lastTransition))
+                          GoodState(store, appendToTraceFrom(lastState, lastTransition), Some(Number(-1)))
+                        } else {
+                          val random = new scala.util.Random
+                          GoodState(store, appendToTraceFrom(lastState, lastTransition), Some(Number(lowerBound + random.nextInt(upperBound + 1))))
+                        }
+                      case _ => throw new Exception
+                    }
+                  case _ => throw new Exception
+                }
+              case PreDefinedFunctions.NdBool.name =>
+                val random = new scala.util.Random
+                GoodState(initialState.store, appendToTraceFrom(initialState, lastTransition), Some(Bool(random.nextBoolean())))
+              case PreDefinedFunctions.Assume.name => throw new Exception
               case PreDefinedFunctions.BoundAssertion.name => throw new Exception
               case PreDefinedFunctions.Uninitialize.name => throw new Exception
               case _ =>
-                evaluateFunctionCall(initialState, specialFunction.internalRepresentation, arguments)
+                evaluateFunctionCall(initialState, specialFunction.cRepresentation, arguments)
             }
           case None =>
             brboProgram.functions.find(f => f.identifier == identifier) match {
@@ -478,7 +499,12 @@ object Interpreter {
                           override val store: Store,
                           override val trace: Trace) extends FlowBeginState(store, trace)
 
-  class BadStateException(val store: Store, val trace: Trace) extends Exception
+  class BadStateException(val store: Store, val trace: Trace) extends Exception {
+    override def toString: String = {
+      val superString = super.toString
+      s"$superString\n${trace.toTable.printAll()}"
+    }
+  }
 
   /**
    *

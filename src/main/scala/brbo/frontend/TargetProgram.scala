@@ -1,5 +1,6 @@
 package brbo.frontend
 
+import brbo.common.GhostVariableUtils.isGhostVariable
 import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo, notEqual}
 import brbo.common.ast._
 import brbo.common.{GhostVariableTyp, GhostVariableUtils, MyLogger, PreDefinedFunctions}
@@ -68,7 +69,7 @@ object TargetProgram {
       case Right(statement) => statement
     }
     val function = BrboFunction(targetMethod.methodName, targetMethod.returnType,
-      targetMethod.inputVariables.map({ case (_, identifier) => identifier}), body, translate.getResourceVariables)
+      targetMethod.inputVariables.map({ case (_, identifier) => identifier }), body, translate.getResourceVariables)
     (function, translate.getBoundAssertions)
   }
 
@@ -159,15 +160,28 @@ object TargetProgram {
                 _: NewArrayTree | _: NewClassTree | _: TypeCastTree) =>
           throw new Exception(s"Unsupported expression: `$expressionTree`")
         case tree: AssignmentTree =>
-          val lhs = toAST(tree.getVariable) match {
-            case Left(value) => value.asInstanceOf[Identifier]
-            case Right(_) => throw new Exception
+          val variableName = tree.getVariable.toString
+          if (isGhostVariable(variableName, GhostVariableTyp.Resource)) {
+            tree.getExpression match {
+              case rhs: BinaryTree =>
+                if (rhs.getLeftOperand.toString == variableName) {
+                  Right(Use(GhostVariableUtils.getId(variableName, GhostVariableTyp.Resource), toAST(rhs.getRightOperand).left.get))
+                } else {
+                  throw new Exception(s"Assignment tree `$tree` not in the form of `$variableName = $variableName + e`!")
+                }
+              case _ => throw new Exception
+            }
+          } else {
+            val lhs = toAST(tree.getVariable) match {
+              case Left(value) => value.asInstanceOf[Identifier]
+              case Right(_) => throw new Exception
+            }
+            val rhs = toAST(tree.getExpression) match {
+              case Left(value) => value
+              case Right(_) => throw new Exception
+            }
+            Right(Assignment(lhs, rhs))
           }
-          val rhs = toAST(tree.getExpression) match {
-            case Left(value) => value
-            case Right(_) => throw new Exception
-          }
-          Right(Assignment(lhs, rhs))
         case tree: BinaryTree =>
           val left: BrboExpr = toAST(tree.getLeftOperand) match {
             case Left(value) => value
@@ -284,7 +298,7 @@ object TargetProgram {
               Left(ArraySum(arguments.head))
             case _ =>
               val returnType = PreDefinedFunctions.functions.find({ f => f.javaFunctionName == functionName }) match {
-                case Some(f) => f.internalRepresentation.returnType
+                case Some(f) => f.returnType
                 case None =>
                   allMethods.find(targetMethod => targetMethod.methodName == functionName) match {
                     case Some(targetMethod) => targetMethod.returnType

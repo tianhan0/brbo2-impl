@@ -31,10 +31,10 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |     0  |            Command not exist  |                             |                             |
         |     1  |                          0;   |                             |                             |
         |     2  |                 int C0 = 0;   |                             |                             |
-        |     3  |                          0;   |                             |                             |
-        |     4  |                 int R0 = 0;   |                             |                             |
-        |     5  |                -2147483648;   |                             |                             |
-        |     6  |       int S0 = -2147483648;   |                             |                             |
+        |     3  |                -2147483648;   |                             |                             |
+        |     4  |       int D0 = -2147483648;   |                             |                             |
+        |     5  |                          0;   |                             |                             |
+        |     6  |                 int R0 = 0;   |                             |                             |
         |     7  |          <resetPlaceHolder>   |                             |                             |
         |     8  |                          0;   |                             |                             |
         |     9  |                  int i = 0;   |                             |                             |
@@ -229,10 +229,10 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |     0  |            Command not exist  |                             |
         |     1  |                          0;   |                             |
         |     2  |                 int C0 = 0;   |                             |
-        |     3  |                          0;   |                             |
-        |     4  |                 int R0 = 0;   |                             |
-        |     5  |                -2147483648;   |                             |
-        |     6  |       int S0 = -2147483648;   |                             |
+        |     3  |                -2147483648;   |                             |
+        |     4  |       int D0 = -2147483648;   |                             |
+        |     5  |                          0;   |                             |
+        |     6  |                 int R0 = 0;   |                             |
         |     7  |          <resetPlaceHolder>   |                             |
         |     8  |                          0;   |                             |
         |     9  |                  int i = 0;   |                             |
@@ -442,7 +442,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val algorithm = Optics(maxEps = Some(0.8), metric = Euclidean)
     val segmentClustering = new SegmentClustering(sumWeight = 1, commandWeight = 0, debugMode = false, algorithm)
     val clusters: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, 1, excludeIndices = Set())
-    val group = Group(clusters.head.sortWith({ case (s1, s2) => s1.lessThanOrEqualTo(s2) }))
+    val group = Group(clusters.head.sortWith({ case (s1, s2) => s1.lessThan(s2) }))
     val result = segmentClustering.chooseGeneralizableGroups(List(group), similarTraces = List(trace), interpreter, sampleEveryKTrace = None)
     val resultString = result.map(g => g.print(trace)).mkString("\n")
     StringCompare.ignoreWhitespaces(
@@ -479,8 +479,8 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |else
         |if ((i < 2) || (i == 2))
         |  {
-        |    if (S1 < R1)
-        |      S1 = R1;
+        |    if (D1 < R1)
+        |      D1 = R1;
         |    else
         |      ;
         |    R1 = 0;
@@ -532,7 +532,7 @@ object ClassifierUnitTest {
           case (_, index) => index / (groupIndices.size / 3)
         }).values.map({
           list => Segment(list.map({ case (index, _) => index }))
-        }).toList.sortWith({ case (s1, s2) => s1.lessThanOrEqualTo(s2) })
+        }).toList.sortWith({ case (s1, s2) => s1.lessThan(s2) })
         (GroupID(groupID), Group(segments))
     }).toMap
   }

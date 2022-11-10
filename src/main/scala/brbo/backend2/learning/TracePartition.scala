@@ -8,7 +8,7 @@ object TracePartition {
   private val numberOfTraces = 1
   def selectRepresentatives(traces: Iterable[Trace]): Map[Trace, Iterable[Trace]] = {
     val sorted = traces.toList.sortWith({
-      case (trace1, trace2) => trace1.nodes.length <= trace2.nodes.length
+      case (trace1, trace2) => trace1.nodes.length < trace2.nodes.length
     })
     val chosenIndex = (sorted.length * 0.8).toInt
     val indexRange = Range.inclusive(chosenIndex, chosenIndex + numberOfTraces - 1).intersect(Range(0, sorted.length))

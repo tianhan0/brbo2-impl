@@ -78,7 +78,7 @@ object TraceClustering {
     val (diff1, diff2) = distanceInternal(left, right)
     // If left is {x, y} and right is {y, z, w}, then right is a better representative because its decomposition
     // is more easily applicable to left, by treating x as z (or w)
-    diff1.size >= diff2.size
+    diff1.size > diff2.size
   }
 
   def selectRepresentativeTrace(traces: List[Trace]): Trace = {

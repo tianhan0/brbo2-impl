@@ -86,7 +86,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
   // non-overlapping segments
   def findNonOverlappingSegments(segments: List[Segment]): List[Group] = {
     val possibleGroups: List[Group] =
-      segments.sortWith({ case (s1, s2) => s1.lessThanOrEqualTo(s2) }).foldLeft(Nil: List[Group])({
+      segments.sortWith({ case (s1, s2) => s1.lessThan(s2) }).foldLeft(Nil: List[Group])({
         case (groups, segment) =>
           var createNewGroup = true
           val newGroups = groups.map({
@@ -237,12 +237,12 @@ object SegmentClustering {
 
     def printAsSet(): String = s"{${indices.mkString(",")}}"
 
-    def lessThanOrEqualTo(other: Segment): Boolean = {
+    def lessThan(other: Segment): Boolean = {
       (indices.isEmpty, other.indices.isEmpty) match {
         case (true, true) => true
         case (true, false) => true
         case (false, true) => false
-        case (false, false) => indices.last <= other.indices.head
+        case (false, false) => indices.last < other.indices.head
       }
     }
 
@@ -257,7 +257,7 @@ object SegmentClustering {
         if (index < segments.length - 1) {
           val current = segment
           val next = segments(index + 1)
-          assert(current.notOverlap(next) && current.lessThanOrEqualTo(next),
+          assert(current.notOverlap(next) && current.lessThan(next),
             s"Segments are sorted and must not overlap: $current, $next")
         }
     })

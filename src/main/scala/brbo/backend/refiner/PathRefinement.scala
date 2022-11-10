@@ -16,7 +16,7 @@ class PathRefinement(arguments: CommandLineArguments) {
     val useInsertedPaths: Set[Refinement] = replaceUseOnly(path, targetFunctionName)
     useInsertedPaths.flatMap({
       useInsertedPath: Refinement => removeResetOnly(useInsertedPath, targetFunctionName)
-    }).toList.sortWith({ case (r1, r2) => r1.toString <= r2.toString })
+    }).toList.sortWith({ case (r1, r2) => r1.toString < r2.toString })
   }
 
   def removeResetOnly(refineUseOnly: Refinement, targetFunctionName: String): Set[Refinement] = {

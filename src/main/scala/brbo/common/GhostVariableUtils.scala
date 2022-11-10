@@ -8,7 +8,7 @@ object GhostVariableUtils {
   private val logger = MyLogger.createLogger(GhostVariableUtils.getClass, debugMode = false)
 
   private val resourceVariablePrefix = "R"
-  private val starVariablePrefix = "S"
+  private val starVariablePrefix = "D"
   private val counterVariablePrefix = "C"
   private val resourceVariablePattern = (resourceVariablePrefix + """\d*""").r
   private val starVariablePattern = (starVariablePrefix + """\d*""").r
@@ -81,6 +81,18 @@ object GhostVariableUtils {
     identifier match {
       case pattern() => true
       case _ => false
+    }
+  }
+
+  def getId(identifier: String, typ: GhostVariableTyp): Option[Int] = {
+    val pattern = typ match {
+      case Resource => resourceVariablePattern
+      case Star => starVariablePattern
+      case Counter => counterVariablePattern
+    }
+    identifier match {
+      case pattern(id) => Some(id.toInt)
+      case _ => None
     }
   }
 }

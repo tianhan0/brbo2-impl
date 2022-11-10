@@ -145,12 +145,12 @@ object TraceClusteringUnitTest {
     List(
       TestCase("traceList1", traceList1,
         """Use Trace: use R1 1 (cost=1)
-          |           use R1 2 (cost=2)
-          |           use R1 1 (cost=1)""".stripMargin),
+          |           use R1 1 (cost=1)
+          |           use R1 2 (cost=2)""".stripMargin),
       TestCase("traceList2", traceList2,
         """Use Trace: use R1 1 (cost=1)
-          |           use R1 2 (cost=2)
-          |           use R1 3 (cost=3)""".stripMargin),
+          |           use R1 1 (cost=1)
+          |           use R1 2 (cost=2)""".stripMargin),
       TestCase("traceList3", traceList3,
         """Use Trace: use R1 1 (cost=1)
           |           use R1 2 (cost=2)
@@ -164,7 +164,7 @@ object TraceClusteringUnitTest {
       TestCase("traceList5", traceList5,
         """Use Trace: use R1 1 (cost=1)
           |           use R1 2 (cost=2)
-          |           use R1 3 (cost=3)""".stripMargin),
+          |           use R1 1 (cost=1)""".stripMargin),
       TestCase("traceList6", traceList6,
         """Use Trace: use R1 1 (cost=1)
           |           use R1 2 (cost=2)

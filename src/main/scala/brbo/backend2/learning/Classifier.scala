@@ -537,13 +537,13 @@ object Classifier {
 
     def areActualSegmentCostsSimilar(segmentClustering: SegmentClustering): Boolean = {
       val expectedDecomposition: List[List[Segment]] = ghostStore.getSegments.values.toList.map({
-        list => list.sortWith({ case (s1, s2) => s1.lessThanOrEqualTo(s2) })
+        list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
       })
       logger.traceOrError(s"Expected:\n${print(expectedDecomposition)}")
       val segments: List[Segment] = expectedDecomposition.flatten
       // logger.traceOrError(s"${ghostStore.print()}")
       val actualDecomposition: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segments).map({
-        list => list.sortWith({ case (s1, s2) => s1.lessThanOrEqualTo(s2) })
+        list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
       })
       logger.traceOrError(s"Actual:\n${print(actualDecomposition)}")
       val expected = expectedDecomposition.map(list => Group(list))

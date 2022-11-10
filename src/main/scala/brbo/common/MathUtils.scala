@@ -68,7 +68,7 @@ object MathUtils {
       // Remove duplicates
       result = result.diff(permutations)
       // For a set of permutations, always select the same one to be kept
-      val toKeep = permutations.toList.sortWith({ case (l1, l2) => l1.toString() <= l2.toString()}).head
+      val toKeep = permutations.toList.sortWith({ case (l1, l2) => l1.toString() < l2.toString()}).head
       actualResult = actualResult + toKeep
     }
     actualResult
