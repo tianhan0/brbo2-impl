@@ -165,15 +165,15 @@ object BrboAstUtils {
     }
   }
 
-  // Insert a reset place holder at the beginning of every block
+  // Insert reset place holders
   def insertResetPlaceHolder(ast: BrboAst): BrboAst = {
     ast match {
       case command: Command => command
       case statement: Statement =>
         statement match {
           case Block(asts, _) =>
-            val newAsts = asts.map(ast => insertResetPlaceHolder(ast))
-            Block(ResetPlaceHolder() :: newAsts)
+            val newAsts = asts.flatMap(ast => List(ResetPlaceHolder(), insertResetPlaceHolder(ast)))
+            Block(newAsts)
           case ITE(condition, thenAst, elseAst, _) =>
             ITE(condition, insertResetPlaceHolder(thenAst), insertResetPlaceHolder(elseAst))
           case Loop(condition, loopBody, _) =>

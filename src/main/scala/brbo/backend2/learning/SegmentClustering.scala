@@ -207,7 +207,9 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
                   logger.info(s"Tested the generality of $groupIndex-th group on $traceIndex-th trace: $areSimilar")
                   logger.info(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
                   areSimilar
-                case None => false
+                case None =>
+                  logger.info(s"Cannot test the generality of $groupIndex-th group on $traceIndex-th trace: No classifier")
+                  false
               }
           })
         }

@@ -19,7 +19,7 @@ class NewCommandLineArguments extends Serializable {
 
   @Option(name = "--samples", aliases = Array("-s"),
     usage = "The number of samples to fuzz, for every integer-typed input.")
-  private var fuzzSamples: Int = Fuzzer.SAMPLES
+  private var fuzzSamples: Int = Fuzzer.DEFAULT_SAMPLES
 
   @Option(name = "--algorithm", aliases = Array("-a"),
     usage = "The cluster algorithm to use. Choose from `optics` or `kmeans`.")

@@ -614,6 +614,8 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
   }
 
   override def printToJava(indent: Int): String = {
+    if (groupId.isEmpty)
+      return s"${indentString(indent)};"
     val resourceVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Resource, legacy = true)
     val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
     val commandString = assignmentCommand.printToJava(0)

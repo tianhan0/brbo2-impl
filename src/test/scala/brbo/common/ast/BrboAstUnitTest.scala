@@ -322,23 +322,31 @@ object BrboAstUnitTest {
         |    if (!((x < 10)) && !((x == 10))) { D1 = D1 + 10; }
         |    if (x < 10) {
         |      if (D2p < D2)
-        |      { D2p = D2; }
+        |      {
+        |        D2p = D2;
+        |      }
         |      else
-        |      { ; }
+        |      {
+        |        ;
+        |      }
         |      D2 = 0;
         |      C2 = C2 + 1;
         |    }
         |    D3 = D3 + 100;
         |    {
         |      if (D4p < D4)
-        |      { D4p = D4; }
+        |      {
+        |        D4p = D4;
+        |      }
         |      else
-        |      { ; }
+        |      {
+        |        ;
+        |      }
         |      D4 = 0;
         |      C4 = C4 + 1;
         |    }
         |    int R = 0;
-        |    D = D + 1011;
+        |    ;
         |    int a4 = ndInt();
         |    int a5 = ndInt2(12, 34);
         |    int a6 = ndBool();
