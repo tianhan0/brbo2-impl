@@ -6,7 +6,7 @@ public abstract class AmortizeSeparately01 extends Common {
     void main(int array1, int array2) {
         int R = 0;
         mostPreciseBound(R <= array1 + array2);
-        mostPreciseBound(R <= MAX * array1 + MAX * array2);
+        lessPreciseBound(R <= MAX * array1 + MAX * array2);
         int it1 = array1;
         int it2 = array2;
         int e = 0;

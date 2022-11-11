@@ -1,5 +1,6 @@
 package brbo.backend2.learning
 
+import brbo.backend2.Fuzzer
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTraceAssociation, Trace}
 import brbo.backend2.learning.Classifier._
@@ -51,7 +52,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
             testTrace = trace,
             similarTraces,
             interpreter,
-            sampleKTraces = Some(2)
+            sampleKTraces = Some(Fuzzer.LOOP_ITERATIONS_SAMPLE + 1)
           )
           chooseGroup(generalizableGroups) match {
             case Some(chosenGroup) =>
@@ -159,12 +160,25 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
                                 similarTraces: Iterable[Trace],
                                 interpreter: Interpreter,
                                 sampleKTraces: Option[Int]): List[Group] = {
+    val lengthMap = similarTraces.map(t => (t, t.nodes.size)).toMap
+    val distinctLengths = lengthMap.values.toList.sorted.distinct
+    logger.info(s"Similar traces have the following (distinct) lengths: $distinctLengths)")
     val sampledSimilarTraces = {
       sampleKTraces match {
         case Some(sampleKTraces) =>
-          similarTraces.zipWithIndex.groupBy({ case (_, index) => index % sampleKTraces }).map({
-            case (_, list) => list.last
-          })
+          val chosenLengths: List[Int] =
+            if (distinctLengths.size <= sampleKTraces) distinctLengths
+            else {
+              logger.info(s"${distinctLengths.zipWithIndex.groupBy({ case (_, index) => index % sampleKTraces })}")
+              distinctLengths.zipWithIndex.groupBy({ case (_, index) => index % sampleKTraces }).map({
+                case (_, tuples) => tuples.head._1
+              }).toList
+            }
+          logger.info(s"Choose traces with the following lengths: $chosenLengths")
+          val traces = chosenLengths.map({
+            length => lengthMap.find({ case (_, i) => i == length }).get
+          }).map({ case (trace, _) => trace })
+          traces.zipWithIndex
         case None => similarTraces.zipWithIndex
       }
     }
@@ -192,8 +206,8 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
 
           sampledSimilarTraces.forall({
             case (trace, traceIndex) =>
-              logger.info(s"Test the generality of $groupIndex-th group on $traceIndex-th trace")
-              logger.info(s"Test group: ${printSegments(group.segments)}")
+              logger.info(s"Test the generality of $groupIndex-th group on $traceIndex-th trace (length: ${trace.nodes.size})")
+              logger.traceOrError(s"Test group: ${printSegments(group.segments)}")
               classifierResults match {
                 case Some(classifierResults) =>
                   val applicationResult = Classifier.applyClassifiers(
@@ -204,8 +218,8 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
                     debugMode
                   )
                   val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
-                  logger.info(s"Tested the generality of $groupIndex-th group on $traceIndex-th trace: $areSimilar")
-                  logger.info(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
+                  logger.info(s"Tested the generality of $groupIndex-th group on $traceIndex-th trace (length: ${trace.nodes.size}): $areSimilar")
+                  logger.traceOrError(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
                   areSimilar
                 case None =>
                   logger.info(s"Cannot test the generality of $groupIndex-th group on $traceIndex-th trace: No classifier")

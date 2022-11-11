@@ -28,10 +28,14 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
     debugMode = debugMode,
     algorithm = arguments.getAlgorithm
   )
+  private var numberOfTraces = 0
+
+  def getNumberOfTraces: Int = numberOfTraces
 
   def decompose(): BrboProgram = {
     logger.info(s"Step 1: Generate traces")
     val rawTraces = Fuzzer.fuzz(instrumentedProgram, debugMode, samples = arguments.getFuzzSamples)
+    numberOfTraces = rawTraces.size
     logger.info(s"Step 2: Select representative traces")
     val representatives = TracePartition.selectRepresentatives(rawTraces)
     logger.info(s"Step 3: Decompose ${representatives.size} selected traces")

@@ -55,8 +55,7 @@ class NewCommandLineArguments extends Serializable {
 
   override def toString: String = {
     val strings = List[String](
-      s"Verify resource usage assertions for each `*.java` file under directory `$directoryToAnalyze`",
-      s"Debug mode? `$debugMode`",
+      s"fuzzSamples: $fuzzSamples\nalgorithm: $algorithm\nalgorithmParameter: $algorithmParameter"
     )
     strings.mkString("\n")
   }

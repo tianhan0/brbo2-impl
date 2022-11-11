@@ -104,7 +104,9 @@ object BrboMain {
         ControlFlowGraph.toControlFlowGraph(targetProgram.program).printPDF()
       }
       val driver = new Driver(arguments, targetProgram.program)
+      val startTime = System.nanoTime
       val decomposedProgram = driver.decompose()
+      val endTime = System.nanoTime
       val outputPath = {
         val parent = FilenameUtils.getBaseName(Paths.get(sourceFilePath).getParent.toAbsolutePath.toString)
         val outputPath = Paths.get(OUTPUT_DIRECTORY, "decomposed", parent, s"${FilenameUtils.getBaseName(sourceFilePath)}.java")
@@ -113,14 +115,21 @@ object BrboMain {
         Files.createFile(outputPath)
         outputPath
       }
+      val duration = (endTime - startTime) / 1e9d
+      val statistics = getStatistics(duration, arguments, driver.getNumberOfTraces)
       val fileWriter = new FileWriter(outputPath.toAbsolutePath.toString)
       logger.info(s"Write into file $outputPath")
-      fileWriter.write(decomposedProgram.printToJava())
+      fileWriter.write(decomposedProgram.printToJava() + s"\n$statistics")
       fileWriter.close()
     }
     else {
       logger.info(s"Not decompose `$sourceFilePath`")
     }
+  }
+
+  private def getStatistics(duration: Double, arguments: NewCommandLineArguments, numberOfTraces: Int): String = {
+    s"// duration,numberOfTraces,fuzzSamples,algorithm,\n" +
+      s"// $duration,$numberOfTraces,${arguments.getFuzzSamples},${arguments.getAlgorithm}"
   }
 
   private def readFromFile(location: String): String = {

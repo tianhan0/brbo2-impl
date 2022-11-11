@@ -183,4 +183,20 @@ object BrboAstUtils {
       case _ => throw new Exception
     }
   }
+
+  def getLoopConditionals(ast: BrboAst): Set[BrboExpr] = {
+    ast match {
+      case _: Command => Set()
+      case statement: Statement =>
+        statement match {
+          case Block(asts, _) => asts.flatMap(ast => getLoopConditionals(ast)).toSet
+          case ITE(_, thenAst, elseAst, _) =>
+            getLoopConditionals(thenAst) ++ getLoopConditionals(elseAst)
+          case Loop(condition, loopBody, _) =>
+            getLoopConditionals(loopBody) + condition
+          case _ => throw new Exception
+        }
+      case _ => throw new Exception
+    }
+  }
 }

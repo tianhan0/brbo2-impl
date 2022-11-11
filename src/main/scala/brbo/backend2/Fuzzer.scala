@@ -1,7 +1,7 @@
 package brbo.backend2
 
 import brbo.backend2.interpreter.Interpreter
-import brbo.common.ast.{Bool, BrboArray, BrboProgram, BrboValue, Identifier, Number}
+import brbo.common.ast.{Bool, BrboArray, BrboAstUtils, BrboProgram, BrboValue, Identifier, Number}
 import brbo.common.string.StringFormatUtils
 import brbo.common.{BrboType, MathUtils, MyLogger}
 
@@ -34,9 +34,9 @@ class Fuzzer(maxInteger: Int, minInteger: Int) {
     })
   }
 
-  def randomValues(typ: BrboType.T, samples: Int, maxArrayLength: Int): List[BrboValue] = {
+  def randomValues(typ: BrboType.T, samples: Int, maxArrayLength: Int, seed: Int): List[BrboValue] = {
     typ match {
-      case BrboType.INT => randomInteger(samples, seed = 62618)
+      case BrboType.INT => randomInteger(samples, seed)
       case BrboType.BOOL => List(Bool(b = false), Bool(b = true))
       case BrboType.ARRAY(typ) =>
         typ match {
@@ -60,23 +60,36 @@ class Fuzzer(maxInteger: Int, minInteger: Int) {
 object Fuzzer {
   val DEFAULT_SAMPLES = 0
   private val MAX_ARRAY_LENGTH = 5
-  private val MAX_INTEGER = 35 // No need to be a huge number. Just need to let the costs vary.
-  private val MIN_INTEGER = 5
+  private val MAX_INTEGER = 300 // No need to be a huge number. Just need to let the costs vary.
+  private val MIN_INTEGER = 100
+  val LOOP_ITERATIONS_SAMPLE = 3
 
   def fuzz(brboProgram: BrboProgram, debugMode: Boolean, samples: Int): List[Interpreter.Trace] = {
     val logger = MyLogger.createLogger(Fuzzer.getClass, debugMode)
     val FUZZING = s"Fuzzing: ${brboProgram.name}: "
     val interpreter = new Interpreter(brboProgram, debugMode)
     val fuzzer = new Fuzzer(maxInteger = MAX_INTEGER, minInteger = MIN_INTEGER)
-    val inputs = MathUtils.crossJoin(brboProgram.mainFunction.parameters.map({
-      case Identifier(_, typ, _) => fuzzer.randomValues(typ, samples, maxArrayLength = MAX_ARRAY_LENGTH)
+    // val loopIterationsFuzzer = new Fuzzer(maxInteger = 53, minInteger = 2)
+    val loopConditionals = BrboAstUtils.getLoopConditionals(brboProgram.mainFunction.body)
+    val inputs = MathUtils.crossJoin(brboProgram.mainFunction.parameters.zipWithIndex.map({
+      case (identifier@Identifier(_, typ, _), index) =>
+        val usedInLoopConditionals = loopConditionals.exists({
+          e => e.getUses.contains(identifier)
+        })
+        if (!usedInLoopConditionals)
+          fuzzer.randomValues(typ, samples, maxArrayLength = MAX_ARRAY_LENGTH, seed = index)
+        else {
+          // loopIterationsFuzzer.randomValues(typ, samples = LOOP_ITERATIONS_SAMPLE, maxArrayLength = MAX_ARRAY_LENGTH, seed = index)
+          List(2, 10, 30).map(i => Number(i))
+        }
     }))
     logger.info(s"${FUZZING}Generated `${inputs.size}` inputs")
 
+    val random = new scala.util.Random(seed = 12662)
     val futures = Future.traverse(inputs.zipWithIndex)({
       case (inputValues, index) =>
         Future {
-          if (index % 50 == 0) {
+          if (index % (1 + random.nextInt(50)) == 0) {
             val percentage = StringFormatUtils.float(index.toDouble / inputs.size * 100, digit = 2)
             logger.info(s"$FUZZING$index / ${inputs.size} ($percentage%)")
             logger.info(s"Inputs: ${inputValues.map(v => v.printToIR())}")

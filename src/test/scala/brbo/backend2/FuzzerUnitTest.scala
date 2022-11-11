@@ -9,13 +9,14 @@ class FuzzerUnitTest extends AnyFlatSpec {
     val maxArrayLength = 5
     val samples = 10
     val fuzzer = new Fuzzer(maxInteger = 30, minInteger = 0)
-    val booleans = fuzzer.randomValues(BrboType.BOOL, samples, maxArrayLength = maxArrayLength).map(v => v.printToIR())
+    val seed = 62618
+    val booleans = fuzzer.randomValues(BrboType.BOOL, samples, maxArrayLength = maxArrayLength, seed = seed).map(v => v.printToIR())
     val booleansExpected =
       """false
         |true""".stripMargin
     StringCompare.ignoreWhitespaces(booleans, booleansExpected, "Numerating booleans failed")
 
-    val integers = fuzzer.randomValues(BrboType.INT, samples, maxArrayLength = maxArrayLength).map(v => v.printToIR())
+    val integers = fuzzer.randomValues(BrboType.INT, samples, maxArrayLength = maxArrayLength, seed = seed).map(v => v.printToIR())
     StringCompare.ignoreWhitespaces(integers,
       """1
         |11
@@ -29,7 +30,7 @@ class FuzzerUnitTest extends AnyFlatSpec {
         |29
         |3""".stripMargin, "Numerating integers failed")
 
-    val arrays = fuzzer.randomValues(BrboType.ARRAY(BrboType.INT), samples, maxArrayLength = maxArrayLength).map(v => v.printToIR())
+    val arrays = fuzzer.randomValues(BrboType.ARRAY(BrboType.INT), samples, maxArrayLength = maxArrayLength, seed = seed).map(v => v.printToIR())
     StringCompare.ignoreWhitespaces(arrays,
       """{1,12,9,20,16,28}
         |{1,12,9,20,16}

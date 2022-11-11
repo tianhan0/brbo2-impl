@@ -18,7 +18,7 @@ public abstract class AmortizeAndWorstCase02 extends Common {
                 R = R + costA;
                 it -= e;
             }
-            use(0, costB);
+            R = R + costB;
             i++;
         }
         // Amortize the first use and apply the worst-case reasoning on the second and third use
