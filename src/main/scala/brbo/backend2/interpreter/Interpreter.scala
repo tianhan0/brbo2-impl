@@ -455,7 +455,9 @@ object Interpreter {
     def getVariables: List[String] = map.keys.toList.sorted
   }
 
-  class VariableNotFoundException(message: String) extends Exception
+  class VariableNotFoundException(message: String) extends Exception {
+    override def toString: String = s"$message\n${super.toString}"
+  }
 
   /**
    *

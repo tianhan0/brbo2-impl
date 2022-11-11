@@ -344,8 +344,8 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |  else
         |  if ((i < 2) || (i == 2))
         |    {
-        |      if (D1 < R1)
-        |        D1 = R1;
+        |      if (S1 < R1)
+        |        S1 = R1;
         |      else
         |        ;
         |      R1 = 0;
@@ -358,8 +358,8 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |  else
         |  if ((i < 1) || (i == 1))
         |    {
-        |      if (D0 < R0)
-        |        D0 = R0;
+        |      if (S0 < R0)
+        |        S0 = R0;
         |      else
         |        ;
         |      R0 = 0;
@@ -370,8 +370,8 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |    ;
         |  else
         |    {
-        |      if (D0 < R0)
-        |        D0 = R0;
+        |      if (S0 < R0)
+        |        S0 = R0;
         |      else
         |        ;
         |      R0 = 0;

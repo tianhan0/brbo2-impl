@@ -114,6 +114,7 @@ object BrboMain {
         outputPath
       }
       val fileWriter = new FileWriter(outputPath.toAbsolutePath.toString)
+      logger.info(s"Write into file $outputPath")
       fileWriter.write(decomposedProgram.printToJava())
       fileWriter.close()
     }

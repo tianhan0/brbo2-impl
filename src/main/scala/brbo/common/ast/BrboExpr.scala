@@ -15,6 +15,8 @@ abstract class BrboExpr(val typ: BrboType.T, uuid: UUID) extends Command(uuid)
     if (string.startsWith("(") && string.endsWith(")")) string.substring(1, string.length - 1)
     else string
   }
+
+  override def printToJava(indent: Int): String = printToC(indent)
 }
 
 abstract class BrboValue(override val typ: BrboType.T, override val uuid: UUID) extends BrboExpr(typ, uuid)

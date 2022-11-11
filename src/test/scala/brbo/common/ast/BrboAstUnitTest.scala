@@ -78,8 +78,8 @@ object BrboAstUnitTest {
       TestCase("Use 2", createUse2, "  R = R + 2;"),
       TestCase("Reset", createReset,
         """  {
-          |    if (D5 < R5)
-          |      D5 = R5;
+          |    if (S5 < R5)
+          |      S5 = R5;
           |    else
           |      ;
           |    R5 = 0;
@@ -185,6 +185,14 @@ object BrboAstUnitTest {
       |  int upperBound(int group, String index, int bound) { return 0; }
       |}""".stripMargin
 
+  private val resourceVariableTest =
+    """class Test {
+      |  void main(int x) {
+      |    int R = 0;
+      |    R = R + 22;
+      |  }
+      |}""".stripMargin
+
   val parsingAstTests: List[TestCase] = List(
     TestCase("useResetTest", useResetTest,
       """void main(int x)
@@ -193,18 +201,18 @@ object BrboAstUnitTest {
         |  int C2 = 0;
         |  int C3 = 0;
         |  int C4 = 0;
-        |  int D1 = -2147483648;
-        |  int D2 = -2147483648;
-        |  int D3 = -2147483648;
-        |  int D4 = -2147483648;
         |  int R1 = 0;
         |  int R2 = 0;
         |  int R3 = 0;
         |  int R4 = 0;
+        |  int S1 = -2147483648;
+        |  int S2 = -2147483648;
+        |  int S3 = -2147483648;
+        |  int S4 = -2147483648;
         |  if (!((x < 10)) && !((x == 10))) R1 = R1 + 10;
         |  if (x < 10) {
-        |    if (D2 < R2)
-        |      D2 = R2;
+        |    if (S2 < R2)
+        |      S2 = R2;
         |    else
         |      ;
         |    R2 = 0;
@@ -212,14 +220,15 @@ object BrboAstUnitTest {
         |  }
         |  R3 = R3 + 100;
         |  {
-        |    if (D4 < R4)
-        |      D4 = R4;
+        |    if (S4 < R4)
+        |      S4 = R4;
         |    else
         |      ;
         |    R4 = 0;
         |    C4 = C4 + 1;
         |  }
-        |}""".stripMargin),
+        |}
+        |""".stripMargin),
     TestCase("arrayInputTest", arrayInputTest,
       """void main(int x)
         |{
@@ -248,6 +257,13 @@ object BrboAstUnitTest {
         |{
         |  ;
         |}""".stripMargin),
+    TestCase("resourceVariableTest", resourceVariableTest,
+      """void main(int x)
+        |{
+        |  int R = 0;
+        |  R = R + 22;
+        |}
+        |""".stripMargin),
   )
 
   private val printToJavaTest1 =
@@ -257,14 +273,16 @@ object BrboAstUnitTest {
       |    reset(2, x < 10);
       |    use(3, 100);
       |    reset(4);
+      |    int R = 0;
+      |    R = R + 1011;
       |    // int a1 = arrayRead(array, 0);
       |    // int a2 = arraySum(array);
       |    // int a3 = arrayLength(array);
       |    int a4 = ndInt();
       |    int a5 = ndInt2(12, 34);
       |    boolean a6 = ndBool();
-      |    mostPreciseBound(x > 10);
-      |    lessPreciseBound(x < 10);
+      |    mostPreciseBound(R > 10);
+      |    lessPreciseBound(R < 10);
       |  }
       |
       |  void use(int x, int cost, boolean condition) {}
@@ -283,45 +301,57 @@ object BrboAstUnitTest {
 
   val printToJavaTests: List[TestCase] = List(
     TestCase("printToJavaTest1", printToJavaTest1,
-      """abstract class Test extends Common {
+      """abstract class Test {
         |  void main(int x, int array)
+        |
         |  {
         |    int C1 = -1;
         |    int C2 = -1;
         |    int C3 = -1;
         |    int C4 = -1;
         |    int D1 = 0;
+        |    int D1p = 0;
         |    int D2 = 0;
+        |    int D2p = 0;
         |    int D3 = 0;
+        |    int D3p = 0;
         |    int D4 = 0;
-        |    int R1 = 0;
-        |    int R2 = 0;
-        |    int R3 = 0;
-        |    int R4 = 0;
-        |    if (!((x < 10)) && !((x == 10))) R1 = R1 + 10;
+        |    int D4p = 0;
+        |    lessPreciseBound(((((0 + D1) + D2) + D3) + D4) < 10);
+        |    mostPreciseBound(!((((((0 + D1) + D2) + D3) + D4) < 10)) && !((((((0 + D1) + D2) + D3) + D4) == 10)));
+        |    if (!((x < 10)) && !((x == 10))) D1 = D1 + 10;
         |    if (x < 10) {
-        |      if (D2 < R2)
-        |        D2 = R2;
+        |      if (D2p < D2)
+        |        D2p = D2;
         |      else
         |        ;
-        |      R2 = 0;
+        |      D2 = 0;
         |      C2 = C2 + 1;
         |    }
-        |    R3 = R3 + 100;
+        |    D3 = D3 + 100;
         |    {
-        |      if (D4 < R4)
-        |        D4 = R4;
+        |      if (D4p < D4)
+        |        D4p = D4;
         |      else
         |        ;
-        |      R4 = 0;
+        |      D4 = 0;
         |      C4 = C4 + 1;
         |    }
+        |    int R = 0;
+        |    D = D + 1011;
         |    int a4 = ndInt();
         |    int a5 = ndInt2(12, 34);
         |    int a6 = ndBool();
-        |    mostPreciseBound(!((x < 10)) && !((x == 10)));
-        |    lessPreciseBound(x < 10);
+        |    ;
+        |    ;
         |  }
+        |  public abstract int ndInt();
+        |  public abstract int ndInt2(int lower, int upper);
+        |  public abstract boolean ndBool();
+        |  public abstract void assume(boolean expression);
+        |  public abstract void mostPreciseBound(boolean assertion);
+        |  public abstract void lessPreciseBound(boolean assertion);
+        |  public abstract void resetPlaceHolder();
         |}
         |""".stripMargin)
   )

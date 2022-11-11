@@ -265,6 +265,9 @@ object TargetProgram {
             case PreDefinedFunctions.BoundAssertion.name =>
               boundAssertions = BoundAssertion.parse(tag = arguments.head, expr = arguments(1)) :: boundAssertions
               Right(Skip())
+            case PreDefinedFunctions.MostPreciseBound.name | PreDefinedFunctions.LessPreciseBound.name =>
+              boundAssertions = BoundAssertion.parse(tag = StringLiteral(functionName), expr = arguments.head) :: boundAssertions
+              Right(Skip())
             case PreDefinedFunctions.UpperBound.name =>
               arguments.head match {
                 case Number(groupId, _) =>
