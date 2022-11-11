@@ -319,21 +319,21 @@ object BrboAstUnitTest {
         |    int D4p = 0;
         |    lessPreciseBound(((((0 + D1) + D2) + D3) + D4) < 10);
         |    mostPreciseBound(!((((((0 + D1) + D2) + D3) + D4) < 10)) && !((((((0 + D1) + D2) + D3) + D4) == 10)));
-        |    if (!((x < 10)) && !((x == 10))) D1 = D1 + 10;
+        |    if (!((x < 10)) && !((x == 10))) { D1 = D1 + 10; }
         |    if (x < 10) {
         |      if (D2p < D2)
-        |        D2p = D2;
+        |      { D2p = D2; }
         |      else
-        |        ;
+        |      { ; }
         |      D2 = 0;
         |      C2 = C2 + 1;
         |    }
         |    D3 = D3 + 100;
         |    {
         |      if (D4p < D4)
-        |        D4p = D4;
+        |      { D4p = D4; }
         |      else
-        |        ;
+        |      { ; }
         |      D4 = 0;
         |      C4 = C4 + 1;
         |    }

@@ -229,11 +229,7 @@ case class Loop(condition: BrboExpr, loopBody: BrboAst, override val uuid: UUID 
 
   override def printToJava(indent: Int): String = {
     val conditionString = condition.printNoOuterBrackets
-    val bodyString = loopBody match {
-      case _: Command => s"${loopBody.printToJava(indent + DEFAULT_INDENT)}"
-      case _: Statement => s"${loopBody.printToJava(indent)}"
-      case _ => throw new Exception
-    }
+    val bodyString = s"${indentString(indent)}{\n${loopBody.printToJava(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
     s"${indentString(indent)}while ($conditionString)\n$bodyString"
   }
 
@@ -264,16 +260,8 @@ case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, override
 
   override def printToJava(indent: Int): String = {
     val conditionString = condition.printNoOuterBrackets
-    val thenString = thenAst match {
-      case _: Command => thenAst.printToJava(indent + DEFAULT_INDENT)
-      case _: Statement => thenAst.printToJava(indent)
-      case _ => throw new Exception
-    }
-    val elseString = elseAst match {
-      case _: Command => elseAst.printToJava(indent + DEFAULT_INDENT)
-      case _: Statement => elseAst.printToJava(indent)
-      case _ => throw new Exception
-    }
+    val thenString = s"${indentString(indent)}{\n${thenAst.printToJava(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
+    val elseString = s"${indentString(indent)}{\n${elseAst.printToJava(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
     s"${indentString(indent)}if ($conditionString)\n$thenString\n${indentString(indent)}else\n$elseString"
   }
 
@@ -628,11 +616,11 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
   override def printToJava(indent: Int): String = {
     val resourceVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Resource, legacy = true)
     val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
-    val conditionString = condition match {
-      case Bool(true, _) => ""
-      case _ => s"if (${condition.printNoOuterBrackets}) "
+    val commandString = assignmentCommand.printToJava(0)
+    condition match {
+      case Bool(true, _) => s"${indentString(indent)}$commandString"
+      case _ => s"${indentString(indent)}if (${condition.printNoOuterBrackets}) { $commandString }"
     }
-    s"${indentString(indent)}$conditionString${assignmentCommand.printToC(0)}"
   }
 
   override def replace(newGroupId: Int): Use = Use(Some(newGroupId), update, condition)
@@ -693,7 +681,7 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
       case Bool(true, _) => ""
       case _ => s"if (${condition.printNoOuterBrackets}) "
     }
-    s"${indentString(indent)}$conditionString{\n${maxStatement.printToC(indent + DEFAULT_INDENT)}\n${resetCommand.printToC(indent + DEFAULT_INDENT)}\n${counterCommand.printToC(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
+    s"${indentString(indent)}$conditionString{\n${maxStatement.printToJava(indent + DEFAULT_INDENT)}\n${resetCommand.printToJava(indent + DEFAULT_INDENT)}\n${counterCommand.printToJava(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
   }
 
   def replace(newGroupId: Int): Reset = Reset(newGroupId, condition)
