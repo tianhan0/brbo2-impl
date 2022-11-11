@@ -4,12 +4,14 @@ import brbo.benchmarks.Common;
 
 public abstract class NonTermination extends Common {
     void main(int costA, int costB) {
-        // upperBound(0, "most", costA + costB);
+        int R = 0;
+        mostPreciseBound(R <= costA + costB);
+        lessPreciseBound(R <= MAX * costA + MAX * costB);
         while (true) {
-            use(0, costA);
-            use(0, costB);
-            use(0, -costA);
-            use(0, -costB);
+            R = R + costA;
+            R = R + costB;
+            R = R - costA;
+            R = R - costB;
         }
         // Verify bounds on a non-terminating program
     }

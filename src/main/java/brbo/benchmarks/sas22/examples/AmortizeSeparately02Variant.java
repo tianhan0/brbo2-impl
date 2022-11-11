@@ -2,7 +2,7 @@ package brbo.benchmarks.sas22.examples;
 
 import brbo.benchmarks.Common;
 
-public abstract class AmortizeSeparately02 extends Common {
+public abstract class AmortizeSeparately02Variant extends Common {
     void main(int array, int costA) {
         int it = array;
         int e = 0;
@@ -11,7 +11,8 @@ public abstract class AmortizeSeparately02 extends Common {
             e = ndInt2(1, it);
             it -= e;
             R = R + e;
-            R = R + costA;
+            e = costA;
+            R = R + e;
         }
         it = array;
         while (it > 0) {
