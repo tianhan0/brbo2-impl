@@ -3,7 +3,7 @@ package brbo.benchmarks.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class Modify extends Common {
-  void f(int str) {
+  void main(int str) {
     if (str <= 0) {
       return;
     }

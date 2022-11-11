@@ -3,7 +3,7 @@ package brbo.benchmarks.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class DbgPrint extends Common {
-  void f(int src) {
+  void main(int src) {
     if (src <= 0) {
       return;
     }

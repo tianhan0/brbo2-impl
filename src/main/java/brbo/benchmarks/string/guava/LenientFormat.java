@@ -3,7 +3,7 @@ package brbo.benchmarks.string.guava;
 import brbo.benchmarks.Common;
 
 abstract public class LenientFormat extends Common {
-  void f(int template, int args) {
+  void main(int template, int args) {
     if (template <= 0 || args <= 0) {
       return;
     }
@@ -13,8 +13,11 @@ abstract public class LenientFormat extends Common {
     lessPreciseBound(R <= MAX * template + MAX * args + MAX);
     int templateStart = 0;
     int i = 0;
+    int placeholderStart = 0;
     while (i < args) {
-      int placeholderStart = ndBool() ? -1 : ndInt2(templateStart, template - 1);
+      if (templateStart > template - 1)
+        break;
+      placeholderStart = ndBool() ? -1 : ndInt2(templateStart, template - 1);
       if (placeholderStart == -1) {
         break;
       }

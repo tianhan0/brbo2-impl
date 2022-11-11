@@ -3,15 +3,20 @@ package brbo.benchmarks.sas22.examples;
 import brbo.benchmarks.Common;
 
 public abstract class AmortizeAndWorstCase02 extends Common {
-    void main(int[] array, int costA, int costB, int n) {
-        // upperBound(0, "most", arraySum(array) + costA * arraySum(array));
+    void main(int array, int costA, int costB, int n) {
         int i = 0;
+        int it = 0;
+        int e = 0;
+        int R = 0;
+        mostPreciseBound(R <= n * costB + n * array * costA + n * array);
+        lessPreciseBound(R <= MAX * n * costB + MAX * n * array * costA + MAX * n * array);
         while (i < n) {
-            int j = 0;
-            while (j < arrayLength(array)) {
-                use(0, arrayRead(array, j));
-                use(0, costA);
-                j++;
+            it = array;
+            while (it > 0) {
+                e = ndInt2(1, it);
+                R = R + e;
+                R = R + costA;
+                it -= e;
             }
             use(0, costB);
             i++;

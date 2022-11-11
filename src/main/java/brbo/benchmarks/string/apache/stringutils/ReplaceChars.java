@@ -3,7 +3,7 @@ package brbo.benchmarks.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class ReplaceChars extends Common {
-  void f(int str, int searchChars, int replaceChars) {
+  void main(int str, int searchChars, int replaceChars) {
     if (str <= 0 || searchChars <= 0 || replaceChars <= 0) {
       return;
     }

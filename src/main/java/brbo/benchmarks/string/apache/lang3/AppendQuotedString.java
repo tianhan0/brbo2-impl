@@ -3,7 +3,7 @@ package brbo.benchmarks.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class AppendQuotedString extends Common {
-  void f(int pattern, int pos) {
+  void main(int pattern, int pos) {
     if (pattern <= 0 || pos <= 0 || pattern < pos) {
       return;
     }

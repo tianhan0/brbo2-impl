@@ -3,7 +3,7 @@ package brbo.benchmarks.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class LongToHex extends Common {
-  void f(int nHexs) {
+  void main(int nHexs) {
     if (nHexs <= 0) {
       return;
     }

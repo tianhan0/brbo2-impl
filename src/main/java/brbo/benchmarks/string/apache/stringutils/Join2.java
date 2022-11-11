@@ -3,7 +3,7 @@ package brbo.benchmarks.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class Join2 extends Common {
-  void f(int n) {
+  void main(int n) {
     if (n <= 0) {
       return;
     }
@@ -28,6 +28,7 @@ abstract public class Join2 extends Common {
         buf++;
         R = R + 1;
       }
+      iterator--;
     }
   }
 }

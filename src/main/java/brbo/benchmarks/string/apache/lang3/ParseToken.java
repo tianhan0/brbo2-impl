@@ -3,7 +3,7 @@ package brbo.benchmarks.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class ParseToken extends Common {
-  void f(int pattern) {
+  void main(int pattern) {
     if (pattern <= 0) {
       return;
     }

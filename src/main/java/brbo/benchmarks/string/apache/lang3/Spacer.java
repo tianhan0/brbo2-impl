@@ -3,7 +3,7 @@ package brbo.benchmarks.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class Spacer extends Common {
-  void f(int spaces) {
+  void main(int spaces) {
     if (spaces <= 0) {
       return;
     }

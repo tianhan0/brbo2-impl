@@ -3,7 +3,7 @@ package brbo.benchmarks.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class SplitWorker2 extends Common {
-  void f(int str, int separatorChars, int max, boolean preserveAllTokens) {
+  void main(int str, int separatorChars, int max, boolean preserveAllTokens) {
     if (str <= 0 || max <= 0 || separatorChars < 0) {
       return;
     }

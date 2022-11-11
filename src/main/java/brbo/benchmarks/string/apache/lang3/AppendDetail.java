@@ -3,7 +3,7 @@ package brbo.benchmarks.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class AppendDetail extends Common {
-  void f(int array) {
+  void main(int array) {
     if (array <= 0) {
       return;
     }

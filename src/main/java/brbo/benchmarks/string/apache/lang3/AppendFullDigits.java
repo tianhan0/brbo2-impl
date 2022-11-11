@@ -3,7 +3,7 @@ package brbo.benchmarks.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class AppendFullDigits extends Common {
-  void f(int value, int minFieldWidth) {
+  void main(int value, int minFieldWidth) {
     if (minFieldWidth <= 0) {
       return;
     }
