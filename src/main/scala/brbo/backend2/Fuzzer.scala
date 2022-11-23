@@ -60,8 +60,8 @@ class Fuzzer(maxInteger: Int, minInteger: Int) {
 object Fuzzer {
   val DEFAULT_SAMPLES = 0
   private val MAX_ARRAY_LENGTH = 5
-  private val MAX_INTEGER = 300 // No need to be a huge number. Just need to let the costs vary.
-  private val MIN_INTEGER = 100
+  private val MAX_INTEGER = 100 // No need to be a huge number. Just need to let the costs vary.
+  private val MIN_INTEGER = 10
   val LOOP_ITERATIONS_SAMPLE = 3
 
   def fuzz(brboProgram: BrboProgram, debugMode: Boolean, samples: Int): List[Interpreter.Trace] = {
@@ -80,7 +80,7 @@ object Fuzzer {
           fuzzer.randomValues(typ, samples, maxArrayLength = MAX_ARRAY_LENGTH, seed = index)
         else {
           // loopIterationsFuzzer.randomValues(typ, samples = LOOP_ITERATIONS_SAMPLE, maxArrayLength = MAX_ARRAY_LENGTH, seed = index)
-          List(2, 10, 30).map(i => Number(i))
+          List(2, 3, 4).map(i => Number(i))
         }
     }))
     logger.info(s"${FUZZING}Generated `${inputs.size}` inputs")
