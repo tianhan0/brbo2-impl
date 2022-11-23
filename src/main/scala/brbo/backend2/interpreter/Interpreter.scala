@@ -475,6 +475,24 @@ object Interpreter {
         case None => commandString
       }
     }
+
+    def print(onlyGhostCommand: Boolean, commandMaxLength: Int): (String, String) = {
+      if (command.isInstanceOf[GhostCommand] || !onlyGhostCommand) {
+        val commandString = {
+          val commandString = command.printToC(0)
+          if (commandString.length > commandMaxLength) s"${commandString.slice(0, commandMaxLength)}..."
+          else commandString
+        }
+        val costString = {
+          cost match {
+            case Some(value) => s"$value"
+            case None => ""
+          }
+        }
+        (commandString, costString)
+      }
+      else ("", "")
+    }
   }
 
   abstract class State
@@ -598,25 +616,15 @@ object Interpreter {
       nodes.zipWithIndex.foreach({
         case (node, actualIndex) =>
           node.lastTransition match {
-            case Some(Transition(command, cost)) =>
-              if (omitExpressions && command.isInstanceOf[BrboExpr]) ()
+            case Some(transition) =>
+              if (omitExpressions && transition.command.isInstanceOf[BrboExpr]) ()
               else {
-                if (command.isInstanceOf[GhostCommand] || !onlyGhostCommand) {
-                  val commandString = {
-                    val commandString = command.printToC(0)
-                    if (commandString.length > commandMaxLength) s"${commandString.slice(0, commandMaxLength)}..."
-                    else commandString
-                  }
-                  val costString = {
-                    cost match {
-                      case Some(value) => s"$value"
-                      case None => ""
-                    }
-                  }
+                if (transition.command.isInstanceOf[GhostCommand] || !onlyGhostCommand) {
                   indexMap = indexMap + (commands.length -> actualIndex)
-                  actualIndices = actualIndices :+ actualIndex
+                  val (commandString, costString) = transition.print(onlyGhostCommand, commandMaxLength)
                   commands = commands :+ commandString
                   costs = costs :+ costString
+                  actualIndices = actualIndices :+ actualIndex
                   if (printStores) {
                     variables.foreach({
                       variable =>

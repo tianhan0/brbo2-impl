@@ -1,7 +1,7 @@
 package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter.Store
-import brbo.backend2.learning.Classifier.GroupID
+import brbo.backend2.learning.Classifier.{GeneralityTestGroup, GroupID}
 import brbo.common.ast._
 import play.api.libs.functional.syntax.toFunctionalBuilderOps
 import play.api.libs.json.Reads.{min, _}
@@ -57,7 +57,9 @@ object DecisionTree {
           Classifier.useLabelFromString(className) match {
             case Classifier.AllGroups => throw new Exception
             case Classifier.NoneGroup => Skip()
-            case Classifier.GeneralityTestGroup => throw new Exception
+            case Classifier.GeneralityTestGroup =>
+              // For debugging purposes
+              Use(Some(GeneralityTestGroup.value), update)
             case Classifier.GroupID(groupID) => Use(Some(groupID), update)
           }
         case _ => throw new Exception

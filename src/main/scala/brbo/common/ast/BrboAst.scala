@@ -589,15 +589,18 @@ abstract class GhostCommand(uuid: UUID) extends Command(uuid) {
   def replace(newGroupId: Int): GhostCommand
 }
 
+/**
+ *
+ * @param groupId When None, this command represents updating the original resource variable.
+ *                Otherwise, this command represents updating a resource variable for some amortization group
+ * @param update
+ * @param condition
+ * @param uuid
+ */
 case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Bool(b = true),
                override val uuid: UUID = UUID.randomUUID()) extends GhostCommand(uuid) {
   assert(update.typ == BrboType.INT)
   assert(condition.typ == BrboType.BOOL)
-
-  groupId match {
-    case Some(value) => assert(value >= 0) // This command represents updating a resource variable for some amortization group
-    case None => // This command represents updating the original resource variable
-  }
 
   val resourceVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Resource)
 

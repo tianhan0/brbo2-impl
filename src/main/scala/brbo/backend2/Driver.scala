@@ -50,7 +50,7 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
     logger.info(s"Step 3.1: Decompose $index-th representative trace")
     val representativeTraceString =
       if (debugMode)
-        trace.toTable(printStores = true, omitExpressions = false, onlyGhostCommand = false)._1.printAll()
+        trace.toTable(printStores = true, omitExpressions = true, onlyGhostCommand = false)._1.printAll()
       else
         trace.toTable(printStores = false, omitExpressions = true, onlyGhostCommand = true)._1.printAll()
     logger.info(s"Step 3.1: Trace:\n$representativeTraceString")
@@ -73,11 +73,7 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
     val classifierResults = tables.toProgramTables.generateClassifiers(debugMode)
     logger.info(s"Step 3.4: Generate program transformations")
     val transformation: Map[BrboAst, BrboAst] = classifierResults.toTransformation
-    logger.info(s"Step 3.4: See below for a mapping from existing ASTs to new ASTs")
-    transformation.foreach({
-      case (oldAst, newAst) =>
-        logger.info(s"${oldAst.asInstanceOf[Command].printToIR()} -> ${newAst.printToC(0)}")
-    })
+    logger.info(Classifier.printTransformation(transformation))
     val ghostVariableIDs = {
       transformation.flatMap({
         case (_, ast1) =>
