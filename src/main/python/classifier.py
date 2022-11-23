@@ -5,9 +5,9 @@ import json
 import matplotlib
 
 
-def classify(features, label, print_tree):
+def classify(features, labels, print_tree):
     classifier = tree.DecisionTreeClassifier()
-    classifier = classifier.fit(features, label)
+    classifier = classifier.fit(features, labels)
     if print_tree:
         print(f"Tree:\n{tree.export_text(classifier)}")
         # show(classifier)
