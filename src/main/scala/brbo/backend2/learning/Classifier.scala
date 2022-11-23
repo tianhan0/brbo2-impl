@@ -4,13 +4,14 @@ import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter._
 import brbo.backend2.learning.DecisionTree.{ResetLeaf, TreeClassifier, UseLeaf}
 import brbo.backend2.learning.ScriptRunner.DecisionTreeLearning
-import brbo.backend2.learning.SegmentClustering.{Group, Segment, printDecomposition, printGroups, printSegments}
+import brbo.backend2.learning.SegmentClustering._
 import brbo.common.GhostVariableUtils.{counterInitialValue, resourceInitialValue, starInitialValue}
 import brbo.common.ast._
 import brbo.common.{MyLogger, Print}
 import play.api.libs.json.Json
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -23,18 +24,24 @@ object Classifier {
   }
 
   object NoneGroup extends GroupID(-34673) {
+    // This group is used to indicate that a use or a reset command should do nothing
     override def print(): String = "NoneGroup"
   }
 
   object AllGroups extends GroupID(-4127) {
+    // For a use command, its training data (or a table) is associated with "AllGroups"
+    // (which is a "virtual group"), even if the use command is decomposed into (actual) groups
     override def print(): String = "AllGroups"
   }
 
   object GeneralityTestGroup extends GroupID(-182827172) {
+    // This group is used when testing the generality of a group
+    // The group under test is named as "GeneralityTestGroup"
     override def print(): String = "GeneralityTestGroup"
   }
 
   object PrintGroup extends GroupID(-23123) {
+    // This group is only used for printing purposes
     override def print(): String = "PrintGroup"
   }
 
@@ -116,6 +123,25 @@ object Classifier {
     }
 
     def copy(): BrboTable
+
+    def sameFeaturesDifferentLabels(): Boolean = {
+      Range(0, table.rowCount()).exists({
+        rowIndex =>
+          Range(0, table.rowCount()).exists({
+            anotherRowIndex =>
+              if (anotherRowIndex > rowIndex) {
+                val row = table.row(rowIndex)
+                val anotherRow = table.row(anotherRowIndex)
+                val sameFeatures = Range(0, features.length).forall({
+                  columnIndex => row.getInt(columnIndex) == anotherRow.getInt(columnIndex)
+                })
+                val differentLabels = row.getObject(features.length) != anotherRow.getObject(features.length)
+                sameFeatures && differentLabels
+              }
+              else false
+          })
+      })
+    }
   }
 
   class UseTable(features: List[BrboExpr]) extends BrboTable(features) {
@@ -138,16 +164,18 @@ object Classifier {
     }
   }
 
+  abstract class Location extends Print
+
   /**
    *
    * @param command The command at this trace location
    * @param index   The index of the command in the trace where this location is created
    */
-  case class TraceLocation(command: Command, index: Int) extends Print {
+  case class TraceLocation(command: Command, index: Int) extends Location {
     def print(): String = s"TraceLocation: ${command.printToIR()} (index=$index)"
   }
 
-  case class ProgramLocation(command: Command) extends Print {
+  case class ProgramLocation(command: Command) extends Location {
     def print(): String = s"ProgramLocation: ${command.printToIR()}"
   }
 
@@ -155,24 +183,7 @@ object Classifier {
 
   // A mapping from a location in a trace to a table for the previous store -- the store right before the location
   class TraceTables(tables: Map[TraceLocation, BrboTables], features: List[BrboExpr]) {
-    def print(): String = {
-      val separator1 = "=" * 40
-      val separator2 = "*" * 60
-      val featuresString = features.map(e => e.printToIR()).mkString(", ")
-      val tablesString = tables.map({
-        case (location, tables) =>
-          val tablesString = tables.map({
-            case (id, table) =>
-              table match {
-                case table: UseTable => s"Use table:\n${table.print()}"
-                case table: ResetTable => s"Reset table: ${id.print()} ->\n${table.print()}"
-                case _ => throw new Exception
-              }
-          }).toList.sorted.mkString(s"\n$separator1\n")
-          s"${location.print()} ->\n$tablesString"
-      }).toList.sorted.mkString(s"\n$separator2\n\n")
-      s"Tables:\nFeatures: $featuresString\n$tablesString"
-    }
+    def print(): String = printTables(tables.asInstanceOf[Map[Location, BrboTables]], features)
 
     def toProgramTables: ProgramTables = {
       val map = tables.groupBy({ case (location, _) => location.command }).map({
@@ -181,8 +192,20 @@ object Classifier {
           var summaryTables: Map[GroupID, BrboTable] = Map()
 
           def update(groupID: GroupID, table: BrboTable): Unit = {
+            if (table.sameFeaturesDifferentLabels()) {
+              throw TableGenerationError(s"Inserting a table containing rows that " +
+                s"have the same features but different labels\n${table.print()}")
+            }
             summaryTables.get(groupID) match {
-              case Some(summaryTable) => summaryTable.append(table)
+              case Some(summaryTable) =>
+                val existingTable = summaryTable.copy()
+                summaryTable.append(table)
+                if (summaryTable.sameFeaturesDifferentLabels()) {
+                  throw TableGenerationError("Appending a table such that we now have rows that " +
+                    s"have the same features but different labels\n" +
+                    s"Existing table:\n${existingTable.print()}\n" +
+                    s"Appending table:\n${table.print()}")
+                }
               case None =>
                 val summaryTable = table.copy()
                 summaryTables = summaryTables + (groupID -> summaryTable)
@@ -208,8 +231,29 @@ object Classifier {
     }
   }
 
+  private def printTables(tables: Map[Location, BrboTables], features: List[BrboExpr]): String = {
+    val separator1 = "=" * 40
+    val separator2 = "*" * 60
+    val featuresString = features.map(e => e.printToIR()).mkString(", ")
+    val tablesString = tables.map({
+      case (location, tables) =>
+        val tablesString = tables.map({
+          case (id, table) =>
+            table match {
+              case table: UseTable => s"Use table:\n${table.print()}"
+              case table: ResetTable => s"Reset table: ${id.print()} ->\n${table.print()}"
+              case _ => throw new Exception
+            }
+        }).toList.sorted.mkString(s"\n$separator1\n")
+        s"${location.print()} ->\n$tablesString"
+    }).toList.sorted.mkString(s"\n$separator2\n\n")
+    s"Tables:\nFeatures: $featuresString\n$tablesString"
+  }
+
   // A mapping from a program location (i.e., a command) to a table for any of its previous store
   class ProgramTables(tables: Map[ProgramLocation, BrboTables], features: List[BrboExpr]) {
+    def print(): String = printTables(tables.asInstanceOf[Map[Location, BrboTables]], features)
+
     def generateClassifiers(debugMode: Boolean): ClassifierResultsMap = {
       val futures = Future.traverse(tables)({
         case (location, tables) =>
@@ -299,6 +343,14 @@ object Classifier {
           else throw new Exception
       })
     }
+  }
+
+  def printTransformation(transformation: Map[BrboAst, BrboAst]): String = {
+    "See below for a mapping from existing ASTs to new ASTs\n" +
+      transformation.map({
+        case (oldAst, newAst) =>
+          s"${oldAst.asInstanceOf[Command].printToIR()} -> ${newAst.printToC(0)}"
+      }).mkString("\n")
   }
 
   case class TableGenerationError(message: String) extends Exception
@@ -544,7 +596,9 @@ object Classifier {
     }
   }
 
-  class ClassifierApplication(ghostStore: GhostStore, trace: Trace, debugMode: Boolean) {
+  case class DecomposedTraceNode(index: Int, transition: Transition, groupID: GroupID)
+
+  class ClassifierApplication(ghostStore: GhostStore, trace: Trace, decomposedTrace: List[DecomposedTraceNode], debugMode: Boolean) {
     private val logger = MyLogger.createLogger(classOf[ClassifierApplication], debugMode)
 
     private def print(groupsOfSegments: List[List[Segment]]): String = {
@@ -577,12 +631,41 @@ object Classifier {
           result
       })
     }
+
+    def printDecomposedTrace(): String = {
+      val table: Table = Table.create("")
+      var commands: List[String] = Nil
+      var costs: List[String] = Nil
+      var indices: List[String] = Nil
+      val groupIDs: Map[GroupID, ArrayBuffer[String]] = decomposedTrace.map(node => (node.groupID, ArrayBuffer[String]())).toMap
+      decomposedTrace.foreach({
+        case DecomposedTraceNode(index, transition, groupID) =>
+          indices = indices :+ index.toString
+          val (commandString, costString) = transition.print(onlyGhostCommand = true, commandMaxLength = 30)
+          commands = commands :+ commandString
+          costs = costs :+ costString
+          groupIDs.foreach({
+            case (groupID2, array) =>
+              if (groupID2 == groupID) array.append("x")
+              else array.append("")
+          })
+      })
+      table.addColumns(StringColumn.create("Index", indices: _*))
+      table.addColumns(StringColumn.create("Command", commands: _*))
+      table.addColumns(StringColumn.create("Cost", costs: _*))
+      groupIDs.foreach({
+        case (groupID, array) =>
+          table.addColumns(StringColumn.create(groupID.print(), array: _*))
+      })
+      table.printAll()
+    }
   }
 
   class BoundCheckClassifierApplication(val exceedBound: Boolean,
                                         ghostStore: GhostStore,
                                         trace: Trace,
-                                        debugMode: Boolean) extends ClassifierApplication(ghostStore, trace, debugMode)
+                                        decomposedTrace: List[DecomposedTraceNode],
+                                        debugMode: Boolean) extends ClassifierApplication(ghostStore, trace, decomposedTrace, debugMode)
 
   // Interpret the trace with the given classifier, to see if at some point
   // the cost approximation goes beyond the given bound
@@ -601,6 +684,7 @@ object Classifier {
       case None => None
     }
     val ghostStore = new GhostStore
+    var decomposedTrace: List[DecomposedTraceNode] = Nil
 
     if (debugMode) logger.error(s"# of nodes: ${trace.nodes.size}")
     trace.nodes.zipWithIndex.foreach({
@@ -608,13 +692,14 @@ object Classifier {
         if (index == trace.nodes.size - 1) {
           if (checkBound) {
             // Managed to reach the final store without violating the bound
-            return new BoundCheckClassifierApplication(exceedBound = false, ghostStore, trace, debugMode)
+            return new BoundCheckClassifierApplication(exceedBound = false, ghostStore, trace, decomposedTrace = decomposedTrace.reverse, debugMode)
           } else {
-            return new ClassifierApplication(ghostStore, trace, debugMode)
+            return new ClassifierApplication(ghostStore, trace, decomposedTrace = decomposedTrace.reverse, debugMode)
           }
         }
         val nextCommandIndex = index + 1
-        val nextCommand = trace.nodes(nextCommandIndex).lastTransition.get.command.asInstanceOf[Command]
+        val nextTransition = trace.nodes(nextCommandIndex).lastTransition.get
+        val nextCommand = nextTransition.command.asInstanceOf[Command]
         val location = ProgramLocation(nextCommand)
         classifierResultsMap.results.get(location) match {
           case Some(classifierResults) =>
@@ -624,8 +709,9 @@ object Classifier {
                 val label = classifierResults(AllGroups).classifier.classify(store, evaluate, classifierResultsMap.features)
                 val groupID = useLabelFromString(label.name)
                 ghostStore.initialize(groupID)
-                if (debugMode) logger.error(s"[Index $index] ${use.printToIR()} is decomposed into ${groupID.print()}")
-                val beforeString = ghostStore.print()
+                // if (debugMode) logger.error(s"[Index $index] ${use.printToIR()} is decomposed into ${groupID.print()}")
+                decomposedTrace = DecomposedTraceNode(nextCommandIndex, nextTransition, groupID) :: decomposedTrace
+                lazy val beforeString = ghostStore.print()
                 evaluate(use.condition, store) match {
                   case Bool(b, _) =>
                     if (b && groupID != NoneGroup) {
@@ -636,27 +722,28 @@ object Classifier {
                     }
                   case _ => throw new Exception
                 }
-                val afterString = ghostStore.print()
-                if (debugMode && beforeString != afterString) {
-                  logger.error(s"Before:\n$beforeString")
-                  logger.error(s"After:\n$afterString")
-                }
+                lazy val afterString = ghostStore.print()
+              // if (debugMode && beforeString != afterString) {
+              //   logger.error(s"Before:\n$beforeString")
+              //   logger.error(s"After:\n$afterString")
+              // }
               case resetPlaceHolder: ResetPlaceHolder =>
                 classifierResults.foreach({
                   case (groupID, classifierResult) =>
                     ghostStore.initialize(groupID)
-                    if (debugMode) logger.error(s"[Index $index] ${resetPlaceHolder.printToIR()} is decomposed into ${groupID.print()}")
-                    val beforeString = ghostStore.print()
+                    // if (debugMode) logger.error(s"[Index $index] ${resetPlaceHolder.printToIR()} is decomposed into ${groupID.print()}")
+                    lazy val beforeString = ghostStore.print()
                     val toReset = {
                       val label = classifierResult.classifier.classify(store, evaluate, classifierResultsMap.features)
                       resetLabelFromString(label.name)
                     }
                     if (toReset) ghostStore.reset(groupID)
-                    val afterString = ghostStore.print()
-                    if (debugMode && beforeString != afterString) {
-                      logger.error(s"Before:\n$beforeString")
-                      logger.error(s"After:\n$afterString")
-                    }
+                    decomposedTrace = DecomposedTraceNode(nextCommandIndex, nextTransition, groupID) :: decomposedTrace
+                    lazy val afterString = ghostStore.print()
+                  // if (debugMode && beforeString != afterString) {
+                  //   logger.error(s"Before:\n$beforeString")
+                  //   logger.error(s"After:\n$afterString")
+                  // }
                 })
               case _ => throw new Exception
             }
@@ -664,12 +751,11 @@ object Classifier {
               // Early return
               logger.info(s"Bound $bound is violated under state:\n${ghostStore.print()} for the following " +
                 s"trace decomposition:\n${trace.toTable(printStores = true, onlyGhostCommand = false)._1.printAll()}")
-              return new BoundCheckClassifierApplication(exceedBound = true, ghostStore, trace, debugMode)
+              return new BoundCheckClassifierApplication(exceedBound = true, ghostStore, trace, decomposedTrace = decomposedTrace.reverse, debugMode)
             }
           case None =>
           // if (debugMode) logger.error(s"${location.print()} does not have a classifier result")
         }
-      case _ =>
     })
     throw new Exception("unreachable")
   }
