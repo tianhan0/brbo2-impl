@@ -27,14 +27,17 @@ import scala.concurrent.{Await, Future}
 class SegmentClustering(sumWeight: Int, commandWeight: Int,
                         debugMode: Boolean, val algorithm: Algorithm) {
   private val logger = MyLogger.createLogger(classOf[SegmentClustering], debugMode)
+  private val MAX_SEGMENT_LENGTH = 6
 
   def decompose(trace: Trace, similarTraces: Iterable[Trace], interpreter: Interpreter): TraceDecomposition = {
     val decomposition = new TraceDecomposition(trace)
     var segmentLength = 1
     var excludeIndices: Set[Int] = Set()
-    var madeProgress = true
-    while (madeProgress && decomposition.getSize < trace.costTrace.nodes.size) {
-      madeProgress = false
+    var remainingIndices: Set[Int] = trace.costTraceAssociation.indexMap.keys.toSet
+    while (decomposition.getSize < trace.costTrace.nodes.size
+      && segmentLength <= remainingIndices.size
+      && segmentLength <= MAX_SEGMENT_LENGTH) {
+      logger.info("-" * 80)
       logger.info(s"Cluster segments with length $segmentLength")
       val clusters: List[List[Segment]] = clusterSimilarSegments(trace, segmentLength, excludeIndices)
       var clusterId = 0
@@ -43,9 +46,9 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
         val cluster = clusters(clusterId).filter({
           segment => segment.indices.toSet.intersect(excludeIndices).isEmpty
         })
-        logger.info(s"Visit $clusterId-th cluster: ${printSegments(cluster)}")
+        logger.info(s"Visit $clusterId-th cluster (segment length: $segmentLength)")
         if (cluster.size > 1) {
-          logger.info(s"Choose non-overlapping segments from cluster $clusterId")
+          logger.info(s"Choose non-overlapping segments from $clusterId-th cluster")
           val nonOverlappingGroups = findNonOverlappingSegments(cluster)
           val generalizableGroups = chooseGeneralizableGroups(
             nonOverlappingGroups,
@@ -62,7 +65,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
               logger.info(s"Chosen group: ${printSegments(chosenGroup.segments)}")
               logger.traceOrError(s"Chosen group on trace:\n${printDecomposition(trace, Map(PrintGroup -> chosenGroup))}")
               excludeIndices = excludeIndices ++ chosenIndices
-              madeProgress = true
+              remainingIndices = remainingIndices -- chosenIndices
             case None =>
           }
         }
@@ -73,9 +76,8 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
     }
     // All remaining indices are put into a single segment for amortization
 
-    val remainingIndices = trace.costTraceAssociation.indexMap.keys.toSet.diff(excludeIndices).toList.sorted
     if (remainingIndices.nonEmpty) {
-      val lastGroup = Group(List(Segment(remainingIndices)))
+      val lastGroup = Group(List(Segment(remainingIndices.toList.sorted)))
       decomposition.addGroup(lastGroup)
     }
     decomposition
@@ -169,7 +171,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
           val chosenLengths: List[Int] =
             if (distinctLengths.size <= sampleKTraces) distinctLengths
             else {
-              logger.info(s"${distinctLengths.zipWithIndex.groupBy({ case (_, index) => index % sampleKTraces })}")
+              // logger.info(s"${distinctLengths.zipWithIndex.groupBy({ case (_, index) => index % sampleKTraces })}")
               distinctLengths.zipWithIndex.groupBy({ case (_, index) => index % sampleKTraces }).map({
                 case (_, tuples) => tuples.head._1
               }).toList
@@ -188,6 +190,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
         Future {
           val classifierResults =
             try {
+              logger.info(s"Train a classifier for $groupIndex-th group: ${printSegments(group.segments)}")
               val tables = Classifier.generateTables(
                 testTrace,
                 Classifier.evaluateFunctionFromInterpreter(interpreter),
@@ -195,19 +198,19 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
                 features = List(Identifier("i", INT), Identifier("n", INT)),
                 failIfCannotFindResetPlaceHolder = true
               )
-              // logger.traceOrError(s"Generated table: ${tables.print()}")
-              val classifierResults = tables.toProgramTables.generateClassifiers(debugMode)
+              val programTables = tables.toProgramTables
+              logger.traceOrError(s"Generated training data:\n${programTables.print()}")
+              val classifierResults = programTables.generateClassifiers(debugMode)
               Some(classifierResults)
             } catch {
               case TableGenerationError(message) =>
-                logger.info(message)
+                logger.info(s"Failed to train a classifier: $message")
                 None
             }
 
           sampledSimilarTraces.forall({
             case (trace, traceIndex) =>
               logger.info(s"Test the generality of $groupIndex-th group on $traceIndex-th trace (length: ${trace.nodes.size})")
-              logger.traceOrError(s"Test group: ${printSegments(group.segments)}")
               classifierResults match {
                 case Some(classifierResults) =>
                   val applicationResult = Classifier.applyClassifiers(
@@ -219,7 +222,9 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
                   )
                   val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
                   logger.info(s"Tested the generality of $groupIndex-th group on $traceIndex-th trace (length: ${trace.nodes.size}): $areSimilar")
-                  logger.traceOrError(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
+                  logger.info(Classifier.printTransformation(classifierResults.toTransformation))
+                  logger.traceOrError(s"Decomposed trace:\n${applicationResult.printDecomposedTrace()}")
+                  // logger.traceOrError(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
                   areSimilar
                 case None =>
                   logger.info(s"Cannot test the generality of $groupIndex-th group on $traceIndex-th trace: No classifier")
@@ -288,10 +293,10 @@ object SegmentClustering {
 
     def lessThan(other: Segment): Boolean = {
       (indices.isEmpty, other.indices.isEmpty) match {
-        case (true, true) => true
+        case (true, true) => false
         case (true, false) => true
         case (false, true) => false
-        case (false, false) => indices.last < other.indices.head
+        case (false, false) => indices.head < other.indices.head
       }
     }
 
@@ -338,7 +343,7 @@ object SegmentClustering {
       if (segments.isEmpty)
         Some(Group(List(segment)))
       else {
-        if (!segments.last.notOverlap(segment))
+        if (!segments.last.notOverlap(segment) || !segments.last.lessThan(segment))
           None // Cannot add the segment to this group
         else
           Some(Group(segments :+ segment))
