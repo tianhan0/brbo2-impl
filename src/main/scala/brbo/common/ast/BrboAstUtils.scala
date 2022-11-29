@@ -172,12 +172,19 @@ object BrboAstUtils {
       case statement: Statement =>
         statement match {
           case Block(asts, _) =>
-            val newAsts = asts.flatMap(ast => List(ResetPlaceHolder(), insertResetPlaceHolder(ast)))
+            val newAsts = asts.map(ast => insertResetPlaceHolder(ast))
+            // Not inserting a reset placeholder, because if a program has no loops,
+            // then we should not bother finding a decomposition
             Block(newAsts)
           case ITE(condition, thenAst, elseAst, _) =>
             ITE(condition, insertResetPlaceHolder(thenAst), insertResetPlaceHolder(elseAst))
           case Loop(condition, loopBody, _) =>
-            Loop(condition, insertResetPlaceHolder(loopBody))
+            // Right after the loop head
+            val block = Block(List(ResetPlaceHolder(), insertResetPlaceHolder(loopBody)))
+            val loop = Loop(condition, block)
+            // Right before the loop head
+            // Block(List(ResetPlaceHolder(), loop))
+            loop
           case _ => throw new Exception
         }
       case _ => throw new Exception
