@@ -73,7 +73,7 @@ object Classifier {
   def resetLabelFromString(label: String): Boolean = label.toBoolean
 
   abstract class BrboTable(features: List[BrboExpr]) extends Print {
-    protected val tableName: String
+    val tableName: String
 
     protected val table: Table = Table.create(tableName)
 
@@ -201,8 +201,8 @@ object Classifier {
                 val existingTable = summaryTable.copy()
                 summaryTable.append(table)
                 if (summaryTable.sameFeaturesDifferentLabels()) {
-                  throw TableGenerationError("Appending a table such that we now have rows that " +
-                    s"have the same features but different labels\n" +
+                  throw TableGenerationError(s"Appending `${table.tableName}` for ${groupID.print()} " +
+                    s"at `${location.print()}` but now we have rows that have the same features but different labels\n" +
                     s"Existing table:\n${existingTable.print()}\n" +
                     s"Appending table:\n${table.print()}")
                 }

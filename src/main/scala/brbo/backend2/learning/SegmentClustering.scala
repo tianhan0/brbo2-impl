@@ -164,7 +164,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
                                 sampleKTraces: Option[Int]): List[Group] = {
     val lengthMap = similarTraces.map(t => (t, t.nodes.size)).toMap
     val distinctLengths = lengthMap.values.toList.sorted.distinct
-    logger.info(s"Similar traces have the following (distinct) lengths: $distinctLengths)")
+    logger.info(s"Similar traces have the following (distinct) lengths: $distinctLengths")
     val sampledSimilarTraces = {
       sampleKTraces match {
         case Some(sampleKTraces) =>
@@ -190,12 +190,12 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
         Future {
           val classifierResults =
             try {
-              logger.info(s"Train a classifier for $groupIndex-th group: ${printSegments(group.segments)}")
+              logger.info(s"Train a classifier for $groupIndex-th group (among ${groups.size}): ${printSegments(group.segments)}")
               val tables = Classifier.generateTables(
                 testTrace,
                 Classifier.evaluateFunctionFromInterpreter(interpreter),
                 Map(GeneralityTestGroup -> group),
-                features = List(Identifier("i", INT), Identifier("n", INT)),
+                features = List(Identifier("i", INT), Identifier("n", INT)), // TODO: Use non resource variables
                 failIfCannotFindResetPlaceHolder = true
               )
               val programTables = tables.toProgramTables
@@ -210,7 +210,9 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
 
           sampledSimilarTraces.forall({
             case (trace, traceIndex) =>
-              logger.info(s"Test the generality of $groupIndex-th group on $traceIndex-th trace (length: ${trace.nodes.size})")
+              val logging = s"Test the generality of $groupIndex-th group (among ${groups.size}) " +
+                s"on $traceIndex-th trace (among ${sampledSimilarTraces.size}). Length: ${trace.nodes.size}"
+              logger.info(logging)
               classifierResults match {
                 case Some(classifierResults) =>
                   val applicationResult = Classifier.applyClassifiers(
@@ -221,7 +223,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
                     debugMode
                   )
                   val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
-                  logger.info(s"Tested the generality of $groupIndex-th group on $traceIndex-th trace (length: ${trace.nodes.size}): $areSimilar")
+                  logger.info(s"$logging: $areSimilar")
                   logger.info(Classifier.printTransformation(classifierResults.toTransformation))
                   logger.traceOrError(s"Decomposed trace:\n${applicationResult.printDecomposedTrace()}")
                   // logger.traceOrError(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
