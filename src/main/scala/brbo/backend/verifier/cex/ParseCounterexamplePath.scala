@@ -169,7 +169,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               }
             case _: CFGOnly | Skip(_) =>
               logger.traceOrError(s"Skip the empty command and CFGOnly nodes (except for FunctionExit): `$currentNode`")
-              val successorNodes = cfg.findSuccessorNodes(currentNode)
+              val successorNodes = cfg.successorNodes(currentNode)
               successorNodes.size match {
                 case 1 =>
                   val newSubState = SubState(successorNodes.head, state.subState.processFunctionCalls, state.subState.currentFunction)
@@ -217,7 +217,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                 }
               }
               if (skipCurrentNodeWhenReturn) {
-                val successorNodes = cfg.findSuccessorNodes(currentNode)
+                val successorNodes = cfg.successorNodes(currentNode)
                 assert(successorNodes.size == 1)
                 (successorNodes.head, true) // If skipping the current node, then must process function calls for the next node
               }
@@ -277,7 +277,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               else (result, false)
             }
             val newCurrentNode: CFGNode = {
-              val successorNodes = cfg.findSuccessorNodes(currentNode)
+              val successorNodes = cfg.successorNodes(currentNode)
               if (matchResult.matchedExpression) {
                 // Matched an expression
                 assert(successorNodes.size == 2, s"Successor nodes:\n`${successorNodes.map(n => n.printToIR()).mkString("\n")}`")

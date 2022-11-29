@@ -4,6 +4,7 @@ import brbo.BrboMain
 import brbo.common.MathUtils
 import brbo.common.ast._
 import com.ibm.wala.util.graph.NumberedGraph
+import com.ibm.wala.util.graph.dominators.DominanceFrontiers
 import com.ibm.wala.util.graph.impl.DelegatingNumberedGraph
 import org.apache.logging.log4j.{LogManager, Logger}
 import org.jgrapht.alg.connectivity.ConnectivityInspector
@@ -220,8 +221,9 @@ case class ControlFlowGraph(entryNode: CFGNode,
                             walaGraph: NumberedGraph[CFGNode],
                             jgraphtGraph: SimpleDirectedWeightedGraph[CFGNode, DefaultEdge]) {
   private val connectivityInspector = new ConnectivityInspector(jgraphtGraph)
+  private val dominanceFrontiers = new DominanceFrontiers(walaGraph, entryNode)
 
-  // Check if any two CFGs of two functions are disconnected
+  // Ensure CFGs of any two functions are disconnected
   MathUtils.crossJoin2(cfgs, cfgs).foreach({
     case (pair1, pair2) =>
       if (pair1 != pair2) {
@@ -229,6 +231,25 @@ case class ControlFlowGraph(entryNode: CFGNode,
           s"CFG of function ${pair1._1.identifier} is connected with that of function ${pair2._1.identifier}")
       }
   })
+
+  def closestDominator(root: CFGNode, nodes: Set[CFGNode], predicate: CFGNode => Boolean): Option[CFGNode] = {
+    // println(s"root: ${root.printToIR()} ${predicate(root)}")
+    val isRootDominator = nodes.forall(node => dominanceFrontiers.isDominatedBy(node, root))
+    if (!isRootDominator) return None
+    val qualifyingSuccessors: Iterator[CFGNode] = walaGraph.getSuccNodes(root).asScala.flatMap({
+      successor => closestDominator(root = successor, nodes, predicate)
+    })
+    if (qualifyingSuccessors.isEmpty) Some(root).filter(predicate)
+    else Some(qualifyingSuccessors.toList.head)
+  }
+
+  def nodesFromCommands(commands: Set[Command]): Set[CFGNode] = {
+    jgraphtGraph.vertexSet().asScala.foldLeft(Set[CFGNode]())({
+      case (acc, node) =>
+        if (commands.contains(node.command)) acc + node
+        else acc
+    })
+  }
 
   def exportToDOT: String = {
     val exporter = new DOTExporter[CFGNode, DefaultEdge]
@@ -276,7 +297,7 @@ case class ControlFlowGraph(entryNode: CFGNode,
     }
   }
 
-  def findSuccessorNodes(node: CFGNode): Set[CFGNode] = {
+  def successorNodes(node: CFGNode): Set[CFGNode] = {
     val edges: mutable.Iterable[DefaultEdge] = jgraphtGraph.outgoingEdgesOf(node).asScala
     edges.map({ edge: DefaultEdge => jgraphtGraph.getEdgeTarget(edge) }).toSet
   }

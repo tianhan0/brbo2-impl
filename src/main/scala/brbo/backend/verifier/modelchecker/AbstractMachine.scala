@@ -206,7 +206,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
     val nextNodes: Set[CFGNode] = {
       if (currentNode == fakeInitialNode) Set(cfg.entryNode)
       else {
-        val nextNodes = cfg.findSuccessorNodes(currentNode)
+        val nextNodes = cfg.successorNodes(currentNode)
         nextNodes.size match {
           case 0 | 1 | 2 =>
           case _ => throw new Exception(s"Current state `${currentNode.printToIR}` has the following successor nodes: `$nextNodes`.")
