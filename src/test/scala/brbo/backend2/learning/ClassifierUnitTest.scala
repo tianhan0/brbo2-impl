@@ -28,30 +28,22 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val decompositionExpected1 =
       """Index  |       Commands        |  Costs  |  SegmentIDs in GroupID(0)  |  SegmentIDs in GroupID(1)  |
         |-----------------------------------------------------------------------------------------------------
-        |     7  |  resetPlaceHolder();  |         |                            |                            |
-        |    10  |  resetPlaceHolder();  |         |                            |                            |
-        |    14  |  resetPlaceHolder();  |         |                            |                            |
-        |    21  |      R0 = R0 + 2011;  |   2011  |                            |                         0  |
-        |    22  |  resetPlaceHolder();  |         |                            |                            |
-        |    30  |  resetPlaceHolder();  |         |                            |                            |
-        |    37  |      R0 = R0 + 1011;  |   1011  |                            |                         0  |
-        |    38  |  resetPlaceHolder();  |         |                            |                            |
-        |    46  |  resetPlaceHolder();  |         |                            |                            |
-        |    53  |      R0 = R0 + 1011;  |   1011  |                            |                         1  |
-        |    54  |  resetPlaceHolder();  |         |                            |                            |
-        |    62  |  resetPlaceHolder();  |         |                            |                            |
-        |    69  |      R0 = R0 + 1011;  |   1011  |                            |                         1  |
-        |    70  |  resetPlaceHolder();  |         |                            |                            |
-        |    78  |  resetPlaceHolder();  |         |                            |                            |
-        |    81  |        R0 = R0 + 88;  |     88  |                            |                         2  |
-        |    82  |  resetPlaceHolder();  |         |                            |                            |
-        |    85  |        R0 = R0 + 89;  |     89  |                            |                         2  |""".stripMargin
+        |    12  |  resetPlaceHolder();  |         |                            |                            |
+        |    19  |      R0 = R0 + 2011;  |   2011  |                            |                         0  |
+        |    27  |  resetPlaceHolder();  |         |                            |                            |
+        |    34  |      R0 = R0 + 1011;  |   1011  |                         0  |                            |
+        |    42  |  resetPlaceHolder();  |         |                            |                            |
+        |    49  |      R0 = R0 + 1011;  |   1011  |                            |                         1  |
+        |    57  |  resetPlaceHolder();  |         |                            |                            |
+        |    64  |      R0 = R0 + 1011;  |   1011  |                         1  |                            |
+        |    74  |        R0 = R0 + 88;  |     88  |                         2  |                            |
+        |    77  |        R0 = R0 + 89;  |     89  |                            |                         2  |""".stripMargin
     StringCompare.ignoreWhitespaces(SegmentClustering.printDecomposition(trace, groups1), decompositionExpected1, "decomposition 1 failed")
 
     val expected1 =
       """Tables:
         |Features: i, n
-        |TraceLocation: resetPlaceHolder(); (index=10) ->
+        |TraceLocation: resetPlaceHolder(); (index=12) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -63,43 +55,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 0  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=14) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 0  |  4  |  false  |
-        |========================================
-        |Reset table: GroupID(1) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 0  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=22) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 0  |  4  |  false  |
-        |========================================
-        |Reset table: GroupID(1) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 0  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=30) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 1  |  4  |  false  |
-        |========================================
-        |Reset table: GroupID(1) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 1  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=38) ->
+        |TraceLocation: resetPlaceHolder(); (index=27) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -111,11 +67,11 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 1  |  4  |   true  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=46) ->
+        |TraceLocation: resetPlaceHolder(); (index=42) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
-        | 2  |  4  |  false  |
+        | 2  |  4  |   true  |
         |========================================
         |Reset table: GroupID(1) ->
         | i  |  n  |  Label  |
@@ -123,43 +79,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 2  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=54) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 2  |  4  |  false  |
-        |========================================
-        |Reset table: GroupID(1) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 2  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=62) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 3  |  4  |  false  |
-        |========================================
-        |Reset table: GroupID(1) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 3  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=7) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        |    |  4  |  false  |
-        |========================================
-        |Reset table: GroupID(1) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        |    |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=70) ->
+        |TraceLocation: resetPlaceHolder(); (index=57) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -171,66 +91,42 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 3  |  4  |   true  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=78) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 4  |  4  |  false  |
-        |========================================
-        |Reset table: GroupID(1) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 4  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=82) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 4  |  4  |  false  |
-        |========================================
-        |Reset table: GroupID(1) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 4  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: use R0 1011 (index=37) ->
+        |TraceLocation: use R0 1011 (index=34) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
-        | 1  |  4  |  GroupID(1)  |
+        | 1  |  4  |  GroupID(0)  |
         |************************************************************
         |
-        |TraceLocation: use R0 1011 (index=53) ->
+        |TraceLocation: use R0 1011 (index=49) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
         | 2  |  4  |  GroupID(1)  |
         |************************************************************
         |
-        |TraceLocation: use R0 1011 (index=69) ->
+        |TraceLocation: use R0 1011 (index=64) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
-        | 3  |  4  |  GroupID(1)  |
+        | 3  |  4  |  GroupID(0)  |
         |************************************************************
         |
-        |TraceLocation: use R0 2011 (index=21) ->
+        |TraceLocation: use R0 2011 (index=19) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
         | 0  |  4  |  GroupID(1)  |
         |************************************************************
         |
-        |TraceLocation: use R0 88 (index=81) ->
+        |TraceLocation: use R0 88 (index=74) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
-        | 4  |  4  |  GroupID(1)  |
+        | 4  |  4  |  GroupID(0)  |
         |************************************************************
         |
-        |TraceLocation: use R0 89 (index=85) ->
+        |TraceLocation: use R0 89 (index=77) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
@@ -249,148 +145,84 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val decompositionExpected2 =
       """Index  |       Commands        |  Costs  |  SegmentIDs in GroupID(0)  |
         |------------------------------------------------------------------------
-        |     7  |  resetPlaceHolder();  |         |                            |
-        |    10  |  resetPlaceHolder();  |         |                            |
-        |    14  |  resetPlaceHolder();  |         |                            |
-        |    21  |      R0 = R0 + 2011;  |   2011  |                            |
-        |    22  |  resetPlaceHolder();  |         |                            |
-        |    30  |  resetPlaceHolder();  |         |                            |
-        |    37  |      R0 = R0 + 1011;  |   1011  |                            |
-        |    38  |  resetPlaceHolder();  |         |                            |
-        |    46  |  resetPlaceHolder();  |         |                            |
-        |    53  |      R0 = R0 + 1011;  |   1011  |                            |
-        |    54  |  resetPlaceHolder();  |         |                            |
-        |    62  |  resetPlaceHolder();  |         |                            |
-        |    69  |      R0 = R0 + 1011;  |   1011  |                            |
-        |    70  |  resetPlaceHolder();  |         |                            |
-        |    78  |  resetPlaceHolder();  |         |                            |
-        |    81  |        R0 = R0 + 88;  |     88  |                            |
-        |    82  |  resetPlaceHolder();  |         |                            |
-        |    85  |        R0 = R0 + 89;  |     89  |                            |""".stripMargin
+        |    12  |  resetPlaceHolder();  |         |                            |
+        |    19  |      R0 = R0 + 2011;  |   2011  |                            |
+        |    27  |  resetPlaceHolder();  |         |                            |
+        |    34  |      R0 = R0 + 1011;  |   1011  |                         0  |
+        |    42  |  resetPlaceHolder();  |         |                            |
+        |    49  |      R0 = R0 + 1011;  |   1011  |                            |
+        |    57  |  resetPlaceHolder();  |         |                            |
+        |    64  |      R0 = R0 + 1011;  |   1011  |                         1  |
+        |    74  |        R0 = R0 + 88;  |     88  |                         2  |
+        |    77  |        R0 = R0 + 89;  |     89  |                            |""".stripMargin
     StringCompare.ignoreWhitespaces(SegmentClustering.printDecomposition(trace, groups2), decompositionExpected2, "decomposition 2 failed")
     val expected2 =
       """Tables:
         |Features: i, n
-        |TraceLocation: resetPlaceHolder(); (index=10) ->
+        |TraceLocation: resetPlaceHolder(); (index=12) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 0  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=14) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 0  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=22) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 0  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=30) ->
+        |TraceLocation: resetPlaceHolder(); (index=27) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 1  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=38) ->
+        |TraceLocation: resetPlaceHolder(); (index=42) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
-        | 1  |  4  |  false  |
+        | 2  |  4  |   true  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=46) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 2  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=54) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 2  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=62) ->
+        |TraceLocation: resetPlaceHolder(); (index=57) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 3  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=7) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        |    |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=70) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 3  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=78) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 4  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder(); (index=82) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 4  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: use R0 1011 (index=37) ->
+        |TraceLocation: use R0 1011 (index=34) ->
         |Use table:
-        | i  |  n  |    Label    |
-        |-------------------------
-        | 1  |  4  |  NoneGroup  |
+        | i  |  n  |    Label     |
+        |--------------------------
+        | 1  |  4  |  GroupID(0)  |
         |************************************************************
         |
-        |TraceLocation: use R0 1011 (index=53) ->
+        |TraceLocation: use R0 1011 (index=49) ->
         |Use table:
         | i  |  n  |    Label    |
         |-------------------------
         | 2  |  4  |  NoneGroup  |
         |************************************************************
         |
-        |TraceLocation: use R0 1011 (index=69) ->
+        |TraceLocation: use R0 1011 (index=64) ->
         |Use table:
-        | i  |  n  |    Label    |
-        |-------------------------
-        | 3  |  4  |  NoneGroup  |
+        | i  |  n  |    Label     |
+        |--------------------------
+        | 3  |  4  |  GroupID(0)  |
         |************************************************************
         |
-        |TraceLocation: use R0 2011 (index=21) ->
+        |TraceLocation: use R0 2011 (index=19) ->
         |Use table:
         | i  |  n  |    Label    |
         |-------------------------
         | 0  |  4  |  NoneGroup  |
         |************************************************************
         |
-        |TraceLocation: use R0 88 (index=81) ->
+        |TraceLocation: use R0 88 (index=74) ->
         |Use table:
-        | i  |  n  |    Label    |
-        |-------------------------
-        | 4  |  4  |  NoneGroup  |
+        | i  |  n  |    Label     |
+        |--------------------------
+        | 4  |  4  |  GroupID(0)  |
         |************************************************************
         |
-        |TraceLocation: use R0 89 (index=85) ->
+        |TraceLocation: use R0 89 (index=77) ->
         |Use table:
         | i  |  n  |    Label    |
         |-------------------------
@@ -482,21 +314,6 @@ class ClassifierUnitTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(
       transformation,
       """Transform resetPlaceHolder(); into:
-        |;
-        |
-        |Transform resetPlaceHolder(); into:
-        |;
-        |
-        |Transform resetPlaceHolder(); into:
-        |;
-        |
-        |Transform resetPlaceHolder(); into:
-        |;
-        |
-        |Transform resetPlaceHolder(); into:
-        |;
-        |
-        |Transform resetPlaceHolder(); into:
         |{
         |  if ((i < 0) || (i == 0))
         |    ;
@@ -522,17 +339,36 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |      R1 = 0;
         |      C1 = C1 + 1;
         |    }
-        |  ;
+        |  if ((i < 1) || (i == 1))
+        |    ;
+        |  else
+        |  if ((i < 2) || (i == 2))
+        |    {
+        |      if (S0 < R0)
+        |        S0 = R0;
+        |      else
+        |        ;
+        |      R0 = 0;
+        |      C0 = C0 + 1;
+        |    }
+        |  else
+        |    ;
         |}
         |
         |Transform use R0 1011 into:
-        |R1 = R1 + 1011;
+        |if ((i < 1) || (i == 1))
+        |  R0 = R0 + 1011;
+        |else
+        |if ((i < 2) || (i == 2))
+        |  R1 = R1 + 1011;
+        |else
+        |  R0 = R0 + 1011;
         |
         |Transform use R0 2011 into:
         |R1 = R1 + 2011;
         |
         |Transform use R0 88 into:
-        |R1 = R1 + 88;
+        |R0 = R0 + 88;
         |
         |Transform use R0 89 into:
         |R1 = R1 + 89;""".stripMargin,

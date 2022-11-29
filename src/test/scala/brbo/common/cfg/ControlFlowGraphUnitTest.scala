@@ -33,6 +33,10 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(set1.toString(), """List((-1) [Empty Node] [fun `NONE!`])""")
     StringCompare.ignoreWhitespaces(set2.toString(), """List((-1) [Empty Node] [fun `NONE!`], (-1) [Empty Node] [fun `NONE!`])""")
   }
+
+  "Finding the closest dominator" should "be correct" in {
+
+  }
 }
 
 object ControlFlowGraphUnitTest {

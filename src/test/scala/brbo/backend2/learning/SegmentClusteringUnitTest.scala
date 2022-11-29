@@ -134,11 +134,11 @@ object SegmentClusteringUnitTest {
       BrboArray(List(Number(10), Number(4), Number(3)), INT),
       Number(3)
     )),
-      """List(use R0 arrayRead(array, j) (cost=4), use R0 arrayRead(array, j) (cost=4), use R0 arrayRead(array, j) (cost=4))
-        |List(use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011))
+      """List(use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011), use R0 1011 (cost=1011))
         |List(use R0 arrayRead(array, j) (cost=3), use R0 arrayRead(array, j) (cost=3), use R0 arrayRead(array, j) (cost=3))
         |List(use R0 88 (cost=88), use R0 88 (cost=88), use R0 88 (cost=88))
-        |List(use R0 arrayRead(array, j) (cost=10), use R0 arrayRead(array, j) (cost=10), use R0 arrayRead(array, j) (cost=10))""".stripMargin),
+        |List(use R0 arrayRead(array, j) (cost=10), use R0 arrayRead(array, j) (cost=10), use R0 arrayRead(array, j) (cost=10))
+        |List(use R0 arrayRead(array, j) (cost=4), use R0 arrayRead(array, j) (cost=4), use R0 arrayRead(array, j) (cost=4))""".stripMargin),
     TestCase("amortizeSeparately", (amortizeSeparately, List(
       BrboArray(List(Number(10), Number(4), Number(3)), INT),
       BrboArray(List(Number(7), Number(20), Number(1)), INT),
