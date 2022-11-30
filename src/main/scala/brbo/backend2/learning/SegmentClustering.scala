@@ -8,7 +8,8 @@ import brbo.backend2.learning.ScriptRunner._
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.BrboType.INT
 import brbo.common.MyLogger
-import brbo.common.ast.Identifier
+import brbo.common.ast.{Command, Identifier}
+import brbo.common.cfg.ControlFlowGraph
 import com.google.common.collect.Sets
 import tech.tablesaw.api.IntColumn
 
@@ -55,7 +56,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
             testTrace = trace,
             similarTraces,
             interpreter,
-            sampleKTraces = Some(Fuzzer.LOOP_ITERATIONS_SAMPLE + 1)
+            sampleKTraces = Some(Fuzzer.LOOP_ITERATIONS_SAMPLE + 1),
           )
           chooseGroup(generalizableGroups) match {
             case Some(chosenGroup) =>
@@ -196,7 +197,8 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
                 Classifier.evaluateFunctionFromInterpreter(interpreter),
                 Map(GeneralityTestGroup -> group),
                 features = List(Identifier("i", INT), Identifier("n", INT)), // TODO: Use non resource variables
-                failIfCannotFindResetPlaceHolder = true
+                failIfCannotFindResetPlaceHolder = true,
+                controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
               )
               val programTables = tables.toProgramTables
               logger.traceOrError(s"Generated training data:\n${programTables.print()}")
@@ -374,6 +376,19 @@ object SegmentClustering {
 
     def print(trace: Trace): String = {
       removeEmptySegments().segments.map({ segment => segment.print(trace) }).mkString("; ")
+    }
+
+    def getCommands(trace: Trace): List[Command] = {
+      trace.nodes.zipWithIndex.foldLeft(Nil: List[Command])({
+        case (soFar, (node, index)) =>
+          if (indices.contains(index)) {
+            node.lastTransition match {
+              case Some(transition) => transition.command.asInstanceOf[Command] :: soFar
+              case None => soFar
+            }
+          }
+          else soFar
+      })
     }
   }
 

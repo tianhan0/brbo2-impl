@@ -232,12 +232,17 @@ case class ControlFlowGraph(entryNode: CFGNode,
       }
   })
 
-  def closestDominator(root: CFGNode, nodes: Set[CFGNode], predicate: CFGNode => Boolean): Option[CFGNode] = {
-    // println(s"root: ${root.printToIR()} ${predicate(root)}")
+  def closestDominator(nodes: Set[CFGNode], predicate: CFGNode => Boolean): Option[CFGNode] = {
+    closestDominator(root = entryNode, nodes, predicate, visited = Set())
+  }
+
+  private def closestDominator(root: CFGNode, nodes: Set[CFGNode], predicate: CFGNode => Boolean, visited: Set[CFGNode]): Option[CFGNode] = {
     val isRootDominator = nodes.forall(node => dominanceFrontiers.isDominatedBy(node, root))
     if (!isRootDominator) return None
     val qualifyingSuccessors: Iterator[CFGNode] = walaGraph.getSuccNodes(root).asScala.flatMap({
-      successor => closestDominator(root = successor, nodes, predicate)
+      successor =>
+        if (visited.contains(successor)) None
+        else closestDominator(root = successor, nodes, predicate, visited = visited + root)
     })
     if (qualifyingSuccessors.isEmpty) Some(root).filter(predicate)
     else Some(qualifyingSuccessors.toList.head)

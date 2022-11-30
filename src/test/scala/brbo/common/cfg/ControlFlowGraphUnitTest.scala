@@ -38,9 +38,9 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
   "Finding the closest dominator" should "be correct" in {
     val controlFlowGraph = ControlFlowGraph.toControlFlowGraph(test05)
     val nodes = controlFlowGraph.nodesFromCommands(Set(test05InnerLoopCondition, test05InnerLoopContinue))
-    val closestBranchingHead = controlFlowGraph.closestDominator(controlFlowGraph.entryNode, nodes, { node: CFGNode => node.command.isInstanceOf[BranchingHead]})
+    val closestBranchingHead = controlFlowGraph.closestDominator(nodes, { node: CFGNode => node.command.isInstanceOf[BranchingHead]})
     StringCompare.ignoreWhitespaces(closestBranchingHead.get.printToIR(), "(11) [Branch Head]", "Finding the closest BranchingHead failed")
-    val closestLessThan = controlFlowGraph.closestDominator(controlFlowGraph.entryNode, nodes, { node: CFGNode => node.command.isInstanceOf[LessThan]})
+    val closestLessThan = controlFlowGraph.closestDominator(nodes, { node: CFGNode => node.command.isInstanceOf[LessThan]})
     StringCompare.ignoreWhitespaces(closestLessThan.get.printToIR(), "(8) (i < 7)", "Finding the closest LessThan failed")
   }
 }

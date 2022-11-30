@@ -10,6 +10,7 @@ import brbo.backend2.learning.SegmentClustering.{Group, Segment}
 import brbo.backend2.learning.SegmentClusteringUnitTest.functionDefinitions
 import brbo.common.BrboType.INT
 import brbo.common.ast.{Command, Identifier, Number}
+import brbo.common.cfg.ControlFlowGraph
 import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -23,7 +24,8 @@ class ClassifierUnitTest extends AnyFlatSpec {
       Classifier.evaluateFunctionFromInterpreter(interpreter),
       groups1,
       features = List(Identifier("i", INT), Identifier("n", INT)),
-      failIfCannotFindResetPlaceHolder = false
+      failIfCannotFindResetPlaceHolder = false,
+      controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
     )
     val decompositionExpected1 =
       """Index  |       Commands        |  Costs  |  SegmentIDs in GroupID(0)  |  SegmentIDs in GroupID(1)  |
@@ -140,7 +142,8 @@ class ClassifierUnitTest extends AnyFlatSpec {
       Classifier.evaluateFunctionFromInterpreter(interpreter),
       groups2,
       features = List(Identifier("i", INT), Identifier("n", INT)),
-      failIfCannotFindResetPlaceHolder = false
+      failIfCannotFindResetPlaceHolder = false,
+      controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
     )
     val decompositionExpected2 =
       """Index  |       Commands        |  Costs  |  SegmentIDs in GroupID(0)  |
@@ -254,7 +257,8 @@ class ClassifierUnitTest extends AnyFlatSpec {
       Classifier.evaluateFunctionFromInterpreter(interpreter),
       groups,
       features = List(Identifier("i", INT), Identifier("n", INT)),
-      failIfCannotFindResetPlaceHolder = false
+      failIfCannotFindResetPlaceHolder = false,
+      controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
     )
     val classifierResults = tables.toProgramTables.generateClassifiers(debugMode = false)
     val invalidBound = Number(2000)
@@ -304,7 +308,8 @@ class ClassifierUnitTest extends AnyFlatSpec {
       Classifier.evaluateFunctionFromInterpreter(interpreter),
       groups,
       features = List(Identifier("i", INT), Identifier("n", INT)),
-      failIfCannotFindResetPlaceHolder = false
+      failIfCannotFindResetPlaceHolder = false,
+      controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
     )
     val classifierResults = tables.toProgramTables.generateClassifiers(debugMode = false)
     val transformation = classifierResults.toTransformation.map({

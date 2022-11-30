@@ -9,7 +9,7 @@ import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 import scala.annotation.tailrec
 import scala.collection.immutable.{HashMap, Map}
 
-class Interpreter(brboProgram: BrboProgram, debugMode: Boolean = false) {
+class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
   protected val logger: MyLogger = MyLogger.createLogger(classOf[Interpreter], debugMode)
   private val parentStatements: Map[BrboAst, Statement] =
     (brboProgram.mainFunction :: brboProgram.functions).flatMap(f => immediateParentStatements(f.bodyWithInitialization)).toMap

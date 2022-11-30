@@ -7,6 +7,7 @@ import brbo.backend2.learning.ScriptRunner.DecisionTreeLearning
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.GhostVariableUtils.{counterInitialValue, resourceInitialValue, starInitialValue}
 import brbo.common.ast._
+import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 import brbo.common.{MyLogger, Print}
 import play.api.libs.json.Json
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
@@ -372,7 +373,21 @@ object Classifier {
                      evaluate: (BrboExpr, Store) => BrboValue,
                      groups: Map[GroupID, Group],
                      features: List[BrboExpr],
-                     failIfCannotFindResetPlaceHolder: Boolean): TraceTables = {
+                     failIfCannotFindResetPlaceHolder: Boolean,
+                     controlFlowGraph: ControlFlowGraph): TraceTables = {
+    val dominators: Map[GroupID, Command] = groups.map({
+      case (groupID, group) =>
+        val commands = group.getCommands(trace)
+        val nodes = controlFlowGraph.nodesFromCommands(commands.toSet)
+        val dominator = controlFlowGraph.closestDominator(
+          nodes = nodes,
+          predicate = { node: CFGNode => node.command.isInstanceOf[ResetPlaceHolder] },
+        )
+        if (dominator.isEmpty)
+          throw TableGenerationError(s"Failed to find the closest dominating reset place holder for all uses in group:\n${group.print(trace)}")
+        (groupID, dominator.get.command)
+    })
+
     val nodesWithIndex = trace.nodes.zipWithIndex
     // From group IDs to the trace node indices into which resets need to be placed
     val resetPlaceHolderMap: Map[GroupID, Set[Int]] = groups.map({
@@ -400,7 +415,7 @@ object Classifier {
               else
                 None
           })
-          chooseResetPlaceHolder(allResetPlaceHolders) match {
+          chooseResetPlaceHolder(allResetPlaceHolders, dominators(groupID)) match {
             case Some(index) => resetPlaceHolderIndices = resetPlaceHolderIndices + index
             case None =>
               val errorMessage = s"Failed to find a reset place holder between " +
@@ -411,6 +426,7 @@ object Classifier {
         }
         (groupID, resetPlaceHolderIndices)
     })
+    // TODO: Do not specify reset labels for reset place holders after the last use of the last segment
 
     val groupIDs = groups.keys.toSet
     var traceTableMap = Map[TraceLocation, BrboTables]()
@@ -488,12 +504,16 @@ object Classifier {
     new TraceTables(traceTableMap, features)
   }
 
-  private def chooseResetPlaceHolder(holders: Iterable[(ResetPlaceHolder, Int)]): Option[Int] = {
+  private def chooseResetPlaceHolder(holders: Iterable[(ResetPlaceHolder, Int)], dominator: Command): Option[Int] = {
     if (holders.isEmpty)
       None
     else {
-      // TODO: Choose more carefully
-      Some(holders.head._2)
+      return Some(holders.head._2)
+      // Find the reset place holder that is the same as the dominator
+      holders.find({ case (holder, _) => holder == dominator }) match {
+        case Some((_, index)) => Some(index)
+        case None => None
+      }
     }
   }
 

@@ -5,6 +5,7 @@ import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.backend2.learning.SegmentClustering.printSegments
 import brbo.backend2.learning.{Classifier, SegmentClustering, TracePartition}
 import brbo.common.ast._
+import brbo.common.cfg.ControlFlowGraph
 import brbo.common.{BrboType, GhostVariableUtils, MyLogger, NewCommandLineArguments}
 
 class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
@@ -66,7 +67,8 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
       Classifier.evaluateFunctionFromInterpreter(interpreter),
       groups,
       features = classifierFeatures,
-      failIfCannotFindResetPlaceHolder = false
+      failIfCannotFindResetPlaceHolder = false,
+      controlFlowGraph = ControlFlowGraph.toControlFlowGraph(instrumentedProgram)
     )
     // logger.traceOrError(s"Step 3.2: Generated tables:\n${tables.print()}")
     logger.info(s"Step 3.3: Generate classifiers on the tables")
