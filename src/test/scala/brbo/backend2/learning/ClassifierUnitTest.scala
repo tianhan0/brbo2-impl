@@ -28,24 +28,24 @@ class ClassifierUnitTest extends AnyFlatSpec {
       controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
     )
     val decompositionExpected1 =
-      """Index  |       Commands        |  Costs  |  SegmentIDs in GroupID(0)  |  SegmentIDs in GroupID(1)  |
-        |-----------------------------------------------------------------------------------------------------
-        |    12  |  resetPlaceHolder();  |         |                            |                            |
-        |    19  |      R0 = R0 + 2011;  |   2011  |                            |                         0  |
-        |    27  |  resetPlaceHolder();  |         |                            |                            |
-        |    34  |      R0 = R0 + 1011;  |   1011  |                         0  |                            |
-        |    42  |  resetPlaceHolder();  |         |                            |                            |
-        |    49  |      R0 = R0 + 1011;  |   1011  |                            |                         1  |
-        |    57  |  resetPlaceHolder();  |         |                            |                            |
-        |    64  |      R0 = R0 + 1011;  |   1011  |                         1  |                            |
-        |    74  |        R0 = R0 + 88;  |     88  |                         2  |                            |
-        |    77  |        R0 = R0 + 89;  |     89  |                            |                         2  |""".stripMargin
+      """Index  |        Commands         |  Costs  |  SegmentIDs in GroupID(0)  |  SegmentIDs in GroupID(1)  |
+        |-------------------------------------------------------------------------------------------------------
+        |    12  |  resetPlaceHolder_1();  |         |                            |                            |
+        |    19  |        R0 = R0 + 2011;  |   2011  |                            |                         0  |
+        |    27  |  resetPlaceHolder_1();  |         |                            |                            |
+        |    34  |        R0 = R0 + 1011;  |   1011  |                         0  |                            |
+        |    42  |  resetPlaceHolder_1();  |         |                            |                            |
+        |    49  |        R0 = R0 + 1011;  |   1011  |                            |                         1  |
+        |    57  |  resetPlaceHolder_1();  |         |                            |                            |
+        |    64  |        R0 = R0 + 1011;  |   1011  |                         1  |                            |
+        |    74  |          R0 = R0 + 88;  |     88  |                         2  |                            |
+        |    77  |          R0 = R0 + 89;  |     89  |                            |                         2  |""".stripMargin
     StringCompare.ignoreWhitespaces(SegmentClustering.printDecomposition(trace, groups1), decompositionExpected1, "decomposition 1 failed")
 
     val expected1 =
       """Tables:
         |Features: i, n
-        |TraceLocation: resetPlaceHolder(); (index=12) ->
+        |TraceLocation: resetPlaceHolder_1(); (index=12) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -57,7 +57,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 0  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=27) ->
+        |TraceLocation: resetPlaceHolder_1(); (index=27) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -69,7 +69,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 1  |  4  |   true  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=42) ->
+        |TraceLocation: resetPlaceHolder_1(); (index=42) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -81,7 +81,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | 2  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=57) ->
+        |TraceLocation: resetPlaceHolder_1(); (index=57) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -146,44 +146,44 @@ class ClassifierUnitTest extends AnyFlatSpec {
       controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
     )
     val decompositionExpected2 =
-      """Index  |       Commands        |  Costs  |  SegmentIDs in GroupID(0)  |
-        |------------------------------------------------------------------------
-        |    12  |  resetPlaceHolder();  |         |                            |
-        |    19  |      R0 = R0 + 2011;  |   2011  |                            |
-        |    27  |  resetPlaceHolder();  |         |                            |
-        |    34  |      R0 = R0 + 1011;  |   1011  |                         0  |
-        |    42  |  resetPlaceHolder();  |         |                            |
-        |    49  |      R0 = R0 + 1011;  |   1011  |                            |
-        |    57  |  resetPlaceHolder();  |         |                            |
-        |    64  |      R0 = R0 + 1011;  |   1011  |                         1  |
-        |    74  |        R0 = R0 + 88;  |     88  |                         2  |
-        |    77  |        R0 = R0 + 89;  |     89  |                            |""".stripMargin
+      """Index  |        Commands         |  Costs  |  SegmentIDs in GroupID(0)  |
+        |--------------------------------------------------------------------------
+        |    12  |  resetPlaceHolder_1();  |         |                            |
+        |    19  |        R0 = R0 + 2011;  |   2011  |                            |
+        |    27  |  resetPlaceHolder_1();  |         |                            |
+        |    34  |        R0 = R0 + 1011;  |   1011  |                         0  |
+        |    42  |  resetPlaceHolder_1();  |         |                            |
+        |    49  |        R0 = R0 + 1011;  |   1011  |                            |
+        |    57  |  resetPlaceHolder_1();  |         |                            |
+        |    64  |        R0 = R0 + 1011;  |   1011  |                         1  |
+        |    74  |          R0 = R0 + 88;  |     88  |                         2  |
+        |    77  |          R0 = R0 + 89;  |     89  |                            |""".stripMargin
     StringCompare.ignoreWhitespaces(SegmentClustering.printDecomposition(trace, groups2), decompositionExpected2, "decomposition 2 failed")
     val expected2 =
       """Tables:
         |Features: i, n
-        |TraceLocation: resetPlaceHolder(); (index=12) ->
+        |TraceLocation: resetPlaceHolder_1(); (index=12) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 0  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=27) ->
+        |TraceLocation: resetPlaceHolder_1(); (index=27) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 1  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=42) ->
+        |TraceLocation: resetPlaceHolder_1(); (index=42) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
         | 2  |  4  |   true  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder(); (index=57) ->
+        |TraceLocation: resetPlaceHolder_1(); (index=57) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
@@ -318,7 +318,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
     }).toList.sorted.mkString("\n\n")
     StringCompare.ignoreWhitespaces(
       transformation,
-      """Transform resetPlaceHolder(); into:
+      """Transform resetPlaceHolder_1(); into:
         |{
         |  if ((i < 0) || (i == 0))
         |    ;

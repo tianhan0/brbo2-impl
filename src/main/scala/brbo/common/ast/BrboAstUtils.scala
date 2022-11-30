@@ -167,24 +167,35 @@ object BrboAstUtils {
 
   // Insert reset place holders
   def insertResetPlaceHolder(ast: BrboAst): BrboAst = {
+    insertResetPlaceHolder(ast, numberOfInserted = 0)._1
+  }
+
+  private def insertResetPlaceHolder(ast: BrboAst, numberOfInserted: Int): (BrboAst, Int) = {
     ast match {
-      case command: Command => command
+      case command: Command => (command, numberOfInserted)
       case statement: Statement =>
         statement match {
           case Block(asts, _) =>
-            val newAsts = asts.map(ast => insertResetPlaceHolder(ast))
+            val (newAsts, newNumberOfInserted) = asts.foldLeft((Nil: List[BrboAst], numberOfInserted))({
+              case ((asts, numberOfInserted), ast) =>
+                val (newAst, newNumberOfInserted) = insertResetPlaceHolder(ast, numberOfInserted = numberOfInserted)
+                (newAst :: asts, newNumberOfInserted)
+            })
             // Not inserting a reset placeholder, because if a program has no loops,
             // then we should not bother finding a decomposition
-            Block(newAsts)
+            (Block(newAsts.reverse), newNumberOfInserted)
           case ITE(condition, thenAst, elseAst, _) =>
-            ITE(condition, insertResetPlaceHolder(thenAst), insertResetPlaceHolder(elseAst))
+            val (newThenAst, newNumberOfInserted) = insertResetPlaceHolder(thenAst, numberOfInserted = numberOfInserted)
+            val (newElseAst, newNumberOfInserted2) = insertResetPlaceHolder(elseAst, numberOfInserted = newNumberOfInserted)
+            (ITE(condition, newThenAst, newElseAst), newNumberOfInserted2)
           case Loop(condition, loopBody, _) =>
             // Right after the loop head
-            val block = Block(List(ResetPlaceHolder(), insertResetPlaceHolder(loopBody)))
+            val resetPlaceHolder = ResetPlaceHolder(numberOfInserted + 1)
+            val (newLoopBody, newNumberOfInserted) = insertResetPlaceHolder(loopBody, numberOfInserted = numberOfInserted + 1)
+            val block = Block(List(resetPlaceHolder, newLoopBody))
             val loop = Loop(condition, block)
-            // Right before the loop head
-            // Block(List(ResetPlaceHolder(), loop))
-            loop
+            // TODO: Right before the loop head?
+            (loop, newNumberOfInserted)
           case _ => throw new Exception
         }
       case _ => throw new Exception

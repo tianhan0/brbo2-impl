@@ -709,15 +709,15 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
 }
 
 // This is a place holder that will be replaced with reset commands
-case class ResetPlaceHolder(override val uuid: UUID = UUID.randomUUID()) extends GhostCommand(uuid) {
-  override def printToCInternal(indent: Int): String = s"${indentString(indent)}${PreDefinedFunctions.ResetPlaceHolder.name}();"
+case class ResetPlaceHolder(id: Int, override val uuid: UUID = UUID.randomUUID()) extends GhostCommand(uuid) {
+  override def printToCInternal(indent: Int): String = s"${indentString(indent)}${PreDefinedFunctions.ResetPlaceHolder.name}_$id();"
 
   override def getUses: Set[Identifier] = Set()
 
   override def getDefs: Set[Identifier] = Set()
 
   override def sameAs(other: Any): Boolean = other match {
-    case ResetPlaceHolder(_) => true
+    case ResetPlaceHolder(otherId, _) => id == otherId
     case _ => false
   }
 
