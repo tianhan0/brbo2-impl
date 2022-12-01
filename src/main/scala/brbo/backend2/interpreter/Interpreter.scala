@@ -3,11 +3,12 @@ package brbo.backend2.interpreter
 import brbo.backend2.interpreter.Interpreter._
 import brbo.common.ast.BrboAstUtils.immediateParentStatements
 import brbo.common.ast._
-import brbo.common.{MyLogger, PreDefinedFunctions, Print}
+import brbo.common.{BrboType, MyLogger, PreDefinedFunctions, Print}
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.{HashMap, Map}
+import scala.collection.mutable.ArrayBuffer
 
 class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
   protected val logger: MyLogger = MyLogger.createLogger(classOf[Interpreter], debugMode)
@@ -442,9 +443,6 @@ object Interpreter {
 
     def get(variable: Identifier): BrboValue = get(variable.name)
 
-    def get(variable: String): BrboValue = map.getOrElse(variable,
-      throw new VariableNotFoundException(s"Variable `$variable` is not defined in ${this.toString}"))
-
     override def toString: String = {
       val values = map.map({
         case (identifier, value) => s"$identifier -> ${value.printToIR()}"
@@ -452,7 +450,32 @@ object Interpreter {
       s"Store: ($values)"
     }
 
-    def getVariables: List[String] = map.keys.toList.sorted
+    def getVariables: Map[String, BrboType.T] = {
+      map.map({
+        case (name, value) =>
+          val typ = value match {
+            case _: Number => BrboType.INT
+            case _: Bool => BrboType.BOOL
+            case _ => throw new Exception("Unknown Type")
+          }
+          (name, typ)
+      })
+    }
+
+    def printValue(variable: String): String = {
+      try {
+        get(variable) match {
+          case Number(n, _) => n.toString
+          case Bool(b, _) => b.toString
+          case _ => throw new Exception
+        }
+      } catch {
+        case _: VariableNotFoundException => ""
+      }
+    }
+
+    private def get(variable: String): BrboValue = map.getOrElse(variable,
+      throw new VariableNotFoundException(s"Variable `$variable` is not defined in ${this.toString}"))
   }
 
   class VariableNotFoundException(message: String) extends Exception {
@@ -601,49 +624,48 @@ object Interpreter {
       s"$prefix$string"
     }
 
-    def getVariables: List[String] = nodes.flatMap(node => node.store.getVariables).distinct.sorted
+    def getVariables: List[(String, BrboType.T)] = {
+      val variables: Map[String, BrboType.T] = nodes.map(node => node.store.getVariables).foldLeft(Map(): Map[String, BrboType.T])({
+        case (soFar, map) => soFar ++ map
+      })
+      variables.toList.sortWith({
+        case ((name1, type1), (name2, type2)) => name1 < name2 && type1.toString < type2.toString
+      })
+    }
 
     def toTable(printStores: Boolean, onlyGhostCommand: Boolean,
                 omitExpressions: Boolean = true, commandMaxLength: Int = 30): (Table, Map[Int, Int]) = {
       val table: Table = Table.create("")
       // From the indices in the shortened table to the actual indices
       var indexMap: Map[Int, Int] = Map()
-      var commands: List[String] = Nil
-      var costs: List[String] = Nil
-      var actualIndices: List[Int] = Nil
-      var values: Map[String, List[String]] = Map()
+      val commands: ArrayBuffer[String] = ArrayBuffer()
+      val costs: ArrayBuffer[String] = ArrayBuffer()
+      val actualIndices: ArrayBuffer[Int] = ArrayBuffer()
+      var values: Map[String, ArrayBuffer[String]] = Map()
       val variables = getVariables
       nodes.zipWithIndex.foreach({
-        case (node, actualIndex) =>
-          node.lastTransition match {
+        case (TraceNode(store, lastTransition), actualIndex) =>
+          lastTransition match {
             case Some(transition) =>
               if (omitExpressions && transition.command.isInstanceOf[BrboExpr]) ()
               else {
                 if (transition.command.isInstanceOf[GhostCommand] || !onlyGhostCommand) {
                   indexMap = indexMap + (commands.length -> actualIndex)
                   val (commandString, costString) = transition.print(onlyGhostCommand, commandMaxLength)
-                  commands = commands :+ commandString
-                  costs = costs :+ costString
-                  actualIndices = actualIndices :+ actualIndex
+                  commands.append(commandString)
+                  costs.append(costString)
+                  actualIndices.append(actualIndex)
                   if (printStores) {
                     variables.foreach({
-                      variable =>
-                        val value = {
-                          try {
-                            node.store.get(variable) match {
-                              case Number(n, _) => n.toString
-                              case Bool(b, _) => b.toString
-                              case _ => throw new Exception
-                            }
-                          } catch {
-                            case _: VariableNotFoundException => ""
-                          }
+                      case (name, _) =>
+                        val value = store.printValue(name)
+                        values.get(name) match {
+                          case Some(array) => array.append(value)
+                          case None =>
+                            val array = ArrayBuffer[String]()
+                            array.append(value)
+                            values = values + (name -> array)
                         }
-                        val list = values.get(variable) match {
-                          case Some(list) => list
-                          case None => Nil
-                        }
-                        values = values + (variable -> (list :+ value))
                     })
                   }
                 }

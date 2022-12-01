@@ -426,7 +426,7 @@ object Classifier {
         }
         (groupID, resetPlaceHolderIndices)
     })
-    // TODO: Do not specify reset labels for reset place holders after the last use of the last segment
+    val lastUseIndices = groups.map({ case (groupID, group) => (groupID, group.last) })
 
     val groupIDs = groups.keys.toSet
     var traceTableMap = Map[TraceLocation, BrboTables]()
@@ -480,21 +480,29 @@ object Classifier {
                 val traceLocation = TraceLocation(resetPlaceHolder, index)
                 groupIDs.foreach({
                   groupID =>
-                    val resetTable: ResetTable = traceTableMap.get(traceLocation) match {
-                      case Some(tables) =>
-                        tables.get(groupID) match {
-                          case Some(table) => table.asInstanceOf[ResetTable]
-                          case None =>
-                            val resetTable = new ResetTable(features)
-                            traceTableMap = traceTableMap + (traceLocation -> (tables + (groupID -> resetTable)))
-                            resetTable
-                        }
-                      case None =>
-                        val resetTable = new ResetTable(features)
-                        traceTableMap = traceTableMap + (traceLocation -> Map(groupID -> resetTable))
-                        resetTable
+                    val addRow = lastUseIndices(groupID) match {
+                      case Some(lastUseIndex) => index < lastUseIndex
+                      case None => false
                     }
-                    resetTable.addRow(evaluatedFeatures, ResetLabel(groupsToReset.contains(groupID)))
+                    // Do not specify reset labels for reset place holders after the last use of the last segment
+                    // Otherwise, the labels may introduce contradiction -- same features but different labels
+                    if (addRow) {
+                      val resetTable: ResetTable = traceTableMap.get(traceLocation) match {
+                        case Some(tables) =>
+                          tables.get(groupID) match {
+                            case Some(table) => table.asInstanceOf[ResetTable]
+                            case None =>
+                              val resetTable = new ResetTable(features)
+                              traceTableMap = traceTableMap + (traceLocation -> (tables + (groupID -> resetTable)))
+                              resetTable
+                          }
+                        case None =>
+                          val resetTable = new ResetTable(features)
+                          traceTableMap = traceTableMap + (traceLocation -> Map(groupID -> resetTable))
+                          resetTable
+                      }
+                      resetTable.addRow(evaluatedFeatures, ResetLabel(groupsToReset.contains(groupID)))
+                    }
                 })
               case _ =>
             }
@@ -632,13 +640,13 @@ object Classifier {
       })
       logger.traceOrError(s"Expected segment clusters:\n${print(expectedDecomposition)}")
       val segments: List[Segment] = expectedDecomposition.flatten
-      logger.traceOrError(s"${ghostStore.print()}")
+      logger.traceOrError(s"Final ghost state after trace decomposition: ${ghostStore.print()}")
       val actualDecomposition: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segments).map({
         list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
       })
       logger.traceOrError(s"Actual segment clusters:\n${print(actualDecomposition)}")
-      val expected = expectedDecomposition.map(list => Group(list))
-      val actual = actualDecomposition.map(list => Group(list))
+      val expected = expectedDecomposition.map(segments => Group(segments))
+      val actual = actualDecomposition.map(segments => Group(segments))
       if (expected.nonEmpty && actual.isEmpty)
         return false // calling forall on an empty list returns true
       // logger.traceOrError(s"Actual groups ${printGroups(actual, trace)}")
@@ -655,20 +663,31 @@ object Classifier {
 
     def printDecomposedTrace(): String = {
       val table: Table = Table.create("")
-      var commands: List[String] = Nil
-      var costs: List[String] = Nil
-      var indices: List[String] = Nil
+      val commands: ArrayBuffer[String] = ArrayBuffer()
+      val costs: ArrayBuffer[String] = ArrayBuffer()
+      val indices: ArrayBuffer[String] = ArrayBuffer()
       val groupIDs: Map[GroupID, ArrayBuffer[String]] = decomposedTrace.map(node => (node.groupID, ArrayBuffer[String]())).toMap
+      val variables = trace.getVariables
+      var values: Map[String, List[String]] = Map()
       decomposedTrace.foreach({
         case DecomposedTraceNode(index, transition, groupID) =>
-          indices = indices :+ index.toString
+          indices.append(index.toString)
           val (commandString, costString) = transition.print(onlyGhostCommand = true, commandMaxLength = 30)
-          commands = commands :+ commandString
-          costs = costs :+ costString
+          commands.append(commandString)
+          costs.append(costString)
           groupIDs.foreach({
             case (groupID2, array) =>
-              if (groupID2 == groupID) array.append("x")
+              if (groupID2 == groupID) array.append("*")
               else array.append("")
+          })
+          variables.foreach({
+            case (name, _) =>
+              val value = trace.nodes(index).store.printValue(name)
+              val list = values.get(name) match {
+                case Some(list) => list
+                case None => Nil
+              }
+              values = values + (name -> (list :+ value))
           })
       })
       table.addColumns(StringColumn.create("Index", indices: _*))
@@ -677,6 +696,10 @@ object Classifier {
       groupIDs.foreach({
         case (groupID, array) =>
           table.addColumns(StringColumn.create(groupID.print(), array: _*))
+      })
+      values.toList.sortWith({ case (p1, p2) => p1._1 < p2._1 }).foreach({
+        case (identifier, values) =>
+          table.addColumns(StringColumn.create(identifier, values: _*))
       })
       table.printAll()
     }
@@ -707,7 +730,7 @@ object Classifier {
     val ghostStore = new GhostStore
     var decomposedTrace: List[DecomposedTraceNode] = Nil
 
-    if (debugMode) logger.error(s"# of nodes: ${trace.nodes.size}")
+    // if (debugMode) logger.error(s"# of nodes: ${trace.nodes.size}")
     trace.nodes.zipWithIndex.foreach({
       case (TraceNode(store, _), index) =>
         if (index == trace.nodes.size - 1) {

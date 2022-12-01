@@ -84,11 +84,6 @@ class ClassifierUnitTest extends AnyFlatSpec {
         | i  |  n  |  Label  |
         |---------------------
         | 3  |  4  |  false  |
-        |========================================
-        |Reset table: GroupID(1) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 3  |  4  |  false  |
         |************************************************************
         |
         |TraceLocation: use R0 1011 (index=34) ->
@@ -288,13 +283,13 @@ class ClassifierUnitTest extends AnyFlatSpec {
       transformation,
       """Transform resetPlaceHolder_1(); into:
         |{
-        |  if ((i < 1) || (i == 1))
+        |  if ((i < 0) || (i == 0))
         |  {
-        |    if ((i < 0) || (i == 0))
-        |    {
-        |      ;
-        |    }
-        |    else
+        |    ;
+        |  }
+        |  else
+        |  {
+        |    if ((i < 1) || (i == 1))
         |    {
         |      if (S1 < R1)
         |      {
@@ -307,10 +302,10 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |      R1 = 0;
         |      C1 = C1 + 1;
         |    }
-        |  }
-        |  else
-        |  {
-        |    ;
+        |    else
+        |    {
+        |      ;
+        |    }
         |  }
         |  if ((i < 1) || (i == 1))
         |  {
@@ -356,7 +351,8 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |}
         |
         |Transform use R0 2011 into:
-        |R1 = R1 + 2011;""".stripMargin,
+        |R1 = R1 + 2011;
+        |""".stripMargin,
       "Generating transformations failed"
     )
   }
