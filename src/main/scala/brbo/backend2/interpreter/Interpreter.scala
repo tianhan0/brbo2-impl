@@ -597,7 +597,7 @@ object Interpreter {
   }
 
   case class Trace(nodes: List[TraceNode]) extends Print {
-    val costTraceAssociation: CostTraceAssociation = {
+    lazy val costTraceAssociation: CostTraceAssociation = {
       val indexMap =
         nodes.zipWithIndex.foldLeft(Map(): Map[Int, CostTraceNode])({
           case (indexMap, (node, index)) => node.lastTransition match {
@@ -613,7 +613,7 @@ object Interpreter {
         })
       CostTraceAssociation(this, indexMap)
     }
-    val costTrace: CostTrace = CostTrace(costTraceAssociation.costTrace(indices = None))
+    lazy val costTrace: CostTrace = CostTrace(costTraceAssociation.costTrace(indices = None))
 
     def add(node: TraceNode): Trace = Trace(nodes :+ node)
 
@@ -624,7 +624,7 @@ object Interpreter {
       s"$prefix$string"
     }
 
-    def getVariables: List[(String, BrboType.T)] = {
+    lazy val variables: List[(String, BrboType.T)] = {
       val variables: Map[String, BrboType.T] = nodes.map(node => node.store.getVariables).foldLeft(Map(): Map[String, BrboType.T])({
         case (soFar, map) => soFar ++ map
       })
@@ -642,7 +642,6 @@ object Interpreter {
       val costs: ArrayBuffer[String] = ArrayBuffer()
       val actualIndices: ArrayBuffer[Int] = ArrayBuffer()
       var values: Map[String, ArrayBuffer[String]] = Map()
-      val variables = getVariables
       nodes.zipWithIndex.foreach({
         case (TraceNode(store, lastTransition), actualIndex) =>
           lastTransition match {

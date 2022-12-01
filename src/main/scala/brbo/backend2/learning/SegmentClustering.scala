@@ -186,7 +186,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
       }
     }
 
-    val nonResourceVariables = testTrace.getVariables.map(variable => Identifier(variable._1, variable._2)).filterNot({
+    val nonGhostVariables = testTrace.variables.map(variable => Identifier(variable._1, variable._2)).filterNot({
       identifier => GhostVariableUtils.isGhostVariable(identifier.name)
     })
     val futures = Future.traverse(groups.zipWithIndex)({
@@ -199,7 +199,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
                 testTrace,
                 Classifier.evaluateFromInterpreter(interpreter),
                 Map(GeneralityTestGroup -> group),
-                features = nonResourceVariables,
+                features = nonGhostVariables,
                 throwIfNoResetPlaceHolder = true,
                 controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
               )
@@ -230,7 +230,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
                   val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
                   logger.info(s"$logging: $areSimilar")
                   logger.info(Classifier.printTransformation(classifierResults.toTransformation))
-                  logger.traceOrError(s"Decomposed trace:\n${applicationResult.printDecomposedTrace()}")
+                  logger.traceOrError(s"Decomposed trace:\n${applicationResult.printDecomposedTrace}")
                   // logger.traceOrError(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
                   areSimilar
                 case None =>
@@ -298,7 +298,7 @@ object SegmentClustering {
       }).mkString(", ")
     }
 
-    def printAsSet(): String = s"{${indices.mkString(",")}}"
+    lazy val printAsSet: String = s"{${indices.mkString(",")}}"
 
     def lessThan(other: Segment): Boolean = {
       (this.isEmpty, other.isEmpty) match {
@@ -392,7 +392,7 @@ object SegmentClustering {
   }
 
   def printSegments(segments: Iterable[Segment]): String = {
-    segments.map(segment => segment.printAsSet()).toList.sorted.mkString(", ")
+    segments.map(segment => segment.printAsSet).toList.sorted.mkString(", ")
   }
 
   class TraceDecomposition(trace: Trace) {

@@ -661,14 +661,13 @@ object Classifier {
       })
     }
 
-    def printDecomposedTrace(): String = {
+    lazy val printDecomposedTrace: String = {
       val table: Table = Table.create("")
       val commands: ArrayBuffer[String] = ArrayBuffer()
       val costs: ArrayBuffer[String] = ArrayBuffer()
       val indices: ArrayBuffer[String] = ArrayBuffer()
       val groupIDs: Map[GroupID, ArrayBuffer[String]] = decomposedTrace.map(node => (node.groupID, ArrayBuffer[String]())).toMap
-      val variables = trace.getVariables
-      var values: Map[String, List[String]] = Map()
+      var values: Map[String, ArrayBuffer[String]] = Map()
       decomposedTrace.foreach({
         case DecomposedTraceNode(index, transition, groupID) =>
           indices.append(index.toString)
@@ -680,14 +679,16 @@ object Classifier {
               if (groupID2 == groupID) array.append("*")
               else array.append("")
           })
-          variables.foreach({
+          trace.variables.foreach({
             case (name, _) =>
               val value = trace.nodes(index).store.printValue(name)
-              val list = values.get(name) match {
-                case Some(list) => list
-                case None => Nil
+              values.get(name) match {
+                case Some(array) => array.append(value)
+                case None =>
+                  val array = ArrayBuffer[String]()
+                  array.append(value)
+                  values = values + (name -> array)
               }
-              values = values + (name -> (list :+ value))
           })
       })
       table.addColumns(StringColumn.create("Index", indices: _*))
