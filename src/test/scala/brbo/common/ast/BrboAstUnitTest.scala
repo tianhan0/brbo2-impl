@@ -71,20 +71,30 @@ object BrboAstUnitTest {
       // TestCase("Assert", createAssert, "  assert(false);"),
       // TestCase("Assume", createAssume, "  assume(false);"),
       TestCase("LabeledCommand", createLabeledCommand, "  label: return;"),
-      TestCase("ITE", createITE, "  if (true)\n    x = 0;\n  else\n    x = 1;"),
+      TestCase("ITE", createITE,
+        """  if (true)
+          |  {
+          |    x = 0;
+          |  }
+          |  else
+          |  {
+          |    x = 1;
+          |  }""".stripMargin),
       TestCase("Loop", createLoop, "  while (0 < x)\n  {\n    x = 0;\n    x = 1;\n  }"),
       TestCase("Block", createBlock, "  {\n    x = 0;\n    x = 1;\n  }"),
       TestCase("Use", createUse, "  R5 = R5 + 1;"),
       TestCase("Use 2", createUse2, "  R = R + 2;"),
       TestCase("Reset", createReset,
-        """  {
-          |    if (S5 < R5)
-          |      S5 = R5;
-          |    else
-          |      ;
-          |    R5 = 0;
-          |    C5 = C5 + 1;
-          |  }""".stripMargin)
+        """  if (S5 < R5)
+          |  {
+          |    S5 = R5;
+          |  }
+          |  else
+          |  {
+          |    ;
+          |  }
+          |  R5 = 0;
+          |  C5 = C5 + 1;""".stripMargin)
     )
 
   def createContinue: Continue = Continue()
@@ -209,25 +219,44 @@ object BrboAstUnitTest {
         |  int S2 = -2147483648;
         |  int S3 = -2147483648;
         |  int S4 = -2147483648;
-        |  if (!((x < 10)) && !((x == 10))) R1 = R1 + 10;
-        |  if (x < 10) {
+        |  if (!((x < 10)) && !((x == 10)))
+        |  {
+        |    R1 = R1 + 10;
+        |  }
+        |  else
+        |  {
+        |    ;
+        |  }
+        |  if (x < 10)
+        |  {
         |    if (S2 < R2)
+        |    {
         |      S2 = R2;
+        |    }
         |    else
+        |    {
         |      ;
+        |    }
         |    R2 = 0;
         |    C2 = C2 + 1;
         |  }
-        |  R3 = R3 + 100;
+        |  else
         |  {
-        |    if (S4 < R4)
-        |      S4 = R4;
-        |    else
-        |      ;
-        |    R4 = 0;
-        |    C4 = C4 + 1;
+        |    ;
         |  }
+        |  R3 = R3 + 100;
+        |  if (S4 < R4)
+        |  {
+        |    S4 = R4;
+        |  }
+        |  else
+        |  {
+        |    ;
+        |  }
+        |  R4 = 0;
+        |  C4 = C4 + 1;
         |}
+        |
         |""".stripMargin),
     TestCase("arrayInputTest", arrayInputTest,
       """void main(int x)
@@ -319,8 +348,16 @@ object BrboAstUnitTest {
         |    int D4p = 0;
         |    lessPreciseBound(((((0 + D1) + D2) + D3) + D4) < 10);
         |    mostPreciseBound(!((((((0 + D1) + D2) + D3) + D4) < 10)) && !((((((0 + D1) + D2) + D3) + D4) == 10)));
-        |    if (!((x < 10)) && !((x == 10))) { D1 = D1 + 10; }
-        |    if (x < 10) {
+        |    if (!((x < 10)) && !((x == 10)))
+        |    {
+        |      D1 = D1 + 10;
+        |    }
+        |    else
+        |    {
+        |      ;
+        |    }
+        |    if (x < 10)
+        |    {
         |      if (D2p < D2)
         |      {
         |        D2p = D2;
@@ -332,19 +369,21 @@ object BrboAstUnitTest {
         |      D2 = 0;
         |      C2 = C2 + 1;
         |    }
-        |    D3 = D3 + 100;
+        |    else
         |    {
-        |      if (D4p < D4)
-        |      {
-        |        D4p = D4;
-        |      }
-        |      else
-        |      {
-        |        ;
-        |      }
-        |      D4 = 0;
-        |      C4 = C4 + 1;
+        |      ;
         |    }
+        |    D3 = D3 + 100;
+        |    if (D4p < D4)
+        |    {
+        |      D4p = D4;
+        |    }
+        |    else
+        |    {
+        |      ;
+        |    }
+        |    D4 = 0;
+        |    C4 = C4 + 1;
         |    int R = 0;
         |    ;
         |    int a4 = ndInt();

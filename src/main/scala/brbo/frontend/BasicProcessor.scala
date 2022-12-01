@@ -127,12 +127,12 @@ object BasicProcessor {
 
   /**
    *
-   * @param className          The class name
-   * @param sourceFileContents Java source code that contains a class, which defines exactly 1 method
+   * @param className  The class name
+   * @param sourceCode Java source code that contains a class, which defines exactly 1 method
    * @return The method in the Java source code
    */
-  def getTargetProgram(className: String, sourceFileContents: String): TargetProgram = {
-    val processor = run(className, sourceFileContents)
+  def getTargetProgram(className: String, sourceCode: String): TargetProgram = {
+    val processor = run(className, sourceCode)
     processor.assumeOneClass()
     processor.mainMethod match {
       case Some(mainMethod) =>

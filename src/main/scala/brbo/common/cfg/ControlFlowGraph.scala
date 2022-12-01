@@ -72,18 +72,18 @@ object ControlFlowGraph {
       functionCFG
     }
 
-    def getNode(content: Command, brboFunction: BrboFunction): CFGNode = {
+    def getNode(command: Command, brboFunction: BrboFunction): CFGNode = {
       def addNode(node: CFGNode): Unit = {
         walaGraph.addNode(node)
         jgraphtGraph.addVertex(node)
       }
 
-      nodes.get(content) match {
+      nodes.get(command) match {
         case Some(node) => node
         case None =>
           val id = nodes.size + 1
-          val node = CFGNode(content, Some(brboFunction), id)
-          nodes = nodes + (content -> node)
+          val node = CFGNode(command, Some(brboFunction), id)
+          nodes = nodes + (command -> node)
           addNode(node)
           node
       }
@@ -227,8 +227,8 @@ case class ControlFlowGraph(entryNode: CFGNode,
   MathUtils.crossJoin2(cfgs, cfgs).foreach({
     case (pair1, pair2) =>
       if (pair1 != pair2) {
-        assert(!connectivityInspector.pathExists(pair1._2.root, pair2._2.root),
-          s"CFG of function ${pair1._1.identifier} is connected with that of function ${pair2._1.identifier}")
+        assert(!pathExists(pair1._2.root, pair2._2.root),
+          s"CFG of function ${pair1._1.identifier} is connected with CFG of function ${pair2._1.identifier}")
       }
   })
 

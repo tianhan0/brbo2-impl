@@ -101,7 +101,7 @@ class SymbolicExecution(inputVariables: List[Identifier], debugMode: Boolean) {
 
           var newValuation: Valuation = valuation
           var newReturnValues2: ReturnValues = newReturnValues
-          List(reset.maxCommand, reset.resetCommand, reset.counterCommand).foreach({
+          List(reset.updateStarCommand, reset.updateResource, reset.updateCounter).foreach({
             assignment =>
               val r = evaluateAssignment(newValuation, newReturnValues2, Left(assignment))
               newValuation = r._1

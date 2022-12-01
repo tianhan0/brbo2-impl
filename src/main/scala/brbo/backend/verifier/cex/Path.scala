@@ -31,7 +31,8 @@ case class Path(pathNodes: List[CFGNode]) extends Serializable {
 
   groupsInPath.foreach({
     groupId =>
-      val (resource: Identifier, star: Identifier, counter: Identifier) = GhostVariableUtils.generateVariables(Some(groupId))
+      val (resource: Identifier, star: Identifier, counter: Identifier) =
+        GhostVariableUtils.generateVariables(Some(groupId), legacy = false)
       // Every ghost variable that appears in the path must be initialized by a variable declaration
       assert(existDeclaration(resource), s"Resource variable `${resource.name}` is used but not declared!")
       assert(existDeclaration(star), s"Star variable `${star.name}` is used but not declared!")

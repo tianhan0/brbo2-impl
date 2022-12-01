@@ -217,19 +217,21 @@ case class Block(asts: List[BrboAst], override val uuid: UUID = UUID.randomUUID(
 }
 
 case class Loop(condition: BrboExpr, loopBody: BrboAst, override val uuid: UUID = UUID.randomUUID()) extends Statement(uuid) {
+  private val loopBodyBlock = loopBody match {
+    case _: Command | _: Loop | _: ITE => Block(List(loopBody))
+    case _: Block => loopBody
+    case _ => throw new Exception
+  }
+
+  private val conditionString = condition.printNoOuterBrackets
+
   override def printToC(indent: Int): String = {
-    val conditionString = condition.printNoOuterBrackets
-    val bodyString = loopBody match {
-      case _: Command => s"${loopBody.printToC(indent + DEFAULT_INDENT)}"
-      case _: Statement => s"${loopBody.printToC(indent)}"
-      case _ => throw new Exception
-    }
+    val bodyString = loopBodyBlock.printToC(indent)
     s"${indentString(indent)}while ($conditionString)\n$bodyString"
   }
 
   override def printToJava(indent: Int): String = {
-    val conditionString = condition.printNoOuterBrackets
-    val bodyString = s"${indentString(indent)}{\n${loopBody.printToJava(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
+    val bodyString = loopBodyBlock.printToJava(indent)
     s"${indentString(indent)}while ($conditionString)\n$bodyString"
   }
 
@@ -243,25 +245,29 @@ case class Loop(condition: BrboExpr, loopBody: BrboAst, override val uuid: UUID 
 }
 
 case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, override val uuid: UUID = UUID.randomUUID()) extends Statement(uuid) {
+  private val thenBlock = thenAst match {
+    case _: Command | _: Loop | _: ITE => Block(List(thenAst))
+    case _: Block => thenAst
+    case _ => throw new Exception
+  }
+
+  private val elseBlock = elseAst match {
+    case _: Command | _: Loop | _: ITE => Block(List(elseAst))
+    case _: Block => elseAst
+    case _ => throw new Exception
+  }
+
+  private val conditionString = condition.printNoOuterBrackets
+
   override def printToC(indent: Int): String = {
-    val conditionString = condition.printNoOuterBrackets
-    val thenString = thenAst match {
-      case _: Command => thenAst.printToC(indent + DEFAULT_INDENT)
-      case _: Statement => thenAst.printToC(indent)
-      case _ => throw new Exception
-    }
-    val elseString = elseAst match {
-      case _: Command => elseAst.printToC(indent + DEFAULT_INDENT)
-      case _: Statement => elseAst.printToC(indent)
-      case _ => throw new Exception
-    }
+    val thenString = thenBlock.printToC(indent)
+    val elseString = elseBlock.printToC(indent)
     s"${indentString(indent)}if ($conditionString)\n$thenString\n${indentString(indent)}else\n$elseString"
   }
 
   override def printToJava(indent: Int): String = {
-    val conditionString = condition.printNoOuterBrackets
-    val thenString = s"${indentString(indent)}{\n${thenAst.printToJava(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
-    val elseString = s"${indentString(indent)}{\n${elseAst.printToJava(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
+    val thenString = thenBlock.printToJava(indent)
+    val elseString = elseBlock.printToJava(indent)
     s"${indentString(indent)}if ($conditionString)\n$thenString\n${indentString(indent)}else\n$elseString"
   }
 
@@ -609,22 +615,23 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
   override def getFunctionCalls: List[FunctionCallExpr] = update.getFunctionCalls
 
   override def printToCInternal(indent: Int): String = {
-    val conditionString = condition match {
-      case Bool(true, _) => ""
-      case _ => s"if (${condition.printNoOuterBrackets}) "
-    }
-    s"${indentString(indent)}$conditionString${assignmentCommand.printToC(0)}"
+    val ast = generateAst(assignmentCommand)
+    ast.printToC(indent)
   }
 
   override def printToJava(indent: Int): String = {
     if (groupId.isEmpty)
-      return s"${indentString(indent)};"
+      return Skip().printToJava(indent)
     val resourceVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Resource, legacy = true)
     val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
-    val commandString = assignmentCommand.printToJava(0)
+    val ast = generateAst(assignmentCommand)
+    ast.printToJava(indent)
+  }
+
+  private def generateAst(assignment: Assignment): BrboAst = {
     condition match {
-      case Bool(true, _) => s"${indentString(indent)}$commandString"
-      case _ => s"${indentString(indent)}if (${condition.printNoOuterBrackets}) { $commandString }"
+      case Bool(true, _) => assignment
+      case _ => ITE(condition, assignment, Skip())
     }
   }
 
@@ -652,41 +659,47 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
   assert(condition.typ == BrboType.BOOL)
 
   val (resourceVariable: Identifier, starVariable: Identifier, counterVariable: Identifier) =
-    GhostVariableUtils.generateVariables(Some(groupId))
+    GhostVariableUtils.generateVariables(Some(groupId), legacy = false)
 
-  val maxCommand: Assignment = {
+  val updateStarCommand: Assignment = {
     val iteExpr = ITEExpr(LessThan(starVariable, resourceVariable), resourceVariable, starVariable)
     Assignment(starVariable, iteExpr)
   }
-  val maxComparison: LessThan = LessThan(starVariable, resourceVariable)
-  val maxAssignment: Assignment = Assignment(starVariable, resourceVariable)
-  val maxStatement: ITE = ITE(maxComparison, maxAssignment, Skip())
-  val resetCommand: Assignment = Assignment(resourceVariable, Number(0))
-  val counterCommand: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
+  val compareStarWithResource: LessThan = LessThan(starVariable, resourceVariable)
+  val assignToStar: Assignment = Assignment(starVariable, resourceVariable)
+  val updateStarITE: ITE = ITE(compareStarWithResource, assignToStar, Skip())
+  val updateResource: Assignment = Assignment(resourceVariable, Number(0))
+  val updateCounter: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
   override def printToCInternal(indent: Int): String = {
-    val conditionString = condition match {
-      case Bool(true, _) => ""
-      case _ => s"if (${condition.printNoOuterBrackets}) "
-    }
-    s"${indentString(indent)}$conditionString{\n${maxStatement.printToC(indent + DEFAULT_INDENT)}\n${resetCommand.printToC(indent + DEFAULT_INDENT)}\n${counterCommand.printToC(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
+    val ast = generateAst(updateStar = updateStarITE, updateResource = updateResource, updateCounter = updateCounter)
+    ast.map(ast => ast.printToC(indent)).mkString("\n")
   }
 
   override def printToJava(indent: Int): String = {
     val (resourceVariable: Identifier, starVariable: Identifier, counterVariable: Identifier) =
       GhostVariableUtils.generateVariables(Some(groupId), legacy = true)
-    val maxComparison: LessThan = LessThan(starVariable, resourceVariable)
-    val maxAssignment: Assignment = Assignment(starVariable, resourceVariable)
-    val maxStatement: ITE = ITE(maxComparison, maxAssignment, Skip())
+    val maxStatement: ITE = {
+      val maxComparison: LessThan = LessThan(starVariable, resourceVariable)
+      val maxAssignment: Assignment = Assignment(starVariable, resourceVariable)
+      ITE(maxComparison, maxAssignment, Skip())
+    }
     val resetCommand: Assignment = Assignment(resourceVariable, Number(0))
     val counterCommand: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
-    val conditionString = condition match {
-      case Bool(true, _) => ""
-      case _ => s"if (${condition.printNoOuterBrackets}) "
+    val ast = generateAst(updateStar = maxStatement, updateResource = resetCommand, updateCounter = counterCommand)
+    ast.map(ast => ast.printToJava(indent)).mkString("\n")
+  }
+
+  private def generateAst(updateStar: ITE, updateResource: Command, updateCounter: Command): List[BrboAst] = {
+    val list = List(updateStar, updateResource, updateCounter)
+    condition match {
+      case Bool(true, _) => list
+      case _ =>
+        val ite = ITE(condition, Block(list), Skip())
+        List(ite)
     }
-    s"${indentString(indent)}$conditionString{\n${maxStatement.printToJava(indent + DEFAULT_INDENT)}\n${resetCommand.printToJava(indent + DEFAULT_INDENT)}\n${counterCommand.printToJava(indent + DEFAULT_INDENT)}\n${indentString(indent)}}"
   }
 
   def replace(newGroupId: Int): Reset = Reset(newGroupId, condition)

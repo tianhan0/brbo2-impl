@@ -36,7 +36,7 @@ object GhostVariableUtils {
     }
   }
 
-  def generateVariables(groupId: Option[Int], legacy: Boolean = false): (Identifier, Identifier, Identifier) = {
+  def generateVariables(groupId: Option[Int], legacy: Boolean): (Identifier, Identifier, Identifier) = {
     val resourceVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Resource, legacy)
     val starVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Star, legacy)
     val counterVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Counter, legacy)
@@ -44,7 +44,7 @@ object GhostVariableUtils {
   }
 
   def generateSum(groupId: Option[Int]): BrboExpr = {
-    val (resourceVariable, starVariable, counterVariable) = generateVariables(groupId)
+    val (resourceVariable, starVariable, counterVariable) = generateVariables(groupId, legacy = false)
     Addition(resourceVariable, Multiplication(starVariable, counterVariable))
   }
 

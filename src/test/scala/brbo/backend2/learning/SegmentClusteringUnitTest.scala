@@ -18,7 +18,8 @@ class SegmentClusteringUnitTest extends AnyFlatSpec {
     SegmentClusteringUnitTest.clusterSimilarSegmentTests.foreach({
       testCase =>
         val (program, inputs) = testCase.input.asInstanceOf[(String, List[BrboValue])]
-        val trace = getTrace(program, inputs)
+        val interpreter = SegmentClusteringUnitTest.toInterpreter(program)
+        val trace = getTrace(interpreter, inputs)
         val segmentClustering = new SegmentClustering(sumWeight = 1000, commandWeight = 10, debugMode = false, algorithm = KMeans(clusters = Some(5)))
         val groups = segmentClustering.clusterSimilarSegments(trace, segmentLength = 1, excludeIndices = Set())
         StringCompare.ignoreWhitespaces(printSegments(groups, trace), testCase.expectedOutput, s"${testCase.name} failed")
@@ -39,15 +40,14 @@ object SegmentClusteringUnitTest {
     groups.map(group => group.map(segment => segment.print(trace))).mkString("\n")
   }
 
-  def toBrboProgram(program: String): BrboProgram = {
-    val targetProgram = BasicProcessor.getTargetProgram("Test", program).program
-    Driver.insertResetPlaceHolders(targetProgram)
-  }
-
-  def getTrace(program: String, inputs: List[BrboValue]): Trace = {
-    val interpreter = new Interpreter(toBrboProgram(program), debugMode = true)
+  def getTrace(interpreter: Interpreter, inputs: List[BrboValue]): Trace = {
     val flowEndState = interpreter.execute(inputs)
     flowEndState.trace
+  }
+
+  def toInterpreter(source: String): Interpreter = {
+    val targetProgram = BasicProcessor.getTargetProgram(className = "Test", sourceCode = source).program
+    new Interpreter(Driver.insertResetPlaceHolders(targetProgram))
   }
 
   val functionDefinitions: String =

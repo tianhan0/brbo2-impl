@@ -64,10 +64,10 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
     logger.info(s"Step 3.2: Generate tables for training classifiers")
     val tables = Classifier.generateTables(
       trace,
-      Classifier.evaluateFunctionFromInterpreter(interpreter),
+      Classifier.evaluateFromInterpreter(interpreter),
       groups,
       features = classifierFeatures,
-      failIfCannotFindResetPlaceHolder = false,
+      throwIfNoResetPlaceHolder = false,
       controlFlowGraph = ControlFlowGraph.toControlFlowGraph(instrumentedProgram)
     )
     // logger.traceOrError(s"Step 3.2: Generated tables:\n${tables.print()}")

@@ -356,7 +356,7 @@ object Classifier {
 
   case class TableGenerationError(message: String) extends Exception
 
-  def evaluateFunctionFromInterpreter(interpreter: Interpreter): (BrboExpr, Store) => BrboValue = {
+  def evaluateFromInterpreter(interpreter: Interpreter): (BrboExpr, Store) => BrboValue = {
     (brboExpr: BrboExpr, store: Store) =>
       try {
         interpreter.evaluateAst(InitialState(brboExpr, store, EmptyTrace)) match {
@@ -373,7 +373,7 @@ object Classifier {
                      evaluate: (BrboExpr, Store) => BrboValue,
                      groups: Map[GroupID, Group],
                      features: List[BrboExpr],
-                     failIfCannotFindResetPlaceHolder: Boolean,
+                     throwIfNoResetPlaceHolder: Boolean,
                      controlFlowGraph: ControlFlowGraph): TraceTables = {
     val dominators: Map[GroupID, Command] = groups.map({
       case (groupID, group) =>
@@ -420,7 +420,7 @@ object Classifier {
             case None =>
               val errorMessage = s"Failed to find a reset place holder between " +
                 s"${groupID.print()}'s $i and ${i + 1} segment\n${printDecomposition(trace, groups)}"
-              if (failIfCannotFindResetPlaceHolder) throw TableGenerationError(errorMessage)
+              if (throwIfNoResetPlaceHolder) throw TableGenerationError(errorMessage)
           }
           i = i + 1
         }
@@ -508,7 +508,8 @@ object Classifier {
     if (holders.isEmpty)
       None
     else {
-      return Some(holders.head._2)
+      // logger.trace(s"dominator: $dominator")
+      // holders.foreach({ case (holder, i) => logger.trace(s"index $i: ${holder}")})
       // Find the reset place holder that is the same as the dominator
       holders.find({ case (holder, _) => holder == dominator }) match {
         case Some((_, index)) => Some(index)

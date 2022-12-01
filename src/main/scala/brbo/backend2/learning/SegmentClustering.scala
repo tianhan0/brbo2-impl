@@ -194,10 +194,10 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
               logger.info(s"Train a classifier for $groupIndex-th group (among ${groups.size}): ${printSegments(group.segments)}")
               val tables = Classifier.generateTables(
                 testTrace,
-                Classifier.evaluateFunctionFromInterpreter(interpreter),
+                Classifier.evaluateFromInterpreter(interpreter),
                 Map(GeneralityTestGroup -> group),
                 features = List(Identifier("i", INT), Identifier("n", INT)), // TODO: Use non resource variables
-                failIfCannotFindResetPlaceHolder = true,
+                throwIfNoResetPlaceHolder = true,
                 controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
               )
               val programTables = tables.toProgramTables
@@ -220,7 +220,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
                   val applicationResult = Classifier.applyClassifiers(
                     boundExpression = None,
                     trace,
-                    evaluateFunctionFromInterpreter(interpreter),
+                    evaluateFromInterpreter(interpreter),
                     classifierResults,
                     debugMode
                   )

@@ -56,12 +56,12 @@ case class BrboCFunction(originalFunction: BrboFunction) {
         case _: CFGOnly => throw new Exception
         case Return(value, _) => Return(value)
         case reset@Reset(_, condition, _) =>
-          map = map + (reset.maxComparison -> reset)
-          map = map + (reset.maxAssignment -> reset)
-          map = map + (reset.resetCommand -> reset)
-          map = map + (reset.counterCommand -> reset)
+          map = map + (reset.compareStarWithResource -> reset)
+          map = map + (reset.assignToStar -> reset)
+          map = map + (reset.updateResource -> reset)
+          map = map + (reset.updateCounter -> reset)
           map = map + (condition -> reset)
-          val block = Block(List(reset.maxStatement, reset.resetCommand, reset.counterCommand))
+          val block = Block(List(reset.updateStarITE, reset.updateResource, reset.updateCounter))
           ITE(condition, block, Skip())
         case use@Use(_, _, condition, _) =>
           map = map + (use.assignmentCommand -> use)

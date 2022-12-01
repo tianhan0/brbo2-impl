@@ -241,9 +241,13 @@ object BasicProcessorUnitTest {
         """void main(int n, int m)
           |{
           |  if (!((n < 0)) && !((n == 0)))
+          |  {
           |    return;
+          |  }
           |  else
+          |  {
           |    ;
+          |  }
           |}""".stripMargin),
       TestCase("StringLiteral", ("Test", test13),
         """void main($string$ arg)
