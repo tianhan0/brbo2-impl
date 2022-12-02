@@ -6,7 +6,6 @@ import brbo.backend2.interpreter.Interpreter.{CostTraceAssociation, Trace}
 import brbo.backend2.learning.Classifier._
 import brbo.backend2.learning.ScriptRunner._
 import brbo.backend2.learning.SegmentClustering._
-import brbo.common.BrboType.INT
 import brbo.common.ast.{Command, Identifier}
 import brbo.common.cfg.ControlFlowGraph
 import brbo.common.{GhostVariableUtils, MyLogger}
@@ -123,8 +122,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
     algorithm match {
       case Optics(_, Precomputed) =>
         segments.map({
-          left =>
-            segments.map({ right => segmentToData.difference(left, right) })
+          left => segments.map({ right => segmentToData.difference(left, right) })
         })
       case KMeans(_) | Optics(_, Euclidean) =>
         segments.map(segment => List(segmentToData.toTrainingData(segment)))
@@ -309,7 +307,7 @@ object SegmentClustering {
       }
     }
 
-    def includes(other: Segment): Boolean = other.indices.toSet.subsetOf(this.indices.toSet)
+    def sameAs(other: Segment): Boolean = indices == other.indices
 
     def add(index: Int): Segment = Segment(indices :+ index)
   }
@@ -325,6 +323,7 @@ object SegmentClustering {
             s"Segments are sorted and must not overlap: $current, $next")
         }
     })
+    val numberOfEmptySegments: Int = segments.size - nonEmptySegments.size
     val size: Int = segments.map(segment => segment.indices.size).sum
 
     val indices: List[Int] = segments.flatMap(segment => segment.indices)
@@ -360,12 +359,13 @@ object SegmentClustering {
       }
     }
 
-    def includes(other: Group): Boolean = {
-      val thisRemovedEmptySegments = nonEmptySegments
-      val otherRemovedEmptySegments = other.nonEmptySegments
-      otherRemovedEmptySegments.forall({
-        otherSegment =>
-          thisRemovedEmptySegments.exists(thisSegment => thisSegment.includes(otherSegment))
+    def sameAs(other: Group): Boolean = {
+      if (numberOfEmptySegments != other.numberOfEmptySegments)
+        return false
+      if (nonEmptySegments.size != other.nonEmptySegments.size)
+        return false
+      nonEmptySegments.zip(other.nonEmptySegments).forall({
+        case (segment, otherSegment) => segment.sameAs(otherSegment)
       })
     }
 

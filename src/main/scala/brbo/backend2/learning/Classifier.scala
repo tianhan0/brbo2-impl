@@ -631,34 +631,29 @@ object Classifier {
     private val logger = MyLogger.createLogger(classOf[ClassifierApplication], debugMode)
 
     private def print(groupsOfSegments: List[List[Segment]]): String = {
-      groupsOfSegments.map(segments => segments.map(s => s.printAsSet()).mkString(", ")).mkString("\n")
+      groupsOfSegments.map(segments => segments.map(s => s.printAsSet).mkString(", ")).mkString("\n")
     }
 
     def areActualSegmentCostsSimilar(segmentClustering: SegmentClustering): Boolean = {
       val expectedDecomposition: List[List[Segment]] = ghostStore.getSegments.values.toList.map({
         list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
       })
-      logger.traceOrError(s"Expected segment clusters:\n${print(expectedDecomposition)}")
+      logger.traceOrError(s"Segment clusters that are considered to be similar:\n${print(expectedDecomposition)}")
       val segments: List[Segment] = expectedDecomposition.flatten
       logger.traceOrError(s"Final ghost state after trace decomposition: ${ghostStore.print()}")
       val actualDecomposition: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segments).map({
         list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
       })
-      logger.traceOrError(s"Actual segment clusters:\n${print(actualDecomposition)}")
+      logger.traceOrError(s"Segment clusters that are actually similar:\n${print(actualDecomposition)}")
       val expected = expectedDecomposition.map(segments => Group(segments))
       val actual = actualDecomposition.map(segments => Group(segments))
       if (expected.nonEmpty && actual.isEmpty)
         return false // calling forall on an empty list returns true
       // logger.traceOrError(s"Actual groups ${printGroups(actual, trace)}")
       // logger.traceOrError(s"Expected groups ${printGroups(expected, trace)}")
-      actual.forall({
-        actualGroup =>
-          val result = expected.exists(expectedGroup => expectedGroup.includes(actualGroup))
-          if (!result)
-            logger.traceOrError(s"Actual group ${actualGroup.print(trace)} is not included in the expected groups" +
-              s"\n${printGroups(expected, trace)}")
-          result
-      })
+      if (expected.size != actual.size)
+        return false
+      expected.zip(actual).forall({ case (expectedGroup, actualGroup) => expectedGroup.sameAs(actualGroup) })
     }
 
     lazy val printDecomposedTrace: String = {
