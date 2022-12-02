@@ -17,7 +17,8 @@ object ScriptRunner {
   }
   private val CLUSTER_SCRIPT = s"clustering.py"
   private val CLASSIFY_SCRIPT = s"classifier.py"
-  private val TIMEOUT_IN_SECONDS = 30
+  private val TIMEOUT_IN_SECONDS = 1200
+  private val TIMEOUT_DURATION = Duration(TIMEOUT_IN_SECONDS, TimeUnit.SECONDS).toSeconds
 
   sealed trait Algorithm {
     def commandLineOption: String
@@ -94,8 +95,7 @@ object ScriptRunner {
       .directory(new java.io.File(OUTPUT_DIRECTORY))
       .redirectErrorStream(true)
     val process: java.lang.Process = processBuilder.start()
-    if (process.waitFor(Duration(TIMEOUT_IN_SECONDS, SECONDS).toSeconds, TimeUnit.SECONDS)
-      && process.exitValue() == 0) {
+    if (process.waitFor(TIMEOUT_DURATION, TimeUnit.SECONDS) && process.exitValue() == 0) {
       // logger.traceOrError(s"Read labels from ${outputFile.toAbsolutePath}")
       val outputFileContents = Files.readString(outputFile)
       // logger.traceOrError(s"Output file content: $outputFileContents")
@@ -104,7 +104,7 @@ object ScriptRunner {
     else {
       val stdout = IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
       logger.fatal(s"Ran python clustering script via `$command`")
-      logger.fatal(s"Failed to execute ${algorithm.scriptName}. stdout: $stdout")
+      logger.fatal(s"Exit code ${process.exitValue()}. Failed to execute ${algorithm.scriptName}. stdout: $stdout")
       None
     }
   }
