@@ -641,6 +641,11 @@ object Classifier {
       logger.traceOrError(s"Segment clusters that are considered to be similar:\n${print(expectedDecomposition)}")
       val segments: List[Segment] = expectedDecomposition.flatten
       logger.traceOrError(s"Final ghost state after trace decomposition: ${ghostStore.print()}")
+      if (segments.forall(segment => segment.isEmpty)) {
+        logger.info(s"Empty segments are vacuously similar to each other, but " +
+          s"if a grouping is truly generalizable to a similar trace, it should not result in all empty segments.")
+        return false
+      }
       val actualDecomposition: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segments).map({
         list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
       })
