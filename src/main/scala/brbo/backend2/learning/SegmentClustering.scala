@@ -55,9 +55,9 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
             testTrace = trace,
             similarTraces,
             interpreter,
-            sampleKTraces = Some(Fuzzer.LOOP_ITERATIONS.size + 1),
+            sampleKTraces = Some(2),
           )
-          logger.info(s"Generalizable groups:\n${generalizableGroups.map({ group => printSegments(group.segments)}).mkString("  \n")}")
+          logger.info(s"Generalizable groups:\n${generalizableGroups.map({ group => printSegments(group.segments) }).mkString("  \n")}")
           chooseGroup(generalizableGroups) match {
             case Some(chosenGroup) =>
               decomposition.addGroup(chosenGroup)
@@ -172,9 +172,11 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
             if (distinctLengths.size <= sampleKTraces) distinctLengths
             else {
               // logger.info(s"${distinctLengths.zipWithIndex.groupBy({ case (_, index) => index % sampleKTraces })}")
-              distinctLengths.zipWithIndex.groupBy({ case (_, index) => index % sampleKTraces }).map({
+              /*distinctLengths.zipWithIndex.groupBy({ case (_, index) => index % sampleKTraces }).map({
                 case (_, tuples) => tuples.head._1
-              }).toList
+              }).toList*/
+              // Choose the longest traces to test generality
+              distinctLengths.slice(distinctLengths.size - sampleKTraces, distinctLengths.size)
             }
           logger.info(s"Choose traces with the following lengths: $chosenLengths")
           val traces = chosenLengths.map({
