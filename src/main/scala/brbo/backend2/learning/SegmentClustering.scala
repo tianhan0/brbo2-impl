@@ -27,7 +27,7 @@ import scala.concurrent.{Await, Future}
 class SegmentClustering(sumWeight: Int, commandWeight: Int,
                         debugMode: Boolean, val algorithm: Algorithm) {
   private val logger = MyLogger.createLogger(classOf[SegmentClustering], debugMode)
-  private val MAX_SEGMENT_LENGTH = 6
+  private val MAX_SEGMENT_LENGTH = 3
 
   def decompose(trace: Trace, similarTraces: Iterable[Trace], interpreter: Interpreter): TraceDecomposition = {
     val decomposition = new TraceDecomposition(trace)
@@ -55,8 +55,9 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
             testTrace = trace,
             similarTraces,
             interpreter,
-            sampleKTraces = Some(Fuzzer.LOOP_ITERATIONS_SAMPLE + 1),
+            sampleKTraces = Some(Fuzzer.LOOP_ITERATIONS.size + 1),
           )
+          logger.info(s"Generalizable groups:\n${generalizableGroups.map({ group => printSegments(group.segments)}).mkString("  \n")}")
           chooseGroup(generalizableGroups) match {
             case Some(chosenGroup) =>
               decomposition.addGroup(chosenGroup)
@@ -189,10 +190,11 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
     })
     val futures = Future.traverse(groups.zipWithIndex)({
       case (group, groupIndex) =>
+        val printGroup = printSegments(group.segments)
         Future {
           val classifierResults =
             try {
-              logger.info(s"Train a classifier for ${groupIndex + 1}-th group (among ${groups.size}): ${printSegments(group.segments)}")
+              logger.info(s"Train a classifier for ${groupIndex + 1}-th group (among ${groups.size}): $printGroup")
               val tables = Classifier.generateTables(
                 testTrace,
                 Classifier.evaluateFromInterpreter(interpreter),
@@ -214,7 +216,8 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
           sampledSimilarTraces.forall({
             case (trace, traceIndex) =>
               val logging = s"Test the generality of ${groupIndex + 1}-th group (among ${groups.size}) " +
-                s"on ${traceIndex + 1}-th trace (among ${sampledSimilarTraces.size}) (length: ${trace.nodes.size})"
+                s"on ${traceIndex + 1}-th trace (among ${sampledSimilarTraces.size}) " +
+                s"(length: ${trace.nodes.size}) (group: $printGroup)"
               logger.info(logging)
               classifierResults match {
                 case Some(classifierResults) =>
@@ -226,13 +229,14 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
                     debugMode
                   )
                   val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
-                  logger.info(s"$logging: $areSimilar")
                   logger.info(Classifier.printTransformation(classifierResults.toTransformation))
                   logger.traceOrError(s"Decomposed trace:\n${applicationResult.printDecomposedTrace}")
+                  logger.info(s"$logging: $areSimilar")
                   // logger.traceOrError(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
                   areSimilar
                 case None =>
-                  logger.info(s"Cannot test the generality of $groupIndex-th group on $traceIndex-th trace: No classifier")
+                  logger.info(s"Cannot test the generality of ${groupIndex + 1}-th group on $traceIndex-th trace: " +
+                    s"No classifier for $printGroup")
                   false
               }
           })

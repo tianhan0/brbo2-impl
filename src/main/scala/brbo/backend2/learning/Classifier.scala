@@ -767,7 +767,7 @@ object Classifier {
               //   logger.error(s"Before:\n$beforeString")
               //   logger.error(s"After:\n$afterString")
               // }
-              case resetPlaceHolder: ResetPlaceHolder =>
+              case _: ResetPlaceHolder =>
                 classifierResults.foreach({
                   case (groupID, classifierResult) =>
                     ghostStore.initialize(groupID)
@@ -777,8 +777,10 @@ object Classifier {
                       val label = classifierResult.classifier.classify(store, evaluate, classifierResultsMap.features)
                       resetLabelFromString(label.name)
                     }
-                    if (toReset) ghostStore.reset(groupID)
-                    decomposedTrace = DecomposedTraceNode(nextCommandIndex, nextTransition, groupID) :: decomposedTrace
+                    if (toReset) {
+                      ghostStore.reset(groupID)
+                      decomposedTrace = DecomposedTraceNode(nextCommandIndex, nextTransition, groupID) :: decomposedTrace
+                    }
                     lazy val afterString = ghostStore.print()
                   // if (debugMode && beforeString != afterString) {
                   //   logger.error(s"Before:\n$beforeString")
