@@ -20,7 +20,7 @@ class SegmentClusteringUnitTest extends AnyFlatSpec {
         val (program, inputs) = testCase.input.asInstanceOf[(String, List[BrboValue])]
         val interpreter = SegmentClusteringUnitTest.toInterpreter(program)
         val trace = getTrace(interpreter, inputs)
-        val segmentClustering = new SegmentClustering(sumWeight = 1000, commandWeight = 10, debugMode = false, algorithm = KMeans(clusters = Some(5)))
+        val segmentClustering = new SegmentClustering(sumWeight = 1000, commandWeight = 10, debugMode = false, algorithm = KMeans(clusters = Some(5)), threads = SegmentClustering.THREADS)
         val groups = segmentClustering.clusterSimilarSegments(trace, segmentLength = 1, excludeIndices = Set())
         StringCompare.ignoreWhitespaces(printSegments(groups, trace), testCase.expectedOutput, s"${testCase.name} failed")
     })

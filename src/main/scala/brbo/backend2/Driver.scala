@@ -27,7 +27,8 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
     sumWeight = 1,
     commandWeight = 0,
     debugMode = debugMode,
-    algorithm = arguments.getAlgorithm
+    algorithm = arguments.getAlgorithm,
+    threads = arguments.getThreads,
   )
   private var numberOfTraces = 0
 

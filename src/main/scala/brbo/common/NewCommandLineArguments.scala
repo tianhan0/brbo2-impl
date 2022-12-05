@@ -2,6 +2,7 @@ package brbo.common
 
 import brbo.backend2.Fuzzer
 import brbo.backend2.learning.ScriptRunner.{Algorithm, Euclidean, KMeans, Optics}
+import brbo.backend2.learning.SegmentClustering
 import brbo.common.CommandLineArguments._
 import org.apache.logging.log4j.LogManager
 import org.kohsuke.args4j.{CmdLineException, CmdLineParser, Option}
@@ -29,11 +30,17 @@ class NewCommandLineArguments extends Serializable {
     usage = "The parameter of the algorithm. For `optics`, the parameter is `max-eps`. For `kmeans`, the parameter is the number of clusters.")
   private var algorithmParameter: Double = -1
 
+  @Option(name = "--threads", aliases = Array("-t"),
+    usage = "The number of threads when computing in parallel.")
+  private var threads: Int = SegmentClustering.THREADS
+
   def getDebugMode: Boolean = debugMode
 
   def getDirectoryToAnalyze: String = directoryToAnalyze
 
   def getFuzzSamples: Int = fuzzSamples
+
+  def getThreads: Int = threads
 
   def getAlgorithm: Algorithm = {
     val parameter = if (algorithmParameter < 0) None else Some(algorithmParameter)
@@ -55,7 +62,10 @@ class NewCommandLineArguments extends Serializable {
 
   override def toString: String = {
     val strings = List[String](
-      s"fuzzSamples: $fuzzSamples\nalgorithm: $algorithm\nalgorithmParameter: $algorithmParameter"
+      s"fuzzSamples: $fuzzSamples",
+      s"algorithm: $algorithm",
+      s"algorithmParameter: $algorithmParameter",
+      s"threads: $threads"
     )
     strings.mkString("\n")
   }
