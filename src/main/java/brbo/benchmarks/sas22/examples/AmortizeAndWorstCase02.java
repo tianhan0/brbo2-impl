@@ -8,6 +8,7 @@ public abstract class AmortizeAndWorstCase02 extends Common {
         int it = 0;
         int e = 0;
         int R = 0;
+        int j = 0;
         mostPreciseBound(R <= n * costB + n * array * costA + n * array);
         lessPreciseBound(R <= MAX * n * costB + MAX * n * array * costA + MAX * n * array);
         while (i < n) {
@@ -17,6 +18,7 @@ public abstract class AmortizeAndWorstCase02 extends Common {
                 R = R + e;
                 R = R + costA;
                 it -= e;
+                j++;
             }
             R = R + costB;
             i++;
