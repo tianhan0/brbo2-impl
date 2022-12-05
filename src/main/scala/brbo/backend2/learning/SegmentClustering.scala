@@ -1,6 +1,5 @@
 package brbo.backend2.learning
 
-import brbo.backend2.Fuzzer
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTraceAssociation, Trace}
 import brbo.backend2.learning.Classifier._
@@ -13,8 +12,10 @@ import com.google.common.collect.Sets
 import tech.tablesaw.api.IntColumn
 
 import java.util
+import java.util.concurrent.Executors
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
+// import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
@@ -24,10 +25,17 @@ import scala.concurrent.{Await, Future}
  * @param commandWeight The weight of the commands in segments when deciding the similarity between two segments.
  * @param debugMode     Whether to print more information.
  */
-class SegmentClustering(sumWeight: Int, commandWeight: Int,
-                        debugMode: Boolean, val algorithm: Algorithm) {
+class SegmentClustering(sumWeight: Int,
+                        commandWeight: Int,
+                        debugMode: Boolean,
+                        val algorithm: Algorithm,
+                        threads: Int) {
   private val logger = MyLogger.createLogger(classOf[SegmentClustering], debugMode)
   private val MAX_SEGMENT_LENGTH = 3
+  private val executionContextExecutor = {
+    val executorService = Executors.newFixedThreadPool(threads)
+    ExecutionContext.fromExecutor(executorService)
+  }
 
   def decompose(trace: Trace, similarTraces: Iterable[Trace], interpreter: Interpreter): TraceDecomposition = {
     val decomposition = new TraceDecomposition(trace)
@@ -187,64 +195,72 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
       }
     }
 
-    val nonGhostVariables = testTrace.variables.map(variable => Identifier(variable._1, variable._2)).filterNot({
-      identifier => GhostVariableUtils.isGhostVariable(identifier.name)
-    })
-    val futures = Future.traverse(groups.zipWithIndex)({
+    val nonGhostVariables: List[Identifier] = testTrace.variables
+      .map(variable => Identifier(variable._1, variable._2))
+      .filterNot({ identifier => GhostVariableUtils.isGhostVariable(identifier.name) })
+    // The features are a variable (as opposed to all variables)
+    val possibleFeatures: List[List[Identifier]] = nonGhostVariables.map(identifier => List(identifier))
+    val result = groups.zipWithIndex.map({
       case (group, groupIndex) =>
         val printGroup = printSegments(group.segments)
-        Future {
-          val classifierResults =
-            try {
-              logger.info(s"Train a classifier for ${groupIndex + 1}-th group (among ${groups.size}): $printGroup")
-              val tables = Classifier.generateTables(
-                testTrace,
-                Classifier.evaluateFromInterpreter(interpreter),
-                Map(GeneralityTestGroup -> group),
-                features = nonGhostVariables,
-                throwIfNoResetPlaceHolder = true,
-                controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
-              )
-              val programTables = tables.toProgramTables
-              logger.traceOrError(s"Generated training data:\n${programTables.print()}")
-              val classifierResults = programTables.generateClassifiers(debugMode)
-              Some(classifierResults)
-            } catch {
-              case TableGenerationError(message) =>
-                logger.info(s"Failed to train a classifier: $message")
-                None
-            }
-
-          sampledSimilarTraces.forall({
-            case (trace, traceIndex) =>
-              val logging = s"Test the generality of ${groupIndex + 1}-th group (among ${groups.size}) " +
-                s"on ${traceIndex + 1}-th trace (among ${sampledSimilarTraces.size}) " +
-                s"(length: ${trace.nodes.size}) (group: $printGroup)"
-              logger.info(logging)
-              classifierResults match {
-                case Some(classifierResults) =>
-                  val applicationResult = Classifier.applyClassifiers(
-                    boundExpression = None,
-                    trace,
-                    evaluateFromInterpreter(interpreter),
-                    classifierResults,
-                    debugMode
+        // If there exist a set of features under which the given group is generalizable to all traces
+        val futures = Future.traverse(possibleFeatures)({
+          features =>
+            Future {
+              val printFeatures = s"features: ${features.map(identifier => identifier.printToIR()).mkString(",")}"
+              val classifierResults =
+                try {
+                  logger.info(s"Train a classifier for ${groupIndex + 1}-th group (among ${groups.size}): " +
+                    s"$printGroup ($printFeatures)")
+                  val tables = Classifier.generateTables(
+                    testTrace,
+                    Classifier.evaluateFromInterpreter(interpreter),
+                    Map(GeneralityTestGroup -> group),
+                    features = features,
+                    throwIfNoResetPlaceHolder = true,
+                    controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
                   )
-                  val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
-                  logger.info(Classifier.printTransformation(classifierResults.toTransformation))
-                  logger.traceOrError(s"Decomposed trace:\n${applicationResult.printDecomposedTrace}")
-                  logger.info(s"$logging: $areSimilar")
-                  // logger.traceOrError(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
-                  areSimilar
-                case None =>
-                  logger.info(s"Cannot test the generality of ${groupIndex + 1}-th group on $traceIndex-th trace: " +
-                    s"No classifier for $printGroup")
-                  false
-              }
-          })
-        }
+                  val programTables = tables.toProgramTables
+                  logger.traceOrError(s"Generated training data:\n${programTables.print()}")
+                  val classifierResults = programTables.generateClassifiers(debugMode)
+                  Some(classifierResults)
+                } catch {
+                  case TableGenerationError(message) =>
+                    logger.info(s"Failed to train a classifier: $message")
+                    None
+                }
+
+              sampledSimilarTraces.forall({
+                case (trace, traceIndex) =>
+                  val logging = s"Test the generality of ${groupIndex + 1}-th group (among ${groups.size}) " +
+                    s"on ${traceIndex + 1}-th trace (among ${sampledSimilarTraces.size}) " +
+                    s"(length: ${trace.nodes.size}) (group: $printGroup) ($printFeatures)"
+                  logger.info(logging)
+                  classifierResults match {
+                    case Some(classifierResults) =>
+                      val applicationResult = Classifier.applyClassifiers(
+                        boundExpression = None,
+                        trace,
+                        evaluateFromInterpreter(interpreter),
+                        classifierResults,
+                        debugMode
+                      )
+                      val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
+                      logger.info(Classifier.printTransformation(classifierResults.toTransformation))
+                      logger.traceOrError(s"Decomposed trace:\n${applicationResult.printDecomposedTrace}")
+                      logger.info(s"$logging: $areSimilar")
+                      // logger.traceOrError(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
+                      areSimilar
+                    case None =>
+                      logger.info(s"Cannot test the generality of ${groupIndex + 1}-th group on $traceIndex-th trace " +
+                        s"No classifier for $printGroup ($printFeatures)")
+                      false
+                  }
+              })
+            }(executionContextExecutor)
+        })(implicitly, executionContextExecutor)
+        Await.result(futures, Duration.Inf).contains(true)
     })
-    val result = Await.result(futures, Duration.Inf)
     groups.zip(result).flatMap({
       case (group, areSimilar) => if (areSimilar) Some(group) else None
     })
@@ -253,6 +269,7 @@ class SegmentClustering(sumWeight: Int, commandWeight: Int,
 
 object SegmentClustering {
   private val logger = MyLogger.createLogger(SegmentClustering.getClass, debugMode = false)
+  val THREADS: Int = Runtime.getRuntime.availableProcessors
 
   private def chooseGroup(groups: List[Group]): Option[Group] = {
     // TODO: Carefully choose a group
