@@ -10,14 +10,14 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.Random
 
-class Fuzzer(maxInteger: Int, minInteger: Int) {
-  def randomValues(typ: BrboType.T, samples: Int, maxArrayLength: Int, seed: Int): List[BrboValue] = {
+class Fuzzer(maxInteger: Int, minInteger: Int, maxArrayLength: Int) {
+  def randomValues(typ: BrboType.T, samples: Int, seed: Int): List[BrboValue] = {
     val result = typ match {
       case BrboType.INT => randomInteger(samples, seed)
       case BrboType.BOOL => randomBoolean(samples, seed)
       case BrboType.ARRAY(typ) =>
         typ match {
-          case BrboType.INT => throw new Exception // randomArray(samples, maxArrayLength)
+          case BrboType.INT => randomArray(samples, seed)
           case _ => throw new Exception
         }
       case _ => throw new Exception
@@ -39,33 +39,24 @@ class Fuzzer(maxInteger: Int, minInteger: Int) {
 
   private def nextRandomInteger(random: Random): Int = minInteger + random.nextInt(maxInteger - minInteger + 1)
 
-  private def randomArray(samples: Int, maxArrayLength: Int): List[BrboValue] = {
-    val partitionSize = {
-      val partitionSize = samples / maxArrayLength
-      if (partitionSize == 0) 1
-      else partitionSize
-    }
-    Range.inclusive(1, maxArrayLength + 1).toList.flatMap({
-      length =>
-        Range(0, partitionSize).map({
-          sampleID =>
-            // seed only depends on `samples` and `maxArrayLength`
-            val array = Range(0, length).map({
-              elementID => randomInteger(samples = 1, seed = partitionSize + length + sampleID + elementID).head
-            }).toList
-            BrboArray(array, BrboType.INT)
-        })
-    })
+  private def randomArray(samples: Int, seed: Int): List[BrboValue] = {
+    val random = new scala.util.Random(seed)
+    Range(0, samples).map({
+      sampleIndex =>
+        val length = random.nextInt(maxArrayLength) + 1
+        val array = randomInteger(samples = length, seed = length + sampleIndex)
+        BrboArray(array, BrboType.INT)
+    }).toList
   }
 }
 
 object Fuzzer {
   val DEFAULT_SAMPLES = 0
-  private val MAX_ARRAY_LENGTH = 5
+  private val MAX_ARRAY_LENGTH = 3
   private val MAX_INTEGER = 3000 // No need to be a huge number. Just need to let the costs vary.
   private val MIN_INTEGER = 10
   val LOOP_ITERATIONS: List[Int] = List(2, 5, 8)
-  private val fuzzer = new Fuzzer(maxInteger = MAX_INTEGER, minInteger = MIN_INTEGER)
+  private val fuzzer = new Fuzzer(maxInteger = MAX_INTEGER, minInteger = MIN_INTEGER, maxArrayLength = MAX_ARRAY_LENGTH)
 
   def fuzz(brboProgram: BrboProgram, debugMode: Boolean, samples: Int): List[Interpreter.Trace] = {
     val logger = MyLogger.createLogger(Fuzzer.getClass, debugMode)
@@ -98,7 +89,7 @@ object Fuzzer {
       case (identifier, index) =>
         val usedInLoopConditionals = loopConditionals.exists({ e => e.getUses.contains(identifier) })
         // If using the same seed below, then we will generate the same possible values for all inputs
-        val values = fuzzer.randomValues(identifier.typ, samples, maxArrayLength = MAX_ARRAY_LENGTH, seed = index)
+        val values = fuzzer.randomValues(identifier.typ, samples, seed = index)
         if (usedInLoopConditionals && identifier.typ == BrboType.INT) {
           values.map({
             case Number(n, _) => Number(LOOP_ITERATIONS(n % LOOP_ITERATIONS.size))
