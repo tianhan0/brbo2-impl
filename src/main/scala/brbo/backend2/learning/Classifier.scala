@@ -90,7 +90,9 @@ object Classifier {
         case (value, index) =>
           value match {
             case Number(n, _) => row.setInt(index, n)
-            case BottomValue => row.setMissing(index)
+            case _: BrboArray | BottomValue =>
+              // No need to train a classifier based on array values
+              row.setMissing(index)
             case _ => throw new Exception(s"Unexpected value ${value.printToIR()}")
           }
       })

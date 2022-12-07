@@ -1,7 +1,6 @@
 package brbo.backend2.interpreter
 
 import brbo.backend2.interpreter.Interpreter._
-import brbo.common.ast.BrboAstUtils.immediateParentStatements
 import brbo.common.ast._
 import brbo.common.{BrboType, MyLogger, PreDefinedFunctions, Print}
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
@@ -12,8 +11,6 @@ import scala.collection.mutable.ArrayBuffer
 
 class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
   protected val logger: MyLogger = MyLogger.createLogger(classOf[Interpreter], debugMode)
-  private val parentStatements: Map[BrboAst, Statement] =
-    (brboProgram.mainFunction :: brboProgram.functions).flatMap(f => immediateParentStatements(f.bodyWithInitialization)).toMap
 
   def execute(inputValues: List[BrboValue]): FlowEndState = {
     try {
@@ -456,6 +453,7 @@ object Interpreter {
           val typ = value match {
             case _: Number => BrboType.INT
             case _: Bool => BrboType.BOOL
+            case BrboArray(_, innerType, _) => BrboType.ARRAY(innerType)
             case _ => throw new Exception("Unknown Type")
           }
           (name, typ)
@@ -467,6 +465,8 @@ object Interpreter {
         get(variable) match {
           case Number(n, _) => n.toString
           case Bool(b, _) => b.toString
+          case BrboArray(values, _, _) =>
+            s"[${values.map(v => v.printToIR()).mkString(",")}]"
           case _ => throw new Exception
         }
       } catch {
