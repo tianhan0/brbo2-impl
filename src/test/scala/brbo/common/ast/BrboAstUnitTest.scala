@@ -304,23 +304,23 @@ object BrboAstUnitTest {
       |    reset(4);
       |    int R = 0;
       |    R = R + 1011;
-      |    // int a1 = arrayRead(array, 0);
-      |    // int a2 = arraySum(array);
-      |    // int a3 = arrayLength(array);
+      |    int a1 = arrayRead(array, 0);
+      |    int a2 = arraySum(array);
+      |    int a3 = arrayLength(array);
       |    int a4 = ndInt();
       |    int a5 = ndInt2(12, 34);
       |    boolean a6 = ndBool();
-      |    mostPreciseBound(R > 10);
-      |    lessPreciseBound(R < 10);
+      |    mostPreciseBound(R + arraySum(array) > 10);
+      |    lessPreciseBound(R + arraySum(array) < 10);
       |  }
       |
       |  void use(int x, int cost, boolean condition) {}
       |  void use(int x, int cost) {}
       |  void reset(int x, boolean condition) {}
       |  void reset(int x) {}
-      |  // int arrayRead(int[] x, int index) { return 0; }
-      |  // int arraySum(int[] x) { return 0; }
-      |  // int arrayLength(int[] x) { return 0; }
+      |  int arrayRead(int[] x, int index) { return 0; }
+      |  int arraySum(int[] x) { return 0; }
+      |  int arrayLength(int[] x) { return 0; }
       |  public abstract int ndInt();
       |  public abstract int ndInt2(int lower, int upper);
       |  public abstract boolean ndBool();
@@ -346,8 +346,8 @@ object BrboAstUnitTest {
         |    int D3p = 0;
         |    int D4 = 0;
         |    int D4p = 0;
-        |    lessPreciseBound(((((0 + D1) + D2) + D3) + D4) < 10);
-        |    mostPreciseBound(!((((((0 + D1) + D2) + D3) + D4) < 10)) && !((((((0 + D1) + D2) + D3) + D4) == 10)));
+        |    lessPreciseBound((((((0 + D1) + D2) + D3) + D4) + arrayLength(array)) < 10);
+        |    mostPreciseBound(!(((((((0 + D1) + D2) + D3) + D4) + arrayLength(array)) < 10)) && !(((((((0 + D1) + D2) + D3) + D4) + arrayLength(array)) == 10)));
         |    if (!((x < 10)) && !((x == 10)))
         |    {
         |      D1 = D1 + 10;
@@ -386,6 +386,9 @@ object BrboAstUnitTest {
         |    C4 = C4 + 1;
         |    int R = 0;
         |    ;
+        |    int a1 = arrayRead(array, 0);
+        |    int a2 = arraySum(array);
+        |    int a3 = arrayLength(array);
         |    int a4 = ndInt();
         |    int a5 = ndInt2(12, 34);
         |    int a6 = ndBool();

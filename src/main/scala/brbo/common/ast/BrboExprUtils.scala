@@ -56,6 +56,10 @@ object BrboExprUtils {
         FunctionCallExpr(identifier, arguments.map(a => replaceCLiteral(a, from, to)), returnType)
       case ITEExpr(condition, thenExpr, elseExpr, _) =>
         ITEExpr(replaceCLiteral(condition, from, to), replaceCLiteral(thenExpr, from, to), replaceCLiteral(elseExpr, from, to))
+      case ArraySum(array, _) => ArrayLength(replaceCLiteral(array, from, to))
+      case ArrayRead(array, index, _) =>
+        ArrayRead(replaceCLiteral(array, from, to), replaceCLiteral(index, from, to))
+      case ArrayLength(array, _) => ArrayLength(replaceCLiteral(array, from, to))
     }
   }
 
