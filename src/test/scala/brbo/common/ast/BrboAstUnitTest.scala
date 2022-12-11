@@ -346,8 +346,8 @@ object BrboAstUnitTest {
         |    int D3p = 0;
         |    int D4 = 0;
         |    int D4p = 0;
-        |    lessPreciseBound((((((0 + D1) + D2) + D3) + D4) + arrayLength(array)) < 10);
-        |    mostPreciseBound(!(((((((0 + D1) + D2) + D3) + D4) + arrayLength(array)) < 10)) && !(((((((0 + D1) + D2) + D3) + D4) + arrayLength(array)) == 10)));
+        |    lessPreciseBound((((((0 + D1) + D2) + D3) + D4) + arraySum(array)) < 10);
+        |    mostPreciseBound(!(((((((0 + D1) + D2) + D3) + D4) + arraySum(array)) < 10)) && !(((((((0 + D1) + D2) + D3) + D4) + arraySum(array)) == 10)));
         |    if (!((x < 10)) && !((x == 10)))
         |    {
         |      D1 = D1 + 10;
