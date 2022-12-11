@@ -41,7 +41,7 @@ public abstract class TemplateEngine3 extends Common {
         chunk = arrayRead(text, j + 1);
         R = R + chunk;
         R = R + rep;
-        j++;
+        j += 2;
       }
       i++;
       R = R + sep;

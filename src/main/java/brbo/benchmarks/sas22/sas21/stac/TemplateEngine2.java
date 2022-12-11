@@ -33,7 +33,7 @@ public abstract class TemplateEngine2 extends Common {
         tag = arrayRead(text, j);
         chunk = arrayRead(text, j + 1);
         R = R + chunk;
-        j++;
+        j += 2;
       }
       i++;
       R = R + separator;

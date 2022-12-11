@@ -21,7 +21,7 @@ public abstract class TemplateEngine extends Common {
       tag = arrayRead(text, i);
       chunk = arrayRead(text, i + 1);
       R = R + chunk;
-      i++;
+      i += 2;
     }
   }
 }
