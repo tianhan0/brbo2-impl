@@ -312,28 +312,20 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
         }
       case ITEExpr(condition, thenExpr, elseExpr, _) =>
         evaluateExpr(InitialState(condition, initialState.store, initialState.trace)) match {
-          case GoodState(store, trace, value) =>
-            value match {
-              case Some(Bool(b, _)) =>
-                if (b) evaluateExpr(InitialState(thenExpr, store, trace))
-                else evaluateExpr(InitialState(elseExpr, store, trace))
-              case _ => throw new Exception
-            }
+          case GoodState(store, trace, Some(Bool(b, _))) =>
+            if (b) evaluateExpr(InitialState(thenExpr, store, trace))
+            else evaluateExpr(InitialState(elseExpr, store, trace))
           case _ => throw new Exception
         }
       case ArrayRead(array, index, _) =>
         evaluateExpr(InitialState(array, initialState.store, initialState.trace)) match {
-          case GoodState(store, trace, arrayValue) =>
-            arrayValue match {
-              case Some(BrboArray(arrayValue, _, _)) =>
-                evaluateExpr(InitialState(index, store, trace)) match {
-                  case GoodState(store, trace, indexValue) =>
-                    indexValue match {
-                      case Some(Number(indexValue, _)) =>
-                        val value = arrayValue(indexValue).asInstanceOf[BrboValue]
-                        GoodState(store, trace, Some(value))
-                      case _ => throw new Exception
-                    }
+          case GoodState(store, trace, Some(BrboArray(arrayValue, _, _))) =>
+            evaluateExpr(InitialState(index, store, trace)) match {
+              case GoodState(store, trace, indexValue) =>
+                indexValue match {
+                  case Some(Number(indexValue, _)) =>
+                    val value = arrayValue(indexValue)
+                    GoodState(store, trace, Some(value))
                   case _ => throw new Exception
                 }
               case _ => throw new Exception
@@ -342,12 +334,14 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
         }
       case ArrayLength(array, _) =>
         evaluateExpr(InitialState(array, initialState.store, initialState.trace)) match {
-          case GoodState(store, trace, arrayValue) =>
-            arrayValue match {
-              case Some(BrboArray(arrayValue, _, _)) =>
-                GoodState(store, trace, Some(Number(arrayValue.length)))
-              case _ => throw new Exception
-            }
+          case GoodState(store, trace, Some(BrboArray(arrayValue, _, _))) =>
+            GoodState(store, trace, Some(Number(arrayValue.length)))
+          case _ => throw new Exception
+        }
+      case ArraySum(array, _) =>
+        evaluateExpr(InitialState(array, initialState.store, initialState.trace)) match {
+          case GoodState(store, trace, Some(BrboArray(arrayValue, _, _))) =>
+            GoodState(store, trace, Some(Number(arraySum(arrayValue))))
           case _ => throw new Exception
         }
     }
@@ -422,6 +416,14 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
     }
     val node = TraceNode(store, Some(lastTransition))
     trace.add(node)
+  }
+
+  private def arraySum(values: List[BrboValue]): Int = {
+    values.map({
+      case BrboArray(values, _, _) => arraySum(values)
+      case Number(n, _) => n
+      case _ => throw new Exception
+    }).sum
   }
 }
 
