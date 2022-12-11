@@ -9,7 +9,7 @@ import brbo.common.{BrboType, GhostVariableTyp, GhostVariableUtils, SameAs}
  */
 case class BoundAssertion(resourceVariable: String, assertion: BrboExpr, tag: String) extends SameAs with Serializable {
   def replaceResourceVariable(into: BrboExpr): BrboExpr = {
-    BrboExprUtils.replaceCLiteral(assertion, Identifier(resourceVariable, BrboType.INT), into)
+    BrboExprUtils.replace(assertion, Identifier(resourceVariable, BrboType.INT), into)
   }
 
   override def sameAs(other: Any): Boolean = {

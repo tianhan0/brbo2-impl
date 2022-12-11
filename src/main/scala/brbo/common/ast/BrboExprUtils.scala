@@ -29,7 +29,7 @@ object BrboExprUtils {
     }
   }
 
-  def replaceCLiteral(body: BrboExpr, from: BrboExpr, to: BrboExpr): BrboExpr = {
+  def replace(body: BrboExpr, from: BrboExpr, to: BrboExpr): BrboExpr = {
     if (from.printToC(0) == body.printToC(0)) {
       if (from.typ == body.typ) return to
       else throw new Exception("Type mismatch")
@@ -37,29 +37,29 @@ object BrboExprUtils {
     body match {
       case _@(Identifier(_, _, _) | Bool(_, _) | Number(_, _) | StringLiteral(_, _)) => body
       case Addition(left, right, _) =>
-        Addition(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
+        Addition(replace(left, from, to), replace(right, from, to))
       case Subtraction(left, right, _) =>
-        Subtraction(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
+        Subtraction(replace(left, from, to), replace(right, from, to))
       case Multiplication(left, right, _) =>
-        Multiplication(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
+        Multiplication(replace(left, from, to), replace(right, from, to))
       case Negation(expression, _) =>
-        Negation(replaceCLiteral(expression, from, to))
+        Negation(replace(expression, from, to))
       case LessThan(left, right, _) =>
-        LessThan(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
+        LessThan(replace(left, from, to), replace(right, from, to))
       case Equal(left, right, _) =>
-        Equal(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
+        Equal(replace(left, from, to), replace(right, from, to))
       case And(left, right, _) =>
-        And(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
+        And(replace(left, from, to), replace(right, from, to))
       case Or(left, right, _) =>
-        Or(replaceCLiteral(left, from, to), replaceCLiteral(right, from, to))
+        Or(replace(left, from, to), replace(right, from, to))
       case FunctionCallExpr(identifier, arguments, returnType, _) =>
-        FunctionCallExpr(identifier, arguments.map(a => replaceCLiteral(a, from, to)), returnType)
+        FunctionCallExpr(identifier, arguments.map(a => replace(a, from, to)), returnType)
       case ITEExpr(condition, thenExpr, elseExpr, _) =>
-        ITEExpr(replaceCLiteral(condition, from, to), replaceCLiteral(thenExpr, from, to), replaceCLiteral(elseExpr, from, to))
-      case ArraySum(array, _) => ArrayLength(replaceCLiteral(array, from, to))
+        ITEExpr(replace(condition, from, to), replace(thenExpr, from, to), replace(elseExpr, from, to))
+      case ArraySum(array, _) => ArraySum(replace(array, from, to))
       case ArrayRead(array, index, _) =>
-        ArrayRead(replaceCLiteral(array, from, to), replaceCLiteral(index, from, to))
-      case ArrayLength(array, _) => ArrayLength(replaceCLiteral(array, from, to))
+        ArrayRead(replace(array, from, to), replace(index, from, to))
+      case ArrayLength(array, _) => ArrayLength(replace(array, from, to))
     }
   }
 
