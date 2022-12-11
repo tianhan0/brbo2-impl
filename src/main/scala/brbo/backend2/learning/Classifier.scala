@@ -377,7 +377,7 @@ object Classifier {
                      features: List[BrboExpr],
                      throwIfNoResetPlaceHolder: Boolean,
                      controlFlowGraph: ControlFlowGraph): TraceTables = {
-    val dominators: Map[GroupID, Command] = groups.map({
+    val dominators: Map[GroupID, Option[Command]] = groups.map({
       case (groupID, group) =>
         val commands = group.getCommands(trace)
         val nodes = controlFlowGraph.nodesFromCommands(commands.toSet)
@@ -385,49 +385,15 @@ object Classifier {
           nodes = nodes,
           predicate = { node: CFGNode => node.command.isInstanceOf[ResetPlaceHolder] },
         )
-        if (dominator.isEmpty)
-          throw TableGenerationError(s"Failed to find the closest dominating reset place holder for all uses in group:\n${group.print(trace)}")
-        (groupID, dominator.get.command)
+        dominator match {
+          case Some(dominator) => (groupID, Some(dominator.command))
+          case None => (groupID, None)
+        }
     })
 
-    val nodesWithIndex = trace.nodes.zipWithIndex
     // From group IDs to the trace node indices into which resets need to be placed
-    val resetPlaceHolderMap: Map[GroupID, Set[Int]] = groups.map({
-      case (groupID, group) =>
-        var resetPlaceHolderIndices: Set[Int] = Set()
-        var i = 0
-        while (i + 1 < group.segments.size) {
-          val begin = {
-            val current = group.segments(i)
-            current.indices.last + 1
-          }
-          val end = {
-            val next = group.segments(i + 1)
-            next.indices.head - 1
-          }
-          // logger.trace(s"begin $begin end $end")
-          val allResetPlaceHolders = nodesWithIndex.flatMap({
-            case (node, index) =>
-              val isResetPlaceHolder = node.lastTransition match {
-                case Some(Transition(command, _)) => command.isInstanceOf[ResetPlaceHolder]
-                case _ => false
-              }
-              if (isResetPlaceHolder && begin <= index && index <= end)
-                Some((node.lastTransition.get.command.asInstanceOf[ResetPlaceHolder], index))
-              else
-                None
-          })
-          chooseResetPlaceHolder(allResetPlaceHolders, dominators(groupID)) match {
-            case Some(index) => resetPlaceHolderIndices = resetPlaceHolderIndices + index
-            case None =>
-              val errorMessage = s"Failed to find a reset place holder between " +
-                s"${groupID.print()}'s $i and ${i + 1} segment\n${printDecomposition(trace, groups)}"
-              if (throwIfNoResetPlaceHolder) throw TableGenerationError(errorMessage)
-          }
-          i = i + 1
-        }
-        (groupID, resetPlaceHolderIndices)
-    })
+    val resetPlaceHolderMap: Map[GroupID, Set[Int]] =
+      findReplaceHolderLocations(trace, groups, dominators, throwIfNoResetPlaceHolder)
     val lastUseIndices = groups.map({ case (groupID, group) => (groupID, group.last) })
 
     val groupIDs = groups.keys.toSet
@@ -514,14 +480,58 @@ object Classifier {
     new TraceTables(traceTableMap, features)
   }
 
-  private def chooseResetPlaceHolder(holders: Iterable[(ResetPlaceHolder, Int)], dominator: Command): Option[Int] = {
-    if (holders.isEmpty)
+  private def findReplaceHolderLocations(trace: Trace,
+                                         groups: Map[GroupID, Group],
+                                         dominators: Map[GroupID, Option[Command]],
+                                         throwIfNoResetPlaceHolder: Boolean): Map[GroupID, Set[Int]] = {
+    val nodesWithIndex = trace.nodes.zipWithIndex
+    groups.map({
+      case (groupID, group) =>
+        var resetPlaceHolderIndices: Set[Int] = Set()
+        var i = 0
+        while (i + 1 < group.segments.size) {
+          val begin = {
+            val current = group.segments(i)
+            current.indices.last + 1
+          }
+          val end = {
+            val next = group.segments(i + 1)
+            next.indices.head - 1
+          }
+          // logger.trace(s"begin $begin end $end")
+          val allResetPlaceHolders = nodesWithIndex.flatMap({
+            case (node, index) =>
+              val isResetPlaceHolder = node.lastTransition match {
+                case Some(Transition(command, _)) => command.isInstanceOf[ResetPlaceHolder]
+                case _ => false
+              }
+              if (isResetPlaceHolder && begin <= index && index <= end)
+                Some((node.lastTransition.get.command.asInstanceOf[ResetPlaceHolder], index))
+              else
+                None
+          })
+          chooseResetPlaceHolder(allResetPlaceHolders, dominators(groupID)) match {
+            case Some(index) => resetPlaceHolderIndices = resetPlaceHolderIndices + index
+            case None =>
+              val errorMessage = s"Failed to find a reset place holder between " +
+                s"${groupID.print()}'s $i and ${i + 1} segment\n${printDecomposition(trace, groups)}"
+              if (throwIfNoResetPlaceHolder) throw TableGenerationError(errorMessage)
+          }
+          i = i + 1
+        }
+        (groupID, resetPlaceHolderIndices)
+    })
+  }
+
+  private def chooseResetPlaceHolder(holders: Iterable[(ResetPlaceHolder, Int)],
+                                     dominator: Option[Command]): Option[Int] = {
+    if (holders.isEmpty || dominator.isEmpty)
       None
     else {
       // logger.trace(s"dominator: $dominator")
       // holders.foreach({ case (holder, i) => logger.trace(s"index $i: ${holder}")})
-      // Find the reset place holder that is the same as the dominator
-      holders.find({ case (holder, _) => holder == dominator }) match {
+      // Let the reset place holder be the dominator
+      holders.find({ case (holder, _) => holder == dominator.get }) match {
         case Some((_, index)) => Some(index)
         case None => None
       }
