@@ -5,7 +5,6 @@ import brbo.benchmarks.Common;
 public abstract class AmortizeAndWorstCase02Array extends Common {
     void main(int[] array, int costA, int costB, int n) {
         int i = 0;
-        int it = 0;
         int R = 0;
         int j = 0;
         int k = 0;
