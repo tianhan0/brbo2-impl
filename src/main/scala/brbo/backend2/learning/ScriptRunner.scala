@@ -79,7 +79,8 @@ object ScriptRunner {
 
   def run(inputFileContent: String, algorithm: Algorithm, debugMode: Boolean): Option[String] = {
     val logger = if (debugMode) MyLogger.commonDebugLogger else MyLogger.commonLogger
-    val inputFilePath = Files.createTempFile("", ".json").toAbsolutePath.toString
+    val inputFile = Files.createTempFile("", ".json")
+    val inputFilePath = inputFile.toAbsolutePath.toString
     // logger.traceOrError(s"Write data into $inputFilePath")
     new PrintWriter(inputFilePath) {
       // logger.traceOrError(s"Input file content: $inputFileContent")
@@ -99,12 +100,15 @@ object ScriptRunner {
       // logger.traceOrError(s"Read labels from ${outputFile.toAbsolutePath}")
       val outputFileContents = Files.readString(outputFile)
       // logger.traceOrError(s"Output file content: $outputFileContents")
+      Files.deleteIfExists(inputFile)
+      Files.deleteIfExists(outputFile)
       Some(outputFileContents)
     }
     else {
       val stdout = IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
       logger.fatal(s"Ran python clustering script via `$command`")
       logger.fatal(s"Exit code ${process.exitValue()}. Failed to execute ${algorithm.scriptName}. stdout: $stdout")
+      Files.deleteIfExists(outputFile)
       None
     }
   }
