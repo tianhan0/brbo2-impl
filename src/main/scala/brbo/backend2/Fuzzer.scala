@@ -99,7 +99,7 @@ object Fuzzer {
       case (identifier, index) =>
         val usedInLoopConditionals = loopConditionals.exists({ e => e.getUses.contains(identifier) })
         // If using the same seed below, then we will generate the same possible values for all inputs
-        val values = fuzzer.randomValues(identifier.typ, samples, seed = index + identifier.hashCode)
+        val values = fuzzer.randomValues(identifier.typ, samples, seed = index)
         if (usedInLoopConditionals && identifier.typ == BrboType.INT) {
           values.map({
             case Number(n, _) => Number(LOOP_ITERATIONS(n % LOOP_ITERATIONS.size))
