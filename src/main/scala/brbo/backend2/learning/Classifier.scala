@@ -309,8 +309,8 @@ object Classifier {
       s"ClassifierResultsMap (Features: $featureString)\n$resultsString"
     }
 
-    def toTransformation: Map[BrboAst, BrboAst] = {
-      var transforms: Map[BrboAst, List[BrboAst]] = Map()
+    def toTransformation: Map[Command, BrboAst] = {
+      var transforms: Map[Command, List[BrboAst]] = Map()
       results.foreach({
         case (location, results) =>
           location.command match {
@@ -348,11 +348,11 @@ object Classifier {
     }
   }
 
-  def printTransformation(transformation: Map[BrboAst, BrboAst]): String = {
+  def printTransformation(transformation: Map[Command, BrboAst]): String = {
     "See below for a mapping from existing ASTs to new ASTs\n" +
       transformation.map({
-        case (oldAst, newAst) =>
-          s"${oldAst.asInstanceOf[Command].printToIR()} -> ${newAst.printToC(0)}"
+        case (oldCommand, newAst) =>
+          s"${oldCommand.printToIR()} -> ${newAst.printToC(0)}"
       }).mkString("\n")
   }
 

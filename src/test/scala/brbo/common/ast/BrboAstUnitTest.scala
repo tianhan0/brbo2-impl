@@ -284,7 +284,7 @@ object BrboAstUnitTest {
     TestCase("upperBoundTest", upperBoundTest,
       """void main(int x)
         |{
-        |  ;
+        |  // upperBound(0, "tag", x + 1)
         |}""".stripMargin),
     TestCase("resourceVariableTest", resourceVariableTest,
       """void main(int x)
@@ -385,15 +385,15 @@ object BrboAstUnitTest {
         |    D4 = 0;
         |    C4 = C4 + 1;
         |    int R = 0;
-        |    ;
+        |    R = R + 1011;
         |    int a1 = arrayRead(array, 0);
         |    int a2 = arraySum(array);
         |    int a3 = arrayLength(array);
         |    int a4 = ndInt();
         |    int a5 = ndInt2(12, 34);
         |    int a6 = ndBool();
-        |    ;
-        |    ;
+        |    // mostPreciseBound(R + arraySum(array) > 10)
+        |    // lessPreciseBound(R + arraySum(array) < 10)
         |  }
         |  public abstract int ndInt();
         |  public abstract int ndInt2(int lower, int upper);

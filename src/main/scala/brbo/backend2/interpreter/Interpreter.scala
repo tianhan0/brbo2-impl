@@ -104,7 +104,7 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
       case _: CFGOnly | _: CexPathOnly => throw new Exception()
       case _: VariableDeclaration | _: Assignment =>
         evaluateAssignment(initialState, ast)
-      case _: Skip | _: ResetPlaceHolder =>
+      case _: Skip | _: ResetPlaceHolder | _: Comment =>
         GoodState(initialState.store, appendToTraceFrom(initialState, Transition(ast)), None)
       case _: Break =>
         JumpState(initialState.store, appendToTraceFrom(initialState, Transition(ast)), BreakJump)

@@ -9,8 +9,6 @@ import org.apache.commons.io.{FileUtils, FilenameUtils}
 
 import java.io.{File, FileWriter}
 import java.nio.file.{Files, Path, Paths}
-import java.text.SimpleDateFormat
-import java.util.Date
 import scala.collection.JavaConverters._
 
 object BrboMain {
@@ -44,7 +42,7 @@ object BrboMain {
       })
     }
 
-    val date = new SimpleDateFormat("MMdd-HHmm").format(new Date) // YYYYMMdd-HHmm
+    // val date = new SimpleDateFormat("MMdd-HHmm").format(new Date) // YYYYMMdd-HHmm
     logger.info(s"Group programs based on the inner most package names")
     val groups: Map[String, List[(File, String)]] = sourceFiles.groupBy({
       case (file, _) =>
@@ -62,6 +60,7 @@ object BrboMain {
           case (batch, index) => runBatch(logger, batch, index, sourceFiles.size, arguments)
         })
     })
+    sys.exit()
   }
 
   private def runBatch(logger: MyLogger, sourceFiles: List[(File, String)], batchIndex: Int,
@@ -74,13 +73,14 @@ object BrboMain {
         val fileIndex = index + batchIndex * BATCH_SIZE
         val progress: Double = fileIndex.toDouble / totalFiles * 100
         logger.info(s"Process `$fileIndex`-th input file. Progress: ${StringFormatUtils.float(progress, 2)}%")
-        analyze(logger, sourceFile, sourceFileContents, arguments)
-        logger.info(s"Finished analyzing ${sourceFile.getAbsolutePath}")
+        decompose(logger, sourceFile, sourceFileContents, arguments)
+        logger.info(s"Finished decomposing ${sourceFile.getAbsolutePath}")
       // TODO: Store results into csv files
     })
   }
 
-  def analyze(logger: MyLogger, sourceFile: File, sourceFileContents: String, arguments: NewCommandLineArguments): Unit = {
+  def decompose(logger: MyLogger, sourceFile: File,
+                sourceFileContents: String, arguments: NewCommandLineArguments): Unit = {
     val sourceFilePath = sourceFile.getAbsolutePath
     logger.info(s"Process file `$sourceFilePath`")
 
@@ -124,7 +124,7 @@ object BrboMain {
       fileWriter.close()
     }
     else {
-      logger.info(s"Not decompose `$sourceFilePath`")
+      logger.info(s"Skip decomposing `$sourceFilePath`")
     }
   }
 

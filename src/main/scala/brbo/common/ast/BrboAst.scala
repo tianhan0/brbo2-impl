@@ -115,9 +115,9 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
     val ghostVariableInitializations: List[Command] = groupIds.flatMap({
       groupId => GhostVariableUtils.declareVariables(groupId, legacy = true)
     }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
-    val bodyWithInitialization = body match {
+    val bodyWithInitialization: Block = body match {
       case Block(asts, _) => Block(ghostVariableInitializations ::: boundAssertionExprs ::: asts)
-      case ITE(_, _, _, _) | Loop(_, _, _) => Block((ghostVariableInitializations ::: boundAssertionExprs) :+ body)
+      case _: ITE | _: Loop => Block((ghostVariableInitializations ::: boundAssertionExprs) :+ body)
       case _ => throw new Exception
     }
     s"${indentString(indent)}${BrboType.toCString(returnType)} $identifier($parametersString) \n" +
@@ -443,11 +443,7 @@ case class Break(override val uuid: UUID = UUID.randomUUID()) extends Command(uu
 
   override def sameAs(other: Any): Boolean = {
     other match {
-      case command: Command =>
-        command match {
-          case Break(_) => true
-          case _ => false
-        }
+      case Break(_) => true
       case _ => false
     }
   }
@@ -466,11 +462,7 @@ case class Continue(override val uuid: UUID = UUID.randomUUID()) extends Command
 
   override def sameAs(other: Any): Boolean = {
     other match {
-      case command: Command =>
-        command match {
-          case Continue(_) => true
-          case _ => false
-        }
+      case Continue(_) => true
       case _ => false
     }
   }
@@ -492,12 +484,27 @@ case class LabeledCommand(label: String, command: Command, override val uuid: UU
 
   override def sameAs(other: Any): Boolean = {
     other match {
-      case command: Command =>
-        command match {
-          case LabeledCommand(otherLabel, otherCommand, _) =>
-            otherLabel == label && otherCommand.sameAs(command)
-          case _ => false
-        }
+      case LabeledCommand(otherLabel, otherCommand, _) =>
+        otherLabel == label && otherCommand.sameAs(command)
+      case _ => false
+    }
+  }
+}
+
+case class Comment(content: String, override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
+  override def printToCInternal(indent: Int): String = {
+    s"${indentString(indent)}// ${content.replace("\n", " ")}"
+  }
+
+  override def getFunctionCalls: List[FunctionCallExpr] = Nil
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
+
+  override def sameAs(other: Any): Boolean = {
+    other match {
+      case Comment(otherContent, _) => content == otherContent
       case _ => false
     }
   }
@@ -620,8 +627,11 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
   }
 
   override def printToJava(indent: Int): String = {
-    if (groupId.isEmpty)
-      return Skip().printToJava(indent)
+    if (groupId.isEmpty) {
+      // When a use command is not assigned with a group (i.e., the command is not decomposed),
+      // print the original assignment commands over `R`.
+      return printToCInternal(indent)
+    }
     val resourceVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Resource, legacy = true)
     val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
     val ast = generateAst(assignmentCommand)

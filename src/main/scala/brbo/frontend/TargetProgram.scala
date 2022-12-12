@@ -264,17 +264,17 @@ object TargetProgram {
           functionName match {
             case PreDefinedFunctions.BoundAssertion.name =>
               boundAssertions = BoundAssertion.parse(tag = arguments.head, expr = arguments(1)) :: boundAssertions
-              Right(Skip())
+              Right(Comment(tree.toString))
             case PreDefinedFunctions.MostPreciseBound.name | PreDefinedFunctions.LessPreciseBound.name =>
               boundAssertions = BoundAssertion.parse(tag = StringLiteral(functionName), expr = arguments.head) :: boundAssertions
-              Right(Skip())
+              Right(Comment(tree.toString))
             case PreDefinedFunctions.UpperBound.name =>
               arguments.head match {
                 case Number(groupId, _) =>
                   val resourceVariable = GhostVariableUtils.generateVariable(Some(groupId), GhostVariableTyp.Resource)
                   boundAssertions =
                     BoundAssertion.parse(tag = arguments(1), expr = lessThanOrEqualTo(resourceVariable, arguments(2))) :: boundAssertions
-                  Right(Skip())
+                  Right(Comment(tree.toString))
                 case _ => throw new Exception
               }
             case PreDefinedFunctions.Use.javaFunctionName =>

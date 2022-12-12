@@ -76,20 +76,20 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
     logger.info(s"Step 3.3: Generate classifiers on the tables")
     val classifierResults = tables.toProgramTables.generateClassifiers(debugMode)
     logger.info(s"Step 3.4: Generate program transformations")
-    val transformation: Map[BrboAst, BrboAst] = classifierResults.toTransformation
+    val transformation: Map[Command, BrboAst] = classifierResults.toTransformation
     logger.info(Classifier.printTransformation(transformation))
-    val ghostVariableIDs = {
-      transformation.flatMap({
-        case (_, ast) =>
-          BrboAstUtils.collectCommands(ast).flatMap({
-            case use: Use => use.groupId
-            case reset: Reset => Some(reset.groupId)
-            case _ => None
-          })
-      })
-    }
-    val newBody = BrboAstUtils.replaceAst(instrumentedProgram.mainFunction.body, transformation)
+    val newBody = BrboAstUtils.replaceCommands(instrumentedProgram.mainFunction.body, transformation, omitResetPlaceHolders = true)
     val newMain = {
+      val ghostVariableIDs = {
+        transformation.flatMap({
+          case (_, ast) =>
+            BrboAstUtils.collectCommands(ast).flatMap({
+              case use: Use => use.groupId
+              case reset: Reset => Some(reset.groupId)
+              case _ => None
+            })
+        })
+      }
       val main = instrumentedProgram.mainFunction
       BrboFunction(main.identifier, main.returnType, main.parameters, newBody.asInstanceOf[Statement], ghostVariableIDs.toSet)
     }

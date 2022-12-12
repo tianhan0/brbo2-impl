@@ -51,23 +51,28 @@ object BrboAstUtils {
     }
   }
 
-  def replaceAst(body: BrboAst, replaces: Map[BrboAst, BrboAst]): BrboAst = {
-    replaces.get(body) match {
-      case Some(newAst) => newAst
-      case None =>
-        body match {
-          case command: Command => command
-          case statement: Statement =>
-            statement match {
-              case Block(asts, _) =>
-                Block(asts.map(ast => replaceAst(ast, replaces)))
-              case ITE(condition, thenAst, elseAst, _) =>
-                ITE(condition, replaceAst(thenAst, replaces), replaceAst(elseAst, replaces))
-              case Loop(condition, loopBody, _) =>
-                Loop(condition, replaceAst(loopBody, replaces))
-              case _ => throw new Exception
-            }
-          case _ => throw new Exception
+  def replaceCommands(body: BrboAst, replacements: Map[Command, BrboAst], omitResetPlaceHolders: Boolean): BrboAst = {
+    body match {
+      case command: Command =>
+        // println(s"${command.printToIR()} -> ${replacements.get(command)}")
+        replacements.get(command) match {
+          case Some(newAst) => newAst
+          case None =>
+            if (command.isInstanceOf[ResetPlaceHolder] && omitResetPlaceHolders) Comment(command.printToIR())
+            else command
+        }
+      case statement: Statement =>
+        statement match {
+          case Block(asts, _) =>
+            Block(asts.map(ast => replaceCommands(ast, replacements, omitResetPlaceHolders)))
+          case ITE(condition, thenAst, elseAst, _) =>
+            ITE(
+              condition,
+              replaceCommands(thenAst, replacements, omitResetPlaceHolders),
+              replaceCommands(elseAst, replacements, omitResetPlaceHolders)
+            )
+          case Loop(condition, loopBody, _) =>
+            Loop(condition, replaceCommands(loopBody, replacements, omitResetPlaceHolders))
         }
     }
   }
