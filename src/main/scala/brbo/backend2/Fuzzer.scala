@@ -5,9 +5,9 @@ import brbo.common.ast._
 import brbo.common.string.StringFormatUtils
 import brbo.common.{BrboType, MyLogger}
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import java.util.concurrent.Executors
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Random
 
 class Fuzzer(maxInteger: Int, minInteger: Int, maxArrayLength: Int, minArrayLength: Int) {
@@ -68,7 +68,12 @@ object Fuzzer {
     maxInteger = MAX_INTEGER, minInteger = MIN_INTEGER,
     maxArrayLength = MAX_ARRAY_LENGTH, minArrayLength = MIN_ARRAY_LENGTH)
 
-  def fuzz(brboProgram: BrboProgram, debugMode: Boolean, samples: Int): List[Interpreter.Trace] = {
+  def fuzz(brboProgram: BrboProgram, debugMode: Boolean, samples: Int, threads: Int): List[Interpreter.Trace] = {
+    val executionContextExecutor = {
+      val executorService = Executors.newFixedThreadPool(threads)
+      ExecutionContext.fromExecutor(executorService)
+    }
+
     val logger = MyLogger.createLogger(Fuzzer.getClass, debugMode)
     val FUZZING = s"Fuzzing: ${brboProgram.name}: "
     val interpreter = new Interpreter(brboProgram, debugMode)
@@ -89,8 +94,8 @@ object Fuzzer {
           val endState = interpreter.execute(inputValues)
           // logger.traceOrError(s"Trace:\n${endState.trace.toTable.printAll()}")
           endState.trace
-        }
-    })
+        }(executionContextExecutor)
+    })(implicitly, executionContextExecutor)
     Await.result(futures, Duration.Inf)
   }
 
