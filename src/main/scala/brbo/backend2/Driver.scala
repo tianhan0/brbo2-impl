@@ -36,7 +36,8 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
 
   def decompose(): BrboProgram = {
     logger.info(s"Step 1: Generate traces")
-    val rawTraces = Fuzzer.fuzz(instrumentedProgram, debugMode, samples = arguments.getFuzzSamples)
+    val rawTraces = Fuzzer.fuzz(instrumentedProgram, debugMode,
+      samples = arguments.getFuzzSamples, threads = arguments.getThreads)
     numberOfTraces = rawTraces.size
     logger.info(s"Step 2: Select representative traces")
     val representatives = TracePartition.selectRepresentatives(rawTraces)
@@ -79,8 +80,8 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
     logger.info(Classifier.printTransformation(transformation))
     val ghostVariableIDs = {
       transformation.flatMap({
-        case (_, ast1) =>
-          BrboAstUtils.collectCommands(ast1).flatMap({
+        case (_, ast) =>
+          BrboAstUtils.collectCommands(ast).flatMap({
             case use: Use => use.groupId
             case reset: Reset => Some(reset.groupId)
             case _ => None

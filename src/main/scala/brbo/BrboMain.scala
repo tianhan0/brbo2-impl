@@ -59,13 +59,13 @@ object BrboMain {
         logger.info(s"Run $TOOL_NAME on files in package `$innerMostPackageName`")
         logger.info(s"Run $TOOL_NAME on programs in batches. Batch size: `$BATCH_SIZE`")
         list.grouped(BATCH_SIZE).zipWithIndex.foreach({
-          case (batch, index) => runBatch(logger, batch, index, sourceFiles.size, date, innerMostPackageName, arguments)
+          case (batch, index) => runBatch(logger, batch, index, sourceFiles.size, arguments)
         })
     })
   }
 
   private def runBatch(logger: MyLogger, sourceFiles: List[(File, String)], batchIndex: Int,
-                       totalFiles: Int, date: String, innerMostPackageName: String, arguments: NewCommandLineArguments): Unit = {
+                       totalFiles: Int, arguments: NewCommandLineArguments): Unit = {
     val batchString = s"${StringFormatUtils.integer(batchIndex * BATCH_SIZE, 3)}-${StringFormatUtils.integer((batchIndex + 1) * BATCH_SIZE - 1, 3)}"
     logger.info(s"Run `$batchIndex`-th batch`: $batchString")
 
@@ -75,6 +75,7 @@ object BrboMain {
         val progress: Double = fileIndex.toDouble / totalFiles * 100
         logger.info(s"Process `$fileIndex`-th input file. Progress: ${StringFormatUtils.float(progress, 2)}%")
         analyze(logger, sourceFile, sourceFileContents, arguments)
+        logger.info(s"Finished analyzing ${sourceFile.getAbsolutePath}")
       // TODO: Store results into csv files
     })
   }

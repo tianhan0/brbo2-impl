@@ -29,7 +29,7 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
     val initialStore = parameters.zip(inputValues).foldLeft(new Store())({
       case (store, (parameter, inputValue)) => store.set(parameter, inputValue)
     })
-    // logger.traceOrError(s"Evaluate function `${brboFunction.identifier}` with initial store $initialStore")
+    // println(s"Evaluate function `${brboFunction.identifier}` with initial store $initialStore")
     val initialState = InitialState(brboFunction.bodyWithInitialization, initialStore, lastTrace.add(TraceNode(initialStore, None)))
     evaluateAst(initialState)
   }
@@ -745,7 +745,7 @@ object Interpreter {
   def printState(state: State): String = {
     state match {
       case state: FlowBeginState =>
-        s"${state.getClass.getSimpleName}\nCommand: ${state.ast}\n${state.store}\n${state.trace.print()}"
+        s"${state.getClass.getSimpleName}\nCommand: ${state.ast.printToC(indent = 0)}\n${state.store}\n${state.trace.print()}"
       case state: GoodState =>
         val valueString = state.value match {
           case Some(value) => s"Some(${value.printToIR()})"
