@@ -58,8 +58,8 @@ class Fuzzer(maxInteger: Int, minInteger: Int, maxArrayLength: Int, minArrayLeng
 
 object Fuzzer {
   val DEFAULT_SAMPLES = 0
-  private val MIN_ARRAY_LENGTH = 2
-  private val MAX_ARRAY_LENGTH = 3
+  private val MIN_ARRAY_LENGTH = 3
+  private val MAX_ARRAY_LENGTH = 4
   private val MAX_INTEGER = 300 // No need to be a huge number. Just need to let the costs vary.
   private val MIN_INTEGER = 10
   val SEED: Int = 6182
