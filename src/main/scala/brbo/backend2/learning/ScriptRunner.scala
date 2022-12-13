@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 import scala.collection.JavaConverters._
-import scala.concurrent.duration.{Duration, SECONDS}
+import scala.concurrent.duration.Duration
 
 object ScriptRunner {
   private val OUTPUT_DIRECTORY = {
@@ -78,7 +78,7 @@ object ScriptRunner {
   }
 
   def run(inputFileContent: String, algorithm: Algorithm, debugMode: Boolean): Option[String] = {
-    val logger = if (debugMode) MyLogger.commonDebugLogger else MyLogger.commonLogger
+    val logger = if (debugMode) MyLogger.sharedDebugLogger else MyLogger.sharedLogger
     val inputFile = Files.createTempFile("", ".json")
     val inputFilePath = inputFile.toAbsolutePath.toString
     // logger.traceOrError(s"Write data into $inputFilePath")

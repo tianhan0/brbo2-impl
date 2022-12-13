@@ -31,7 +31,7 @@ class MyLogger(logger: Logger, val debugMode: Boolean) {
 object MyLogger {
   def createLogger[T](clazz: Class[T], debugMode: Boolean): MyLogger = new MyLogger(LogManager.getLogger(clazz), debugMode)
 
-  val commonDebugLogger: MyLogger = createLogger(MyLogger.getClass, debugMode = true)
+  val sharedDebugLogger: MyLogger = createLogger(MyLogger.getClass, debugMode = true)
 
-  val commonLogger: MyLogger = createLogger(MyLogger.getClass, debugMode = false)
+  val sharedLogger: MyLogger = createLogger(MyLogger.getClass, debugMode = false)
 }
