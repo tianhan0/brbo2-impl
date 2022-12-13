@@ -34,6 +34,10 @@ class NewCommandLineArguments extends Serializable {
     usage = "The number of threads when computing in parallel.")
   private var threads: Int = SegmentClustering.THREADS
 
+  @Option(name = "--input", aliases = Array("-i"), required = false,
+    usage = "Use the provided inputs. For java program a/b/Test.java, its input file is a/b/Test.input.")
+  private var useProvidedInputs: Boolean = false
+
   def getDebugMode: Boolean = debugMode
 
   def getDirectoryToAnalyze: String = directoryToAnalyze
@@ -51,6 +55,8 @@ class NewCommandLineArguments extends Serializable {
     }
   }
 
+  def getUseProvidedInputs: Boolean = useProvidedInputs
+
   private var initialized = false
 
   def initialize(debugMode: Boolean, directoryToAnalyze: String): Unit = {
@@ -65,7 +71,8 @@ class NewCommandLineArguments extends Serializable {
       s"fuzzSamples: $fuzzSamples",
       s"algorithm: $algorithm",
       s"algorithmParameter: $algorithmParameter",
-      s"threads: $threads"
+      s"threads: $threads",
+      s"userProvidedInputs: $useProvidedInputs"
     )
     strings.mkString("\n")
   }

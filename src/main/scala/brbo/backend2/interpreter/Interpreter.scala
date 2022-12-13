@@ -2,12 +2,16 @@ package brbo.backend2.interpreter
 
 import brbo.backend2.interpreter.Interpreter._
 import brbo.common.ast._
+import brbo.common.string.StringFormatUtils
 import brbo.common.{BrboType, MyLogger, PreDefinedFunctions, Print}
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
+import java.util.concurrent.Executors
 import scala.annotation.tailrec
 import scala.collection.immutable.{HashMap, Map}
 import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
   protected val logger: MyLogger = MyLogger.createLogger(classOf[Interpreter], debugMode)
@@ -762,5 +766,35 @@ object Interpreter {
     nodes.grouped(nodesPerLine)
       .map(group => group.mkString(s" $arrow "))
       .mkString(s"\n$linePrefix")
+  }
+
+  def generateTraces(inputs: List[List[BrboValue]],
+                     interpreter: Interpreter,
+                     threads: Int,
+                     debugMode: Boolean): List[Trace] = {
+    val logger = MyLogger.createLogger(Interpreter.getClass, debugMode)
+    val executionContextExecutor = {
+      val executorService = Executors.newFixedThreadPool(threads)
+      ExecutionContext.fromExecutor(executorService)
+    }
+    val random = new scala.util.Random(seed = 12662)
+    val futures = Future.traverse(inputs.zipWithIndex)({
+      case (inputValues, index) =>
+        Future {
+          if (debugMode) {
+            logger.info(s"Inputs: ${inputValues.map(v => v.printToIR())}")
+          } else {
+            if (index % (1 + random.nextInt(50)) == 0) {
+              val percentage = StringFormatUtils.float(index.toDouble / inputs.size * 100, digit = 2)
+              logger.info(s"Progress: $index / ${inputs.size} ($percentage%)")
+              logger.info(s"Inputs: ${inputValues.map(v => v.printToIR())}")
+            }
+          }
+          val endState = interpreter.execute(inputValues)
+          // logger.traceOrError(s"Trace:\n${endState.trace.toTable.printAll()}")
+          endState.trace
+        }(executionContextExecutor)
+    })(implicitly, executionContextExecutor)
+    Await.result(futures, Duration.Inf)
   }
 }

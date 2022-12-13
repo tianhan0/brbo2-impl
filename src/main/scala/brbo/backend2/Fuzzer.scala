@@ -1,6 +1,7 @@
 package brbo.backend2
 
 import brbo.backend2.interpreter.Interpreter
+import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.common.ast._
 import brbo.common.string.StringFormatUtils
 import brbo.common.{BrboType, MyLogger}
@@ -68,35 +69,16 @@ object Fuzzer {
     maxInteger = MAX_INTEGER, minInteger = MIN_INTEGER,
     maxArrayLength = MAX_ARRAY_LENGTH, minArrayLength = MIN_ARRAY_LENGTH)
 
-  def fuzz(brboProgram: BrboProgram, debugMode: Boolean, samples: Int, threads: Int): List[Interpreter.Trace] = {
-    val executionContextExecutor = {
-      val executorService = Executors.newFixedThreadPool(threads)
-      ExecutionContext.fromExecutor(executorService)
-    }
-
+  def fuzz(brboProgram: BrboProgram,
+           interpreter: Interpreter,
+           debugMode: Boolean,
+           samples: Int,
+           threads: Int): List[Interpreter.Trace] = {
     val logger = MyLogger.createLogger(Fuzzer.getClass, debugMode)
-    val FUZZING = s"Fuzzing: ${brboProgram.name}: "
-    val interpreter = new Interpreter(brboProgram, debugMode)
     val loopConditionals = BrboAstUtils.getLoopConditionals(brboProgram.mainFunction.body)
     val inputs = generateInputs(brboProgram.mainFunction.parameters, samples, loopConditionals)
-    logger.info(s"${FUZZING}Generated `${inputs.size}` inputs")
-
-    val random = new scala.util.Random(seed = 12662)
-    val futures = Future.traverse(inputs.zipWithIndex)({
-      case (inputValues, index) =>
-        Future {
-          if (index % (1 + random.nextInt(50)) == 0) {
-            val percentage = StringFormatUtils.float(index.toDouble / inputs.size * 100, digit = 2)
-            logger.info(s"$FUZZING$index / ${inputs.size} ($percentage%)")
-            logger.info(s"Inputs: ${inputValues.map(v => v.printToIR())}")
-          }
-          logger.traceOrError(s"Inputs: ${inputValues.map(v => v.printToIR())}")
-          val endState = interpreter.execute(inputValues)
-          // logger.traceOrError(s"Trace:\n${endState.trace.toTable.printAll()}")
-          endState.trace
-        }(executionContextExecutor)
-    })(implicitly, executionContextExecutor)
-    Await.result(futures, Duration.Inf)
+    logger.info(s"[Fuzzing ${brboProgram.name}] Generated `${inputs.size}` inputs")
+    Interpreter.generateTraces(inputs, interpreter, threads, debugMode)
   }
 
   private def generateInputs(inputs: List[Identifier], samples: Int, loopConditionals: Set[BrboExpr]): List[List[BrboValue]] = {

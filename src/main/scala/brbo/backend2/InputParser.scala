@@ -17,7 +17,7 @@ object InputParser {
     }
   }
 
-  def parse(jsValue: JsValue): BrboValue = {
+  private def parse(jsValue: JsValue): BrboValue = {
     jsValue match {
       case boolean: JsBoolean => Bool(boolean.value)
       case JsNumber(value) => Number(value.toInt)

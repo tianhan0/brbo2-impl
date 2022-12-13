@@ -1,5 +1,6 @@
 package brbo.backend2
 
+import brbo.BrboMain.readFromFile
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.backend2.learning.SegmentClustering.printSegments
@@ -7,8 +8,11 @@ import brbo.backend2.learning.{Classifier, SegmentClustering, TracePartition}
 import brbo.common.ast._
 import brbo.common.cfg.ControlFlowGraph
 import brbo.common.{BrboType, GhostVariableUtils, MyLogger, NewCommandLineArguments}
+import org.apache.commons.io.FilenameUtils
 
-class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
+import java.io.File
+
+class Driver(arguments: NewCommandLineArguments, program: BrboProgram, inputFilePath: Option[String]) {
   private val debugMode = arguments.getDebugMode
   private val logger = MyLogger.createLogger(classOf[Driver], debugMode)
   logger.info(s"Step 0: Insert reset place holders")
@@ -36,8 +40,19 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram) {
 
   def decompose(): BrboProgram = {
     logger.info(s"Step 1: Generate traces")
-    val rawTraces = Fuzzer.fuzz(instrumentedProgram, debugMode,
-      samples = arguments.getFuzzSamples, threads = arguments.getThreads)
+    val rawTraces = {
+      if (arguments.getUseProvidedInputs && inputFilePath.isDefined) {
+        logger.info(s"Step 1: Use the provided inputs")
+        val inputFileContents = readFromFile(inputFilePath.get)
+        val inputs = InputParser.parse(inputFileContents)
+        Interpreter.generateTraces(inputs = inputs, interpreter = interpreter,
+          threads = arguments.getThreads, debugMode = debugMode)
+      } else {
+        logger.info(s"Step 1: Use the internal fuzzer to generate inputs")
+        Fuzzer.fuzz(brboProgram = instrumentedProgram, interpreter = interpreter, debugMode = debugMode,
+          samples = arguments.getFuzzSamples, threads = arguments.getThreads)
+      }
+    }
     numberOfTraces = rawTraces.size
     logger.info(s"Step 2: Select representative traces")
     val representatives = TracePartition.selectRepresentatives(rawTraces)
@@ -104,5 +119,14 @@ object Driver {
         BrboAstUtils.insertResetPlaceHolder(program.mainFunction.body).asInstanceOf[Statement]
       )
     program.replaceMainFunction(mainFunctionWithResetPlaceHolders)
+  }
+
+  def getInputFilePath(useProvidedInputs: Boolean, javaFile: File): Option[String] = {
+    if (!useProvidedInputs)
+      return None
+    val absolutePath = javaFile.getAbsolutePath
+    assert(FilenameUtils.getExtension(absolutePath) == "java")
+    val testFileName = s"${FilenameUtils.getBaseName(absolutePath)}.json"
+    Some(s"${FilenameUtils.getFullPath(absolutePath)}$testFileName")
   }
 }

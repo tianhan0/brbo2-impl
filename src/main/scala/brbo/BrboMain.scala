@@ -104,7 +104,8 @@ object BrboMain {
       if (arguments.getDebugMode) {
         ControlFlowGraph.toControlFlowGraph(targetProgram.program).printPDF()
       }
-      val driver = new Driver(arguments, targetProgram.program)
+      val driver = new Driver(arguments = arguments, program = targetProgram.program,
+        inputFilePath = Driver.getInputFilePath(useProvidedInputs = arguments.getUseProvidedInputs, sourceFile))
       val startTime = System.nanoTime
       val decomposedProgram = driver.decompose()
       val endTime = System.nanoTime
@@ -133,8 +134,8 @@ object BrboMain {
       s"// $duration,$numberOfTraces,${arguments.getFuzzSamples},${arguments.getAlgorithm}"
   }
 
-  private def readFromFile(location: String): String = {
-    val source = scala.io.Source.fromFile(location)
+  def readFromFile(path: String): String = {
+    val source = scala.io.Source.fromFile(path)
     try source.mkString finally source.close()
   }
 }
