@@ -40,22 +40,25 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram, inputFile
 
   def decompose(): BrboProgram = {
     logger.info(s"Step 1: Generate traces")
-    val rawTraces = {
+    logger.info(s"Step 1.1: Use the provided inputs")
+    val userProvidedTraces: List[Trace] = {
       if (arguments.getUseProvidedInputs && inputFilePath.isDefined) {
-        logger.info(s"Step 1: Use the provided inputs")
         val inputFileContents = readFromFile(inputFilePath.get)
         val inputs = InputParser.parse(inputFileContents)
         Interpreter.generateTraces(inputs = inputs, interpreter = interpreter,
           threads = arguments.getThreads, debugMode = debugMode)
-      } else {
-        logger.info(s"Step 1: Use the internal fuzzer to generate inputs")
-        Fuzzer.fuzz(brboProgram = instrumentedProgram, interpreter = interpreter, debugMode = debugMode,
-          samples = arguments.getFuzzSamples, threads = arguments.getThreads)
-      }
+      } else Nil
     }
-    numberOfTraces = rawTraces.size
+    logger.info(s"Step 1.2: Use the internal fuzzer to generate inputs")
+    val fuzzerGeneratedTraces: List[Trace] = {
+      Fuzzer.fuzz(brboProgram = instrumentedProgram, interpreter = interpreter, debugMode = debugMode,
+        samples = arguments.getFuzzSamples, threads = arguments.getThreads)
+    }
+    numberOfTraces = userProvidedTraces.size + fuzzerGeneratedTraces.size
     logger.info(s"Step 2: Select representative traces")
-    val representatives = TracePartition.selectRepresentatives(rawTraces)
+    val representatives = TracePartition.selectRepresentatives(
+      userProvidedTraces = userProvidedTraces,
+      fuzzerGeneratedTraces = fuzzerGeneratedTraces)
     logger.info(s"Step 3: Decompose ${representatives.size} selected traces")
     val decomposedPrograms = representatives.zipWithIndex.map({
       case ((traceRepresentative, similarTraces), index) =>
