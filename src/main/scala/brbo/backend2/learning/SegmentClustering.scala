@@ -14,6 +14,7 @@ import tech.tablesaw.api.IntColumn
 import java.util
 import java.util.concurrent.Executors
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 // import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -221,7 +222,8 @@ class SegmentClustering(sumWeight: Int,
                     controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
                   )
                   val programTables = tables.toProgramTables
-                  logger.traceOrError(s"Generated training data:\n${programTables.print()}")
+                  logger.info(s"Generated training data")
+                  // logger.traceOrError(s"${programTables.print()}")
                   val classifierResults = programTables.generateClassifiers(debugMode)
                   Some(classifierResults)
                 } catch {
@@ -245,14 +247,21 @@ class SegmentClustering(sumWeight: Int,
                         classifierResults,
                         debugMode
                       )
-                      val areSimilar = applicationResult.areActualSegmentCostsSimilar(this)
-                      logger.info(Classifier.printTransformation(classifierResults.toTransformation))
-                      logger.traceOrError(s"Decomposed trace:\n${applicationResult.printDecomposedTrace}")
-                      logger.info(s"$logging: $areSimilar")
+                      val stringBuilder = new mutable.StringBuilder
+                      val areSimilar = applicationResult.areActualSegmentCostsSimilar(this, stringBuilder)
+                      stringBuilder.append(Classifier.printTransformation(classifierResults.toTransformation) + "\n")
+                      if (areSimilar) {
+                        // Print details for traces whose decomposition yield segments with similar costs
+                        stringBuilder.append(s"Decomposed trace:${applicationResult.printDecomposedTrace}\n")
+                        stringBuilder.append(s"$logging: $areSimilar\n")
+                        logger.info(s"Re-clustered segments are the same${stringBuilder.toString()}")
+                      } else {
+                        logger.info(s"Re-clustered segments are different${stringBuilder.toString()}")
+                      }
                       // logger.traceOrError(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
                       areSimilar
                     case None =>
-                      logger.info(s"Cannot test the generality of ${groupIndex + 1}-th group on $traceIndex-th trace " +
+                      logger.info(s"Cannot test the generality of ${groupIndex + 1}-th group on $traceIndex-th trace. " +
                         s"No classifier for $printGroup ($printFeatures)")
                       false
                   }

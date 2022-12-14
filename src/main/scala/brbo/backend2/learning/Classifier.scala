@@ -12,6 +12,7 @@ import brbo.common.{MyLogger, Print}
 import play.api.libs.json.Json
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -646,22 +647,22 @@ object Classifier {
       groupsOfSegments.map(segments => segments.map(s => s.printAsSet).mkString(", ")).mkString("\n")
     }
 
-    def areActualSegmentCostsSimilar(segmentClustering: SegmentClustering): Boolean = {
+    def areActualSegmentCostsSimilar(segmentClustering: SegmentClustering, stringBuilder: mutable.StringBuilder): Boolean = {
       val expectedDecomposition: List[List[Segment]] = ghostStore.getSegments.values.toList.map({
         list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
       })
-      logger.traceOrError(s"Segment clusters that are considered to be similar:\n${print(expectedDecomposition)}")
+      stringBuilder.append(s"\nSegment clusters that are considered to be similar:\n${print(expectedDecomposition)}\n")
       val segments: List[Segment] = expectedDecomposition.flatten
-      logger.traceOrError(s"Final ghost state after trace decomposition: ${ghostStore.print()}")
+      // stringBuilder.append(s"Final ghost state after trace decomposition: ${ghostStore.print()}\n")
       if (segments.forall(segment => segment.isEmpty)) {
-        logger.info(s"Empty segments are vacuously similar to each other, but " +
-          s"if a grouping is truly generalizable to a similar trace, it should not result in all empty segments.")
+        // Empty segments are vacuously similar to each other, but if a grouping is truly
+        // generalizable to a similar trace, it should not result in all empty segments
         return false
       }
       val actualDecomposition: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segments).map({
         list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
       })
-      logger.traceOrError(s"Segment clusters that are actually similar:\n${print(actualDecomposition)}")
+      stringBuilder.append(s"Segment clusters that are actually similar:\n${print(actualDecomposition)}\n\n")
       val expected = expectedDecomposition.map(segments => Group(segments))
       val actual = actualDecomposition.map(segments => Group(segments))
       if (expected.nonEmpty && actual.isEmpty)
