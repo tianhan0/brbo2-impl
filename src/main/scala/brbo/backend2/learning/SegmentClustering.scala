@@ -64,7 +64,7 @@ class SegmentClustering(sumWeight: Int,
             testTrace = trace,
             similarTraces,
             interpreter,
-            sampleKTraces = Some(2),
+            sampleKTraces = None,
           )
           logger.info(s"Generalizable groups:\n${generalizableGroups.map({ group => printSegments(group.segments) }).mkString("  \n")}")
           chooseGroup(generalizableGroups) match {
