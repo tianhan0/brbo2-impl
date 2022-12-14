@@ -3,26 +3,26 @@ package brbo.benchmarks.sas22.sas21.stac;
 import brbo.benchmarks.Common;
 
 public abstract class TemplateEngine3 extends Common {
-  void main(int[] text, int ts, int sep, int tags, int rep) {
-    if (arraySum(text) <= 0 || ts <= 0 || sep <= 0 || tags <= 0 || rep <= 0) {
+  void main(int[] text, int ts, int sep, int rep) {
+    if (arraySum(text) <= 0 || ts <= 0 || sep <= 0 || rep <= 0) {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= ts * (arraySum(text) + tags * rep + sep));
+    mostPreciseBound(R <= ts * (arraySum(text) + arraySum(text) * rep + sep));
     lessPreciseBound(R <= MAX * arraySum(text) * ts +
         MAX * arraySum(text) * sep +
-        MAX * arraySum(text) * tags +
+        MAX * arraySum(text) * arraySum(text) +
         MAX * arraySum(text) * rep +
         MAX * ts * sep +
-        MAX * ts * tags +
+        MAX * ts * arraySum(text) +
         MAX * ts * rep +
-        MAX * sep * tags +
+        MAX * sep * arraySum(text) +
         MAX * sep * rep +
-        MAX * tags * rep+
+        MAX * arraySum(text) * rep +
         MAX * arraySum(text) +
         MAX * ts +
         MAX * sep +
-        MAX * tags +
+        MAX * arraySum(text) +
         MAX * rep +
         MAX
     );
