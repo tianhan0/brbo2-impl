@@ -110,8 +110,9 @@ object BrboMain {
       // val statistics = getStatistics(duration, arguments, driver.getNumberOfTraces)
       if (Files.exists(outputPath)) {
         val existingDecomposition = readFromFile(outputPath.toAbsolutePath.toString)
+        val actualOutputPath = Paths.get(outputPath.toAbsolutePath.toString + ".actual")
+        Files.deleteIfExists(actualOutputPath)
         if (existingDecomposition != newDecomposition) {
-          val actualOutputPath = Paths.get(outputPath.toAbsolutePath.toString + ".actual")
           logger.info(s"Write into file $actualOutputPath")
           writeToFile(actualOutputPath, newDecomposition)
 
