@@ -25,24 +25,24 @@ object Classifier {
     def print(): String = toString
   }
 
-  object NoneGroup extends GroupID(-34673) {
+  object NoneGroup extends GroupID(-99) {
     // This group is used to indicate that a use or a reset command should do nothing
     override def print(): String = "NoneGroup"
   }
 
-  object AllGroups extends GroupID(-4127) {
+  object AllGroups extends GroupID(-30) {
     // For a use command, its training data (or a table) is associated with "AllGroups"
     // (which is a "virtual group"), even if the use command is decomposed into (actual) groups
     override def print(): String = "AllGroups"
   }
 
-  object GeneralityTestGroup extends GroupID(-182827172) {
+  object GeneralityTestGroup extends GroupID(-22) {
     // This group is used when testing the generality of a group
     // The group under test is named as "GeneralityTestGroup"
     override def print(): String = "GeneralityTestGroup"
   }
 
-  object PrintGroup extends GroupID(-23123) {
+  object PrintGroup extends GroupID(-40) {
     // This group is only used for printing purposes
     override def print(): String = "PrintGroup"
   }
