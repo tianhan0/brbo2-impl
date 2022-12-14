@@ -5,9 +5,9 @@ import brbo.backend2.interpreter.Interpreter.{CostTraceAssociation, Trace}
 import brbo.backend2.learning.Classifier._
 import brbo.backend2.learning.ScriptRunner._
 import brbo.backend2.learning.SegmentClustering._
+import brbo.common.MyLogger
 import brbo.common.ast.{Command, Identifier}
 import brbo.common.cfg.ControlFlowGraph
-import brbo.common.{GhostVariableUtils, MyLogger}
 import com.google.common.collect.Sets
 import tech.tablesaw.api.IntColumn
 
@@ -38,7 +38,8 @@ class SegmentClustering(sumWeight: Int,
     ExecutionContext.fromExecutor(executorService)
   }
 
-  def decompose(trace: Trace, similarTraces: Iterable[Trace], interpreter: Interpreter): TraceDecomposition = {
+  def decompose(trace: Trace, similarTraces: Iterable[Trace],
+                interpreter: Interpreter, features: List[Identifier]): TraceDecomposition = {
     val decomposition = new TraceDecomposition(trace)
     var segmentLength = 1
     var excludeIndices: Set[Int] = Set()
@@ -64,7 +65,8 @@ class SegmentClustering(sumWeight: Int,
             testTrace = trace,
             similarTraces,
             interpreter,
-            sampleKTraces = None,
+            features = features,
+            sampleKTraces = None
           )
           logger.info(s"Generalizable groups:\n${generalizableGroups.map({ group => printSegments(group.segments) }).mkString("  \n")}")
           chooseGroup(generalizableGroups) match {
@@ -170,6 +172,7 @@ class SegmentClustering(sumWeight: Int,
                                 testTrace: Trace,
                                 similarTraces: Iterable[Trace],
                                 interpreter: Interpreter,
+                                features: List[Identifier],
                                 sampleKTraces: Option[Int]): List[Group] = {
     val lengthMap = similarTraces.map(t => (t, t.nodes.size)).toMap
     val distinctLengths = lengthMap.values.toList.sorted.distinct
@@ -196,11 +199,9 @@ class SegmentClustering(sumWeight: Int,
       }
     }
 
-    val nonGhostVariables: List[Identifier] = testTrace.variables
-      .map(variable => Identifier(variable._1, variable._2))
-      .filterNot({ identifier => GhostVariableUtils.isGhostVariable(identifier.name) })
+    val possibleFeatures: List[List[Identifier]] = List(features)
     // The features are a variable (as opposed to all variables)
-    val possibleFeatures: List[List[Identifier]] = nonGhostVariables.map(identifier => List(identifier))
+    // val possibleFeatures: List[List[Identifier]] = features.map(identifier => List(identifier))
     val result = groups.zipWithIndex.map({
       case (group, groupIndex) =>
         val printGroup = printSegments(group.segments)

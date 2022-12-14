@@ -18,15 +18,8 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram, inputFile
   logger.info(s"Step 0: Insert reset place holders")
   private val instrumentedProgram = Driver.insertResetPlaceHolders(program)
   private val interpreter = new Interpreter(instrumentedProgram, debugMode)
-  private val classifierFeatures = instrumentedProgram.mainFunction.nonGhostVariables().filter({
-    variable =>
-      variable.typ match {
-        case BrboType.BOOL => true
-        case BrboType.INT => !GhostVariableUtils.isGhostVariable(variable.name)
-        case BrboType.ARRAY(_) => false
-        case _ => false
-      }
-  })
+  private val features = Driver.classifierFeatures(instrumentedProgram)
+  logger.info(s"Step 0: Find classifier features {${features.map(i => i.printToIR()).mkString(", ")}}")
   private val segmentClustering = new SegmentClustering(
     sumWeight = 1,
     commandWeight = 0,
@@ -75,7 +68,12 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram, inputFile
       else
         trace.toTable(printStores = false, omitExpressions = true, onlyGhostCommand = true)._1.printAll()
     logger.info(s"Step 3.1: Trace:\n$representativeTraceString")
-    val decomposition = segmentClustering.decompose(trace, similarTraces, interpreter)
+    val decomposition = segmentClustering.decompose(
+      trace = trace,
+      similarTraces = similarTraces,
+      interpreter = interpreter,
+      features = features
+    )
     val groups = decomposition.getGroups
     val groupsString = groups.map({
       case (groupID, group) => s"$groupID: ${printSegments(group.segments)}"
@@ -86,7 +84,7 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram, inputFile
       trace,
       Classifier.evaluateFromInterpreter(interpreter),
       groups,
-      features = classifierFeatures,
+      features = features,
       throwIfNoResetPlaceHolder = false,
       controlFlowGraph = ControlFlowGraph.toControlFlowGraph(instrumentedProgram)
     )
@@ -131,5 +129,20 @@ object Driver {
     assert(FilenameUtils.getExtension(absolutePath) == "java")
     val testFileName = s"${FilenameUtils.getBaseName(absolutePath)}.json"
     Some(s"${FilenameUtils.getFullPath(absolutePath)}$testFileName")
+  }
+
+  def classifierFeatures(program: BrboProgram): List[Identifier] = {
+    val loopConditionals = BrboAstUtils.getLoopConditionals(program.mainFunction.body)
+    program.mainFunction.nonGhostVariables().filter({
+      variable =>
+        val usedInLoopConditional = loopConditionals.exists(e => e.getUses.contains(variable))
+        val nonGhostVariable = variable.typ match {
+          case BrboType.BOOL => true
+          case BrboType.INT => !GhostVariableUtils.isGhostVariable(variable.name)
+          case BrboType.ARRAY(_) => false
+          case _ => false
+        }
+        nonGhostVariable && usedInLoopConditional
+    })
   }
 }

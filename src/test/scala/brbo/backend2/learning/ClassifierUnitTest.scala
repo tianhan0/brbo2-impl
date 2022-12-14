@@ -1,6 +1,7 @@
 package brbo.backend2.learning
 
 import brbo.TestCase
+import brbo.backend2.Driver
 import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.backend2.learning.Classifier._
 import brbo.backend2.learning.ClassifierUnitTest.loopPhase
@@ -253,7 +254,15 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val segmentClustering = new SegmentClustering(sumWeight = 1, commandWeight = 0, debugMode = false, algorithm, SegmentClustering.THREADS)
     val clusters: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, 1, excludeIndices = Set())
     val group = Group(clusters.head.sortWith({ case (s1, s2) => s1.lessThan(s2) }))
-    val result = segmentClustering.chooseGeneralizableGroups(List(group), testTrace = trace, similarTraces = List(trace), interpreter, sampleKTraces = None)
+    val features = Driver.classifierFeatures(interpreter.brboProgram)
+    val result = segmentClustering.chooseGeneralizableGroups(
+      groups = List(group),
+      testTrace = trace,
+      similarTraces = List(trace),
+      interpreter = interpreter,
+      sampleKTraces = None,
+      features = features
+    )
     val resultString = result.map(g => g.print(trace)).mkString("\n")
     StringCompare.ignoreWhitespaces(
       resultString,
