@@ -48,15 +48,16 @@ object DecisionTree {
       val className = classes(classID).name
       leafType match {
         case ResetLeaf(groupID) =>
+          val reset = Reset(groupID.value)
           if (Classifier.resetLabelFromString(className)) {
             Reset(groupID.value)
           } else {
-            Skip()
+            Comment(reset.printToIR())
           }
         case UseLeaf(update) =>
           Classifier.useLabelFromString(className) match {
             case Classifier.AllGroups => throw new Exception
-            case Classifier.NoneGroup => Skip()
+            case Classifier.NoneGroup => Comment(Use(None, update).printToIR())
             case Classifier.GeneralityTestGroup =>
               // For debugging purposes
               Use(Some(GeneralityTestGroup.value), update)

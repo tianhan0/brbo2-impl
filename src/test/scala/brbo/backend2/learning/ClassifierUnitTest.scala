@@ -294,7 +294,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |{
         |  if ((i < 0) || (i == 0))
         |  {
-        |    ;
+        |    // reset R1
         |  }
         |  else
         |  {
@@ -313,12 +313,12 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |    }
         |    else
         |    {
-        |      ;
+        |      // reset R1
         |    }
         |  }
         |  if ((i < 1) || (i == 1))
         |  {
-        |    ;
+        |    // reset R0
         |  }
         |  else
         |  {
@@ -337,7 +337,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |    }
         |    else
         |    {
-        |      ;
+        |      // reset R0
         |    }
         |  }
         |}
