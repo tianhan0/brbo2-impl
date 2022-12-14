@@ -81,9 +81,9 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram, inputFile
     logger.info(s"Step 3.1: Selected decomposition:\n$groupsString\n${SegmentClustering.printDecomposition(trace, groups)}")
     logger.info(s"Step 3.2: Generate tables for training classifiers")
     val tables = Classifier.generateTables(
-      trace,
-      Classifier.evaluateFromInterpreter(interpreter),
-      groups,
+      trace = trace,
+      evaluate = Classifier.evaluateFromInterpreter(interpreter),
+      groups = groups,
       features = features,
       throwIfNoResetPlaceHolder = false,
       controlFlowGraph = ControlFlowGraph.toControlFlowGraph(instrumentedProgram)
