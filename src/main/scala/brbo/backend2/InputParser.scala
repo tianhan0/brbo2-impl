@@ -26,7 +26,7 @@ object InputParser {
           element => parse(element).asInstanceOf[Number]
         }).toList
         BrboArray(values, innerType = BrboType.INT)
-      case JsString(_) | JsObject(_) => throw new Exception
+      case JsString(_) | JsObject(_) | JsNull => throw new Exception
     }
   }
 }
