@@ -5,10 +5,12 @@ import brbo.common.cfg.ControlFlowGraph
 import brbo.common.string.StringFormatUtils
 import brbo.common.{MyLogger, NewCommandLineArguments}
 import brbo.frontend.{BasicProcessor, TargetProgram}
-import org.apache.commons.io.{FileUtils, FilenameUtils}
+import org.apache.commons.io.{FileUtils, FilenameUtils, IOUtils}
 
 import java.io.{File, FileWriter}
+import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
+import java.util.concurrent.TimeUnit
 import scala.collection.JavaConverters._
 
 object BrboMain {
@@ -84,18 +86,7 @@ object BrboMain {
     val sourceFilePath = sourceFile.getAbsolutePath
     logger.info(s"Process file `$sourceFilePath`")
 
-    val className: String = {
-      val prefix = """src/main/java/"""
-      val indexOfPrefix = sourceFilePath.indexOf(prefix)
-      val almostClassName = {
-        if (indexOfPrefix != -1) {
-          sourceFilePath.substring(indexOfPrefix + prefix.length)
-        }
-        else sourceFilePath
-      }
-      val indexOfExtension = FilenameUtils.indexOfExtension(almostClassName)
-      almostClassName.replace("""/""", ".").substring(0, indexOfExtension)
-    }
+    val className: String = getClassName(sourceFilePath)
     logger.info(s"Class name: `$className`")
 
     if (className != "brbo.benchmarks.Common") {
@@ -108,25 +99,46 @@ object BrboMain {
         inputFilePath = Driver.getInputFilePath(useProvidedInputs = arguments.getUseProvidedInputs, sourceFile))
       val startTime = System.nanoTime
       val decomposedProgram = driver.decompose()
+      val newDecomposition = decomposedProgram.printToJava()
       val endTime = System.nanoTime
       val outputPath = {
         val parent = FilenameUtils.getBaseName(Paths.get(sourceFilePath).getParent.toAbsolutePath.toString)
-        val outputPath = Paths.get(OUTPUT_DIRECTORY, "decomposed", parent, s"${FilenameUtils.getBaseName(sourceFilePath)}.java")
-        Files.deleteIfExists(outputPath)
-        Files.createDirectories(outputPath.getParent)
-        Files.createFile(outputPath)
-        outputPath
+        Paths.get(OUTPUT_DIRECTORY, "decomposed", parent, s"${FilenameUtils.getBaseName(sourceFilePath)}.java")
       }
-      val duration = (endTime - startTime) / 1e9d
-      val statistics = getStatistics(duration, arguments, driver.getNumberOfTraces)
-      val fileWriter = new FileWriter(outputPath.toAbsolutePath.toString)
-      logger.info(s"Write into file $outputPath")
-      fileWriter.write(decomposedProgram.printToJava() + s"\n$statistics")
-      fileWriter.close()
+      Files.createDirectories(outputPath.getParent)
+      // val duration = (endTime - startTime) / 1e9d
+      // val statistics = getStatistics(duration, arguments, driver.getNumberOfTraces)
+      if (Files.exists(outputPath)) {
+        val existingDecomposition = readFromFile(outputPath.toAbsolutePath.toString)
+        if (existingDecomposition != newDecomposition) {
+          val actualOutputPath = Paths.get(outputPath.toAbsolutePath.toString + ".actual")
+          logger.info(s"Write into file $actualOutputPath")
+          writeToFile(actualOutputPath, newDecomposition)
+
+          logger.info(s"New decomposition differs from the existing decomposition")
+          logger.info(diffFiles(outputPath, actualOutputPath))
+        }
+      } else {
+        logger.info(s"Write into file $outputPath")
+        writeToFile(outputPath, newDecomposition)
+      }
     }
     else {
       logger.info(s"Skip decomposing `$sourceFilePath`")
     }
+  }
+
+  private def getClassName(sourceFilePath: String): String = {
+    val prefix = """src/main/java/"""
+    val indexOfPrefix = sourceFilePath.indexOf(prefix)
+    val almostClassName = {
+      if (indexOfPrefix != -1) {
+        sourceFilePath.substring(indexOfPrefix + prefix.length)
+      }
+      else sourceFilePath
+    }
+    val indexOfExtension = FilenameUtils.indexOfExtension(almostClassName)
+    almostClassName.replace("""/""", ".").substring(0, indexOfExtension)
   }
 
   private def getStatistics(duration: Double, arguments: NewCommandLineArguments, numberOfTraces: Int): String = {
@@ -134,8 +146,30 @@ object BrboMain {
       s"// $duration,$numberOfTraces,${arguments.getFuzzSamples},${arguments.getAlgorithm}"
   }
 
+  def diffFiles(file1: Path, file2: Path): String = {
+    val command =
+      s"diff --context=5 ${file1.toString} ${file2.toString}".split(" ").toList.asJava
+    val processBuilder: java.lang.ProcessBuilder =
+      new java.lang.ProcessBuilder(command).redirectErrorStream(true)
+    val process: java.lang.Process = processBuilder.start()
+    try {
+      process.waitFor(5, TimeUnit.SECONDS)
+    } catch {
+      case _: Exception =>
+    }
+    s"\n${IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)}"
+  }
+
   def readFromFile(path: String): String = {
     val source = scala.io.Source.fromFile(path)
     try source.mkString finally source.close()
+  }
+
+  def writeToFile(path: Path, content: String): Unit = {
+    Files.deleteIfExists(path)
+    Files.createFile(path)
+    val fileWriter = new FileWriter(path.toAbsolutePath.toString)
+    fileWriter.write(content)
+    fileWriter.close()
   }
 }
