@@ -201,7 +201,7 @@ class SegmentClustering(sumWeight: Int,
     // The features are a variable (as opposed to all variables)
     // val possibleFeatures: List[List[Identifier]] = features.map(identifier => List(identifier))
     val result = groups.zipWithIndex.map({
-      case (group, groupIndex) =>
+      case (group, groupIndex) if group.segments.size > 1 =>
         val printGroup = printSegments(group.segments)
         // If there exist a set of features under which the given group is generalizable to all traces
         val futures = Future.traverse(possibleFeatures)({
@@ -268,6 +268,9 @@ class SegmentClustering(sumWeight: Int,
             }(executionContextExecutor)
         })(implicitly, executionContextExecutor)
         Await.result(futures, Duration.Inf).contains(true)
+      case _ =>
+        // If a group contains a single segment, then we cannot witness (at least) two segments that have similar costs
+        false
     })
     groups.zip(result).flatMap({
       case (group, areSimilar) => if (areSimilar) Some(group) else None
