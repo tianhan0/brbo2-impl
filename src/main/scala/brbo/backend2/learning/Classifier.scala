@@ -378,23 +378,12 @@ object Classifier {
                      features: List[BrboExpr],
                      throwIfNoResetPlaceHolder: Boolean,
                      controlFlowGraph: ControlFlowGraph): TraceTables = {
-    val dominators: Map[GroupID, Option[Command]] = groups.map({
-      case (groupID, group) =>
-        val commands = group.getCommands(trace)
-        val nodes = controlFlowGraph.nodesFromCommands(commands.toSet)
-        val dominator = controlFlowGraph.closestDominator(
-          nodes = nodes,
-          predicate = { node: CFGNode => node.command.isInstanceOf[ResetPlaceHolder] },
-        )
-        dominator match {
-          case Some(dominator) => (groupID, Some(dominator.command))
-          case None => (groupID, None)
-        }
-    })
+    val resetPlaceHolderCandidates: Map[GroupID, Set[Command]] =
+      resetPlaceHoldersAsDominators(trace = trace, groups = groups, controlFlowGraph = controlFlowGraph)
 
     // From group IDs to the trace node indices into which resets need to be placed
     val resetPlaceHolderMap: Map[GroupID, Set[Int]] =
-      findReplaceHolderLocations(trace, groups, dominators, throwIfNoResetPlaceHolder)
+      resetPlaceHolderLocations(trace, groups, resetPlaceHolderCandidates, throwIfNoResetPlaceHolder)
     val lastUseIndices = groups.map({ case (groupID, group) => (groupID, group.last) })
 
     val groupIDs = groups.keys.toSet
@@ -481,10 +470,29 @@ object Classifier {
     new TraceTables(traceTableMap, features)
   }
 
-  private def findReplaceHolderLocations(trace: Trace,
-                                         groups: Map[GroupID, Group],
-                                         dominators: Map[GroupID, Option[Command]],
-                                         throwIfNoResetPlaceHolder: Boolean): Map[GroupID, Set[Int]] = {
+  private def resetPlaceHoldersAsDominators(trace: Trace,
+                                            groups: Map[GroupID, Group],
+                                            controlFlowGraph: ControlFlowGraph): Map[GroupID, Set[Command]] = {
+    groups.map({
+      case (groupID, group) =>
+        val commands = group.getCommands(trace)
+        val nodes = controlFlowGraph.nodesFromCommands(commands.toSet)
+        // Find a node that dominates all commands from the group
+        val dominator = controlFlowGraph.closestDominator(
+          nodes = nodes,
+          predicate = { node: CFGNode => node.command.isInstanceOf[ResetPlaceHolder] },
+        )
+        dominator match {
+          case Some(dominator) => (groupID, Set(dominator.command))
+          case None => (groupID, Set[Command]())
+        }
+    })
+  }
+
+  private def resetPlaceHolderLocations(trace: Trace,
+                                        groups: Map[GroupID, Group],
+                                        resetPlaceHolderCandidates: Map[GroupID, Set[Command]],
+                                        throwIfNoResetPlaceHolder: Boolean): Map[GroupID, Set[Int]] = {
     val nodesWithIndex = trace.nodes.zipWithIndex
     groups.map({
       case (groupID, group) =>
@@ -500,7 +508,7 @@ object Classifier {
             next.indices.head - 1
           }
           // logger.trace(s"begin $begin end $end")
-          val allResetPlaceHolders = nodesWithIndex.flatMap({
+          val allResetPlaceHolders: Iterable[(ResetPlaceHolder, Int)] = nodesWithIndex.flatMap({
             case (node, index) =>
               val isResetPlaceHolder = node.lastTransition match {
                 case Some(Transition(command, _)) => command.isInstanceOf[ResetPlaceHolder]
@@ -511,7 +519,7 @@ object Classifier {
               else
                 None
           })
-          chooseResetPlaceHolder(allResetPlaceHolders, dominators(groupID)) match {
+          resetPlaceHolderFromCandidates(allResetPlaceHolders, resetPlaceHolderCandidates(groupID)) match {
             case Some(index) => resetPlaceHolderIndices = resetPlaceHolderIndices + index
             case None =>
               val errorMessage = s"Failed to find a reset place holder between " +
@@ -524,15 +532,15 @@ object Classifier {
     })
   }
 
-  private def chooseResetPlaceHolder(holders: Iterable[(ResetPlaceHolder, Int)],
-                                     dominator: Option[Command]): Option[Int] = {
-    if (holders.isEmpty || dominator.isEmpty)
+  private def resetPlaceHolderFromCandidates(resetPlaceHolders: Iterable[(ResetPlaceHolder, Int)],
+                                             candidates: Set[Command]): Option[Int] = {
+    if (resetPlaceHolders.isEmpty || candidates.isEmpty)
       None
     else {
       // logger.trace(s"dominator: $dominator")
       // holders.foreach({ case (holder, i) => logger.trace(s"index $i: ${holder}")})
       // Let the reset place holder be the dominator
-      holders.find({ case (holder, _) => holder == dominator.get }) match {
+      resetPlaceHolders.find({ case (resetPlaceHolder, _) => candidates.contains(resetPlaceHolder) }) match {
         case Some((_, index)) => Some(index)
         case None => None
       }
