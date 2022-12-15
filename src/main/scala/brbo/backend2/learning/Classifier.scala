@@ -657,7 +657,7 @@ object Classifier {
       if (segments.forall(segment => segment.isEmpty)) {
         // Empty segments are vacuously similar to each other, but if a grouping is truly
         // generalizable to a similar trace, it should not result in all empty segments
-        return false
+        // return false
       }
       val actualDecomposition: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segments).map({
         list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
