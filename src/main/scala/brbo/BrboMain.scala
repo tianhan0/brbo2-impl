@@ -149,7 +149,7 @@ object BrboMain {
 
   def diffFiles(file1: Path, file2: Path): String = {
     val command =
-      s"diff --context=5 ${file1.toString} ${file2.toString}".split(" ").toList.asJava
+      s"diff -u ${file1.toString} ${file2.toString}".split(" ").toList.asJava
     val processBuilder: java.lang.ProcessBuilder =
       new java.lang.ProcessBuilder(command).redirectErrorStream(true)
     val process: java.lang.Process = processBuilder.start()
