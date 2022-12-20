@@ -3,12 +3,12 @@ package brbo.common.cfg
 import brbo.BrboMain
 import brbo.common.MathUtils
 import brbo.common.ast._
-import com.ibm.wala.util.graph.NumberedGraph
 import com.ibm.wala.util.graph.dominators.DominanceFrontiers
 import com.ibm.wala.util.graph.impl.DelegatingNumberedGraph
+import com.ibm.wala.util.graph.{INodeWithNumberedEdges, NumberedGraph}
 import org.apache.logging.log4j.{LogManager, Logger}
 import org.jgrapht.alg.connectivity.ConnectivityInspector
-import org.jgrapht.graph.{DefaultEdge, SimpleDirectedWeightedGraph}
+import org.jgrapht.graph.{DefaultEdge, SimpleDirectedGraph, SimpleDirectedWeightedGraph}
 import org.jgrapht.nio.dot.DOTExporter
 import org.jgrapht.nio.{Attribute, AttributeType, DefaultAttribute}
 
@@ -16,7 +16,7 @@ import java.io.{File, IOException, PrintWriter, StringWriter}
 import java.util
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.collection.immutable.HashMap
+import scala.collection.immutable.{HashMap, HashSet}
 import scala.collection.mutable
 
 object ControlFlowGraph {
@@ -206,6 +206,145 @@ object ControlFlowGraph {
     })
     ControlFlowGraph(mainCFG.root, cfgs, brboProgram, walaGraph, jgraphtGraph)
   }
+
+  def deepCopyNumberedGraph[T <: INodeWithNumberedEdges](graph: NumberedGraph[T],
+                                                         entry: T,
+                                                         exit: T,
+                                                         reverse: Boolean): (NumberedGraph[T], T) = {
+    def successorNodes(node: T): List[T] = {
+      def compare(left: T, right: T): Boolean = left.toString < right.toString
+      graph.getSuccNodes(node).asScala.toList.sortWith(compare)
+    }
+
+    def addNode(graph: NumberedGraph[T], node: T): Unit = graph.addNode(node)
+
+    def addEdge(graph: NumberedGraph[T], from: T, to: T): Unit = graph.addEdge(from, to)
+
+    val newGraph = new DelegatingNumberedGraph[T]()
+    val root = deepCopyGraph[T, NumberedGraph[T]](
+      newGraph = newGraph,
+      successorNodes = successorNodes,
+      addNode = addNode,
+      addEdge = addEdge,
+      entry = entry,
+      exit = exit,
+      reverse = reverse
+    )
+    (newGraph, root)
+  }
+
+  def deepCopySimpleDirectedGraph[T](graph: SimpleDirectedGraph[T, DefaultEdge],
+                                     entry: T,
+                                     exit: T,
+                                     reverse: Boolean): (SimpleDirectedGraph[T, DefaultEdge], T) = {
+    def successorNodes(node: T): List[T] = {
+      def compare(left: T, right: T): Boolean = left.toString < right.toString
+      ControlFlowGraph.successorNodesSorted(graph, node, compare)
+    }
+
+    def addNode(graph: SimpleDirectedGraph[T, DefaultEdge], node: T): Unit = graph.addVertex(node)
+
+    def addEdge(graph: SimpleDirectedGraph[T, DefaultEdge], from: T, to: T): Unit = graph.addEdge(from, to)
+
+    val newGraph = new SimpleDirectedWeightedGraph[T, DefaultEdge](classOf[DefaultEdge])
+    val root = deepCopyGraph[T, SimpleDirectedGraph[T, DefaultEdge]](
+      newGraph = newGraph,
+      successorNodes = successorNodes,
+      addNode = addNode,
+      addEdge = addEdge,
+      entry = entry,
+      exit = exit,
+      reverse = reverse
+    )
+    (newGraph, root)
+  }
+
+  private def deepCopyGraph[Node, Graph](newGraph: Graph,
+                                         successorNodes: Node => List[Node],
+                                         addNode: (Graph, Node) => Unit,
+                                         addEdge: (Graph, Node, Node) => Unit,
+                                         entry: Node,
+                                         exit: Node,
+                                         reverse: Boolean): Node = {
+    var visited = HashSet[Node]()
+    val stack = new java.util.Stack[Node]
+    stack.push(entry)
+    while (!stack.empty()) {
+      val top: Node = stack.pop()
+      if (!visited.contains(top)) {
+        visited = visited + top
+        // Add the node upon the 1st visit
+        addNode(newGraph, top)
+      }
+      successorNodes(top).foreach({
+        successorNode =>
+          if (!visited.contains(successorNode))
+            stack.push(successorNode)
+          // Add the reversed edge
+          val from = top
+          val to = successorNode
+          addNode(newGraph, from)
+          addNode(newGraph, to)
+          if (reverse) addEdge(newGraph, to, from)
+          else addEdge(newGraph, from, to)
+      })
+    }
+    if (reverse) exit else entry
+  }
+
+  def successorNodes[T](graph: SimpleDirectedGraph[T, DefaultEdge], node: T): Iterator[T] = {
+    val edges: mutable.Iterable[DefaultEdge] = graph.outgoingEdgesOf(node).asScala
+    edges.map({ edge: DefaultEdge => graph.getEdgeTarget(edge) }).toIterator
+  }
+
+  def successorNodesSorted[T](graph: SimpleDirectedGraph[T, DefaultEdge],
+                              node: T,
+                              compare: (T, T) => Boolean): List[T] = successorNodes(graph, node).toList.sortWith(compare)
+
+  def printDotToPDF(filename: String, dotFileContents: String): Unit = {
+    val dotFilePath = s"${ControlFlowGraph.OUTPUT_DIRECTORY}/$filename.dot"
+    val pdfFilePath = s"${ControlFlowGraph.OUTPUT_DIRECTORY}/$filename.pdf"
+
+    val pw = new PrintWriter(new File(dotFilePath))
+    pw.write(dotFileContents)
+    pw.close()
+
+    try {
+      val command = "dot -Tpdf \"" + dotFilePath + "\" -o \"" + pdfFilePath + "\""
+      val child = Runtime.getRuntime.exec(Array[String]("/bin/sh", "-c", command))
+      child.waitFor
+    } catch {
+      case e@(_: InterruptedException | _: IOException) =>
+        e.printStackTrace()
+        System.exit(1)
+    }
+  }
+
+  def exportToDOT(graph: SimpleDirectedGraph[CFGNode, DefaultEdge]): String = {
+    val exporter = new DOTExporter[CFGNode, DefaultEdge]
+    val outputWriter = new StringWriter
+    exporter.setVertexAttributeProvider({
+      node: CFGNode =>
+        val map = new util.HashMap[String, Attribute]()
+        map.put("label", DefaultAttribute.createAttribute(node.printToIR()))
+        val shape: String =
+          node.command match {
+            case _: BrboExpr => "diamond"
+            case _: CFGOnly => "oval"
+            case _ => "rectangle"
+          }
+        map.put("shape", new DefaultAttribute(shape, AttributeType.IDENTIFIER))
+        map
+    })
+    exporter.setEdgeAttributeProvider({
+      edge =>
+        val map = new util.HashMap[String, Attribute]()
+        map.put("label", DefaultAttribute.createAttribute(graph.getEdgeWeight(edge)))
+        map
+    })
+    exporter.exportGraph(graph, outputWriter)
+    outputWriter.toString
+  }
 }
 
 /**
@@ -257,56 +396,10 @@ case class ControlFlowGraph(entryNode: CFGNode,
     })
   }
 
-  def exportToDOT: String = {
-    val exporter = new DOTExporter[CFGNode, DefaultEdge]
-    val outputWriter = new StringWriter
-    exporter.setVertexAttributeProvider({
-      node: CFGNode =>
-        val map = new util.HashMap[String, Attribute]()
-        map.put("label", DefaultAttribute.createAttribute(node.printToIR()))
-        val shape: String =
-          node.command match {
-            case _: BrboExpr => "diamond"
-            case _: CFGOnly => "oval"
-            case _ => "rectangle"
-          }
-        map.put("shape", new DefaultAttribute(shape, AttributeType.IDENTIFIER))
-        map
-    })
-    exporter.setEdgeAttributeProvider({
-      edge =>
-        val map = new util.HashMap[String, Attribute]()
-        map.put("label", DefaultAttribute.createAttribute(jgraphtGraph.getEdgeWeight(edge)))
-        map
-    })
-    exporter.exportGraph(jgraphtGraph, outputWriter)
-    outputWriter.toString
-  }
+  def printPDF(): Unit =
+    ControlFlowGraph.printDotToPDF(filename = brboProgram.name, dotFileContents = ControlFlowGraph.exportToDOT(jgraphtGraph))
 
-  def printPDF(): Unit = {
-    val dotFilePath = s"${ControlFlowGraph.OUTPUT_DIRECTORY}/${brboProgram.name}.dot"
-    val pdfFilePath = s"${ControlFlowGraph.OUTPUT_DIRECTORY}/${brboProgram.name}.pdf"
-
-    val dotFileContents: String = exportToDOT
-    val pw = new PrintWriter(new File(dotFilePath))
-    pw.write(dotFileContents)
-    pw.close()
-
-    try {
-      val command = "dot -Tpdf \"" + dotFilePath + "\" -o \"" + pdfFilePath + "\""
-      val child = Runtime.getRuntime.exec(Array[String]("/bin/sh", "-c", command))
-      child.waitFor
-    } catch {
-      case e@(_: InterruptedException | _: IOException) =>
-        e.printStackTrace()
-        System.exit(1)
-    }
-  }
-
-  def successorNodes(node: CFGNode): Set[CFGNode] = {
-    val edges: mutable.Iterable[DefaultEdge] = jgraphtGraph.outgoingEdgesOf(node).asScala
-    edges.map({ edge: DefaultEdge => jgraphtGraph.getEdgeTarget(edge) }).toSet
-  }
+  def successorNodes(node: CFGNode): Iterator[CFGNode] = ControlFlowGraph.successorNodes(jgraphtGraph, node)
 
   def pathExists(src: CFGNode, dst: CFGNode): Boolean = connectivityInspector.pathExists(src, dst)
 }

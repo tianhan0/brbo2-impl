@@ -172,7 +172,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               val successorNodes = cfg.successorNodes(currentNode)
               successorNodes.size match {
                 case 1 =>
-                  val newSubState = SubState(successorNodes.head, state.subState.processFunctionCalls, state.subState.currentFunction)
+                  val newSubState = SubState(successorNodes.next(), state.subState.processFunctionCalls, state.subState.currentFunction)
                   return matchPath(State(newSubState, state.callStack, state.matchedNodes, state.remainingPath, state.shouldContinue))
                 case _ => throw new Exception(s"Node `${currentNode.printToIR()}` must have 1 successor node!")
               }
@@ -219,7 +219,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               if (skipCurrentNodeWhenReturn) {
                 val successorNodes = cfg.successorNodes(currentNode)
                 assert(successorNodes.size == 1)
-                (successorNodes.head, true) // If skipping the current node, then must process function calls for the next node
+                (successorNodes.next(), true) // If skipping the current node, then must process function calls for the next node
               }
               else (currentNode, false) // If not skipping the current node, then there is no need to process the function calls again
             }
@@ -283,8 +283,8 @@ class ParseCounterexamplePath(debugMode: Boolean) {
                 assert(successorNodes.size == 2, s"Successor nodes:\n`${successorNodes.map(n => n.printToIR()).mkString("\n")}`")
                 // Find the branch to proceed
                 val (trueNode: CFGNode, falseNode: CFGNode) = {
-                  val n1 = successorNodes.head
-                  val n2 = successorNodes.tail.head
+                  val n1 = successorNodes.next()
+                  val n2 = successorNodes.next()
                   val e1 = cfg.jgraphtGraph.getEdge(currentNode, n1)
                   val e2 = cfg.jgraphtGraph.getEdge(currentNode, n2)
                   (cfg.jgraphtGraph.getEdgeWeight(e1), cfg.jgraphtGraph.getEdgeWeight(e2)) match {
@@ -298,7 +298,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
               else {
                 // Matched a command
                 assert(successorNodes.size == 1)
-                successorNodes.head
+                successorNodes.next()
               }
             }
             logger.traceOrError(s"Successor node: `$newCurrentNode`")

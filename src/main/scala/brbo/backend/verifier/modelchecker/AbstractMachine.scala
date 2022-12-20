@@ -211,7 +211,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments)
           case 0 | 1 | 2 =>
           case _ => throw new Exception(s"Current state `${currentNode.printToIR}` has the following successor nodes: `$nextNodes`.")
         }
-        nextNodes
+        nextNodes.toSet
       }
     }
     val currentScope = scopeOperations.getScope(currentNode.command)

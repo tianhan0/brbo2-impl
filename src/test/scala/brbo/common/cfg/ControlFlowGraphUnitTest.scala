@@ -18,7 +18,7 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
       testCase =>
         val controlFlowGraph = ControlFlowGraph.toControlFlowGraph(testCase.input.asInstanceOf[BrboProgram])
         controlFlowGraph.printPDF()
-        val dotRepresentation = controlFlowGraph.exportToDOT
+        val dotRepresentation = ControlFlowGraph.exportToDOT(controlFlowGraph.jgraphtGraph)
         StringCompare.ignoreWhitespaces(dotRepresentation, testCase.expectedOutput, s"${testCase.name} failed!")
     })
   }
@@ -38,10 +38,112 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
   "Finding the closest dominator" should "be correct" in {
     val controlFlowGraph = ControlFlowGraph.toControlFlowGraph(test05)
     val nodes = controlFlowGraph.nodesFromCommands(Set(test05InnerLoopCondition, test05InnerLoopContinue))
-    val closestBranchingHead = controlFlowGraph.closestDominator(nodes, { node: CFGNode => node.command.isInstanceOf[BranchingHead]})
+    val closestBranchingHead = controlFlowGraph.closestDominator(nodes, { node: CFGNode => node.command.isInstanceOf[BranchingHead] })
     StringCompare.ignoreWhitespaces(closestBranchingHead.get.printToIR(), "(11) [Branch Head]", "Finding the closest BranchingHead failed")
-    val closestLessThan = controlFlowGraph.closestDominator(nodes, { node: CFGNode => node.command.isInstanceOf[LessThan]})
+    val closestLessThan = controlFlowGraph.closestDominator(nodes, { node: CFGNode => node.command.isInstanceOf[LessThan] })
     StringCompare.ignoreWhitespaces(closestLessThan.get.printToIR(), "(8) (i < 7)", "Finding the closest LessThan failed")
+  }
+
+  "Deep copy a graph" should "be correct" in {
+    val controlFlowGraph = ControlFlowGraph.toControlFlowGraph(test05)
+    val (entry, exit) = {
+      val graph = controlFlowGraph.cfgs.head._2
+      (graph.root, graph.exits.head)
+    }
+    val (copiedGraph, root) = ControlFlowGraph.deepCopySimpleDirectedGraph(
+      graph = controlFlowGraph.jgraphtGraph,
+      entry = entry,
+      exit = exit,
+      reverse = false
+    )
+    val copiedGraphDot = ControlFlowGraph.exportToDOT(copiedGraph)
+    ControlFlowGraph.printDotToPDF(s"${test05.name}_nonreversed", dotFileContents = copiedGraphDot)
+    StringCompare.ignoreWhitespaces(s"root: ${root.printToIR()}\n$copiedGraphDot",
+      """root: (2) int i = 0;
+        |strict digraph G {
+        |  1 [ shape=rectangle label="(2) int i = 0;" ];
+        |  2 [ shape=oval label="(3) [Branch Head]" ];
+        |  3 [ shape=diamond label="(4) (i < 5)" ];
+        |  4 [ shape=diamond label="(5) !((i < 5))" ];
+        |  5 [ shape=oval label="(6) [Loop Exit]" ];
+        |  6 [ shape=oval label="(1) [Function Exit]" ];
+        |  7 [ shape=oval label="(7) [Branch Head]" ];
+        |  8 [ shape=diamond label="(8) (i < 7)" ];
+        |  9 [ shape=diamond label="(9) !((i < 7))" ];
+        |  10 [ shape=oval label="(10) [Loop Exit]" ];
+        |  11 [ shape=rectangle label="(16) i = 12;" ];
+        |  12 [ shape=oval label="(11) [Branch Head]" ];
+        |  13 [ shape=diamond label="(12) (i < 10)" ];
+        |  14 [ shape=diamond label="(13) !((i < 10))" ];
+        |  15 [ shape=rectangle label="(15) continue;" ];
+        |  16 [ shape=rectangle label="(14) break;" ];
+        |  1 -> 2 [ label="1.0" ];
+        |  2 -> 3 [ label="1.0" ];
+        |  2 -> 4 [ label="1.0" ];
+        |  4 -> 5 [ label="1.0" ];
+        |  5 -> 6 [ label="1.0" ];
+        |  3 -> 7 [ label="1.0" ];
+        |  7 -> 8 [ label="1.0" ];
+        |  7 -> 9 [ label="1.0" ];
+        |  9 -> 10 [ label="1.0" ];
+        |  10 -> 11 [ label="1.0" ];
+        |  11 -> 3 [ label="1.0" ];
+        |  8 -> 12 [ label="1.0" ];
+        |  12 -> 13 [ label="1.0" ];
+        |  12 -> 14 [ label="1.0" ];
+        |  14 -> 15 [ label="1.0" ];
+        |  15 -> 7 [ label="1.0" ];
+        |  13 -> 16 [ label="1.0" ];
+        |  16 -> 10 [ label="1.0" ];
+        |}
+        |""".stripMargin)
+
+    val (reversedCopiedGraph, reversedRoot) = ControlFlowGraph.deepCopySimpleDirectedGraph(
+      graph = controlFlowGraph.jgraphtGraph,
+      entry = entry,
+      exit = exit,
+      reverse = true
+    )
+    val reversedCopiedGraphDot = ControlFlowGraph.exportToDOT(reversedCopiedGraph)
+    ControlFlowGraph.printDotToPDF(s"${test05.name}_reversed", dotFileContents = reversedCopiedGraphDot)
+    StringCompare.ignoreWhitespaces(s"root: ${reversedRoot.printToIR()}\n$reversedCopiedGraphDot",
+      """root: (1) [Function Exit]
+        |strict digraph G {
+        |  1 [ shape=rectangle label="(2) int i = 0;" ];
+        |  2 [ shape=oval label="(3) [Branch Head]" ];
+        |  3 [ shape=diamond label="(4) (i < 5)" ];
+        |  4 [ shape=diamond label="(5) !((i < 5))" ];
+        |  5 [ shape=oval label="(6) [Loop Exit]" ];
+        |  6 [ shape=oval label="(1) [Function Exit]" ];
+        |  7 [ shape=oval label="(7) [Branch Head]" ];
+        |  8 [ shape=diamond label="(8) (i < 7)" ];
+        |  9 [ shape=diamond label="(9) !((i < 7))" ];
+        |  10 [ shape=oval label="(10) [Loop Exit]" ];
+        |  11 [ shape=rectangle label="(16) i = 12;" ];
+        |  12 [ shape=oval label="(11) [Branch Head]" ];
+        |  13 [ shape=diamond label="(12) (i < 10)" ];
+        |  14 [ shape=diamond label="(13) !((i < 10))" ];
+        |  15 [ shape=rectangle label="(15) continue;" ];
+        |  16 [ shape=rectangle label="(14) break;" ];
+        |  2 -> 1 [ label="1.0" ];
+        |  3 -> 2 [ label="1.0" ];
+        |  4 -> 2 [ label="1.0" ];
+        |  5 -> 4 [ label="1.0" ];
+        |  6 -> 5 [ label="1.0" ];
+        |  7 -> 3 [ label="1.0" ];
+        |  8 -> 7 [ label="1.0" ];
+        |  9 -> 7 [ label="1.0" ];
+        |  10 -> 9 [ label="1.0" ];
+        |  11 -> 10 [ label="1.0" ];
+        |  3 -> 11 [ label="1.0" ];
+        |  12 -> 8 [ label="1.0" ];
+        |  13 -> 12 [ label="1.0" ];
+        |  14 -> 12 [ label="1.0" ];
+        |  15 -> 14 [ label="1.0" ];
+        |  7 -> 15 [ label="1.0" ];
+        |  16 -> 13 [ label="1.0" ];
+        |  10 -> 16 [ label="1.0" ];
+        |}""".stripMargin)
   }
 }
 
