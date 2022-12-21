@@ -326,7 +326,9 @@ object Classifier {
                 case _ => throw new Exception
               }
             case resetPlaceHolder: ResetPlaceHolder =>
-              results.foreach({
+              // To ensure determinism, we sort the list of resets based on group IDs
+              val sortedResults = results.toList.sortWith({ case ((id1, _), (id2, _)) => id1.print() < id2.print() })
+              sortedResults.foreach({
                 case (groupID, ResetResult(_, classifier)) =>
                   val ast = classifier.toAst(features, ResetLeaf(groupID))
                   val newList = transforms.get(resetPlaceHolder) match {
