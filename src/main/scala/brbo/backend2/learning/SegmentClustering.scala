@@ -174,7 +174,7 @@ class SegmentClustering(sumWeight: Int,
                                 sampleKTraces: Option[Int]): List[Group] = {
     val lengthMap = similarTraces.map(t => (t, t.nodes.size)).toMap
     val distinctLengths = lengthMap.values.toList.sorted.distinct
-    logger.info(s"Similar traces have the following (distinct) lengths: $distinctLengths")
+    logger.infoOrError(s"Similar traces have the following (distinct) lengths: $distinctLengths")
     val sampledSimilarTraces = {
       sampleKTraces match {
         case Some(sampleKTraces) =>
@@ -188,7 +188,7 @@ class SegmentClustering(sumWeight: Int,
               // Choose the longest traces to test generality
               distinctLengths.slice(distinctLengths.size - sampleKTraces, distinctLengths.size)
             }
-          logger.info(s"Choose traces with the following lengths: $chosenLengths")
+          logger.infoOrError(s"Choose traces with the following lengths: $chosenLengths")
           val traces = chosenLengths.map({
             length => lengthMap.find({ case (_, i) => i == length }).get
           }).map({ case (trace, _) => trace })
@@ -210,7 +210,7 @@ class SegmentClustering(sumWeight: Int,
               val printFeatures = s"features: ${features.map(identifier => identifier.printToIR()).mkString(",")}"
               val classifierResults =
                 try {
-                  logger.info(s"Train a classifier for ${groupIndex + 1}-th group (among ${groups.size}): " +
+                  logger.infoOrError(s"Train a classifier for ${groupIndex + 1}-th group (among ${groups.size}): " +
                     s"$printGroup ($printFeatures)")
                   val tables = Classifier.generateTables(
                     testTrace,
@@ -221,13 +221,13 @@ class SegmentClustering(sumWeight: Int,
                     controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
                   )
                   val programTables = tables.toProgramTables
-                  logger.info(s"Generated training data")
+                  logger.infoOrError(s"Generated training data")
                   // logger.traceOrError(s"${programTables.print()}")
                   val classifierResults = programTables.generateClassifiers(debugMode)
                   Some(classifierResults)
                 } catch {
                   case TableGenerationError(message) =>
-                    logger.info(s"Failed to train a classifier: $message")
+                    logger.infoOrError(s"Failed to train a classifier: $message")
                     None
                 }
 
@@ -236,7 +236,7 @@ class SegmentClustering(sumWeight: Int,
                   val logging = s"Test the generality of ${groupIndex + 1}-th group (among ${groups.size}) " +
                     s"on ${traceIndex + 1}-th trace (among ${sampledSimilarTraces.size}) " +
                     s"(length: ${trace.nodes.size}) (group: $printGroup) ($printFeatures)"
-                  logger.info(logging)
+                  logger.infoOrError(logging)
                   classifierResults match {
                     case Some(classifierResults) =>
                       val applicationResult = Classifier.applyClassifiers(
@@ -253,14 +253,15 @@ class SegmentClustering(sumWeight: Int,
                         // Print details for traces whose decomposition yield segments with similar costs
                         stringBuilder.append(s"Decomposed trace:${applicationResult.printDecomposedTrace}\n")
                         stringBuilder.append(s"$logging: $areSimilar\n")
-                        logger.info(s"Re-clustered segments are the same${stringBuilder.toString()}")
+                        logger.infoOrError(s"Re-clustered segments are the same${stringBuilder.toString()}")
                       } else {
-                        logger.info(s"Re-clustered segments are different${stringBuilder.toString()}")
+                        // stringBuilder.append(s"Decomposed trace:${applicationResult.printDecomposedTrace}\n")
+                        logger.infoOrError(s"Re-clustered segments are different${stringBuilder.toString()}")
                       }
                       // logger.traceOrError(s"Tested group on trace:\n${trace.toTable(printStores = false, onlyGhostCommand = true)._1.printAll()}")
                       areSimilar
                     case None =>
-                      logger.info(s"Cannot test the generality of ${groupIndex + 1}-th group on $traceIndex-th trace. " +
+                      logger.infoOrError(s"Cannot test the generality of ${groupIndex + 1}-th group on $traceIndex-th trace. " +
                         s"No classifier for $printGroup ($printFeatures)")
                       false
                   }

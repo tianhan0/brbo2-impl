@@ -17,6 +17,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class ClassifierUnitTest extends AnyFlatSpec {
   "Generate tables for classification" should "be correct" in {
     val interpreter = SegmentClusteringUnitTest.toInterpreter(loopPhase)
+    val controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
     val trace = SegmentClusteringUnitTest.getTrace(interpreter, List(Number(4)))
     // println(trace.toTable(printStores = false, onlyGhostCommand = false, omitExpressions = false, commandMaxLength = 30)._1.printAll())
     val groups1 = ClassifierUnitTest.generateGroups(trace, numberOfGroups = 2)
@@ -25,94 +26,82 @@ class ClassifierUnitTest extends AnyFlatSpec {
       Classifier.evaluateFromInterpreter(interpreter),
       groups1,
       features = List(Identifier("i", INT), Identifier("n", INT)),
-      throwIfNoResetPlaceHolder = true,
-      controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
+      throwIfNoResetPlaceHolder = false,
+      controlFlowGraph = controlFlowGraph
     )
     val decompositionExpected1 =
       """Index  |        Commands         |  Costs  |  SegmentIDs in GroupID(0)  |  SegmentIDs in GroupID(1)  |
         |-------------------------------------------------------------------------------------------------------
-        |    12  |  resetPlaceHolder_1();  |         |                            |                            |
-        |    19  |        R0 = R0 + 2011;  |   2011  |                            |                         0  |
-        |    27  |  resetPlaceHolder_1();  |         |                            |                            |
-        |    34  |        R0 = R0 + 1011;  |   1011  |                         0  |                            |
-        |    42  |  resetPlaceHolder_1();  |         |                            |                            |
-        |    49  |        R0 = R0 + 1011;  |   1011  |                            |                         1  |
-        |    57  |  resetPlaceHolder_1();  |         |                            |                            |
-        |    64  |        R0 = R0 + 1011;  |   1011  |                         1  |                            |""".stripMargin
+        |    18  |        R0 = R0 + 2011;  |   2011  |                         0  |                            |
+        |    23  |  resetPlaceHolder_1();  |         |                            |                            |
+        |    33  |        R0 = R0 + 1011;  |   1011  |                            |                         0  |
+        |    38  |  resetPlaceHolder_1();  |         |                            |                            |
+        |    48  |        R0 = R0 + 1011;  |   1011  |                         1  |                            |
+        |    53  |  resetPlaceHolder_1();  |         |                            |                            |
+        |    63  |        R0 = R0 + 1011;  |   1011  |                            |                         1  |
+        |    68  |  resetPlaceHolder_1();  |         |                            |                            |""".stripMargin
     StringCompare.ignoreWhitespaces(SegmentClustering.printDecomposition(trace, groups1), decompositionExpected1, "decomposition 1 failed")
 
     val expected1 =
       """Tables:
         |Features: i, n
-        |TraceLocation: resetPlaceHolder_1(); (index=12) ->
+        |TraceLocation: resetPlaceHolder_1(); (index=23) ->
         |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 0  |  4  |  false  |
-        |========================================
-        |Reset table: GroupID(1) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 0  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder_1(); (index=27) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 1  |  4  |  false  |
-        |========================================
-        |Reset table: GroupID(1) ->
         | i  |  n  |  Label  |
         |---------------------
         | 1  |  4  |   true  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder_1(); (index=42) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 2  |  4  |   true  |
         |========================================
         |Reset table: GroupID(1) ->
         | i  |  n  |  Label  |
         |---------------------
-        | 2  |  4  |  false  |
+        | 1  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder_1(); (index=57) ->
+        |TraceLocation: resetPlaceHolder_1(); (index=38) ->
         |Reset table: GroupID(0) ->
+        | i  |  n  |  Label  |
+        |---------------------
+        | 2  |  4  |  false  |
+        |========================================
+        |Reset table: GroupID(1) ->
+        | i  |  n  |  Label  |
+        |---------------------
+        | 2  |  4  |   true  |
+        |************************************************************
+        |
+        |TraceLocation: resetPlaceHolder_1(); (index=53) ->
+        |Reset table: GroupID(1) ->
         | i  |  n  |  Label  |
         |---------------------
         | 3  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: use R0 1011 (index=34) ->
+        |TraceLocation: use R0 1011 (index=33) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
-        | 1  |  4  |  GroupID(0)  |
+        | 1  |  4  |  GroupID(1)  |
         |************************************************************
         |
-        |TraceLocation: use R0 1011 (index=49) ->
+        |TraceLocation: use R0 1011 (index=48) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
-        | 2  |  4  |  GroupID(1)  |
+        | 2  |  4  |  GroupID(0)  |
         |************************************************************
         |
-        |TraceLocation: use R0 1011 (index=64) ->
+        |TraceLocation: use R0 1011 (index=63) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
-        | 3  |  4  |  GroupID(0)  |
+        | 3  |  4  |  GroupID(1)  |
         |************************************************************
         |
-        |TraceLocation: use R0 2011 (index=19) ->
+        |TraceLocation: use R0 2011 (index=18) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
-        | 0  |  4  |  GroupID(1)  |
+        | 0  |  4  |  GroupID(0)  |
         |""".stripMargin
     StringCompare.ignoreWhitespaces(table1.print(), expected1, "loopPhase failed: Multiple groups")
 
@@ -122,78 +111,64 @@ class ClassifierUnitTest extends AnyFlatSpec {
       Classifier.evaluateFromInterpreter(interpreter),
       groups2,
       features = List(Identifier("i", INT), Identifier("n", INT)),
-      throwIfNoResetPlaceHolder = true,
-      controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
+      throwIfNoResetPlaceHolder = false,
+      controlFlowGraph = controlFlowGraph
     )
     val decompositionExpected2 =
       """Index  |        Commands         |  Costs  |  SegmentIDs in GroupID(0)  |
         |--------------------------------------------------------------------------
-        |    12  |  resetPlaceHolder_1();  |         |                            |
-        |    19  |        R0 = R0 + 2011;  |   2011  |                            |
-        |    27  |  resetPlaceHolder_1();  |         |                            |
-        |    34  |        R0 = R0 + 1011;  |   1011  |                         0  |
-        |    42  |  resetPlaceHolder_1();  |         |                            |
-        |    49  |        R0 = R0 + 1011;  |   1011  |                            |
-        |    57  |  resetPlaceHolder_1();  |         |                            |
-        |    64  |        R0 = R0 + 1011;  |   1011  |                         1  |""".stripMargin
+        |    18  |        R0 = R0 + 2011;  |   2011  |                         0  |
+        |    23  |  resetPlaceHolder_1();  |         |                            |
+        |    33  |        R0 = R0 + 1011;  |   1011  |                            |
+        |    38  |  resetPlaceHolder_1();  |         |                            |
+        |    48  |        R0 = R0 + 1011;  |   1011  |                         1  |
+        |    53  |  resetPlaceHolder_1();  |         |                            |
+        |    63  |        R0 = R0 + 1011;  |   1011  |                            |
+        |    68  |  resetPlaceHolder_1();  |         |                            |""".stripMargin
     StringCompare.ignoreWhitespaces(SegmentClustering.printDecomposition(trace, groups2), decompositionExpected2, "decomposition 2 failed")
     val expected2 =
       """Tables:
         |Features: i, n
-        |TraceLocation: resetPlaceHolder_1(); (index=12) ->
+        |TraceLocation: resetPlaceHolder_1(); (index=23) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
-        | 0  |  4  |  false  |
+        | 1  |  4  |   true  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder_1(); (index=27) ->
+        |TraceLocation: resetPlaceHolder_1(); (index=38) ->
         |Reset table: GroupID(0) ->
         | i  |  n  |  Label  |
         |---------------------
-        | 1  |  4  |  false  |
+        | 2  |  4  |  false  |
         |************************************************************
         |
-        |TraceLocation: resetPlaceHolder_1(); (index=42) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 2  |  4  |   true  |
-        |************************************************************
-        |
-        |TraceLocation: resetPlaceHolder_1(); (index=57) ->
-        |Reset table: GroupID(0) ->
-        | i  |  n  |  Label  |
-        |---------------------
-        | 3  |  4  |  false  |
-        |************************************************************
-        |
-        |TraceLocation: use R0 1011 (index=34) ->
-        |Use table:
-        | i  |  n  |    Label     |
-        |--------------------------
-        | 1  |  4  |  GroupID(0)  |
-        |************************************************************
-        |
-        |TraceLocation: use R0 1011 (index=49) ->
+        |TraceLocation: use R0 1011 (index=33) ->
         |Use table:
         | i  |  n  |    Label    |
         |-------------------------
-        | 2  |  4  |  NoneGroup  |
+        | 1  |  4  |  NoneGroup  |
         |************************************************************
         |
-        |TraceLocation: use R0 1011 (index=64) ->
+        |TraceLocation: use R0 1011 (index=48) ->
         |Use table:
         | i  |  n  |    Label     |
         |--------------------------
-        | 3  |  4  |  GroupID(0)  |
+        | 2  |  4  |  GroupID(0)  |
         |************************************************************
         |
-        |TraceLocation: use R0 2011 (index=19) ->
+        |TraceLocation: use R0 1011 (index=63) ->
         |Use table:
         | i  |  n  |    Label    |
         |-------------------------
-        | 0  |  4  |  NoneGroup  |
+        | 3  |  4  |  NoneGroup  |
+        |************************************************************
+        |
+        |TraceLocation: use R0 2011 (index=18) ->
+        |Use table:
+        | i  |  n  |    Label     |
+        |--------------------------
+        | 0  |  4  |  GroupID(0)  |
         |""".stripMargin
     StringCompare.ignoreWhitespaces(table2.print(), expected2, "loopPhase failed: Single group")
 
@@ -249,10 +224,10 @@ class ClassifierUnitTest extends AnyFlatSpec {
 
   "Deciding if applying classifiers to a trace leads to segments with similar costs" should "be correct" in {
     val interpreter = SegmentClusteringUnitTest.toInterpreter(loopPhase)
-    val trace = SegmentClusteringUnitTest.getTrace(interpreter, List(Number(10)))
+    val trace = SegmentClusteringUnitTest.getTrace(interpreter, List(Number(5)))
     val algorithm = Optics(maxEps = Some(0.8), metric = Euclidean)
     val segmentClustering = new SegmentClustering(sumWeight = 1, commandWeight = 0, debugMode = false, algorithm, SegmentClustering.THREADS)
-    val clusters: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, 1, excludeIndices = Set())
+    val clusters: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segmentLength = 1, excludeIndices = Set())
     val group = Group(clusters.head.sortWith({ case (s1, s2) => s1.lessThan(s2) }))
     val features = Driver.classifierFeatures(interpreter.brboProgram)
     val result = segmentClustering.chooseGeneralizableGroups(
@@ -266,8 +241,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val resultString = result.map(g => g.print(trace)).mkString("\n")
     StringCompare.ignoreWhitespaces(
       resultString,
-      """use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011)""",
-      "failed"
+      """use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011); use R0 1011 (cost=1011)""",
     )
   }
 
@@ -286,19 +260,19 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val classifierResults = tables.toProgramTables.generateClassifiers(debugMode = false)
     val transformation = classifierResults.toTransformation.map({
       case (command, ast) =>
-        s"Transform ${command.asInstanceOf[Command].printToIR()} into:\n${ast.printToC(0)}"
+        s"Transform ${command.printToIR()} into:\n${ast.printToC(0)}"
     }).toList.sorted.mkString("\n\n")
     StringCompare.ignoreWhitespaces(
       transformation,
       """Transform resetPlaceHolder_1(); into:
         |{
-        |  if ((i < 0) || (i == 0))
+        |  if ((i < 1) || (i == 1))
         |  {
         |    // reset R1
         |  }
         |  else
         |  {
-        |    if ((i < 1) || (i == 1))
+        |    if ((i < 2) || (i == 2))
         |    {
         |      if (S1 < R1)
         |      {
@@ -318,49 +292,42 @@ class ClassifierUnitTest extends AnyFlatSpec {
         |  }
         |  if ((i < 1) || (i == 1))
         |  {
-        |    // reset R0
-        |  }
-        |  else
-        |  {
-        |    if ((i < 2) || (i == 2))
+        |    if (S0 < R0)
         |    {
-        |      if (S0 < R0)
-        |      {
-        |        S0 = R0;
-        |      }
-        |      else
-        |      {
-        |        ;
-        |      }
-        |      R0 = 0;
-        |      C0 = C0 + 1;
+        |      S0 = R0;
         |    }
         |    else
         |    {
-        |      // reset R0
+        |      ;
         |    }
+        |    R0 = 0;
+        |    C0 = C0 + 1;
+        |  }
+        |  else
+        |  {
+        |    // reset R0
         |  }
         |}
         |
         |Transform use R0 1011 into:
         |if ((i < 1) || (i == 1))
         |{
-        |  R0 = R0 + 1011;
+        |  R1 = R1 + 1011;
         |}
         |else
         |{
         |  if ((i < 2) || (i == 2))
         |  {
-        |    R1 = R1 + 1011;
+        |    R0 = R0 + 1011;
         |  }
         |  else
         |  {
-        |    R0 = R0 + 1011;
+        |    R1 = R1 + 1011;
         |  }
         |}
         |
         |Transform use R0 2011 into:
-        |R1 = R1 + 2011;
+        |R0 = R0 + 2011;
         |""".stripMargin,
       "Generating transformations failed"
     )
@@ -399,8 +366,6 @@ object ClassifierUnitTest {
        |        use(0, 2011);
        |      i++;
        |    }
-       |    // use(0, 88);
-       |    // use(0, 89);
        |  }
        |$functionDefinitions
        |}""".stripMargin

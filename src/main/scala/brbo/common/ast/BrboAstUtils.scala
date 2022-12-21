@@ -194,10 +194,10 @@ object BrboAstUtils {
             val (newElseAst, newNumberOfInserted2) = insertResetPlaceHolder(elseAst, numberOfInserted = newNumberOfInserted)
             (ITE(condition, newThenAst, newElseAst), newNumberOfInserted2)
           case Loop(condition, loopBody, _) =>
-            // Right after the loop head
             val resetPlaceHolder = ResetPlaceHolder(numberOfInserted + 1)
             val (newLoopBody, newNumberOfInserted) = insertResetPlaceHolder(loopBody, numberOfInserted = numberOfInserted + 1)
-            val block = Block(List(resetPlaceHolder, newLoopBody))
+            // Insert at the end of the loop body
+            val block = Block(List(newLoopBody, resetPlaceHolder))
             val loop = Loop(condition, block)
             // TODO: Right before the loop head?
             (loop, newNumberOfInserted)

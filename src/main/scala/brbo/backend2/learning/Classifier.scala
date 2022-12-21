@@ -9,6 +9,7 @@ import brbo.common.GhostVariableUtils.{counterInitialValue, resourceInitialValue
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 import brbo.common.{MyLogger, Print}
+import com.ibm.wala.util.graph.NumberedGraph
 import play.api.libs.json.Json
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
@@ -379,11 +380,13 @@ object Classifier {
                      throwIfNoResetPlaceHolder: Boolean,
                      controlFlowGraph: ControlFlowGraph): TraceTables = {
     val resetPlaceHolderCandidates: Map[GroupID, Set[Command]] =
-      resetPlaceHoldersAsDominators(trace = trace, groups = groups, controlFlowGraph = controlFlowGraph)
+      resetPlaceHoldersAsPostDominators(trace = trace, groups = groups, controlFlowGraph = controlFlowGraph)
 
     // From group IDs to the trace node indices into which resets need to be placed
-    val resetPlaceHolderMap: Map[GroupID, Set[Int]] =
+    val resetPlaceHolderIndices: Map[GroupID, Set[Int]] =
       resetPlaceHolderLocations(trace, groups, resetPlaceHolderCandidates, throwIfNoResetPlaceHolder)
+    // Do not specify whether to reset after the last use of the last segment (as opposed to must not reset after the last use)
+    // Otherwise, the labels may introduce contradiction -- same features but different labels
     val lastUseIndices = groups.map({ case (groupID, group) => (groupID, group.last) })
 
     val groupIDs = groups.keys.toSet
@@ -425,7 +428,7 @@ object Classifier {
                 // Prepare row data: Labels
                 val groupsToReset: Set[GroupID] = groupIDs.filter({
                   groupID =>
-                    resetPlaceHolderMap.get(groupID) match {
+                    resetPlaceHolderIndices.get(groupID) match {
                       case Some(indices) => indices.contains(index)
                       case None => false
                     }
@@ -442,8 +445,6 @@ object Classifier {
                       case Some(lastUseIndex) => index < lastUseIndex
                       case None => false
                     }
-                    // Do not specify reset labels for reset place holders after the last use of the last segment
-                    // Otherwise, the labels may introduce contradiction -- same features but different labels
                     if (addRow) {
                       val resetTable: ResetTable = traceTableMap.get(traceLocation) match {
                         case Some(tables) =>
@@ -473,14 +474,46 @@ object Classifier {
   private def resetPlaceHoldersAsDominators(trace: Trace,
                                             groups: Map[GroupID, Group],
                                             controlFlowGraph: ControlFlowGraph): Map[GroupID, Set[Command]] = {
+    resetPlaceHoldersAsDominatorsHelper(
+      trace = trace,
+      groups = groups,
+      graph = controlFlowGraph.walaGraph,
+      entryNode = controlFlowGraph.entryNode,
+      controlFlowGraph.nodesFromCommands
+    )
+  }
+
+  // We often need resets to split costs from different loop iterations, for which
+  // post-dominators are good candidates
+  private def resetPlaceHoldersAsPostDominators(trace: Trace,
+                                                groups: Map[GroupID, Group],
+                                                controlFlowGraph: ControlFlowGraph): Map[GroupID, Set[Command]] = {
+    val (reversedCopiedGraph, reversedRoot) = ControlFlowGraph.reverseGraph(controlFlowGraph)
+    // ControlFlowGraph.printDotToPDF("abc", ControlFlowGraph.exportToDOT())
+    resetPlaceHoldersAsDominatorsHelper(
+      trace = trace,
+      groups = groups,
+      graph = reversedCopiedGraph,
+      entryNode = reversedRoot,
+      controlFlowGraph.nodesFromCommands
+    )
+  }
+
+  private def resetPlaceHoldersAsDominatorsHelper(trace: Trace,
+                                                  groups: Map[GroupID, Group],
+                                                  graph: NumberedGraph[CFGNode],
+                                                  entryNode: CFGNode,
+                                                  nodesFromCommands: Set[Command] => Set[CFGNode]): Map[GroupID, Set[Command]] = {
     groups.map({
       case (groupID, group) =>
         val commands = group.getCommands(trace)
-        val nodes = controlFlowGraph.nodesFromCommands(commands.toSet)
+        val nodes = nodesFromCommands(commands.toSet)
         // Find a node that dominates all commands from the group
-        val dominator = controlFlowGraph.closestDominator(
+        val dominator = ControlFlowGraph.closestDominator(
+          graph = graph,
+          entryNode = entryNode,
           nodes = nodes,
-          predicate = { node: CFGNode => node.command.isInstanceOf[ResetPlaceHolder] },
+          predicate = { node: CFGNode => node.command.isInstanceOf[ResetPlaceHolder] }
         )
         dominator match {
           case Some(dominator) => (groupID, Set(dominator.command))
@@ -507,8 +540,7 @@ object Classifier {
             val next = group.segments(i + 1)
             next.indices.head - 1
           }
-          // logger.trace(s"begin $begin end $end")
-          val allResetPlaceHolders: Iterable[(ResetPlaceHolder, Int)] = nodesWithIndex.flatMap({
+          val allPossibleResetPlaceHolders: Iterable[(ResetPlaceHolder, Int)] = nodesWithIndex.flatMap({
             case (node, index) =>
               val isResetPlaceHolder = node.lastTransition match {
                 case Some(Transition(command, _)) => command.isInstanceOf[ResetPlaceHolder]
@@ -519,11 +551,12 @@ object Classifier {
               else
                 None
           })
-          resetPlaceHolderFromCandidates(allResetPlaceHolders, resetPlaceHolderCandidates(groupID)) match {
+          resetPlaceHolderFromCandidates(allPossibleResetPlaceHolders, resetPlaceHolderCandidates(groupID)) match {
             case Some(index) => resetPlaceHolderIndices = resetPlaceHolderIndices + index
             case None =>
               val errorMessage = s"Failed to find a reset place holder between " +
-                s"${groupID.print()}'s $i and ${i + 1} segment\n${printDecomposition(trace, groups)}"
+                s"${groupID.print()}'s $i and ${i + 1} segment (index range: [$begin, $end])\n" +
+                s"${printDecomposition(trace, groups)}"
               if (throwIfNoResetPlaceHolder) throw TableGenerationError(errorMessage)
           }
           i = i + 1
@@ -532,15 +565,15 @@ object Classifier {
     })
   }
 
-  private def resetPlaceHolderFromCandidates(resetPlaceHolders: Iterable[(ResetPlaceHolder, Int)],
+  private def resetPlaceHolderFromCandidates(allPossibleResetPlaceHolders: Iterable[(ResetPlaceHolder, Int)],
                                              candidates: Set[Command]): Option[Int] = {
-    if (resetPlaceHolders.isEmpty || candidates.isEmpty)
+    if (allPossibleResetPlaceHolders.isEmpty || candidates.isEmpty)
       None
     else {
       // logger.trace(s"dominator: $dominator")
       // holders.foreach({ case (holder, i) => logger.trace(s"index $i: ${holder}")})
       // Let the reset place holder be the dominator
-      resetPlaceHolders.find({ case (resetPlaceHolder, _) => candidates.contains(resetPlaceHolder) }) match {
+      allPossibleResetPlaceHolders.find({ case (resetPlaceHolder, _) => candidates.contains(resetPlaceHolder) }) match {
         case Some((_, index)) => Some(index)
         case None => None
       }
@@ -619,9 +652,9 @@ object Classifier {
       resources = resources + (groupID -> 0)
     }
 
-    def use(groupID: GroupID, n: Int, traceNodeIndex: Int): Unit = {
+    def use(groupID: GroupID, cost: Int, traceNodeIndex: Int): Unit = {
       val current = resources(groupID)
-      resources = resources + (groupID -> (current + n))
+      resources = resources + (groupID -> (current + cost))
       val segmentList: List[Segment] = segments.get(groupID) match {
         case Some(segmentList) =>
           val segment = segmentList.last.add(traceNodeIndex)
@@ -646,6 +679,22 @@ object Classifier {
     }
   }
 
+  object GhostStore {
+    def removeLastEmptySegment(segments: Map[GroupID, List[Segment]]): Map[GroupID, List[Segment]] = {
+      segments.map({
+        case (groupID, segments) =>
+          val newSegments = {
+            if (segments.nonEmpty) {
+              if (segments.last.isEmpty) segments.slice(0, segments.size - 1)
+              else segments
+            }
+            else segments
+          }
+          (groupID, newSegments)
+      })
+    }
+  }
+
   case class DecomposedTraceNode(index: Int, transition: Transition, groupID: GroupID)
 
   class ClassifierApplication(ghostStore: GhostStore, trace: Trace, decomposedTrace: List[DecomposedTraceNode], debugMode: Boolean) {
@@ -656,9 +705,18 @@ object Classifier {
     }
 
     def areActualSegmentCostsSimilar(segmentClustering: SegmentClustering, stringBuilder: mutable.StringBuilder): Boolean = {
-      val expectedDecomposition: List[List[Segment]] = ghostStore.getSegments.values.toList.map({
-        list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
-      })
+      val expectedDecomposition: List[List[Segment]] = {
+        val segments = ghostStore.getSegments
+
+        /**
+         * TODO: This is a hack. We want to avoid guarding resets with predicates (which may cause the verifier to fail
+         * when the resets are in loops). Hence, when testing the generality of a trace decomposition, if the last segment
+         * of a group is empty, we ignore this segment when re-clustering the segments.
+         */
+        GhostStore.removeLastEmptySegment(segments).values.toList.map({
+          list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
+        })
+      }
       stringBuilder.append(s"\nSegment clusters that are considered to be similar:\n${print(expectedDecomposition)}\n")
       val segments: List[Segment] = expectedDecomposition.flatten
       // stringBuilder.append(s"Final ghost state after trace decomposition: ${ghostStore.print()}\n")
