@@ -33,7 +33,7 @@ object ControlFlowGraph {
   val FALSE_BRANCH_WEIGHT: Double = -1
   val DEFAULT_WEIGHT: Double = 0
 
-  case class JumpTarget(immediateLoopCondition: Option[CFGNode], immediateLoopExit: Option[CFGNode], functionExit: CFGNode)
+  case class JumpTarget(immediateLoopBranchHead: Option[CFGNode], immediateLoopExit: Option[CFGNode], functionExit: CFGNode)
 
   /**
    *
@@ -66,13 +66,13 @@ object ControlFlowGraph {
       }
     }*/
 
-    def getCFG(brboFunction: BrboFunction): InternalGraph = {
+    def generateCFG(brboFunction: BrboFunction): InternalGraph = {
       val functionCFG = functionToInternalGraph(brboFunction)
       cfgs = cfgs + (brboFunction -> functionCFG)
       functionCFG
     }
 
-    def getNode(command: Command, brboFunction: BrboFunction): CFGNode = {
+    def generateNode(command: Command, brboFunction: BrboFunction): CFGNode = {
       def addNode(node: CFGNode): Unit = {
         walaGraph.addNode(node)
         jgraphtGraph.addVertex(node)
@@ -90,78 +90,83 @@ object ControlFlowGraph {
     }
 
     def functionToInternalGraph(brboFunction: BrboFunction): InternalGraph = {
-      val exitNode = getNode(FunctionExit(), brboFunction)
-      val internalGraph = astToInternalGraph(brboFunction.bodyWithInitialization, JumpTarget(None, None, exitNode), brboFunction)
-      internalGraph.exits.foreach(exit => if (exit != exitNode) addEdge(exit, exitNode))
+      val exitNode = generateNode(FunctionExit(), brboFunction)
+      val jumpTarget = JumpTarget(immediateLoopBranchHead = None, immediateLoopExit = None, functionExit = exitNode)
+      val internalGraph = astToInternalGraph(
+        ast = brboFunction.bodyWithInitialization,
+        jumpTarget = jumpTarget,
+        brboFunction = brboFunction
+      )
+      internalGraph.exits.foreach(exit => addEdge(exit, exitNode))
       // Any function has exactly one exit node
       InternalGraph(internalGraph.root, Set(exitNode))
     }
 
-    def astToInternalGraph(ast: BrboAst, jumpTarget: JumpTarget, brboFunction: BrboFunction): InternalGraph = {
-      def addEdgesFromExitsToEntry(exits: Set[CFGNode], entry: CFGNode): Unit = {
-        @tailrec
-        def shouldAddEdge(nodeValue: Command): Boolean = {
-          nodeValue match {
-            case _: BrboExpr => true
-            case Return(_, _) | Break(_) | Continue(_) =>
-              false // Not add edge for commands that do not respect the normal control flow
-            case LabeledCommand(_, command2, _) => shouldAddEdge(command2)
-            case VariableDeclaration(_, _, _) | Assignment(_, _, _) | Skip(_) |
-                 FunctionCallExpr(_, _, _, _) | Assume(_, _) | Comment(_, _) => true
-            case _: CFGOnly => true
-            case _: GhostCommand => true
-          }
-        }
-
-        exits.foreach({ exit => if (shouldAddEdge(exit.command)) addEdge(exit, entry) })
+    @tailrec
+    def shouldAddEdgeToEntryOfNextStatement(nodeValue: Command): Boolean = {
+      nodeValue match {
+        case _: BrboExpr => true
+        case Return(_, _) | Break(_) | Continue(_) =>
+          false // Not add edge for commands that do not respect the normal control flow
+        case LabeledCommand(_, command2, _) => shouldAddEdgeToEntryOfNextStatement(command2)
+        case VariableDeclaration(_, _, _) | Assignment(_, _, _) | Skip(_) |
+             FunctionCallExpr(_, _, _, _) | Assume(_, _) | Comment(_, _) => true
+        case _: CFGOnly => true
+        case _: GhostCommand => true
       }
+    }
 
+    def addEdgesFromExitsToEntry(exits: Set[CFGNode], entry: CFGNode): Unit =
+      exits.foreach({ exit => if (shouldAddEdgeToEntryOfNextStatement(exit.command)) addEdge(exit, entry) })
+
+    @tailrec
+    def addJumpEdges(node: CFGNode, command: Command, jumpTarget: JumpTarget): Unit = {
+      command match {
+        case VariableDeclaration(_, _, _) =>
+        case Assignment(_, _, _) =>
+        case Skip(_) | Comment(_, _) =>
+        case FunctionCallExpr(_, _, _, _) => // No edge is added for function calls!
+        case Assume(_, _) =>
+
+        case Return(_, _) => addEdge(node, jumpTarget.functionExit)
+        case Break(_) => addEdge(node, jumpTarget.immediateLoopExit.get)
+        case Continue(_) => addEdge(node, jumpTarget.immediateLoopBranchHead.get)
+        case LabeledCommand(_, command, _) => addJumpEdges(node, command, jumpTarget)
+        case _: CFGOnly => // throw new Exception(s"`$command` is only used in Control Flow Graphs!")
+        case _: GhostCommand =>
+      }
+    }
+
+    def astToInternalGraph(ast: BrboAst, jumpTarget: JumpTarget, brboFunction: BrboFunction): InternalGraph = {
       ast match {
         case command: Command =>
-          val node = getNode(command, brboFunction)
-          addJumpEdges(command)
-
-          @tailrec
-          def addJumpEdges(command: Command): Unit = {
-            command match {
-              case VariableDeclaration(_, _, _) =>
-              case Assignment(_, _, _) =>
-              case Skip(_) | Comment(_, _) =>
-              case FunctionCallExpr(_, _, _, _) => // No edge is added for function calls!
-              case Assume(_, _) =>
-
-              case Return(_, _) => addEdge(node, jumpTarget.functionExit)
-              case Break(_) => addEdge(node, jumpTarget.immediateLoopExit.get)
-              case Continue(_) => addEdge(node, jumpTarget.immediateLoopCondition.get)
-              case LabeledCommand(_, command2, _) => addJumpEdges(command2)
-              case _: CFGOnly => // throw new Exception(s"`$command` is only used in Control Flow Graphs!")
-              case _: GhostCommand =>
-            }
-          }
-
+          val node = generateNode(command, brboFunction)
+          addJumpEdges(node, command, jumpTarget)
           InternalGraph(node, Set(node))
         case statement: Statement =>
           statement match {
             case Block(statements, _) =>
               val internalGraphs = statements.map(statement => astToInternalGraph(statement, jumpTarget, brboFunction))
-              var i = 0
-              while (i < internalGraphs.size) {
-                if (i > 0) {
-                  val previous = internalGraphs(i - 1)
-                  val current = internalGraphs(i)
-                  addEdgesFromExitsToEntry(previous.exits, current.root)
-                }
-                i = i + 1
+              internalGraphs.size match {
+                case 0 =>
+                  val emptyNode = generateNode(Empty(), brboFunction)
+                  InternalGraph(emptyNode, Set(emptyNode))
+                case 1 =>
+                  InternalGraph(internalGraphs.head.root, internalGraphs.head.exits)
+                case _ =>
+                  var i = 1
+                  while (i < internalGraphs.size) {
+                    val previous = internalGraphs(i - 1)
+                    val current = internalGraphs(i)
+                    addEdgesFromExitsToEntry(previous.exits, current.root)
+                    i = i + 1
+                  }
+                  InternalGraph(internalGraphs.head.root, internalGraphs.last.exits)
               }
-              if (internalGraphs.isEmpty) {
-                val emptyNode = getNode(Empty(), brboFunction)
-                InternalGraph(emptyNode, Set(emptyNode))
-              }
-              else InternalGraph(internalGraphs.head.root, internalGraphs.last.exits)
             case ITE(condition, thenAst, elseAst, _) =>
-              val branchNode = getNode(BranchingHead(), brboFunction)
-              val conditionNode = getNode(condition, brboFunction)
-              val negatedConditionNode = getNode(Negation(condition), brboFunction)
+              val branchNode = generateNode(BranchingHead(), brboFunction)
+              val conditionNode = generateNode(condition, brboFunction)
+              val negatedConditionNode = generateNode(Negation(condition), brboFunction)
 
               val thenGraph = astToInternalGraph(thenAst, jumpTarget, brboFunction)
               val elseGraph = astToInternalGraph(elseAst, jumpTarget, brboFunction)
@@ -176,56 +181,65 @@ object ControlFlowGraph {
 
               InternalGraph(branchNode, thenGraph.exits ++ elseGraph.exits)
             case Loop(condition, body, _) =>
-              val branchNode = getNode(BranchingHead(), brboFunction)
-              val conditionNode = getNode(condition, brboFunction)
-              val negatedConditionNode = getNode(Negation(condition), brboFunction)
-              val loopExit = getNode(LoopExit(), brboFunction)
-              val bodyGraph = astToInternalGraph(body, JumpTarget(Some(branchNode), Some(loopExit), jumpTarget.functionExit), brboFunction)
+              val branchNode = generateNode(BranchingHead(), brboFunction)
+              val conditionNode = generateNode(condition, brboFunction)
+              val negatedConditionNode = generateNode(Negation(condition), brboFunction)
+              val loopExit = generateNode(LoopExit(), brboFunction)
+              val bodyGraph = astToInternalGraph(
+                body,
+                JumpTarget(
+                  immediateLoopBranchHead = Some(branchNode),
+                  immediateLoopExit = Some(loopExit),
+                  functionExit = jumpTarget.functionExit
+                ),
+                brboFunction
+              )
 
               addEdge(branchNode, conditionNode)
-              setEdgeWeight(branchNode, conditionNode, trueBranch = true)
+              setEdgeWeight(src = branchNode, dst = conditionNode, trueBranch = true)
               addEdge(branchNode, negatedConditionNode)
-              setEdgeWeight(branchNode, negatedConditionNode, trueBranch = false)
+              setEdgeWeight(src = branchNode, dst = negatedConditionNode, trueBranch = false)
 
               addEdge(conditionNode, bodyGraph.root)
               addEdge(negatedConditionNode, loopExit)
-              addEdgesFromExitsToEntry(bodyGraph.exits, conditionNode)
+              addEdgesFromExitsToEntry(bodyGraph.exits, branchNode)
 
               InternalGraph(branchNode, Set(loopExit))
           }
       }
     }
 
-    val mainCFG = getCFG(brboProgram.mainFunction)
+    val mainCFG = generateCFG(brboProgram.mainFunction)
     brboProgram.functions.foreach({
       function =>
         cfgs.get(function) match {
           case Some(_) =>
-          case None => getCFG(function)
+          case None => generateCFG(function)
         }
     })
-    ControlFlowGraph(mainCFG.root, cfgs, brboProgram, walaGraph, jgraphtGraph)
+    ControlFlowGraph(mainCFG.root, cfgs, brboProgram, nodes, walaGraph, jgraphtGraph)
   }
 
-  def deepCopyNumberedGraph[T <: INodeWithNumberedEdges](graph: NumberedGraph[T],
-                                                         entry: T,
-                                                         exit: T,
-                                                         reverse: Boolean): (NumberedGraph[T], T) = {
-    def successorNodes(node: T): List[T] = {
-      def compare(left: T, right: T): Boolean = left.toString < right.toString
-      graph.getSuccNodes(node).asScala.toList.sortWith(compare)
-    }
+  def compareNodes[Node](left: Node, right: Node): Boolean = left.toString < right.toString
 
-    def addNode(graph: NumberedGraph[T], node: T): Unit = graph.addNode(node)
+  def deepCopyNumberedGraph[Node <: INodeWithNumberedEdges](graph: NumberedGraph[Node],
+                                                            entry: Node,
+                                                            exit: Node,
+                                                            copyNode: Node => Node,
+                                                            reverse: Boolean): (NumberedGraph[Node], Node) = {
+    def successorNodes(node: Node): List[Node] = graph.getSuccNodes(node).asScala.toList.sortWith(compareNodes)
 
-    def addEdge(graph: NumberedGraph[T], from: T, to: T): Unit = graph.addEdge(from, to)
+    def addNode(graph: NumberedGraph[Node], node: Node): Unit = graph.addNode(node)
 
-    val newGraph = new DelegatingNumberedGraph[T]()
-    val root = deepCopyGraph[T, NumberedGraph[T]](
+    def addEdge(graph: NumberedGraph[Node], from: Node, to: Node): Unit = graph.addEdge(from, to)
+
+    val newGraph = new DelegatingNumberedGraph[Node]()
+    val root = deepCopyGraph[Node, NumberedGraph[Node]](
       newGraph = newGraph,
       successorNodes = successorNodes,
       addNode = addNode,
       addEdge = addEdge,
+      copyNode = copyNode,
       entry = entry,
       exit = exit,
       reverse = reverse
@@ -233,25 +247,24 @@ object ControlFlowGraph {
     (newGraph, root)
   }
 
-  def deepCopySimpleDirectedGraph[T](graph: SimpleDirectedGraph[T, DefaultEdge],
-                                     entry: T,
-                                     exit: T,
-                                     reverse: Boolean): (SimpleDirectedGraph[T, DefaultEdge], T) = {
-    def successorNodes(node: T): List[T] = {
-      def compare(left: T, right: T): Boolean = left.toString < right.toString
-      ControlFlowGraph.successorNodesSorted(graph, node, compare)
-    }
+  def deepCopySimpleDirectedGraph[Node](graph: SimpleDirectedGraph[Node, DefaultEdge],
+                                        entry: Node,
+                                        exit: Node,
+                                        copyNode: Node => Node,
+                                        reverse: Boolean): (SimpleDirectedGraph[Node, DefaultEdge], Node) = {
+    def successorNodes(node: Node): List[Node] = ControlFlowGraph.successorNodesSorted(graph, node, compareNodes)
 
-    def addNode(graph: SimpleDirectedGraph[T, DefaultEdge], node: T): Unit = graph.addVertex(node)
+    def addNode(graph: SimpleDirectedGraph[Node, DefaultEdge], node: Node): Unit = graph.addVertex(node)
 
-    def addEdge(graph: SimpleDirectedGraph[T, DefaultEdge], from: T, to: T): Unit = graph.addEdge(from, to)
+    def addEdge(graph: SimpleDirectedGraph[Node, DefaultEdge], from: Node, to: Node): Unit = graph.addEdge(from, to)
 
-    val newGraph = new SimpleDirectedWeightedGraph[T, DefaultEdge](classOf[DefaultEdge])
-    val root = deepCopyGraph[T, SimpleDirectedGraph[T, DefaultEdge]](
+    val newGraph = new SimpleDirectedGraph[Node, DefaultEdge](classOf[DefaultEdge])
+    val root = deepCopyGraph[Node, SimpleDirectedGraph[Node, DefaultEdge]](
       newGraph = newGraph,
       successorNodes = successorNodes,
       addNode = addNode,
       addEdge = addEdge,
+      copyNode = copyNode,
       entry = entry,
       exit = exit,
       reverse = reverse
@@ -263,18 +276,32 @@ object ControlFlowGraph {
                                          successorNodes: Node => List[Node],
                                          addNode: (Graph, Node) => Unit,
                                          addEdge: (Graph, Node, Node) => Unit,
+                                         copyNode: Node => Node,
                                          entry: Node,
                                          exit: Node,
                                          reverse: Boolean): Node = {
+    // A mapping from nodes to their copies in the new graph
+    var nodes = Map[Node, Node]()
     var visited = HashSet[Node]()
     val stack = new java.util.Stack[Node]
     stack.push(entry)
+
+    def generateCopy(node: Node): Node = {
+      nodes.get(node) match {
+        case Some(value) => value
+        case None =>
+          val copied = copyNode(node)
+          nodes = nodes + (node -> copied)
+          copied
+      }
+    }
+
     while (!stack.empty()) {
       val top: Node = stack.pop()
       if (!visited.contains(top)) {
         visited = visited + top
         // Add the node upon the 1st visit
-        addNode(newGraph, top)
+        addNode(newGraph, generateCopy(top))
       }
       successorNodes(top).foreach({
         successorNode =>
@@ -283,13 +310,15 @@ object ControlFlowGraph {
           // Add the reversed edge
           val from = top
           val to = successorNode
-          addNode(newGraph, from)
-          addNode(newGraph, to)
-          if (reverse) addEdge(newGraph, to, from)
-          else addEdge(newGraph, from, to)
+          val copiedFrom = generateCopy(from)
+          val copiedTo = generateCopy(to)
+          addNode(newGraph, copiedFrom)
+          addNode(newGraph, copiedTo)
+          if (reverse) addEdge(newGraph, copiedTo, copiedFrom)
+          else addEdge(newGraph, copiedFrom, copiedTo)
       })
     }
-    if (reverse) exit else entry
+    if (reverse) generateCopy(exit) else generateCopy(entry)
   }
 
   def successorNodes[T](graph: SimpleDirectedGraph[T, DefaultEdge], node: T): Iterator[T] = {
@@ -345,6 +374,50 @@ object ControlFlowGraph {
     exporter.exportGraph(graph, outputWriter)
     outputWriter.toString
   }
+
+  // Find the node in the subgraph (rooted at `entryNode` of `graph`) that
+  // 1. dominates all `nodes`,
+  // 2. satisfies `predicate`, and
+  // 3. is the "closest". That is, there exists no other node that is strictly dominated by this node, but also satisfies the above two conditions.
+  def closestDominator[T <: INodeWithNumberedEdges](graph: NumberedGraph[T],
+                                                    entryNode: T,
+                                                    nodes: Set[T],
+                                                    predicate: T => Boolean): Option[T] = {
+    val dominanceFrontiers = new DominanceFrontiers(graph, entryNode)
+    closestDominatorInternal(graph, dominanceFrontiers, root = entryNode, nodes, predicate, visited = Set())
+  }
+
+  // Find the node in the subgraph (rooted at `root` of `graph`) that satisfies the conditions above
+  private def closestDominatorInternal[T](graph: NumberedGraph[T],
+                                          dominanceFrontiers: DominanceFrontiers[T],
+                                          root: T,
+                                          nodes: Set[T],
+                                          predicate: T => Boolean, visited: Set[T]): Option[T] = {
+    val isRootDominator = nodes.forall(node => dominanceFrontiers.isDominatedBy(node, root))
+    if (!isRootDominator) return None
+    val candidates: Iterator[T] = graph.getSuccNodes(root).asScala.flatMap({
+      successor =>
+        if (visited.contains(successor)) None
+        else closestDominatorInternal(graph, dominanceFrontiers, root = successor, nodes, predicate, visited = visited + root)
+    })
+    if (candidates.isEmpty) Some(root).filter(predicate)
+    else Some(candidates.toList.head)
+  }
+
+  def reverseGraph(controlFlowGraph: ControlFlowGraph): (NumberedGraph[CFGNode], CFGNode) = {
+    val (entry, exit) = {
+      val graph = controlFlowGraph.cfgs(controlFlowGraph.brboProgram.mainFunction)
+      (graph.root, graph.exits.head)
+    }
+
+    ControlFlowGraph.deepCopyNumberedGraph(
+      graph = controlFlowGraph.walaGraph,
+      entry = entry,
+      exit = exit,
+      copyNode = CFGNode.copyNodeOnly,
+      reverse = true
+    )
+  }
 }
 
 /**
@@ -358,10 +431,10 @@ object ControlFlowGraph {
 case class ControlFlowGraph(entryNode: CFGNode,
                             cfgs: Map[BrboFunction, InternalGraph],
                             brboProgram: BrboProgram,
+                            nodes: Map[Command, CFGNode],
                             walaGraph: NumberedGraph[CFGNode],
                             jgraphtGraph: SimpleDirectedWeightedGraph[CFGNode, DefaultEdge]) {
   private val connectivityInspector = new ConnectivityInspector(jgraphtGraph)
-  private val dominanceFrontiers = new DominanceFrontiers(walaGraph, entryNode)
 
   // Ensure CFGs of any two functions are disconnected
   MathUtils.crossJoin2(cfgs, cfgs).foreach({
@@ -372,28 +445,13 @@ case class ControlFlowGraph(entryNode: CFGNode,
       }
   })
 
-  def closestDominator(nodes: Set[CFGNode], predicate: CFGNode => Boolean): Option[CFGNode] = {
-    closestDominator(root = entryNode, nodes, predicate, visited = Set())
-  }
-
-  private def closestDominator(root: CFGNode, nodes: Set[CFGNode], predicate: CFGNode => Boolean, visited: Set[CFGNode]): Option[CFGNode] = {
-    val isRootDominator = nodes.forall(node => dominanceFrontiers.isDominatedBy(node, root))
-    if (!isRootDominator) return None
-    val qualifyingSuccessors: Iterator[CFGNode] = walaGraph.getSuccNodes(root).asScala.flatMap({
-      successor =>
-        if (visited.contains(successor)) None
-        else closestDominator(root = successor, nodes, predicate, visited = visited + root)
-    })
-    if (qualifyingSuccessors.isEmpty) Some(root).filter(predicate)
-    else Some(qualifyingSuccessors.toList.head)
-  }
+  def closestDominator(nodes: Set[CFGNode], predicate: CFGNode => Boolean): Option[CFGNode] =
+    ControlFlowGraph.closestDominator[CFGNode](graph = walaGraph, entryNode, nodes, predicate)
 
   def nodesFromCommands(commands: Set[Command]): Set[CFGNode] = {
-    jgraphtGraph.vertexSet().asScala.foldLeft(Set[CFGNode]())({
-      case (acc, node) =>
-        if (commands.contains(node.command)) acc + node
-        else acc
-    })
+    nodes.filter({ case (command, _) => commands.contains(command) })
+      .map({ case (_, node) => node })
+      .toSet
   }
 
   def printPDF(): Unit =

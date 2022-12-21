@@ -36,12 +36,42 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
   }
 
   "Finding the closest dominator" should "be correct" in {
+    def branchingHeadPredicate(node: CFGNode): Boolean = node.command.isInstanceOf[BranchingHead]
+
+    def lessThanPredicate(node: CFGNode): Boolean = node.command.isInstanceOf[LessThan]
+
+    def assignmentPredicate(node: CFGNode): Boolean = node.command.isInstanceOf[Assignment]
+
     val controlFlowGraph = ControlFlowGraph.toControlFlowGraph(test05)
     val nodes = controlFlowGraph.nodesFromCommands(Set(test05InnerLoopCondition, test05InnerLoopContinue))
-    val closestBranchingHead = controlFlowGraph.closestDominator(nodes, { node: CFGNode => node.command.isInstanceOf[BranchingHead] })
-    StringCompare.ignoreWhitespaces(closestBranchingHead.get.printToIR(), "(11) [Branch Head]", "Finding the closest BranchingHead failed")
-    val closestLessThan = controlFlowGraph.closestDominator(nodes, { node: CFGNode => node.command.isInstanceOf[LessThan] })
-    StringCompare.ignoreWhitespaces(closestLessThan.get.printToIR(), "(8) (i < 7)", "Finding the closest LessThan failed")
+    val nodesString = s"{${nodes.map(n => n.printToIR()).mkString(", ")}}"
+    val closestBranchingHead = controlFlowGraph.closestDominator(nodes, branchingHeadPredicate)
+    StringCompare.ignoreWhitespaces(closestBranchingHead.get.printToIR(), "(11) [Branch Head]",
+      s"Finding the closest dominating BranchingHead failed for nodes $nodesString")
+    val closestLessThan = controlFlowGraph.closestDominator(nodes, lessThanPredicate)
+    StringCompare.ignoreWhitespaces(closestLessThan.get.printToIR(), "(8) (i < 7)",
+      s"Finding the closest dominating LessThan failed")
+
+    val (reversedGraph, reversedRoot) = ControlFlowGraph.reverseGraph(controlFlowGraph)
+    // println(reversedGraph.toString)
+    // println(nodesString)
+    val closestPostBranchingHead = ControlFlowGraph.closestDominator(
+      graph = reversedGraph,
+      entryNode = reversedRoot,
+      nodes,
+      predicate = branchingHeadPredicate
+    )
+    StringCompare.ignoreWhitespaces(closestPostBranchingHead.get.printToIR(), "(3) [Branch Head]",
+      s"Finding the closest post-dominating BranchingHead failed for nodes $nodesString")
+
+    val closestPostAssignment = ControlFlowGraph.closestDominator(
+      graph = reversedGraph,
+      entryNode = reversedRoot,
+      nodes,
+      predicate = assignmentPredicate
+    )
+    StringCompare.ignoreWhitespaces(closestPostAssignment.get.printToIR(), "(16) i = 12;",
+      s"Finding the closest post-dominating Assignment failed for nodes $nodesString")
   }
 
   "Deep copy a graph" should "be correct" in {
@@ -54,6 +84,7 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
       graph = controlFlowGraph.jgraphtGraph,
       entry = entry,
       exit = exit,
+      copyNode = CFGNode.copyNodeOnly,
       reverse = false
     )
     val copiedGraphDot = ControlFlowGraph.exportToDOT(copiedGraph)
@@ -87,7 +118,7 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
         |  7 -> 9 [ label="1.0" ];
         |  9 -> 10 [ label="1.0" ];
         |  10 -> 11 [ label="1.0" ];
-        |  11 -> 3 [ label="1.0" ];
+        |  11 -> 2 [ label="1.0" ];
         |  8 -> 12 [ label="1.0" ];
         |  12 -> 13 [ label="1.0" ];
         |  12 -> 14 [ label="1.0" ];
@@ -102,6 +133,7 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
       graph = controlFlowGraph.jgraphtGraph,
       entry = entry,
       exit = exit,
+      copyNode = CFGNode.copyNodeOnly,
       reverse = true
     )
     val reversedCopiedGraphDot = ControlFlowGraph.exportToDOT(reversedCopiedGraph)
@@ -135,7 +167,7 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
         |  9 -> 7 [ label="1.0" ];
         |  10 -> 9 [ label="1.0" ];
         |  11 -> 10 [ label="1.0" ];
-        |  3 -> 11 [ label="1.0" ];
+        |  2 -> 11 [ label="1.0" ];
         |  12 -> 8 [ label="1.0" ];
         |  13 -> 12 [ label="1.0" ];
         |  14 -> 12 [ label="1.0" ];
@@ -250,7 +282,7 @@ object ControlFlowGraphUnitTest {
       |  3 -> 5 [ label="-1.0" ];
       |  4 -> 7 [ label="0.0" ];
       |  5 -> 6 [ label="0.0" ];
-      |  8 -> 4 [ label="0.0" ];
+      |  8 -> 3 [ label="0.0" ];
       |  2 -> 3 [ label="0.0" ];
       |  6 -> 1 [ label="0.0" ];
       |}""".stripMargin
@@ -350,7 +382,7 @@ object ControlFlowGraphUnitTest {
       |  3 -> 5 [ label="-1.0" ];
       |  4 -> 7 [ label="0.0" ];
       |  5 -> 6 [ label="0.0" ];
-      |  16 -> 4 [ label="0.0" ];
+      |  16 -> 3 [ label="0.0" ];
       |  2 -> 3 [ label="0.0" ];
       |  6 -> 1 [ label="0.0" ];
       |}""".stripMargin
@@ -375,10 +407,10 @@ object ControlFlowGraphUnitTest {
       |}""".stripMargin
 
   val testCases: List[TestCase] = List[TestCase](
-    TestCase("Test `break`", test01, test01Expected),
-    TestCase("Test `continue`", test02, test02Expected),
-    TestCase("Test `function calls (There must be no edges for function calls)`", test03, test03Expected),
-    TestCase("Test `ite`", test04, test04Expected),
+    TestCase("Test break", test01, test01Expected),
+    TestCase("Test continue", test02, test02Expected),
+    TestCase("Test function calls (There must be no edges for function calls)", test03, test03Expected),
+    TestCase("Test ite", test04, test04Expected),
     TestCase("Test nested loop", test05, test05Expected),
     TestCase("Test ghost commands", test06, test06Expected),
   )

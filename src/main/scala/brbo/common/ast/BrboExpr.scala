@@ -8,7 +8,7 @@ import java.util.UUID
 
 
 abstract class BrboExpr(val typ: BrboType.T, uuid: UUID) extends Command(uuid)
-  with GetFunctionCalls with Z3AST with UseDefVariables with UniqueCopy {
+  with GetFunctionCalls with Z3AST with UseDefVariables {
 
   def printNoOuterBrackets: String = {
     val string = printToCInternal(0)
@@ -17,6 +17,8 @@ abstract class BrboExpr(val typ: BrboType.T, uuid: UUID) extends Command(uuid)
   }
 
   override def printToJava(indent: Int): String = printToC(indent)
+
+  def uniqueCopyExpr: BrboExpr
 }
 
 abstract class BrboValue(override val typ: BrboType.T, override val uuid: UUID) extends BrboExpr(typ, uuid)

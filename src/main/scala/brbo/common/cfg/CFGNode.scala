@@ -7,7 +7,7 @@ import com.ibm.wala.util.intset.{BimodalMutableIntSet, IntSet}
 
 /**
  *
- * @param command    Every node is either a command or an expression
+ * @param command  Every node is either a command or an expression
  * @param function The function that this command or expression belongs to (if any)
  * @param id       A unique (if desired) ID among all commands and expressions in all functions
  */
@@ -93,4 +93,6 @@ case class CFGNode(command: Command, function: Option[BrboFunction] = None, id: 
 object CFGNode {
   val DONT_CARE_ID: Int = -1
   val FUNCTION_NAME_WHEN_FUNCTION_NOT_EXIST = "NONE!"
+
+  def copyNodeOnly(node: CFGNode): CFGNode = CFGNode(node.command, node.function, node.id)
 }
