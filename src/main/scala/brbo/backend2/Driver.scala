@@ -29,11 +29,9 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram, inputFile
   )
   private var numberOfTraces = 0
 
-  def getNumberOfTraces: Int = numberOfTraces
-
   def decompose(): BrboProgram = {
     logger.info(s"Step 1: Generate traces")
-    logger.info(s"Step 1.1: Use the provided inputs")
+    logger.info(s"Step 1.1: User-provided inputs")
     val userProvidedTraces: List[Trace] = {
       if (arguments.getUseProvidedInputs && inputFilePath.isDefined) {
         val inputFileContents = readFromFile(inputFilePath.get)
@@ -42,7 +40,7 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram, inputFile
           threads = arguments.getThreads, debugMode = debugMode)
       } else Nil
     }
-    logger.info(s"Step 1.2: Use the internal fuzzer to generate inputs")
+    logger.info(s"Step 1.2: Fuzzer generated inputs")
     val fuzzerGeneratedTraces: List[Trace] = {
       Fuzzer.fuzz(brboProgram = instrumentedProgram, interpreter = interpreter, debugMode = debugMode,
         samples = arguments.getFuzzSamples, threads = arguments.getThreads)
@@ -67,7 +65,7 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram, inputFile
         trace.toTable(printStores = true, omitExpressions = true, onlyGhostCommand = false)._1.printAll()
       else
         trace.toTable(printStores = false, omitExpressions = true, onlyGhostCommand = true)._1.printAll()
-    logger.info(s"Step 3.1: Trace:\n$representativeTraceString")
+    logger.info(s"Step 3.1: Trace (length ${trace.length}):\n$representativeTraceString")
     val decomposition = segmentClustering.decompose(
       trace = trace,
       similarTraces = similarTraces,

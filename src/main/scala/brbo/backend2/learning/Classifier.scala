@@ -706,16 +706,16 @@ object Classifier {
       groupsOfSegments.map(segments => segments.map(s => s.printAsSet).mkString(", ")).mkString("\n")
     }
 
-    def areActualSegmentCostsSimilar(segmentClustering: SegmentClustering, stringBuilder: mutable.StringBuilder): Boolean = {
+    def areActualSegmentCostsSimilar(segmentClustering: SegmentClustering,
+                                     differentIfNoSegmentAfterDecomposition: Boolean,
+                                     removeLastEmptySegmentAfterDecomposition: Boolean,
+                                     stringBuilder: mutable.StringBuilder): Boolean = {
       val expectedDecomposition: List[List[Segment]] = {
-        val segments = ghostStore.getSegments
-
-        /**
-         * TODO: This is a hack. We want to avoid guarding resets with predicates (which may cause the verifier to fail
-         * when the resets are in loops). Hence, when testing the generality of a trace decomposition, if the last segment
-         * of a group is empty, we ignore this segment when re-clustering the segments.
-         */
-        GhostStore.removeLastEmptySegment(segments).values.toList.map({
+        val segments = {
+          if (removeLastEmptySegmentAfterDecomposition) GhostStore.removeLastEmptySegment(ghostStore.getSegments)
+          else ghostStore.getSegments
+        }
+        segments.values.toList.map({
           list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })
         })
       }
@@ -723,9 +723,8 @@ object Classifier {
       val segments: List[Segment] = expectedDecomposition.flatten
       // stringBuilder.append(s"Final ghost state after trace decomposition: ${ghostStore.print()}\n")
       if (segments.forall(segment => segment.isEmpty)) {
-        // Empty segments are vacuously similar to each other, but if a grouping is truly
-        // generalizable to a similar trace, it should not result in all empty segments
-        // return false
+        stringBuilder.append(s"Empty segments are vacuously similar to each other. Return ${!differentIfNoSegmentAfterDecomposition}.\n")
+        return !differentIfNoSegmentAfterDecomposition
       }
       val actualDecomposition: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segments).map({
         list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })

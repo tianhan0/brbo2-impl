@@ -235,7 +235,7 @@ class SegmentClustering(sumWeight: Int,
                 case (trace, traceIndex) =>
                   val logging = s"Test the generality of ${groupIndex + 1}-th group (among ${groups.size}) " +
                     s"on ${traceIndex + 1}-th trace (among ${sampledSimilarTraces.size}) " +
-                    s"(length: ${trace.nodes.size}) (group: $printGroup) ($printFeatures)"
+                    s"(length: ${trace.length}) (group: $printGroup) ($printFeatures)"
                   logger.infoOrError(logging)
                   classifierResults match {
                     case Some(classifierResults) =>
@@ -247,7 +247,24 @@ class SegmentClustering(sumWeight: Int,
                         debugMode
                       )
                       val stringBuilder = new mutable.StringBuilder
-                      val areSimilar = applicationResult.areActualSegmentCostsSimilar(this, stringBuilder)
+                      val areSimilar = applicationResult.areActualSegmentCostsSimilar(
+                        segmentClustering = this,
+                        stringBuilder = stringBuilder,
+
+                        /**
+                         * TODO: Empty segments are vacuously similar to each other, but if a grouping is truly
+                         * generalizable to a similar trace, it should not result in all empty segments
+                         */
+                        differentIfNoSegmentAfterDecomposition = true,
+
+                        /**
+                         * TODO: This is a hack. We want to avoid guarding resets with predicates (which may cause the
+                         * verifier to fail when the resets are in loops). Hence, when testing the generality of a
+                         * trace decomposition, if the last segment of a group is empty, we want to consider
+                         * this decomposition as generalizable. Hence, we ignore this segment when re-clustering the segments.
+                         */
+                        removeLastEmptySegmentAfterDecomposition = true,
+                      )
                       stringBuilder.append(Classifier.printTransformation(classifierResults.toTransformation) + "\n")
                       if (areSimilar) {
                         // Print details for traces whose decomposition yield segments with similar costs

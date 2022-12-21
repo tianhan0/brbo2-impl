@@ -621,6 +621,8 @@ object Interpreter {
     }
     lazy val costTrace: CostTrace = CostTrace(costTraceAssociation.costTrace(indices = None))
 
+    val length: Int = nodes.size
+
     def add(node: TraceNode): Trace = Trace(nodes :+ node)
 
     override def print(): String = {
