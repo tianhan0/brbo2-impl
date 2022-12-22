@@ -4,6 +4,11 @@ lib/
 output/
 *.json
 
+# Fuzzing related
+fuzzer-out/
+bin/
+bin-instr/
+
 # Intellij
 .bsp/
 *.class
