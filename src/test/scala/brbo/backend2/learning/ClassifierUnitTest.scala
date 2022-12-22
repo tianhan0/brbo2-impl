@@ -227,7 +227,8 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val trace = SegmentClusteringUnitTest.getTrace(interpreter, List(Number(5)))
     val algorithm = Optics(maxEps = Some(0.8), metric = Euclidean)
     val segmentClustering = new SegmentClustering(sumWeight = 1, commandWeight = 0, debugMode = false, algorithm, SegmentClustering.THREADS)
-    val clusters: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segmentLength = 1, excludeIndices = Set())
+    val candidateSegments: List[Segment] = segmentClustering.generateSegments(trace, segmentLength = 1, excludeIndices = Set())
+    val clusters: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, candidateSegments)
     val group = Group(clusters.head.sortWith({ case (s1, s2) => s1.lessThan(s2) }))
     val features = Driver.classifierFeatures(interpreter.brboProgram)
     val result = segmentClustering.chooseGeneralizableGroups(

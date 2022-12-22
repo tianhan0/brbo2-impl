@@ -1,12 +1,12 @@
 package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
-import brbo.backend2.interpreter.Interpreter.{CostTraceAssociation, Trace}
+import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.backend2.learning.Classifier._
 import brbo.backend2.learning.ScriptRunner._
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.MyLogger
-import brbo.common.ast.{Command, Identifier}
+import brbo.common.ast._
 import brbo.common.cfg.ControlFlowGraph
 import com.google.common.collect.Sets
 import tech.tablesaw.api.IntColumn
@@ -47,7 +47,8 @@ class SegmentClustering(sumWeight: Int,
       && segmentLength <= MAX_SEGMENT_LENGTH) {
       logger.info("-" * 80)
       logger.info(s"Cluster segments with length $segmentLength")
-      val clusters: List[List[Segment]] = clusterSimilarSegments(trace, segmentLength, excludeIndices)
+      val candidateSegments: List[Segment] = generateAndFilterSegments(trace, segmentLength, excludeIndices)
+      val clusters: List[List[Segment]] = clusterSimilarSegments(trace, candidateSegments)
       var clusterId = 0
       while (clusterId < clusters.size) {
         // Remove segments that contain indices that have been grouped
@@ -93,15 +94,76 @@ class SegmentClustering(sumWeight: Int,
     decomposition
   }
 
-  def clusterSimilarSegments(trace: Trace, segmentLength: Int, excludeIndices: Set[Int]): List[List[Segment]] = {
+  def generateSegments(trace: Trace, segmentLength: Int, excludeIndices: Set[Int]): List[Segment] = {
     val indices: util.Set[Int] = trace.costTraceAssociation.indexMap.keys.toSet.diff(excludeIndices).asJava
     logger.traceOrError(s"Choose segments with sizes of $segmentLength among trace node indices $indices")
     if (segmentLength > indices.size()) return Nil
-    val segments: List[Segment] =
-      Sets.combinations(indices, segmentLength)
-        .asScala.map(subset => Segment(subset.asScala.toList.sorted))
-        .toList
-    clusterSimilarSegments(trace, segments)
+    Sets.combinations(indices, segmentLength).asScala
+      .map(subset => Segment(subset.asScala.toList.sorted))
+      .toList
+  }
+
+  // Remove a segment if there exists a longer and subsuming segment whose similarity is better
+  // The goal is to prioritize segments that are more similar to some input, such that the relation
+  // between a segment's cost and an input can be expressed with simpler invariants
+  def generateAndFilterSegments(trace: Trace, segmentLength: Int, excludeIndices: Set[Int]): List[Segment] = {
+    val segments = generateSegments(trace, segmentLength, excludeIndices)
+    val longerSegments: Seq[Segment] = Range.inclusive(segmentLength, MAX_SEGMENT_LENGTH).flatMap({
+      segmentLength => generateSegments(trace, segmentLength, excludeIndices)
+    })
+    val similarities = longerSegments.map(segment => (segment, segmentSimilarityWithInputs(segment, trace))).toMap
+    segments.filter({
+      segment =>
+        val indices = segment.indices.toSet
+        val similarity = segmentSimilarityWithInputs(segment, trace)
+        val existBetterSimilarity = longerSegments.exists({
+          longerSegment =>
+            if (indices.subsetOf(longerSegment.indices.toSet)) {
+              // A longer and subsuming segment must be less similar
+              similarities(longerSegment) > similarity
+            } else {
+              // This not a longer and subsuming segment
+              false
+            }
+        })
+        if (existBetterSimilarity)
+          logger.info(s"Remove segment ${segment.printAsSet} because there exists a longer and subsuming segment " +
+            s"whose similarity with inputs is better")
+        !existBetterSimilarity
+    })
+  }
+
+  private def segmentSimilarityWithInputs(segment: Segment, trace: Trace): Double = {
+    val inputValues: Iterable[Value] = trace.inputs.flatMap({
+      case (_, Number(n, _)) => Some(IntegerValue(n))
+      case (_, BrboArray(values, _, _)) => Some(ArrayValue(values.map({ case Number(n, _) => n })))
+      case _ => None
+    })
+    val segmentCosts = segment.getCosts(trace)
+    segmentCosts.size match {
+      case 0 => Value.MIN_SIMILARITY // We do not prefer empty segments
+      case 1 =>
+        // If a segment has 1 cost, then this segment may be similar to an integer-typed input, or an array-typed input (with a single element)
+        val possibleValues = List(IntegerValue(segmentCosts.head), ArrayValue(segmentCosts))
+        val similarities: List[Double] = possibleValues.flatMap({
+          possibleValue =>
+            Value.similarity(
+              value = possibleValue,
+              values = inputValues,
+              maxSimilarity = Value.MAX_SIMILARITY,
+              minSimilarity = Value.MIN_SIMILARITY
+            )
+        })
+        similarities.max
+      case _ =>
+        val similarities = Value.similarity(
+          value = ArrayValue(segmentCosts),
+          values = inputValues,
+          maxSimilarity = Value.MAX_SIMILARITY,
+          minSimilarity = Value.MIN_SIMILARITY
+        )
+        similarities.max
+    }
   }
 
   // Given a list of potentially overlapping segments, choose sets of
@@ -128,7 +190,7 @@ class SegmentClustering(sumWeight: Int,
   }
 
   def generateTrainingData(trace: Trace, segments: List[Segment]): List[List[Int]] = {
-    val segmentToData = new SegmentToTrainingData(trace.costTraceAssociation, sumWeight, commandWeight)
+    val segmentToData = new SegmentToTrainingData(trace, sumWeight, commandWeight)
     algorithm match {
       case Optics(_, Precomputed) =>
         segments.map({
@@ -300,6 +362,61 @@ object SegmentClustering {
   private val logger = MyLogger.createLogger(SegmentClustering.getClass, debugMode = false)
   val THREADS: Int = Runtime.getRuntime.availableProcessors
 
+  abstract class Value
+
+  case class IntegerValue(n: Int) extends Value
+
+  case class ArrayValue(array: List[Int]) extends Value
+
+  object Value {
+    val MAX_SIMILARITY = 100
+    val MIN_SIMILARITY = 0
+
+    private def similarity(value: Value, against: Value, maxSimilarity: Int, minSimilarity: Int): Double = {
+      (value, against) match {
+        case (IntegerValue(n1), IntegerValue(n2)) =>
+          if (n1 == n2) maxSimilarity else minSimilarity
+        case (ArrayValue(array1), ArrayValue(array2)) =>
+          val set1 = array1.toSet
+          val set2 = array2.toSet
+          val intersection = set1.intersect(set2)
+          val union = set1.union(set2)
+          val percentage = intersection.size.toDouble / union.size
+          minSimilarity + (maxSimilarity - minSimilarity) * percentage
+        case (array: ArrayValue, integer: IntegerValue) =>
+          similarity(integer, array, maxSimilarity = maxSimilarity, minSimilarity = minSimilarity)
+        case (integer: IntegerValue, array: ArrayValue) =>
+          similarity(integer, array, maxSimilarity = maxSimilarity, minSimilarity = minSimilarity)
+        case _ => throw new Exception
+      }
+    }
+
+    private def similarity(integerValue: IntegerValue, arrayValue: ArrayValue, maxSimilarity: Int, minSimilarity: Int): Double = {
+      Value.similarity(
+        value = ArrayValue(List(integerValue.n)),
+        values = List(arrayValue),
+        maxSimilarity = Value.MAX_SIMILARITY,
+        minSimilarity = Value.MIN_SIMILARITY
+      ).head
+    }
+
+    // Compute a value's similarity against all values
+    def similarity(value: Value, values: Iterable[Value], maxSimilarity: Int, minSimilarity: Int): Iterable[Double] = {
+      values.map({
+        inputValue =>
+          Value.similarity(
+            value = value,
+            against = inputValue,
+            maxSimilarity = maxSimilarity,
+            minSimilarity = minSimilarity
+          )
+      })
+    }
+
+    def belowThreshold(similarities: Iterable[Double], threshold: Double): Boolean =
+      similarities.forall(similarity => similarity <= threshold)
+  }
+
   private def chooseGroup(groups: List[Group]): Option[Group] = {
     // TODO: Carefully choose a group
     if (groups.isEmpty)
@@ -362,6 +479,10 @@ object SegmentClustering {
     def sameAs(other: Segment): Boolean = indices == other.indices
 
     def add(index: Int): Segment = Segment(indices :+ index)
+
+    def getCosts(trace: Trace): List[Int] = trace.costTraceAssociation.costsAtIndices(indices)
+
+    def getCostSum(trace: Trace): Int = trace.costTraceAssociation.costSumAtIndices(indices)
   }
 
   case class Group(segments: List[Segment]) {
@@ -464,13 +585,13 @@ object SegmentClustering {
     def print(): String = printDecomposition(trace, groups)
   }
 
-  class SegmentToTrainingData(costTraceAssociation: CostTraceAssociation, sumWeight: Int, commandWeight: Int) {
+  class SegmentToTrainingData(trace: Trace, sumWeight: Int, commandWeight: Int) {
     def difference(left: Segment, right: Segment): Int = {
       sumDifference(left, right) + commandDifference(left, right)
     }
 
     def toTrainingData(segment: Segment): Int = {
-      getSum(segment) * sumWeight
+      segment.getCostSum(trace) * sumWeight
       // TODO: Output a weighted vector, where the first element is the sum and has the max weight
       //  and the remaining elements represent commands and have much smaller weights
     }
@@ -479,11 +600,9 @@ object SegmentClustering {
       Math.abs(toTrainingData(left) - toTrainingData(right))
     }
 
-    private def getSum(segment: Segment): Int = costTraceAssociation.costSumAtIndices(segment.indices)
-
     private def commandDifference(left: Segment, right: Segment): Int = {
-      val leftCommands = left.indices.map(index => costTraceAssociation.ghostCommandAtIndex(index)).toSet
-      val rightCommands = right.indices.map(index => costTraceAssociation.ghostCommandAtIndex(index)).toSet
+      val leftCommands = left.indices.map(index => trace.costTraceAssociation.ghostCommandAtIndex(index)).toSet
+      val rightCommands = right.indices.map(index => trace.costTraceAssociation.ghostCommandAtIndex(index)).toSet
       // A large difference in the commands means the group (that includes the two segments)
       // contains (too) many different commands, which may be too complicated
       leftCommands.diff(rightCommands).size * commandWeight

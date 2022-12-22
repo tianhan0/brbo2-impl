@@ -21,7 +21,8 @@ class SegmentClusteringUnitTest extends AnyFlatSpec {
         val interpreter = SegmentClusteringUnitTest.toInterpreter(program)
         val trace = getTrace(interpreter, inputs)
         val segmentClustering = new SegmentClustering(sumWeight = 1000, commandWeight = 10, debugMode = false, algorithm = KMeans(clusters = Some(5)), threads = SegmentClustering.THREADS)
-        val groups = segmentClustering.clusterSimilarSegments(trace, segmentLength = 1, excludeIndices = Set())
+        val candidateSegments: List[Segment] = segmentClustering.generateSegments(trace, segmentLength = 1, excludeIndices = Set())
+        val groups = segmentClustering.clusterSimilarSegments(trace, candidateSegments)
         StringCompare.ignoreWhitespaces(printSegments(groups, trace), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
@@ -31,6 +32,16 @@ class SegmentClusteringUnitTest extends AnyFlatSpec {
       testCase =>
         val (s1, s2) = testCase.input.asInstanceOf[(Segment, Segment)]
         StringCompare.ignoreWhitespaces(s1.notOverlap(s2).toString, testCase.expectedOutput, s"${testCase.name} failed")
+    })
+  }
+
+  "Computing the similarity between values" should "be correct" in {
+    SegmentClusteringUnitTest.valueSimilarityTest.foreach({
+      testCase =>
+        val (value, values) = testCase.input.asInstanceOf[(SegmentClustering.Value, List[SegmentClustering.Value])]
+        val similarities =
+          SegmentClustering.Value.similarity(value = value, values = values, maxSimilarity = 100, minSimilarity = 0).map(similarity => similarity.toInt)
+        StringCompare.ignoreWhitespaces(similarities, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }
@@ -163,6 +174,21 @@ object SegmentClusteringUnitTest {
       TestCase("Test 04", (s2, s3), "true"),
       TestCase("Test 05", (s2, s4), "false"),
       TestCase("Test 06", (s3, s4), "false"),
+    )
+  }
+
+  val valueSimilarityTest: List[TestCase] = {
+    val one = SegmentClustering.IntegerValue(1)
+    val two = SegmentClustering.IntegerValue(2)
+    val array1 = SegmentClustering.ArrayValue(List(4, 5, 6))
+    val array2 = SegmentClustering.ArrayValue(List(5, 7, 8, 9))
+    val array3 = SegmentClustering.ArrayValue(List(1, 2, 3, 4))
+    List(
+      TestCase("Test 01", (one, List(array1)), """0"""),
+      TestCase("Test 02", (two, List(array3)), """25"""),
+      TestCase("Test 03", (array1, List(array1)), """100"""),
+      TestCase("Test 04", (array1, List(array2)), """16"""),
+      TestCase("Test 05", (array1, List(array3)), """16"""),
     )
   }
 }

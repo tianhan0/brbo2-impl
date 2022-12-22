@@ -19,7 +19,8 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
   def execute(inputValues: List[BrboValue]): FlowEndState = {
     try {
       // logger.traceOrError(s"Execute with inputs: ${inputValues.map(v => v.printToIR())}")
-      val state = evaluateFunction(brboProgram.mainFunction, inputValues, EmptyTrace)
+      val inputs = brboProgram.mainFunction.parameters.zip(inputValues).toMap
+      val state = evaluateFunction(brboProgram.mainFunction, inputValues, new EmptyTrace(inputs))
       // logger.traceOrError(s"Final state: ${printState(state)}")
       state
     } catch {
@@ -480,7 +481,7 @@ object Interpreter {
       }
     }
 
-    private def get(variable: String): BrboValue = map.getOrElse(variable,
+    def get(variable: String): BrboValue = map.getOrElse(variable,
       throw new VariableNotFoundException(s"Variable `$variable` is not defined in ${this.toString}"))
   }
 
@@ -602,7 +603,7 @@ object Interpreter {
     }
   }
 
-  case class Trace(nodes: List[TraceNode]) extends Print {
+  case class Trace(nodes: List[TraceNode], inputs: Map[Identifier, BrboValue]) extends Print {
     lazy val costTraceAssociation: CostTraceAssociation = {
       val indexMap =
         nodes.zipWithIndex.foldLeft(Map(): Map[Int, CostTraceNode])({
@@ -623,7 +624,7 @@ object Interpreter {
 
     val length: Int = nodes.size
 
-    def add(node: TraceNode): Trace = Trace(nodes :+ node)
+    def add(node: TraceNode): Trace = Trace(nodes :+ node, inputs)
 
     override def print(): String = {
       val prefix = "Trace: "
@@ -692,7 +693,7 @@ object Interpreter {
     }
   }
 
-  object EmptyTrace extends Trace(Nil) {
+  class EmptyTrace(override val inputs: Map[Identifier, BrboValue]) extends Trace(Nil, inputs) {
     override def print(): String = "EmptyTrace"
   }
 
@@ -738,14 +739,16 @@ object Interpreter {
 
     def ghostCommandAtIndex(index: Int): GhostCommand = indexMap(index).getGhostCommand
 
-    def costSumAtIndices(indices: List[Int]): Int = {
+    def costsAtIndices(indices: List[Int]): List[Int] = {
       indexMap.filter({
         case (index, _) => indices.contains(index)
       }).map({
         case (_, UseNode(_, cost)) => cost
         case _ => 0
-      }).sum
+      }).toList
     }
+
+    def costSumAtIndices(indices: List[Int]): Int = costsAtIndices(indices).sum
   }
 
   def printState(state: State): String = {

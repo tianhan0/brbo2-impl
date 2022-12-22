@@ -365,7 +365,8 @@ object Classifier {
   def evaluateFromInterpreter(interpreter: Interpreter): (BrboExpr, Store) => BrboValue = {
     (brboExpr: BrboExpr, store: Store) =>
       try {
-        interpreter.evaluateAst(InitialState(brboExpr, store, EmptyTrace)) match {
+        val inputs = store.getVariables.map({ case (name, typ) => (Identifier(name, typ), store.get(name)) })
+        interpreter.evaluateAst(InitialState(brboExpr, store, new EmptyTrace(inputs))) match {
           case Interpreter.GoodState(_, _, value) => value.get
           case _ => throw new Exception
         }
