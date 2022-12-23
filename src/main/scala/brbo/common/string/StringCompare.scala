@@ -6,19 +6,23 @@ object StringCompare {
   private val dashes = "$" * 80
 
   def compareLiteral(actual: String, expected: String, printEscaped: Boolean, message: String = ""): Boolean = {
-    val result = actual.replaceAll("\\r", "") == expected.replaceAll("\\r", "")
-    val printActual =
-      if (printEscaped) StringEscapeUtils.escapeJava(actual)
-      else actual
-    val printExpected =
-      if (printEscaped) StringEscapeUtils.escapeJava(expected)
-      else expected
+    val newActual = replaceCarriageReturn(actual)
+    val newExpected = replaceCarriageReturn(expected)
+    val result = newActual == newExpected
     if (!result) {
+      val printActual =
+        if (printEscaped) StringEscapeUtils.escapeJava(newActual)
+        else newActual
+      val printExpected =
+        if (printEscaped) StringEscapeUtils.escapeJava(newExpected)
+        else newExpected
       val lineSeparator = s"$dashes\n"
       System.err.println(s"Error message: $message\nActual:\n$printActual\n${lineSeparator}Expected:\n$printExpected\n$lineSeparator")
     }
     result
   }
+
+  private def replaceCarriageReturn(string: String): String = string.replaceAll("\\r\\n", "\n")
 
   def ignoreWhitespaces(actual: String, expected: String, message: String = ""): Boolean = {
     val result = actual.replaceAll("(?s)\\s+", " ").trim == expected.replaceAll("(?s)\\s+", " ").trim
