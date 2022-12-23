@@ -1,13 +1,21 @@
 package brbo.common.string
 
+import org.apache.commons.text.StringEscapeUtils
+
 object StringCompare {
   private val dashes = "$" * 80
 
-  def compareLiteral(actual: String, expected: String, message: String = ""): Boolean = {
-    val result = actual == expected
+  def compareLiteral(actual: String, expected: String, printEscaped: Boolean, message: String = ""): Boolean = {
+    val result = actual.replaceAll("\\r", "") == expected.replaceAll("\\r", "")
+    val printActual =
+      if (printEscaped) StringEscapeUtils.escapeJava(actual)
+      else actual
+    val printExpected =
+      if (printEscaped) StringEscapeUtils.escapeJava(expected)
+      else expected
     if (!result) {
       val lineSeparator = s"$dashes\n"
-      System.err.println(s"Error message: $message\nActual:\n$actual\n${lineSeparator}Expected:\n$expected\n$lineSeparator")
+      System.err.println(s"Error message: $message\nActual:\n$printActual\n${lineSeparator}Expected:\n$printExpected\n$lineSeparator")
     }
     result
   }
