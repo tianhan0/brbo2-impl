@@ -2,7 +2,7 @@
 
 lib/
 output/
-*.json
+src/main/python/*.json
 
 # Fuzzing related
 fuzzer-out/
