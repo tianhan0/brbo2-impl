@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class ParseToken extends Common {
-  void main(int pattern) {
+  void execute(int pattern) {
     if (pattern <= 0) {
       return;
     }

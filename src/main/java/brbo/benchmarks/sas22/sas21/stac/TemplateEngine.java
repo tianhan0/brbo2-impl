@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.stac;
 import brbo.benchmarks.Common;
 
 public abstract class TemplateEngine extends Common {
-  void main(int[] text) {
+  void execute(int[] text) {
     if (arraySum(text) <= 0) {
       return;
     }

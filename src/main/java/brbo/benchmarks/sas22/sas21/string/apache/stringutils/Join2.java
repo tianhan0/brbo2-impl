@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class Join2 extends Common {
-  void main(int n) {
+  void execute(int n) {
     if (n <= 0) {
       return;
     }

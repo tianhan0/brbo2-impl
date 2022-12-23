@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class LongToHex extends Common {
-  void main(int nHexs) {
+  void execute(int nHexs) {
     if (nHexs <= 0) {
       return;
     }

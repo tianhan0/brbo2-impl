@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class DiffResultToString extends Common {
-  void main(int diff) {
+  void execute(int diff) {
     if (diff <= 0) {
       return;
     }

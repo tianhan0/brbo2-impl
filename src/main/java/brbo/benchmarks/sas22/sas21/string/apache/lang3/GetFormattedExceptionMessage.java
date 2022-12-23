@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class GetFormattedExceptionMessage extends Common {
-  void main(int baseMessage, int contextValues) {
+  void execute(int baseMessage, int contextValues) {
     if (baseMessage <= 0 || contextValues <= 0) {
       return;
     }

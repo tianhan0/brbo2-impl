@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class Lexx extends Common {
-  void main(int format) {
+  void execute(int format) {
     if (format <= 0) {
       return;
     }

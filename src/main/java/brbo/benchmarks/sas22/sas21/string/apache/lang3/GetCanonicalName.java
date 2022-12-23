@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class GetCanonicalName extends Common {
-  void main(int className) {
+  void execute(int className) {
     if (className <= 0) {
       return;
     }

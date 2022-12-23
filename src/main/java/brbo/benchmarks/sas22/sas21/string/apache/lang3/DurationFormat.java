@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class DurationFormat extends Common {
-  void main(int tokens, int years, int months) {
+  void execute(int tokens, int years, int months) {
     if (tokens <= 0 || years <= 0 || months <= 0) {
       return;
     }

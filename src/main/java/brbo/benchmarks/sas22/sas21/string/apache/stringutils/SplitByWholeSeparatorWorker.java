@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class SplitByWholeSeparatorWorker extends Common {
-  void main(int str, int separator, int max, boolean preserveAllTokens) {
+  void execute(int str, int separator, int max, boolean preserveAllTokens) {
     if (str <= 0 || separator <= 0 || max <= 0) {
       return;
     }

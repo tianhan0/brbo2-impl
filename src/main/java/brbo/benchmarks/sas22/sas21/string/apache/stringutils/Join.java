@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class Join extends Common {
-  void main(int array, int startIndex, int endIndex) {
+  void execute(int array, int startIndex, int endIndex) {
     if (array <= 0 || startIndex <= 0 || endIndex <= 0 || endIndex - startIndex <= 0) {
       return;
     }

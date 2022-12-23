@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class SplitWorker extends Common {
-  void main(int str, boolean preserveAllTokens) {
+  void execute(int str, boolean preserveAllTokens) {
     if (str <= 0) {
       return;
     }

@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class Replace extends Common {
-  void main(int text, int searchString, int replacement, int max) {
+  void execute(int text, int searchString, int replacement, int max) {
     if (text <= 0 || searchString <= 0 || max <= 0 || replacement <= 0) {
       return;
     }

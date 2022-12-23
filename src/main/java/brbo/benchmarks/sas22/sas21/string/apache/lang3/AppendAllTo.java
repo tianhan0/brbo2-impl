@@ -3,7 +3,7 @@ package brbo.benchmarks.sas22.sas21.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class AppendAllTo extends Common {
-  void main(int sep, int types) {
+  void execute(int sep, int types) {
     if (sep <= 0 || types <= 0) {
       return;
     }
