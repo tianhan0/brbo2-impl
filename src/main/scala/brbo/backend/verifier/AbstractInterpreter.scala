@@ -6,6 +6,7 @@ import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.{BrboType, CommandLineArguments, Z3Solver}
+import brbo.frontend.TargetProgram
 import com.microsoft.z3.AST
 
 object AbstractInterpreter {
@@ -55,7 +56,7 @@ object AbstractInterpreter {
         }
         (accMap + (newCommand -> (node, index)), newCommand :: accPath)
     })
-    val mainFunction = BrboFunction("main", BrboType.VOID, inputVariables, Block(newPath.reverse), groupIds = Set())
+    val mainFunction = BrboFunction(TargetProgram.MAIN_FUNCTION, BrboType.VOID, inputVariables, Block(newPath.reverse), groupIds = Set())
     val brboProgram = BrboProgram("Symbolic Execution", mainFunction = mainFunction)
     val abstractMachine = new AbstractMachine(brboProgram, arguments.copyNoWidening())
     val assertionToVerify =

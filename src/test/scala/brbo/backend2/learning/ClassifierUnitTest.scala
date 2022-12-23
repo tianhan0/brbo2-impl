@@ -12,6 +12,7 @@ import brbo.common.BrboType.INT
 import brbo.common.ast.{Command, Identifier, Number}
 import brbo.common.cfg.ControlFlowGraph
 import brbo.common.string.StringCompare
+import brbo.frontend.TargetProgram
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ClassifierUnitTest extends AnyFlatSpec {
@@ -358,7 +359,7 @@ object ClassifierUnitTest {
 
   private val loopPhase =
     s"""abstract class Test {
-       |  void main(int n) {
+       |  void ${TargetProgram.MAIN_FUNCTION}(int n) {
        |    int i = 0;
        |    while (i < n) {
        |      if (i != 0)

@@ -55,7 +55,7 @@ case class TargetProgram(fullQualifiedClassName: String,
 }
 
 object TargetProgram {
-  val MAIN_FUNCTION = "main"
+  val MAIN_FUNCTION = "execute"
   val MAX = 8
   val LARGE_INT = 10000000
   val PREDEFINED_VARIABLES: Map[String, Int] = Map("MAX" -> MAX, "LARGE_INT" -> LARGE_INT)

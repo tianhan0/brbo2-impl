@@ -4,7 +4,8 @@ import brbo.TestCase
 import brbo.common.BrboType
 import brbo.common.BrboType.INT
 import brbo.common.string.StringCompare
-import brbo.frontend.BasicProcessor
+import brbo.frontend.{BasicProcessor, TargetProgram}
+import org.apache.commons.text.StringEscapeUtils
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BrboAstUnitTest extends AnyFlatSpec {
@@ -33,9 +34,11 @@ class BrboAstUnitTest extends AnyFlatSpec {
   "Pretty-printing BrboAst to C statements" should "be correct" in {
     BrboAstUnitTest.prettyPrintToCUnitTest.foreach({
       testCase =>
+        val result = testCase.input.asInstanceOf[BrboAst].printToC(2)
         StringCompare.compareLiteral(
-          testCase.input.asInstanceOf[BrboAst].printToC(2),
+          result,
           testCase.expectedOutput,
+          printEscaped = true,
           s"${testCase.name} failed!"
         )
     })
@@ -136,8 +139,8 @@ object BrboAstUnitTest {
   def createReset: Reset = Reset(5)
 
   private val useResetTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    use(1, 10, x > 10);
       |    reset(2, x < 10);
       |    use(3, 100);
@@ -151,14 +154,14 @@ object BrboAstUnitTest {
       |}""".stripMargin
 
   private val arrayInputTest =
-    """class Test {
-      |  void main(int[] x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
       |  }
       |}""".stripMargin
 
   private val arrayReadTest =
-    """class Test {
-      |  void main(int[] x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
       |    arrayRead(x, 0);
       |    int y = arrayRead(x, 10);
       |  }
@@ -167,8 +170,8 @@ object BrboAstUnitTest {
       |}""".stripMargin
 
   private val arrayLengthTest =
-    """class Test {
-      |  void main(int[] x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
       |    arrayLength(x);
       |    int y = arrayLength(x);
       |  }
@@ -177,8 +180,8 @@ object BrboAstUnitTest {
       |}""".stripMargin
 
   private val arraySumTest =
-    """class Test {
-      |  void main(int[] x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
       |    arraySum(x);
       |    int y = arraySum(x);
       |  }
@@ -187,8 +190,8 @@ object BrboAstUnitTest {
       |}""".stripMargin
 
   private val upperBoundTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    upperBound(0, "tag", x + 1);
       |  }
       |
@@ -196,8 +199,8 @@ object BrboAstUnitTest {
       |}""".stripMargin
 
   private val resourceVariableTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    int R = 0;
       |    R = R + 22;
       |  }
@@ -205,7 +208,7 @@ object BrboAstUnitTest {
 
   val parsingAstTests: List[TestCase] = List(
     TestCase("useResetTest", useResetTest,
-      """void main(int x)
+      s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
         |{
         |  int C1 = 0;
         |  int C2 = 0;
@@ -259,35 +262,35 @@ object BrboAstUnitTest {
         |
         |""".stripMargin),
     TestCase("arrayInputTest", arrayInputTest,
-      """void main(int x)
+      s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
         |{
         |
         |}""".stripMargin),
     TestCase("arrayReadTest", arrayReadTest,
-      """void main(int x)
+      s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
         |{
         |  arrayRead(x, 0);
         |  int y = arrayRead(x, 10);
         |}""".stripMargin),
     TestCase("arrayLengthTest", arrayLengthTest,
-      """void main(int x)
+      s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
         |{
         |  arrayLength(x);
         |  int y = arrayLength(x);
         |}""".stripMargin),
     TestCase("arraySumTest", arraySumTest,
-      """void main(int x)
+      s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
         |{
         |  arraySum(x);
         |  int y = arraySum(x);
         |}""".stripMargin),
     TestCase("upperBoundTest", upperBoundTest,
-      """void main(int x)
+      s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
         |{
         |  // upperBound(0, "tag", x + 1)
         |}""".stripMargin),
     TestCase("resourceVariableTest", resourceVariableTest,
-      """void main(int x)
+      s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
         |{
         |  int R = 0;
         |  R = R + 22;
@@ -296,8 +299,8 @@ object BrboAstUnitTest {
   )
 
   private val printToJavaTest1 =
-    """abstract class Test {
-      |  void main(int x, int[] array) {
+    s"""abstract class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x, int[] array) {
       |    use(1, 10, x > 10);
       |    reset(2, x < 10);
       |    use(3, 100);
@@ -330,8 +333,8 @@ object BrboAstUnitTest {
 
   val printToJavaTests: List[TestCase] = List(
     TestCase("printToJavaTest1", printToJavaTest1,
-      """abstract class Test {
-        |  void main(int x, int array)
+      s"""abstract class Test {
+        |  void ${TargetProgram.MAIN_FUNCTION}(int x, int array)
         |
         |  {
         |    int C1 = -1;

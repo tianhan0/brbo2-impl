@@ -4,7 +4,7 @@ import brbo.TestCase
 import brbo.common.BrboType.INT
 import brbo.common.ast._
 import brbo.common.string.StringCompare
-import brbo.frontend.BasicProcessor
+import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class InterpreterUnitTest extends AnyFlatSpec {
@@ -51,8 +51,8 @@ class InterpreterUnitTest extends AnyFlatSpec {
 
 object InterpreterUnitTest {
   private val arithmeticTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    f(x + 10);
       |    f(x - 5);
       |    f(x * 2);
@@ -62,8 +62,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val negationTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    g(!true);
       |    g(!false);
       |  }
@@ -72,8 +72,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val greaterThanTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    g(10 > x);
       |    g(x > 10);
       |  }
@@ -82,8 +82,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val lessThanTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    g(10 < x);
       |    g(x < 10);
       |  }
@@ -92,8 +92,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val equalTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    g(10 == x);
       |    g(true == false);
       |  }
@@ -102,8 +102,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val andTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    g(true && false);
       |    g(true && true);
       |  }
@@ -112,8 +112,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val orTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    g(true || false);
       |    g(false || false);
       |  }
@@ -122,8 +122,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val arrayReadTest =
-    """class Test {
-      |  void main(int[] x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
       |    int element1 = arrayRead(x, 0);
       |    int element2 = arrayRead(x, 1);
       |  }
@@ -132,8 +132,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val arrayLengthTest =
-    """class Test {
-      |  void main(int[] x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
       |    int length = arrayLength(x);
       |  }
       |
@@ -300,16 +300,16 @@ object InterpreterUnitTest {
   )
 
   private val assignmentTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    int y = x;
       |    y = y + 100;
       |  }
       |}""".stripMargin
 
   private val loopBreakTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    int i = 0;
       |    while (i < 10) {
       |      if (i == 2)
@@ -321,8 +321,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val loopContinueTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    int i = 0;
       |    while (i < 3) {
       |      i++;
@@ -336,8 +336,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val blockTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    int a = x;
       |    int b = a + 10;
       |    int c = b + 100;
@@ -345,8 +345,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val iteTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    int a = 0;
       |    if (x > 10) {
       |      a = a + 100;
@@ -358,8 +358,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val loopTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    int i = 0;
       |    while (i < 4) {
       |      i++;
@@ -368,8 +368,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val returnTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    int i = x;
       |    i++;
       |  }
@@ -378,8 +378,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val useTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    use(1, 10, x > 10);
       |    use(1, 100, x >= 10);
       |  }
@@ -388,8 +388,8 @@ object InterpreterUnitTest {
       |}""".stripMargin
 
   private val resetTest =
-    """class Test {
-      |  void main(int x) {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
       |    use(1, 100);
       |    reset(1, x >= 10);
       |    use(1, 200);
@@ -647,8 +647,8 @@ object InterpreterUnitTest {
   )
 
   private val useTraceTest =
-    """class Test {
-      |  void main() {
+    s"""class Test {
+      |  void ${TargetProgram.MAIN_FUNCTION}() {
       |    use(1, 100);
       |    use(2, 10);
       |    use(1, 200);

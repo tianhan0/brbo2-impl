@@ -10,7 +10,7 @@ import brbo.backend2.learning.SegmentClusteringUnitTest._
 import brbo.common.BrboType.INT
 import brbo.common.ast._
 import brbo.common.string.StringCompare
-import brbo.frontend.BasicProcessor
+import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SegmentClusteringUnitTest extends AnyFlatSpec {
@@ -70,7 +70,7 @@ object SegmentClusteringUnitTest {
       |  abstract int arrayLength(int[] x);""".stripMargin
   private val loopPhase =
     s"""abstract class Test {
-       |  void main(int n) {
+       |  void ${TargetProgram.MAIN_FUNCTION}(int n) {
        |    int i = 0;
        |    while (i < n) {
        |      if (i != 0)
@@ -88,7 +88,7 @@ object SegmentClusteringUnitTest {
        |}""".stripMargin
   private val amortizeAndWorstCase01 =
     s"""abstract class Test {
-       |  void main(int[] array) {
+       |  void ${TargetProgram.MAIN_FUNCTION}(int[] array) {
        |    int i = 0;
        |    while (i < arrayLength(array)) {
        |      use(0, arrayRead(array, i));
@@ -101,7 +101,7 @@ object SegmentClusteringUnitTest {
        |}""".stripMargin
   private val amortizeAndWorstCase02 =
     s"""abstract class Test {
-       |  void main(int[] array, int n) {
+       |  void ${TargetProgram.MAIN_FUNCTION}(int[] array, int n) {
        |    int i = 0;
        |    while (i < n) {
        |      int j = 0;
@@ -118,7 +118,7 @@ object SegmentClusteringUnitTest {
        |}""".stripMargin
   private val amortizeSeparately =
     s"""abstract class Test {
-       |  void main(int[] array1, int[] array2, int n) {
+       |  void ${TargetProgram.MAIN_FUNCTION}(int[] array1, int[] array2, int n) {
        |    int i = 0;
        |    while (i < n) {
        |      use(0, arrayRead(array1, i));
