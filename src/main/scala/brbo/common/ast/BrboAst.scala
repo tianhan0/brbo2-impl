@@ -46,7 +46,13 @@ case class BrboProgram(className: String,
     val predefinedFunctions =
       s"""  int ${PreDefinedFunctions.ArrayRead.name}(int[] array, int index) { return array[index]; }
          |  int ${PreDefinedFunctions.ArrayLength.name}(int[] array) { return array.length; }
-         |  int ${PreDefinedFunctions.ArraySum.name}(int[] array) { return 0; }
+         |  int ${PreDefinedFunctions.ArraySum.name}(int[] array) {
+         |    int sum = 0;
+         |    for (int i = 0; i < array.length; i++) {
+         |      sum += array[i];
+         |    }
+         |    return sum;
+         |  }
          |  void ${PreDefinedFunctions.MostPreciseBound.name}(boolean assertion) {}
          |  void ${PreDefinedFunctions.LessPreciseBound.name}(boolean assertion) {}
          |${otherFunctions.find(f => f.identifier == PreDefinedFunctions.Use.name).get.printToQFuzzJava(indent = 0)}""".stripMargin

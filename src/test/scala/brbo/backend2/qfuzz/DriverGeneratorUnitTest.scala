@@ -139,7 +139,13 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |  }
         |  int arrayRead(int[] array, int index) { return array[index]; }
         |  int arrayLength(int[] array) { return array.length; }
-        |  int arraySum(int[] array) { return 0; }
+        |  int arraySum(int[] array) {
+        |    int sum = 0;
+        |    for (int i = 0; i < array.length; i++) {
+        |      sum += array[i];
+        |    }
+        |    return sum;
+        |  }
         |  void mostPreciseBound(boolean assertion) {}
         |  void lessPreciseBound(boolean assertion) {}
         |  void use(int n)
