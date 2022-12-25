@@ -75,11 +75,18 @@ object ProgramTransformerUnitTest {
         |      }
         |    }
         |  }
-        |  int arrayRead(int[] array, index) {
-        |    return array[index];
-        |  }
-        |  int arrayLength(int[] array) {
-        |    return array.length;
+        |  int arrayRead(int[] array, int index) { return array[index]; }
+        |  int arrayLength(int[] array) { return array.length; }
+        |  int arraySum(int[] array) { return 0; }
+        |  void mostPreciseBound(boolean assertion) {}
+        |  void lessPreciseBound(boolean assertion) {}
+        |  void use(int n)
+        |  {
+        |    int i = 0;
+        |    while (i < n)
+        |    {
+        |      i = i + 1;
+        |    }
         |  }
         |}""".stripMargin),
     TestCase("Test 02", test02,
@@ -90,11 +97,18 @@ object ProgramTransformerUnitTest {
         |    x = arraySum(array);
         |    x = arrayRead(array, 3);
         |  }
-        |  int arrayRead(int[] array, index) {
-        |    return array[index];
-        |  }
-        |  int arrayLength(int[] array) {
-        |    return array.length;
+        |  int arrayRead(int[] array, int index) { return array[index]; }
+        |  int arrayLength(int[] array) { return array.length; }
+        |  int arraySum(int[] array) { return 0; }
+        |  void mostPreciseBound(boolean assertion) {}
+        |  void lessPreciseBound(boolean assertion) {}
+        |  void use(int n)
+        |  {
+        |    int i = 0;
+        |    while (i < n)
+        |    {
+        |      i = i + 1;
+        |    }
         |  }
         |}""".stripMargin),
   )

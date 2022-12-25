@@ -34,33 +34,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
     val targetProgram = BasicProcessor.getTargetProgram("Test", test01)
     val result = DriverGenerator.run(targetProgram.program)
     StringCompare.ignoreWhitespaces(result,
-      """class Test {
-        |  void execute(int a, int[] array, int b, int INDEX_VARIABLE)
-        |  {
-        |    int x = arrayLength(array);
-        |    x = arraySum(array);
-        |    x = arrayRead(array, 3);
-        |    int R = 0;
-        |    {
-        |      use(3);
-        |      INDEX_VARIABLE = INDEX_VARIABLE - 1;
-        |      if (INDEX_VARIABLE == 0)
-        |      {
-        |        return;
-        |      }
-        |      else
-        |      {
-        |        ;
-        |      }
-        |    }
-        |  }
-        |  int arrayRead(int[] array, index) {
-        |    return array[index];
-        |  }
-        |  int arrayLength(int[] array) {
-        |    return array.length;
-        |  }
-        |}
+      """package brbo.fuzz;
         |
         |import edu.cmu.sv.kelinci.Kelinci;
         |import edu.cmu.sv.kelinci.Mem;
@@ -75,7 +49,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |import java.util.Arrays;
         |import java.util.List;
         |
-        |public class TestDriver {
+        |public class TestQFuzzDriver {
         |  public final static int ARRAY_SIZE = 8;
         |  private final static short MAX_INTEGER = 30;
         |  private final static short MIN_INTEGER = 1;
@@ -117,7 +91,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |      array[i] = values.get(1 + i);
         |    }
         |
-        |    System.out.println("public: " + Arrays.toString(public_input));
+        |    // System.out.println("public: " + Arrays.toString(public_input));
         |
         |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
         |    Test program = new Test();
@@ -139,6 +113,42 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    Kelinci.setObserverdClusters(clusters.getClusterAverageValues(), clusters.getMinimumDeltaValue());
         |
         |    System.out.println("Done.");
+        |  }
+        |}
+        |
+        |
+        |class Test {
+        |  void execute(int a, int[] array, int b, int INDEX_VARIABLE)
+        |  {
+        |    int x = arrayLength(array);
+        |    x = arraySum(array);
+        |    x = arrayRead(array, 3);
+        |    int R = 0;
+        |    {
+        |      use(3);
+        |      INDEX_VARIABLE = INDEX_VARIABLE - 1;
+        |      if (INDEX_VARIABLE == 0)
+        |      {
+        |        return;
+        |      }
+        |      else
+        |      {
+        |        ;
+        |      }
+        |    }
+        |  }
+        |  int arrayRead(int[] array, int index) { return array[index]; }
+        |  int arrayLength(int[] array) { return array.length; }
+        |  int arraySum(int[] array) { return 0; }
+        |  void mostPreciseBound(boolean assertion) {}
+        |  void lessPreciseBound(boolean assertion) {}
+        |  void use(int n)
+        |  {
+        |    int i = 0;
+        |    while (i < n)
+        |    {
+        |      i = i + 1;
+        |    }
         |  }
         |}""".stripMargin)
   }

@@ -43,21 +43,17 @@ case class BrboProgram(className: String,
   }
 
   override def printToQFuzzJava(indent: Int): String = {
-    val arrayReadFunction =
-      s"""  int ${PreDefinedFunctions.ArrayRead.name}(int[] array, index) {
-         |    return array[index];
-         |  }""".stripMargin
-    val arrayLengthFunction =
-      s"""  int ${PreDefinedFunctions.ArrayLength.name}(int[] array) {
-         |    return array.length;
-         |  }""".stripMargin
     val predefinedFunctions =
-      s"""$arrayReadFunction
-         |$arrayLengthFunction""".stripMargin
+      s"""  int ${PreDefinedFunctions.ArrayRead.name}(int[] array, int index) { return array[index]; }
+         |  int ${PreDefinedFunctions.ArrayLength.name}(int[] array) { return array.length; }
+         |  int ${PreDefinedFunctions.ArraySum.name}(int[] array) { return 0; }
+         |  void ${PreDefinedFunctions.MostPreciseBound.name}(boolean assertion) {}
+         |  void ${PreDefinedFunctions.LessPreciseBound.name}(boolean assertion) {}
+         |${otherFunctions.find(f => f.identifier == PreDefinedFunctions.Use.name).get.printToQFuzzJava(indent = 0)}""".stripMargin
     val nonPredefinedFunctions =
       this.nonPredefinedFunctions.map(function => function.printToQFuzzJava(indent)).mkString("\n")
     val packageString: String = packageName match {
-      case Some(value) => s"package $value;"
+      case Some(value) => s"// package $value;"
       case None => ""
     }
     s"""$packageString

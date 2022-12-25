@@ -15,7 +15,7 @@ object DriverGenerator {
   def run(program: BrboProgram): String = {
     val (declarations, initializations) = declarationsAndInitializations(program.mainFunction.parameters)
     val transformedProgram = ProgramTransformer.transform(program)
-    s"""${transformedProgram.printToQFuzzJava(indent = 0)}
+    s"""package brbo.fuzz;
        |
        |import edu.cmu.sv.kelinci.Kelinci;
        |import edu.cmu.sv.kelinci.Mem;
@@ -68,7 +68,7 @@ object DriverGenerator {
        |${prependIndents(declarations, indent = 4).mkString("\n")}
        |${prependIndents(initializations, indent = 4).mkString("\n")}
        |
-       |    System.out.println("public: " + Arrays.toString(public_input));
+       |    // System.out.println("public: " + Arrays.toString(public_input));
        |
        |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
        |    ${program.className} program = new ${program.className}();
@@ -91,10 +91,12 @@ object DriverGenerator {
        |
        |    System.out.println("Done.");
        |  }
-       |}""".stripMargin
+       |}
+       |
+       |${transformedProgram.printToQFuzzJava(indent = 0)}""".stripMargin
   }
 
-  def driverName(className: String): String = s"${className}Driver"
+  def driverName(className: String): String = s"${className}QFuzzDriver"
 
   def prependIndents(lines: List[String], indent: Int): List[String] =
     lines.map(line => StringFormatUtils.prependIndentsPerLine(line, indent))

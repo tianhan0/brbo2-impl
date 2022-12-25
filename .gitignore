@@ -8,6 +8,7 @@ src/main/python/*.json
 fuzzer-out/
 bin/
 bin-instr/
+*QFuzzDriver.java
 
 # Intellij
 .bsp/

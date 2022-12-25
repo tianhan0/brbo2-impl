@@ -13,13 +13,13 @@ import org.apache.commons.io.FilenameUtils
 
 import java.io.File
 
-class Driver(arguments: DecompositionArguments, program: BrboProgram, inputFilePath: Option[String]) {
+class DecompositionDriver(arguments: DecompositionArguments, program: BrboProgram, inputFilePath: Option[String]) {
   private val debugMode = arguments.getDebugMode
-  private val logger = MyLogger.createLogger(classOf[Driver], debugMode)
+  private val logger = MyLogger.createLogger(classOf[DecompositionDriver], debugMode)
   logger.info(s"Step 0: Insert reset place holders")
-  private val instrumentedProgram = Driver.insertResetPlaceHolders(program)
+  private val instrumentedProgram = DecompositionDriver.insertResetPlaceHolders(program)
   private val interpreter = new Interpreter(instrumentedProgram, debugMode)
-  private val features = Driver.classifierFeatures(instrumentedProgram)
+  private val features = DecompositionDriver.classifierFeatures(instrumentedProgram)
   logger.info(s"Step 0: Find classifier features {${features.map(i => i.printToIR()).mkString(", ")}}")
   private val segmentClustering = new SegmentClustering(
     sumWeight = 1,
@@ -112,7 +112,7 @@ class Driver(arguments: DecompositionArguments, program: BrboProgram, inputFileP
   }
 }
 
-object Driver {
+object DecompositionDriver {
   def insertResetPlaceHolders(program: BrboProgram): BrboProgram = {
     val mainFunctionWithResetPlaceHolders =
       program.mainFunction.replaceBodyWithoutGhostInitialization(
@@ -121,13 +121,12 @@ object Driver {
     program.replaceMainFunction(mainFunctionWithResetPlaceHolders)
   }
 
-  def getInputFilePath(useProvidedInputs: Boolean, javaFile: File): Option[String] = {
+  def getInputFilePath(useProvidedInputs: Boolean, javaFilePath: String): Option[String] = {
     if (!useProvidedInputs)
       return None
-    val absolutePath = javaFile.getAbsolutePath
-    assert(FilenameUtils.getExtension(absolutePath) == "java")
-    val testFileName = s"${FilenameUtils.getBaseName(absolutePath)}.json"
-    Some(s"${FilenameUtils.getFullPath(absolutePath)}$testFileName")
+    assert(FilenameUtils.getExtension(javaFilePath) == "java")
+    val testFileName = s"${FilenameUtils.getBaseName(javaFilePath)}.json"
+    Some(s"${FilenameUtils.getFullPath(javaFilePath)}$testFileName")
   }
 
   def classifierFeatures(program: BrboProgram): List[Identifier] = {

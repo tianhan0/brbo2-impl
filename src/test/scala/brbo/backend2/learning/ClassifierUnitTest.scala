@@ -1,7 +1,7 @@
 package brbo.backend2.learning
 
 import brbo.TestCase
-import brbo.backend2.Driver
+import brbo.backend2.DecompositionDriver
 import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.backend2.learning.Classifier._
 import brbo.backend2.learning.ClassifierUnitTest.loopPhase
@@ -231,7 +231,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val candidateSegments: List[Segment] = segmentClustering.generateSegments(trace, segmentLength = 1, excludeIndices = Set())
     val clusters: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, candidateSegments)
     val group = Group(clusters.head.sortWith({ case (s1, s2) => s1.lessThan(s2) }))
-    val features = Driver.classifierFeatures(interpreter.brboProgram)
+    val features = DecompositionDriver.classifierFeatures(interpreter.brboProgram)
     val result = segmentClustering.chooseGeneralizableGroups(
       groups = List(group),
       testTrace = trace,

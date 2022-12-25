@@ -3,21 +3,9 @@ package brbo.common.commandline
 import brbo.backend2.Fuzzer
 import brbo.backend2.learning.ScriptRunner.{Algorithm, Euclidean, KMeans, Optics}
 import brbo.backend2.learning.SegmentClustering
-import brbo.common.commandline.DecompositionArguments._
-import org.apache.logging.log4j.LogManager
-import org.kohsuke.args4j.{CmdLineException, CmdLineParser, Option}
+import org.kohsuke.args4j.Option
 
-import scala.collection.JavaConverters._
-
-class DecompositionArguments extends Serializable {
-  @Option(name = "--debug", aliases = Array("-g"), required = false,
-    usage = "Turn on the debug mode.")
-  private var debugMode: Boolean = DEFAULT_DEBUG_MODE
-
-  @Option(name = "--directory", aliases = Array("-d"), required = true,
-    usage = "The directory (which will be " + "recursively traversed) or the file to analyze.")
-  private var directoryToAnalyze: String = DEFAULT_DIRECTORY_TO_ANALYZE
-
+class DecompositionArguments extends CommonArguments {
   @Option(name = "--samples", aliases = Array("-s"),
     usage = "The number of samples to fuzz, for every integer-typed input.")
   private var fuzzSamples: Int = Fuzzer.DEFAULT_SAMPLES
@@ -38,10 +26,6 @@ class DecompositionArguments extends Serializable {
     usage = "Use the provided inputs. For java program /a/b/Test.java, its input file is /a/b/Test.json.")
   private var useProvidedInputs: Boolean = false
 
-  def getDebugMode: Boolean = debugMode
-
-  def getDirectoryToAnalyze: String = directoryToAnalyze
-
   def getFuzzSamples: Int = fuzzSamples
 
   def getThreads: Int = threads
@@ -57,15 +41,6 @@ class DecompositionArguments extends Serializable {
 
   def getUseProvidedInputs: Boolean = useProvidedInputs
 
-  private var initialized = false
-
-  def initialize(debugMode: Boolean, directoryToAnalyze: String): Unit = {
-    if (initialized) throw new Exception(s"Already initialized")
-    initialized = true
-    this.debugMode = debugMode
-    this.directoryToAnalyze = directoryToAnalyze
-  }
-
   override def toString: String = {
     val strings = List[String](
       s"fuzzSamples: $fuzzSamples",
@@ -75,25 +50,5 @@ class DecompositionArguments extends Serializable {
       s"userProvidedInputs: $useProvidedInputs"
     )
     strings.mkString("\n")
-  }
-}
-
-object DecompositionArguments {
-  val DEFAULT_DIRECTORY_TO_ANALYZE = "."
-  val DEFAULT_DEBUG_MODE = false
-
-  private val logger = LogManager.getLogger(DecompositionArguments.getClass.getName)
-
-  def parseArguments(args: Array[String]): DecompositionArguments = {
-    val arguments = new DecompositionArguments
-    val parser = new CmdLineParser(arguments)
-    try {
-      parser.parseArgument(args.toList.asJava)
-    } catch {
-      case e: CmdLineException => logger.fatal(s"Error:${e.getMessage}\nUsage:\n")
-        parser.printUsage(System.out)
-        System.exit(1)
-    }
-    arguments
   }
 }

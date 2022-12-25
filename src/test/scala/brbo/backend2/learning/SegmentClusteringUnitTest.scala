@@ -1,7 +1,7 @@
 package brbo.backend2.learning
 
 import brbo.TestCase
-import brbo.backend2.Driver
+import brbo.backend2.DecompositionDriver
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.backend2.learning.ScriptRunner.KMeans
@@ -58,7 +58,7 @@ object SegmentClusteringUnitTest {
 
   def toInterpreter(source: String): Interpreter = {
     val targetProgram = BasicProcessor.getTargetProgram(className = "Test", sourceCode = source).program
-    new Interpreter(Driver.insertResetPlaceHolders(targetProgram))
+    new Interpreter(DecompositionDriver.insertResetPlaceHolders(targetProgram))
   }
 
   val functionDefinitions: String =

@@ -27,7 +27,7 @@ object ProgramTransformer {
     // for too many times, which makes it expensive to choose segments.
     val loopConditionals = BrboAstUtils.getLoopConditionals(mainFunctionBody)
     val earlyReturns: Iterable[BrboAst] = mainFunction.parameters.filter({
-      identifier => loopConditionals.exists({ e => e.getUses.contains(identifier) })
+      identifier => identifier.typ == BrboType.INT && loopConditionals.exists({ e => e.getUses.contains(identifier) })
     }).map({
       identifier => ITE(LessThan(Number(MAX_LOOP_ITERATIONS), identifier), Return(expression = None), Skip())
     })
