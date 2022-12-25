@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# This script should be executed from the root directory of this project via `./scripts/run.sh`
+# This script should be executed from the root directory of this project
 
-# Create output directory
+# Create the output directory
 mkdir -p output/
 mkdir -p output/cfg
 mkdir -p output/amortizations
 
 # Machine-dependent path configurations
-brbo_jar="./target/scala-2.12/brbo2-impl.jar:$HOME/Desktop/brbo2-impl.jar" # Assume this jar file only contains the code of brbo
+brbo_jar="./target/scala-2.12/brbo2-impl.jar:$HOME/Desktop/brbo2-impl.jar"
 
 # Jars dependency
 # lib_jars="lib/com.microsoft.z3.jar"
