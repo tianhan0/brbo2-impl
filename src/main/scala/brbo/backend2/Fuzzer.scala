@@ -99,7 +99,7 @@ object Fuzzer {
     var result: List[List[BrboValue]] = Nil
     Range(0, samples).foreach({
       i =>
-        val list: List[BrboValue] = Range(0, inputs.size).map(index => possibleValues(index)(i)).toList
+        val list: List[BrboValue] = inputs.indices.map(index => possibleValues(index)(i)).toList
         result = list :: result
     })
     result
