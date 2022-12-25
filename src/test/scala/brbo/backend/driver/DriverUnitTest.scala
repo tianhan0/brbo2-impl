@@ -4,11 +4,10 @@ import brbo.TestCase
 import brbo.backend.driver.DriverUnitTest.testCases
 import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.backend.verifier.UAutomizerVerifier
-import brbo.common.CommandLineArguments._
 import brbo.common.ast.BrboExprUtils.lessThanOrEqualTo
 import brbo.common.ast._
 import brbo.common.string.StringCompare
-import brbo.common.{BrboType, CommandLineArguments}
+import brbo.common.BrboType
 import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.scalatest.flatspec.AnyFlatSpec
 

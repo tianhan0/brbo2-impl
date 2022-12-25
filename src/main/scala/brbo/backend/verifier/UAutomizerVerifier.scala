@@ -1,8 +1,9 @@
 package brbo.backend.verifier
 
 import brbo.backend.verifier.cex.ParseCounterexamplePath
-import brbo.common.ast.{BrboProgram, BrboCProgram}
-import brbo.common.{CommandLineArguments, FileUtils}
+import brbo.common.ast.{BrboCProgram, BrboProgram}
+import brbo.common.FileUtils
+import brbo.common.commandline.Arguments
 import org.apache.commons.io.IOUtils
 
 import java.io.PrintWriter
@@ -13,7 +14,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.sys.process._
 
-class UAutomizerVerifier(override val arguments: CommandLineArguments) extends Verifier {
+class UAutomizerVerifier(override val arguments: Arguments) extends Verifier {
   override val toolName = "UAutomizer"
   override val toolDirectory: String = arguments.getVerifierDirectory
 

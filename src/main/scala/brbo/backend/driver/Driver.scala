@@ -9,6 +9,7 @@ import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.backend.verifier.{InterpreterKind, SymbolicExecution, UAutomizerVerifier, VerifierResult}
 import brbo.common._
 import brbo.common.ast._
+import brbo.common.commandline.Arguments
 import brbo.common.string.StringFormatUtils
 import org.apache.commons.io.FileUtils
 import org.jgrapht.graph.{DefaultEdge, SimpleDirectedGraph}
@@ -18,7 +19,7 @@ import java.nio.charset.Charset
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
-class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
+class Driver(arguments: Arguments, originalProgram: BrboProgram) {
   private val logger = MyLogger.createLogger(classOf[Driver], arguments.getDebugMode)
   private val uAutomizerVerifier = new UAutomizerVerifier(arguments)
   private val afterExtractingUses: BrboProgram = extractUsesFromMain(originalProgram)

@@ -8,7 +8,7 @@ import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.string.StringCompare
-import brbo.common.{BrboType, CommandLineArguments, Z3Solver}
+import brbo.common.{BrboType, Z3Solver}
 import org.scalatest.flatspec.AnyFlatSpec
 
 /*class SynthesizerUnitTest extends AnyFlatSpec {

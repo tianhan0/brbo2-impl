@@ -3,14 +3,15 @@ package brbo.backend.verifier
 import brbo.TestCase
 import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.common.BrboType.{INT, VOID}
-import brbo.common.{CommandLineArguments, PreDefinedFunctions}
-import brbo.common.CommandLineArguments._
+import brbo.common.PreDefinedFunctions
+import brbo.common.commandline.Arguments._
 import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
 import brbo.common.ast._
+import brbo.common.commandline.Arguments
 import org.scalatest.flatspec.AnyFlatSpec
 
 class UAutomizerVerifierUnitTest extends AnyFlatSpec {
-  val arguments = new CommandLineArguments
+  val arguments = new Arguments
   arguments.initialize(
     TEST_MODE,
     debugMode = DEFAULT_DEBUG_MODE,

@@ -2,7 +2,7 @@ package brbo.backend.refiner
 
 import brbo.TestCase
 import brbo.backend.verifier.cex.Path
-import brbo.common.CommandLineArguments
+import brbo.common.commandline.Arguments
 import org.scalatest.flatspec.AnyFlatSpec
 
 class PathRefinementUnrestrictedUnitTest extends AnyFlatSpec {

@@ -4,9 +4,10 @@ import brbo.backend.refiner.Refinement.{ResetNode, UseNode}
 import brbo.backend.verifier.cex.{Path, Segment}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{CommandLineArguments, MathUtils, MyLogger}
+import brbo.common.commandline.Arguments
+import brbo.common.{MathUtils, MyLogger}
 
-class PathRefinement(arguments: CommandLineArguments) {
+class PathRefinement(arguments: Arguments) {
   private val maxGroups = arguments.getMaxGroups
   private val logger = MyLogger.createLogger(classOf[PathRefinement], arguments.getDebugMode)
 

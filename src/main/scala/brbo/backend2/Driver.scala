@@ -7,12 +7,13 @@ import brbo.backend2.learning.SegmentClustering.printSegments
 import brbo.backend2.learning.{Classifier, SegmentClustering, TracePartition}
 import brbo.common.ast._
 import brbo.common.cfg.ControlFlowGraph
-import brbo.common.{BrboType, GhostVariableUtils, MyLogger, NewCommandLineArguments}
+import brbo.common.commandline.DecompositionArguments
+import brbo.common.{BrboType, GhostVariableUtils, MyLogger}
 import org.apache.commons.io.FilenameUtils
 
 import java.io.File
 
-class Driver(arguments: NewCommandLineArguments, program: BrboProgram, inputFilePath: Option[String]) {
+class Driver(arguments: DecompositionArguments, program: BrboProgram, inputFilePath: Option[String]) {
   private val debugMode = arguments.getDebugMode
   private val logger = MyLogger.createLogger(classOf[Driver], debugMode)
   logger.info(s"Step 0: Insert reset place holders")

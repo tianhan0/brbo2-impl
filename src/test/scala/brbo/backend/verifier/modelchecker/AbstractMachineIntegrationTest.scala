@@ -4,10 +4,11 @@ import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.backend.verifier.UAutomizerVerifier
 import brbo.backend.verifier.modelchecker.AbstractDomainName._
 import brbo.common.BrboType._
-import brbo.common.CommandLineArguments._
+import brbo.common.commandline.Arguments._
 import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
 import brbo.common.ast._
 import brbo.common._
+import brbo.common.commandline.Arguments
 import org.scalatest.flatspec.AnyFlatSpec
 
 class AbstractMachineIntegrationTest extends AnyFlatSpec {
@@ -59,8 +60,8 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
   private val maxPathLength = 30
   private val checkWithZ3 = true
   private val debugMode = false
-  private val polkaArgument: CommandLineArguments = {
-    val arguments = new CommandLineArguments
+  private val polkaArgument: Arguments = {
+    val arguments = new Arguments
     arguments.initialize(TEST_MODE, debugMode, "",
       printVerifierInputs = DEFAULT_PRINT_VERIFIER_INPUTS, verifierTimeout = DEFAULT_TIMEOUT, printCFG = DEFAULT_PRINT_CFG,
       maxGroups = DEFAULT_MAX_GROUPS, verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,

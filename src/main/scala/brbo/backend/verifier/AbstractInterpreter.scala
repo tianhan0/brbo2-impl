@@ -5,7 +5,8 @@ import brbo.backend.verifier.SymbolicExecution.valuationToAST
 import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
-import brbo.common.{BrboType, CommandLineArguments, Z3Solver}
+import brbo.common.commandline.Arguments
+import brbo.common.{BrboType, Z3Solver}
 import brbo.frontend.TargetProgram
 import com.microsoft.z3.AST
 
@@ -19,7 +20,7 @@ object AbstractInterpreter {
    * @return The final state of the path, and the set of variable names that have been used
    */
   def interpretPath(path: List[CFGNode], inputVariables: List[Identifier], solver: Z3Solver,
-                    interpreterKind: InterpreterKind, arguments: CommandLineArguments): Result = {
+                    interpreterKind: InterpreterKind, arguments: Arguments): Result = {
     interpreterKind match {
       case brbo.backend.verifier.InterpreterKind.SYMBOLIC_EXECUTION =>
         val symbolicExecution = new SymbolicExecution(inputVariables, arguments.getDebugMode)
@@ -38,13 +39,13 @@ object AbstractInterpreter {
   }
 
   def verifyPath(path: List[CFGNode], assertion: BrboExpr,
-                 inputVariables: List[Identifier], arguments: CommandLineArguments): AbstractMachine.Result = {
+                 inputVariables: List[Identifier], arguments: Arguments): AbstractMachine.Result = {
     val result = interpretOrVerifyPath(path, Some(assertion), None, inputVariables, arguments)
     result.result
   }
 
   private def interpretOrVerifyPath(path: List[CFGNode], assertion: Option[BrboExpr], solver: Option[Z3Solver],
-                                    inputVariables: List[Identifier], arguments: CommandLineArguments): ModelCheckerResult = {
+                                    inputVariables: List[Identifier], arguments: Arguments): ModelCheckerResult = {
     val (nodesMap, newPath) = path.zipWithIndex.foldLeft((Map[Command, (CFGNode, Int)](), List[Command]()))({
       case ((accMap, accPath), (node, index)) =>
         // Give every node a new ID. Otherwise if a node appears twice

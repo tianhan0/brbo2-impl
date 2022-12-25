@@ -1,11 +1,12 @@
 package brbo.backend.verifier
 
 import brbo.common.ast.BrboProgram
-import brbo.common.{CommandLineArguments, MyLogger}
+import brbo.common.MyLogger
+import brbo.common.commandline.Arguments
 import org.apache.logging.log4j.LogManager
 
 abstract class Verifier {
-  val arguments: CommandLineArguments
+  val arguments: Arguments
   val toolName: String
   val toolDirectory: String
   val TIMEOUT: Int = arguments.getVerifierTimeout // Unit: Seconds

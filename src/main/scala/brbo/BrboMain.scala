@@ -3,7 +3,8 @@ package brbo
 import brbo.backend2.Driver
 import brbo.common.cfg.ControlFlowGraph
 import brbo.common.string.StringFormatUtils
-import brbo.common.{MyLogger, NewCommandLineArguments}
+import brbo.common.MyLogger
+import brbo.common.commandline.DecompositionArguments
 import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.apache.commons.io.{FileUtils, FilenameUtils, IOUtils}
 
@@ -21,7 +22,7 @@ object BrboMain {
   private val BATCH_SIZE = 100
 
   def main(args: Array[String]): Unit = {
-    val arguments = NewCommandLineArguments.parseArguments(args)
+    val arguments = DecompositionArguments.parseArguments(args)
     val logger = MyLogger.createLogger(BrboMain.getClass, debugMode = arguments.getDebugMode)
     logger.info(s"$TOOL_NAME has started.")
 
@@ -66,7 +67,7 @@ object BrboMain {
   }
 
   private def runBatch(logger: MyLogger, sourceFiles: List[(File, String)], batchIndex: Int,
-                       totalFiles: Int, arguments: NewCommandLineArguments): Unit = {
+                       totalFiles: Int, arguments: DecompositionArguments): Unit = {
     val batchString = s"${StringFormatUtils.integer(batchIndex * BATCH_SIZE, 3)}-${StringFormatUtils.integer((batchIndex + 1) * BATCH_SIZE - 1, 3)}"
     logger.info(s"Run `$batchIndex`-th batch`: $batchString")
 
@@ -82,7 +83,7 @@ object BrboMain {
   }
 
   def decompose(logger: MyLogger, sourceFile: File,
-                sourceFileContents: String, arguments: NewCommandLineArguments): Unit = {
+                sourceFileContents: String, arguments: DecompositionArguments): Unit = {
     val sourceFilePath = sourceFile.getAbsolutePath
     logger.info(s"Process file `$sourceFilePath`")
 
@@ -142,7 +143,7 @@ object BrboMain {
     almostClassName.replace("""/""", ".").substring(0, indexOfExtension)
   }
 
-  private def getStatistics(duration: Double, arguments: NewCommandLineArguments, numberOfTraces: Int): String = {
+  private def getStatistics(duration: Double, arguments: DecompositionArguments, numberOfTraces: Int): String = {
     s"// duration,numberOfTraces,fuzzSamples,algorithm,\n" +
       s"// $duration,$numberOfTraces,${arguments.getFuzzSamples},${arguments.getAlgorithm}"
   }

@@ -9,15 +9,16 @@ import brbo.backend.verifier.modelchecker.Apron._
 import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo, imply, lessThanOrEqualTo}
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
+import brbo.common.commandline.Arguments
 import brbo.common.string.StringFormatUtils
-import brbo.common.{CommandLineArguments, MyLogger, PreDefinedFunctions, Z3Solver}
+import brbo.common.{MyLogger, PreDefinedFunctions, Z3Solver}
 import com.microsoft.z3.AST
 import org.apache.logging.log4j.LogManager
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
-class AbstractMachine(brboProgram: BrboProgram, arguments: CommandLineArguments) {
+class AbstractMachine(brboProgram: BrboProgram, arguments: Arguments) {
   private val logger: MyLogger = MyLogger.createLogger(classOf[AbstractMachine], arguments.getDebugMode)
   private val cfg = ControlFlowGraph.toControlFlowGraph(brboProgram)
   private val fakeInitialNode = CFGNode(Bool(b = true), function = Some(brboProgram.mainFunction))

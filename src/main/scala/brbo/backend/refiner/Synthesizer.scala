@@ -6,9 +6,10 @@ import brbo.backend.verifier.{AbstractInterpreter, InterpreterKind}
 import brbo.common._
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
+import brbo.common.commandline.Arguments
 import com.microsoft.z3.AST
 
-class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) {
+class Synthesizer(originalProgram: BrboProgram, argument: Arguments) {
   private val logger = MyLogger.createLogger(classOf[Synthesizer], argument.getDebugMode)
   private val allCommands = BrboAstUtils.collectCommands(originalProgram.mainFunction.bodyWithGhostInitialization)
   private val useCommands = allCommands.filter(command => command.isInstanceOf[Use])

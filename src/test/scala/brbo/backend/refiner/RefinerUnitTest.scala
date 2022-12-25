@@ -7,7 +7,7 @@ import brbo.common.ast.BrboExprUtils.{greaterThanOrEqualTo, lessThanOrEqualTo}
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.string.StringCompare
-import brbo.common.{BrboType, CommandLineArguments}
+import brbo.common.BrboType
 import org.scalatest.flatspec.AnyFlatSpec
 
 /*class RefinerUnitTest extends AnyFlatSpec {

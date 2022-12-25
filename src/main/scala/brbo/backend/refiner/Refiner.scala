@@ -5,12 +5,13 @@ import brbo.backend.verifier.VerifierStatus.VerifierStatus
 import brbo.backend.verifier.cex.Path
 import brbo.common._
 import brbo.common.ast.{BoundAssertion, BrboProgram}
+import brbo.common.commandline.Arguments
 
 import java.util.concurrent.Executors
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class Refiner(arguments: CommandLineArguments) {
+class Refiner(arguments: Arguments) {
   protected val logger: MyLogger = MyLogger.createLogger(classOf[Refiner], arguments.getDebugMode)
   protected val pathRefinement = new PathRefinement(arguments)
 

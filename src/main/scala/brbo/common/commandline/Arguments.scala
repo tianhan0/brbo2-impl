@@ -1,15 +1,15 @@
-package brbo.common
+package brbo.common.commandline
 
 import brbo.backend.verifier.AmortizationMode._
 import brbo.backend.verifier.UAutomizerVerifier
 import brbo.backend.verifier.modelchecker.AbstractDomainName.{AbstractDomainName, OCTAGON, POLKA_NONSTRICT, POLKA_STRICT}
-import brbo.common.CommandLineArguments._
+import brbo.common.commandline.Arguments._
 import org.apache.logging.log4j.LogManager
 import org.kohsuke.args4j.{CmdLineException, CmdLineParser, Option}
 
 import scala.collection.JavaConverters._
 
-class CommandLineArguments extends Serializable {
+class Arguments extends Serializable {
 
   @Option(name = "--amortize", aliases = Array("-a"), required = false,
     usage = "The amortization mode. Choose from: `FULL`, `NO`, `SELECTIVE`, `ALL` (case-insensitive)")
@@ -187,8 +187,8 @@ class CommandLineArguments extends Serializable {
     s"""$amortizationMode-$timeoutString-$assertionIndexString-$abstractDomain-$checkWithZ3String"""
   }
 
-  def copyNoWidening(): CommandLineArguments = {
-    val arguments = new CommandLineArguments
+  def copyNoWidening(): Arguments = {
+    val arguments = new Arguments
     arguments.initialize(getAmortizationMode, debugMode, directoryToAnalyze, printVerifierInputs,
       verifierTimeout, printCFG, maxGroups, verifierDirectory, relationalPredicates, maxIterations,
       assertionTag, abstractDomain, maxPathLength, checkWithZ3, assumePositiveInputs, widenThreshold = Int.MaxValue,
@@ -197,7 +197,7 @@ class CommandLineArguments extends Serializable {
   }
 }
 
-object CommandLineArguments {
+object Arguments {
   val DEFAULT_DIRECTORY_TO_ANALYZE = "."
   val DEFAULT_DEBUG_MODE = false
   val DEFAULT_PRINT_CFG = false
@@ -215,10 +215,10 @@ object CommandLineArguments {
   val DEFAULT_WIDEN_THRESHOLD = 4
   val DEFAULT_NUMBER_OF_THREADS: Int = -1
 
-  private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)
+  private val logger = LogManager.getLogger(Arguments.getClass.getName)
 
-  def parseArguments(args: Array[String]): CommandLineArguments = {
-    val arguments = new CommandLineArguments
+  def parseArguments(args: Array[String]): Arguments = {
+    val arguments = new Arguments
     val parser = new CmdLineParser(arguments)
     try {
       parser.parseArgument(args.toList.asJava)
@@ -230,8 +230,8 @@ object CommandLineArguments {
     arguments
   }
 
-  val TEST_ARGUMENTS: CommandLineArguments = {
-    val arguments = new CommandLineArguments
+  val TEST_ARGUMENTS: Arguments = {
+    val arguments = new Arguments
     arguments.initialize(TEST_MODE, debugMode = DEFAULT_DEBUG_MODE, directoryToAnalyze = DEFAULT_DIRECTORY_TO_ANALYZE,
       printVerifierInputs = DEFAULT_PRINT_VERIFIER_INPUTS, verifierTimeout = DEFAULT_TIMEOUT, printCFG = DEFAULT_PRINT_CFG,
       maxGroups = DEFAULT_MAX_GROUPS, verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,
@@ -242,8 +242,8 @@ object CommandLineArguments {
     arguments
   }
 
-  val TEST_ARGUMENTS_DEBUG_MODE: CommandLineArguments = {
-    val arguments = new CommandLineArguments
+  val TEST_ARGUMENTS_DEBUG_MODE: Arguments = {
+    val arguments = new Arguments
     arguments.initialize(TEST_MODE, debugMode = !DEFAULT_DEBUG_MODE, directoryToAnalyze = DEFAULT_DIRECTORY_TO_ANALYZE,
       printVerifierInputs = DEFAULT_PRINT_VERIFIER_INPUTS, verifierTimeout = DEFAULT_TIMEOUT, printCFG = DEFAULT_PRINT_CFG,
       maxGroups = DEFAULT_MAX_GROUPS, verifierDirectory = UAutomizerVerifier.TOOL_DIRECTORY,

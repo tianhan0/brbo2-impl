@@ -1,15 +1,15 @@
-package brbo.common
+package brbo.common.commandline
 
 import brbo.backend2.Fuzzer
 import brbo.backend2.learning.ScriptRunner.{Algorithm, Euclidean, KMeans, Optics}
 import brbo.backend2.learning.SegmentClustering
-import brbo.common.CommandLineArguments._
+import brbo.common.commandline.DecompositionArguments._
 import org.apache.logging.log4j.LogManager
 import org.kohsuke.args4j.{CmdLineException, CmdLineParser, Option}
 
 import scala.collection.JavaConverters._
 
-class NewCommandLineArguments extends Serializable {
+class DecompositionArguments extends Serializable {
   @Option(name = "--debug", aliases = Array("-g"), required = false,
     usage = "Turn on the debug mode.")
   private var debugMode: Boolean = DEFAULT_DEBUG_MODE
@@ -27,7 +27,7 @@ class NewCommandLineArguments extends Serializable {
   private var algorithm: String = "optics"
 
   @Option(name = "--parameter", aliases = Array("-p"),
-    usage = "The parameter of the algorithm. For `optics`, the parameter is `max-eps`. For `kmeans`, the parameter is the number of clusters.")
+    usage = "The parameter of the clustering algorithm. For `optics`, the parameter is `max-eps`. For `kmeans`, the parameter is the number of clusters.")
   private var algorithmParameter: Double = -1
 
   @Option(name = "--threads", aliases = Array("-t"),
@@ -35,7 +35,7 @@ class NewCommandLineArguments extends Serializable {
   private var threads: Int = SegmentClustering.THREADS
 
   @Option(name = "--input", aliases = Array("-i"), required = false,
-    usage = "Use the provided inputs. For java program a/b/Test.java, its input file is a/b/Test.input.")
+    usage = "Use the provided inputs. For java program /a/b/Test.java, its input file is /a/b/Test.json.")
   private var useProvidedInputs: Boolean = false
 
   def getDebugMode: Boolean = debugMode
@@ -78,14 +78,14 @@ class NewCommandLineArguments extends Serializable {
   }
 }
 
-object NewCommandLineArguments {
+object DecompositionArguments {
   val DEFAULT_DIRECTORY_TO_ANALYZE = "."
   val DEFAULT_DEBUG_MODE = false
 
-  private val logger = LogManager.getLogger(CommandLineArguments.getClass.getName)
+  private val logger = LogManager.getLogger(DecompositionArguments.getClass.getName)
 
-  def parseArguments(args: Array[String]): NewCommandLineArguments = {
-    val arguments = new NewCommandLineArguments
+  def parseArguments(args: Array[String]): DecompositionArguments = {
+    val arguments = new DecompositionArguments
     val parser = new CmdLineParser(arguments)
     try {
       parser.parseArgument(args.toList.asJava)

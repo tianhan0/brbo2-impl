@@ -3,15 +3,13 @@ package brbo.backend.refiner
 import brbo.TestCase
 import brbo.backend.verifier.AmortizationMode.TEST_MODE
 import brbo.backend.verifier.UAutomizerVerifier
-import brbo.backend.verifier.cex.Path
-import brbo.common.CommandLineArguments._
-import brbo.common.CommandLineArguments
-import brbo.common.string.StringCompare
+import brbo.common.commandline.Arguments
+import brbo.common.commandline.Arguments._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class PathRefinementUnitTest extends AnyFlatSpec {
   private val arguments = {
-    val arguments = new CommandLineArguments
+    val arguments = new Arguments
     arguments.initialize(
       TEST_MODE,
       debugMode = DEFAULT_DEBUG_MODE,
