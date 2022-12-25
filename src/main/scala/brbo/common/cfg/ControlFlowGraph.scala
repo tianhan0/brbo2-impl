@@ -93,7 +93,7 @@ object ControlFlowGraph {
       val exitNode = generateNode(FunctionExit(), brboFunction)
       val jumpTarget = JumpTarget(immediateLoopBranchHead = None, immediateLoopExit = None, functionExit = exitNode)
       val internalGraph = astToInternalGraph(
-        ast = brboFunction.bodyWithInitialization,
+        ast = brboFunction.bodyWithGhostInitialization,
         jumpTarget = jumpTarget,
         brboFunction = brboFunction
       )
@@ -210,7 +210,7 @@ object ControlFlowGraph {
     }
 
     val mainCFG = generateCFG(brboProgram.mainFunction)
-    brboProgram.functions.foreach({
+    brboProgram.otherFunctions.foreach({
       function =>
         cfgs.get(function) match {
           case Some(_) =>
@@ -455,7 +455,7 @@ case class ControlFlowGraph(entryNode: CFGNode,
   }
 
   def printPDF(): Unit =
-    ControlFlowGraph.printDotToPDF(filename = brboProgram.name, dotFileContents = ControlFlowGraph.exportToDOT(jgraphtGraph))
+    ControlFlowGraph.printDotToPDF(filename = brboProgram.className, dotFileContents = ControlFlowGraph.exportToDOT(jgraphtGraph))
 
   def successorNodes(node: CFGNode): Iterator[CFGNode] = ControlFlowGraph.successorNodes(jgraphtGraph, node)
 

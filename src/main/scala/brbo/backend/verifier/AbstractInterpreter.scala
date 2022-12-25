@@ -57,7 +57,7 @@ object AbstractInterpreter {
         (accMap + (newCommand -> (node, index)), newCommand :: accPath)
     })
     val mainFunction = BrboFunction(TargetProgram.MAIN_FUNCTION, BrboType.VOID, inputVariables, Block(newPath.reverse), groupIds = Set())
-    val brboProgram = BrboProgram("Symbolic Execution", mainFunction = mainFunction)
+    val brboProgram = BrboProgram("Symbolic Execution", packageName = None, mainFunction = mainFunction)
     val abstractMachine = new AbstractMachine(brboProgram, arguments.copyNoWidening())
     val assertionToVerify =
       assertion match {

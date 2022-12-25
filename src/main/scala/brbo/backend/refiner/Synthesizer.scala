@@ -10,7 +10,7 @@ import com.microsoft.z3.AST
 
 class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) {
   private val logger = MyLogger.createLogger(classOf[Synthesizer], argument.getDebugMode)
-  private val allCommands = BrboAstUtils.collectCommands(originalProgram.mainFunction.bodyWithInitialization)
+  private val allCommands = BrboAstUtils.collectCommands(originalProgram.mainFunction.bodyWithGhostInitialization)
   private val useCommands = allCommands.filter(command => command.isInstanceOf[Use])
   private val resetCommands = allCommands.filter(command => command.isInstanceOf[Reset])
 
@@ -88,7 +88,7 @@ class Synthesizer(originalProgram: BrboProgram, argument: CommandLineArguments) 
     logger.trace(s"New groups from the path refinement: `${refinement.groupIds}`")
     logger.trace(s"New groups (overall): `$newGroupIds`")
     val newMainFunction = originalProgram.mainFunction
-      .replaceBodyWithoutInitialization(newMainBody.asInstanceOf[Statement])
+      .replaceBodyWithoutGhostInitialization(newMainBody.asInstanceOf[Statement])
       .replaceGroupIds(newGroupIds)
     originalProgram.replaceMainFunction(newMainFunction)
   }

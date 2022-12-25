@@ -18,17 +18,15 @@ object PreDefinedFunctions {
        |""".stripMargin
   }
 
-  def createAssert(expression: BrboExpr): FunctionCallExpr =
+  def callAssert(expression: BrboExpr): FunctionCallExpr =
     FunctionCallExpr(Assert.cRepresentation.identifier, List(expression), BOOL)
 
-  def createAssume(expression: BrboExpr): FunctionCallExpr =
+  def callAssume(expression: BrboExpr): FunctionCallExpr =
     FunctionCallExpr(Assume.cRepresentation.identifier, List(expression), BOOL)
 
   class RepresentationNotExist extends Exception
 
   abstract class PreDefinedFunction(val name: String) {
-    val javaFunctionName: String = name
-
     def cStringRepresentation: String = cRepresentation.printToC(0)
 
     def cRepresentation: BrboFunction
@@ -115,7 +113,7 @@ object PreDefinedFunctions {
       val body = {
         val x = Identifier("x", INT)
         val variableDeclaration = VariableDeclaration(x, FunctionCallExpr("ndInt", Nil, INT))
-        val assume = createAssume(And(lessThanOrEqualTo(lower, x), lessThanOrEqualTo(x, upper)))
+        val assume = callAssume(And(lessThanOrEqualTo(lower, x), lessThanOrEqualTo(x, upper)))
         val returnCommand = Return(Some(x))
         Block(List(variableDeclaration, assume, returnCommand))
       }
@@ -131,7 +129,7 @@ object PreDefinedFunctions {
       val lower = Identifier("lower", INT)
       val upper = Identifier("upper", INT)
       val body = {
-        val assume = createAssume(And(lessThanOrEqualTo(lower, x), lessThanOrEqualTo(x, upper)))
+        val assume = callAssume(And(lessThanOrEqualTo(lower, x), lessThanOrEqualTo(x, upper)))
         Block(List(assume))
       }
       BrboFunction(name, VOID, List(lower, x, upper), body, Set())
@@ -254,7 +252,7 @@ object PreDefinedFunctions {
     ResetPlaceHolder
   )
 
-  val functionInternalRepresentations: List[BrboFunction] = {
+  val functionCRepresentations: List[BrboFunction] = {
     functions.foldLeft(Nil: List[BrboFunction])({
       case (soFar, f) =>
         try {

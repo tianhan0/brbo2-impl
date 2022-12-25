@@ -88,7 +88,7 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
       reverse = false
     )
     val copiedGraphDot = ControlFlowGraph.exportToDOT(copiedGraph)
-    ControlFlowGraph.printDotToPDF(s"${test05.name}_nonreversed", dotFileContents = copiedGraphDot)
+    ControlFlowGraph.printDotToPDF(s"${test05.className}_nonreversed", dotFileContents = copiedGraphDot)
     StringCompare.ignoreWhitespaces(s"root: ${root.printToIR()}\n$copiedGraphDot",
       """root: (2) int i = 0;
         |strict digraph G {
@@ -137,7 +137,7 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
       reverse = true
     )
     val reversedCopiedGraphDot = ControlFlowGraph.exportToDOT(reversedCopiedGraph)
-    ControlFlowGraph.printDotToPDF(s"${test05.name}_reversed", dotFileContents = reversedCopiedGraphDot)
+    ControlFlowGraph.printDotToPDF(s"${test05.className}_reversed", dotFileContents = reversedCopiedGraphDot)
     StringCompare.ignoreWhitespaces(s"root: ${reversedRoot.printToIR()}\n$reversedCopiedGraphDot",
       """root: (1) [Function Exit]
         |strict digraph G {
@@ -185,7 +185,7 @@ object ControlFlowGraphUnitTest {
     val variableDeclaration = VariableDeclaration(i, Number(0))
     val loop = Loop(LessThan(i, Number(10)), Block(List(Assignment(i, Addition(i, Number(1))), Break())))
     val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set())
-    BrboProgram("test01", main, Nil, PreDefinedFunctions.functionInternalRepresentations)
+    BrboProgram("test01", packageName = None, main, PreDefinedFunctions.functionCRepresentations, Nil)
   }
   private val test01Expected =
     """strict digraph G {
@@ -265,7 +265,7 @@ object ControlFlowGraphUnitTest {
     val variableDeclaration = VariableDeclaration(i, Number(0))
     val loop = Loop(LessThan(i, Number(10)), Block(List(Continue(), Assignment(i, Addition(i, Number(1))))))
     val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set())
-    BrboProgram("test02", main, Nil)
+    BrboProgram("test02", packageName = None, main, Nil)
   }
   private val test02Expected =
     """strict digraph G {
@@ -291,7 +291,7 @@ object ControlFlowGraphUnitTest {
     val i = Identifier("i", INT)
     val variableDeclaration = VariableDeclaration(i, FunctionCallExpr("ndInt2", List(Number(0), Number(1)), INT))
     val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration)), Set())
-    BrboProgram("test03", main, Nil)
+    BrboProgram("test03", packageName = None, main, Nil)
   }
   private val test03Expected =
     """strict digraph G {
@@ -311,7 +311,7 @@ object ControlFlowGraphUnitTest {
     }
     val assignment = Assignment(i, Number(3))
     val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, ite, assignment)), Set())
-    BrboProgram("test04", main, Nil)
+    BrboProgram("test04", packageName = None, main, Nil)
   }
   private val test04Expected =
     """strict digraph G {
@@ -347,7 +347,7 @@ object ControlFlowGraphUnitTest {
       Loop(LessThan(test05VariableI, Number(5)), Block(List(loop, assignment)))
     }
     val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set())
-    BrboProgram("test05", main, Nil)
+    BrboProgram("test05", packageName = None, main, Nil)
   }
   private val test05Expected =
     """strict digraph G {
@@ -393,7 +393,7 @@ object ControlFlowGraphUnitTest {
     val reset: Reset = Reset(1, lessThanOrEqualTo(i, Number(0)))
     val use: Use = Use(Some(1), i, greaterThan(i, Number(5)))
     val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, reset, use)), Set())
-    BrboProgram("test06", main, Nil, Nil)
+    BrboProgram("test06", packageName = None, main, Nil, Nil)
   }
   private val test06Expected =
     """strict digraph G {

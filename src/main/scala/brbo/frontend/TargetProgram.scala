@@ -49,8 +49,13 @@ case class TargetProgram(fullQualifiedClassName: String,
   val program: BrboProgram = {
     val (mainFunction, boundAssertions) = toBrboFunction(mainMethod, allMethods)
     val otherFunctions = (allMethods - mainMethod).filter(m => m.methodName != "<init>").map(m => toBrboFunction(m, allMethods)._1).toList
-    BrboProgram(s"$className.${mainMethod.methodName}", mainFunction, boundAssertions,
-      PreDefinedFunctions.functionInternalRepresentations ::: otherFunctions)
+    BrboProgram(
+      className = className,
+      packageName = packageName,
+      mainFunction = mainFunction,
+      boundAssertions = boundAssertions,
+      otherFunctions = otherFunctions
+    )
   }
 }
 
@@ -277,7 +282,7 @@ object TargetProgram {
                   Right(Comment(tree.toString))
                 case _ => throw new Exception
               }
-            case PreDefinedFunctions.Use.javaFunctionName =>
+            case PreDefinedFunctions.Use.name =>
               arguments.head match {
                 case Number(groupId, _) =>
                   resourceVariables = resourceVariables + groupId
@@ -285,7 +290,7 @@ object TargetProgram {
                   Right(Use(Some(groupId), update = arguments(1), condition))
                 case _ => throw new Exception(s"The first argument must be a number in $tree")
               }
-            case PreDefinedFunctions.Reset.javaFunctionName =>
+            case PreDefinedFunctions.Reset.name =>
               arguments.head match {
                 case Number(groupId, _) =>
                   resourceVariables = resourceVariables + groupId
@@ -293,14 +298,14 @@ object TargetProgram {
                   Right(Reset(groupId, condition))
                 case _ => throw new Exception(s"The first argument must be a number in $tree")
               }
-            case PreDefinedFunctions.ArrayRead.javaFunctionName =>
+            case PreDefinedFunctions.ArrayRead.name =>
               Left(ArrayRead(arguments.head, arguments(1)))
-            case PreDefinedFunctions.ArrayLength.javaFunctionName =>
+            case PreDefinedFunctions.ArrayLength.name =>
               Left(ArrayLength(arguments.head))
-            case PreDefinedFunctions.ArraySum.javaFunctionName =>
+            case PreDefinedFunctions.ArraySum.name =>
               Left(ArraySum(arguments.head))
             case _ =>
-              val returnType = PreDefinedFunctions.functions.find({ f => f.javaFunctionName == functionName }) match {
+              val returnType = PreDefinedFunctions.functions.find({ f => f.name == functionName }) match {
                 case Some(f) => f.returnType
                 case None =>
                   allMethods.find(targetMethod => targetMethod.methodName == functionName) match {

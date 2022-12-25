@@ -77,7 +77,7 @@ object Fuzzer {
     val logger = MyLogger.createLogger(Fuzzer.getClass, debugMode)
     val loopConditionals = BrboAstUtils.getLoopConditionals(brboProgram.mainFunction.body)
     val inputs = generateInputs(brboProgram.mainFunction.parameters, samples, loopConditionals)
-    logger.info(s"[Fuzzing ${brboProgram.name}] Generated `${inputs.size}` inputs")
+    logger.info(s"[Fuzzing ${brboProgram.className}] Generated `${inputs.size}` inputs")
     Interpreter.generateTraces(inputs, interpreter, threads, debugMode)
   }
 

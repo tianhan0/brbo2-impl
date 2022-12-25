@@ -27,7 +27,7 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
     val assume = Assume(And(greaterThan(a, Number(0)), greaterThan(n, Number(0))))
     val loop = Loop(condition, Block(List(reset, use, increment)))
     val mainFunction = BrboFunction("main", VOID, List(n, a), Block(List(assume, declaration, loop)), Set(groupId))
-    BrboProgram("Test program 1", mainFunction)
+    BrboProgram("Test program 1", packageName = None, mainFunction)
   }
 
   private val (program2, program3) = {
@@ -46,13 +46,13 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
     val mainFunction1 = BrboFunction("main", VOID, List(t),
       Block(List(assume, VariableDeclaration(l, Number(0)), VariableDeclaration(s, Number(0)),
         VariableDeclaration(e, Number(0)), loop1, use2)), Set(groupId))
-    val program1 = BrboProgram("Test program 2", mainFunction1)
+    val program1 = BrboProgram("Test program 2", packageName = None, mainFunction1)
 
     val loop2 = Loop(LessThan(e, t), Block(List(s1, s2, use1, s3)))
     val mainFunction2 = BrboFunction("main", VOID, List(t),
       Block(List(assume, VariableDeclaration(l, Number(0)), VariableDeclaration(s, Number(0)), reset,
         VariableDeclaration(e, Number(0)), loop2, use2)), Set(groupId))
-    val program2 = BrboProgram("Test program 2", mainFunction2)
+    val program2 = BrboProgram("Test program 2", packageName = None, mainFunction2)
     (program1, program2)
   }
 

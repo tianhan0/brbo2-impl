@@ -3,54 +3,72 @@ package brbo.common.ast
 import brbo.common.BrboType._
 import brbo.common.GhostVariableTyp._
 import brbo.common.{BrboType, GhostVariableUtils, PreDefinedFunctions, SameAs}
-import brbo.frontend.TargetProgram
 
 import java.util.UUID
 
 @SerialVersionUID(1L)
-case class BrboProgram(name: String, mainFunction: BrboFunction,
+case class BrboProgram(className: String,
+                       packageName: Option[String],
+                       mainFunction: BrboFunction,
+                       otherFunctions: List[BrboFunction] = Nil,
                        boundAssertions: List[BoundAssertion] = Nil,
-                       functions: List[BrboFunction] = Nil, uuid: UUID = UUID.randomUUID())
-  extends PrintToC with SameAs with Serializable {
-  lazy val allFunctions: List[BrboFunction] = functions :+ mainFunction
+                       uuid: UUID = UUID.randomUUID())
+  extends Print with SameAs with Serializable {
+
+  lazy val allFunctions: List[BrboFunction] = otherFunctions :+ mainFunction
+  private val nonPredefinedFunctions = allFunctions.filterNot({
+    function => PreDefinedFunctions.functions.exists(predefined => predefined.name == function.identifier)
+  })
 
   override def printToC(indent: Int): String = {
-    val functionsString = allFunctions.map(function => function.printToC(indent)).mkString("\n")
+    val functionsString = nonPredefinedFunctions.map(function => function.printToC(indent)).mkString("\n")
     s"${PreDefinedFunctions.ATOMIC_FUNCTIONS_C_DECLARATION}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
   }
 
-  private val abstractMethods =
-    """  public abstract int ndInt();
-      |  public abstract int ndInt2(int lower, int upper);
-      |  public abstract boolean ndBool();
-      |  public abstract void assume(boolean expression);
-      |  public abstract void mostPreciseBound(boolean assertion);
-      |  public abstract void lessPreciseBound(boolean assertion);
-      |  public abstract void resetPlaceHolder();""".stripMargin
-
-  def printToBrboJava(): String = {
-    val functionsString = allFunctions.filterNot({
-      function => PreDefinedFunctions.functions.exists(predefined => predefined.name == function.identifier)
-    }).map(function => function.printToBrboJava(indent = 2, boundAssertions)).mkString("\n")
-    s"""abstract class ${name.stripSuffix(s".${TargetProgram.MAIN_FUNCTION}")} {
-       |$functionsString
-       |$abstractMethods
+  override def printToBrboJava(indent: Int): String = {
+    val predefinedFunctions =
+      s"""  public abstract int ${PreDefinedFunctions.NdInt.name}();
+         |  public abstract int ${PreDefinedFunctions.NdInt2.name}(int lower, int upper);
+         |  public abstract boolean ${PreDefinedFunctions.NdBool.name}();
+         |  public abstract void ${PreDefinedFunctions.Assume.name}(boolean expression);
+         |  public abstract void ${PreDefinedFunctions.MostPreciseBound.name}(boolean assertion);
+         |  public abstract void ${PreDefinedFunctions.LessPreciseBound.name}(boolean assertion);
+         |  public abstract void ${PreDefinedFunctions.ResetPlaceHolder.name}();""".stripMargin
+    val nonPredefinedFunctions =
+      this.nonPredefinedFunctions.map(function => function.printToBrboJavaWithBoundAssertions(indent, boundAssertions)).mkString("\n")
+    s"""abstract class $className {
+       |$nonPredefinedFunctions
+       |$predefinedFunctions
        |}""".stripMargin
   }
 
+  override def printToQFuzzJava(indent: Int): String = {
+    val arrayReadFunction =
+      s"""int ${PreDefinedFunctions.ArrayRead.name}(int[] array, index) {
+         |  return array[index];
+         |}""".stripMargin
+    val arrayLengthFunction =
+      s"""int ${PreDefinedFunctions.ArrayLength.name}(int[] array) {
+         |  return array.length;
+         |}""".stripMargin
+    ???
+  }
+
   def replaceMainFunction(newMainFunction: BrboFunction): BrboProgram =
-    BrboProgram(name, newMainFunction, boundAssertions, functions)
+    BrboProgram(className, packageName, newMainFunction, otherFunctions, boundAssertions)
 
   override def sameAs(other: Any): Boolean = {
     other match {
-      case BrboProgram(otherName, otherMainFunction, otherBoundAssertions, otherFunctions, _) =>
-        if (otherBoundAssertions.length != boundAssertions.length || otherFunctions.length != functions.length)
+      case BrboProgram(otherName, otherPackageName, otherMainFunction, otherBoundAssertions, otherFunctions, _) =>
+        if (otherBoundAssertions.length != boundAssertions.length || otherFunctions.length != otherFunctions.length)
           false
         else
-          otherName == name && otherMainFunction.sameAs(mainFunction) &&
+          otherName == className &&
+            otherPackageName == packageName &&
+            otherMainFunction.sameAs(mainFunction) &&
             otherBoundAssertions.zip(boundAssertions).forall({
               case (a1, a2) => a1.sameAs(a2)
-            }) && otherFunctions.zip(functions).forall({
+            }) && otherFunctions.zip(otherFunctions).forall({
             case (f1, f2) => f1.sameAs(f2)
           })
       case _ => false
@@ -71,13 +89,17 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
  * @param uuid       Unique ID
  */
 @SerialVersionUID(2L)
-case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: List[Identifier],
-                        body: Statement, groupIds: Set[Int], uuid: UUID = UUID.randomUUID())
-  extends PrintToC with SameAs with Serializable {
+case class BrboFunction(identifier: String,
+                        returnType: BrboType.T,
+                        parameters: List[Identifier],
+                        body: Statement,
+                        groupIds: Set[Int],
+                        uuid: UUID = UUID.randomUUID())
+  extends Print with SameAs with Serializable {
   val approximatedResourceUsage: BrboExpr = GhostVariableUtils.approximatedResourceUsage(groupIds)
 
   // Declare and initialize ghost variables in the function
-  val bodyWithInitialization: Statement = {
+  val bodyWithGhostInitialization: Statement = {
     val ghostVariableInitializations: List[Command] = groupIds.flatMap({
       groupId => GhostVariableUtils.declareVariables(groupId, legacy = false)
     }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
@@ -91,10 +113,14 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
   override def printToC(indent: Int): String = {
     val parametersString = parameters.map(pair => s"${pair.typeNamePairInC()}").mkString(", ")
     val indentString = " " * indent
-    s"$indentString${BrboType.toCString(returnType)} $identifier($parametersString) \n${bodyWithInitialization.printToC(indent)}"
+    s"$indentString${BrboType.toCString(returnType)} $identifier($parametersString) \n${bodyWithGhostInitialization.printToC(indent)}"
   }
 
-  def printToBrboJava(indent: Int, boundAssertions: List[BoundAssertion]): String = {
+  override def printToBrboJava(indent: Int): String = printToBrboJavaWithBoundAssertions(indent, boundAssertions = Nil)
+
+  override def printToQFuzzJava(indent: Int): String = printToBrboJava(indent)
+
+  def printToBrboJavaWithBoundAssertions(indent: Int, boundAssertions: List[BoundAssertion]): String = {
     val ghostVariables: List[Identifier] =
       groupIds.toList.sorted.map(id => GhostVariableUtils.generateVariable(Some(id), Resource, legacy = true))
     val ghostVariablesSum = ghostVariables.foldLeft(Number(0): BrboExpr)({
@@ -126,7 +152,7 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
       s"\n${bodyWithInitialization.printToBrboJava(indent)}"
   }
 
-  def replaceBodyWithoutInitialization(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody, groupIds)
+  def replaceBodyWithoutGhostInitialization(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody, groupIds)
 
   def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, body, newGroupIds)
 
@@ -143,7 +169,7 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
     }
   }
 
-  def nonGhostVariables(): List[Identifier] = {
+  lazy val nonGhostVariables: List[Identifier] = {
     val variables = BrboAstUtils.collectCommands(body).flatMap({
       case VariableDeclaration(identifier, _, _) => Some(identifier)
       case _ => None
@@ -154,8 +180,8 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
   }
 }
 
-abstract class BrboAst extends SameAs with Serializable with PrintToC {
-  def printToBrboJava(indent: Int): String
+abstract class BrboAst extends SameAs with Serializable with Print {
+  override def printToQFuzzJava(indent: Int): String = printToBrboJava(indent)
 }
 
 abstract class Statement(val uuid: UUID) extends BrboAst
@@ -604,16 +630,12 @@ abstract class GhostCommand(uuid: UUID) extends Command(uuid) {
   def replace(newGroupId: Int): GhostCommand
 }
 
-/**
- *
- * @param groupId When None, this command represents updating the original resource variable.
- *                Otherwise, this command represents updating a resource variable for some amortization group
- * @param update
- * @param condition
- * @param uuid
- */
-case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Bool(b = true),
-               override val uuid: UUID = UUID.randomUUID()) extends GhostCommand(uuid) {
+case class Use( // When None, this command represents updating the original resource variable.
+                // Otherwise, this command represents updating a resource variable for some amortization group
+                groupId: Option[Int],
+                update: BrboExpr,
+                condition: BrboExpr = Bool(b = true),
+                override val uuid: UUID = UUID.randomUUID()) extends GhostCommand(uuid) {
   assert(update.typ == BrboType.INT)
   assert(condition.typ == BrboType.BOOL)
 

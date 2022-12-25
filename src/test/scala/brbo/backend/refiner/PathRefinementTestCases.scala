@@ -7,7 +7,7 @@ import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 
 object PathRefinementTestCases {
-  val brboProgram: BrboProgram = BrboProgram("Test program", BrboFunction("Main", VOID, Nil, Block(List(Skip())), Set(0, 1, 2)))
+  val brboProgram: BrboProgram = BrboProgram("Test program", packageName = None, BrboFunction("Main", VOID, Nil, Block(List(Skip())), Set(0, 1, 2)))
 
   private val r1Initialization = GhostVariableUtils.declareVariables(1, legacy = false).map(c => CFGNode(c, Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID))
   private val r2Initialization = GhostVariableUtils.declareVariables(2, legacy = false).map(c => CFGNode(c, Some(brboProgram.mainFunction), CFGNode.DONT_CARE_ID))

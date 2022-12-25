@@ -52,7 +52,7 @@ object SynthesizerUnitTest {
   private val loop = Loop(condition, Block(List(reset, use, increment)))
 
   private val mainFunction: BrboFunction = BrboFunction("main", VOID, List(n), Block(List(declaration, loop)), Set(1))
-  private val program: BrboProgram = BrboProgram("Test program", mainFunction)
+  private val program: BrboProgram = BrboProgram("Test program", packageName = None, mainFunction)
 
   val synthesizeTests: List[TestCase] = {
     val path = List(

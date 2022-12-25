@@ -56,7 +56,7 @@ class BrboAstUnitTest extends AnyFlatSpec {
     BrboAstUnitTest.printToBrboJavaTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
-        StringCompare.ignoreWhitespaces(targetProgram.program.printToBrboJava(), testCase.expectedOutput, s"${testCase.name} failed")
+        StringCompare.ignoreWhitespaces(targetProgram.program.printToBrboJava(indent = 0), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }

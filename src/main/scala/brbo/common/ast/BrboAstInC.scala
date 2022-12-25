@@ -8,13 +8,18 @@ case class BrboCProgram(originalProgram: BrboProgram) {
       val c = BrboCFunction(originalProgram.mainFunction)
       (c.function, c.map)
     }
-    val (functions, map) = originalProgram.functions.foldLeft(Nil: List[BrboFunction], mainMap)({
+    val (otherFunctions, map) = originalProgram.otherFunctions.foldLeft(Nil: List[BrboFunction], mainMap)({
       (acc, function) =>
         val c = BrboCFunction(function)
         (c.function :: acc._1, acc._2 ++ c.map)
     })
-    val newProgram = BrboProgram(originalProgram.name, newMainFunction,
-      originalProgram.boundAssertions, functions.reverse)
+    val newProgram = BrboProgram(
+      className = originalProgram.className,
+      packageName = originalProgram.packageName,
+      mainFunction = newMainFunction,
+      otherFunctions = otherFunctions.reverse,
+      boundAssertions = originalProgram.boundAssertions,
+    )
     (newProgram, map)
   }
 }

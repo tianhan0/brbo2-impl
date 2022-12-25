@@ -94,7 +94,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
           case (node, index) =>
             val programInC = BrboCProgram(node.program)
             val cSourceCode = programInC.program.printToC(0)
-            val file = new File(s"${BrboMain.OUTPUT_DIRECTORY}/amortizations/${originalProgram.name}-${StringFormatUtils.integer(index, 3)}.txt")
+            val file = new File(s"${BrboMain.OUTPUT_DIRECTORY}/amortizations/${originalProgram.className}-${StringFormatUtils.integer(index, 3)}.txt")
             FileUtils.writeStringToFile(file, cSourceCode, Charset.forName("UTF-8"))
         })
         logger.infoOrError(s"Reached the max number of refinement iterations: `${arguments.getMaxIterations}`. Will stop now.")
@@ -226,7 +226,7 @@ class Driver(arguments: CommandLineArguments, originalProgram: BrboProgram) {
     val newBody = replacements.foldLeft(program.mainFunction.body: BrboAst)({
       case (acc, (oldCommand, newCommand)) => BrboAstUtils.replaceAst(acc, oldCommand, newCommand)
     })
-    val newMainFunction = program.mainFunction.replaceBodyWithoutInitialization(newBody.asInstanceOf[Statement])
+    val newMainFunction = program.mainFunction.replaceBodyWithoutGhostInitialization(newBody.asInstanceOf[Statement])
     program.replaceMainFunction(newMainFunction)
   }
 

@@ -7,7 +7,7 @@ object ProgramTransformation {
   def transform(program: BrboProgram): BrboProgram = {
     val mainFunction = program.mainFunction
     val mainFunctionBody = mainFunction.body
-    val useDefVariables = BrboAstUtils.collectUseDefVariables(mainFunction.bodyWithInitialization)
+    val useDefVariables = BrboAstUtils.collectUseDefVariables(mainFunction.bodyWithGhostInitialization)
     // Generate a variable that decrements with the execution of any use command. When the variable equals 0, the program exits.
     // This variable is used to track the cost of every use command.
     val indexVariable = generateIndexVariable(useDefVariables)
@@ -41,10 +41,11 @@ object ProgramTransformation {
       groupIds = mainFunction.groupIds
     )
     BrboProgram(
-      name = program.name,
+      className = program.className,
+      packageName = program.packageName,
       mainFunction = newMainFunction,
       boundAssertions = program.boundAssertions,
-      functions = useFunction :: program.functions
+      otherFunctions = useFunction :: program.otherFunctions
     )
   }
 

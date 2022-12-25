@@ -114,7 +114,7 @@ class Driver(arguments: NewCommandLineArguments, program: BrboProgram, inputFile
 object Driver {
   def insertResetPlaceHolders(program: BrboProgram): BrboProgram = {
     val mainFunctionWithResetPlaceHolders =
-      program.mainFunction.replaceBodyWithoutInitialization(
+      program.mainFunction.replaceBodyWithoutGhostInitialization(
         BrboAstUtils.insertResetPlaceHolder(program.mainFunction.body).asInstanceOf[Statement]
       )
     program.replaceMainFunction(mainFunctionWithResetPlaceHolders)
@@ -131,7 +131,7 @@ object Driver {
 
   def classifierFeatures(program: BrboProgram): List[Identifier] = {
     val loopConditionals = BrboAstUtils.getLoopConditionals(program.mainFunction.body)
-    program.mainFunction.nonGhostVariables().filter({
+    program.mainFunction.nonGhostVariables.filter({
       variable =>
         val usedInLoopConditional = loopConditionals.exists(e => e.getUses.contains(variable))
         val nonGhostVariable = variable.typ match {

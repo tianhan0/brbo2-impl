@@ -35,7 +35,7 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
       case (store, (parameter, inputValue)) => store.set(parameter, inputValue)
     })
     // println(s"Evaluate function `${brboFunction.identifier}` with initial store $initialStore")
-    val initialState = InitialState(brboFunction.bodyWithInitialization, initialStore, lastTrace.add(TraceNode(initialStore, None)))
+    val initialState = InitialState(brboFunction.bodyWithGhostInitialization, initialStore, lastTrace.add(TraceNode(initialStore, None)))
     evaluateAst(initialState)
   }
 
@@ -307,10 +307,11 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
               case PreDefinedFunctions.MostPreciseBound.name | PreDefinedFunctions.LessPreciseBound.name =>
                 GoodState(initialState.store, appendToTraceFrom(initialState, lastTransition), None)
               case _ =>
-                evaluateFunctionCall(initialState, specialFunction.cRepresentation, arguments)
+                // evaluateFunctionCall(initialState, specialFunction.cRepresentation, arguments)
+                throw new Exception(s"Interpreting a predefined function $identifier whose semantics is unknown")
             }
           case None =>
-            brboProgram.functions.find(f => f.identifier == identifier) match {
+            brboProgram.otherFunctions.find(f => f.identifier == identifier) match {
               case Some(function) => evaluateFunctionCall(initialState, function, arguments)
               case None => throw new Exception(s"Evaluating a function that is not defined: $ast")
             }
