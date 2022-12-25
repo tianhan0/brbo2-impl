@@ -27,22 +27,43 @@ object BrboType {
     override def toString: String = s"ARRAY[${typ.toString}]"
   }
 
-  def toCString(typ: T): String = {
-    typ match {
-      case INT => "int"
-      case BOOL => "int"
-      case VOID => "void"
-      case FLOAT => "float"
-      case STRING => "$string$" // Intentionally invalid type name for C
-      case ARRAY(_: T) =>
+  abstract class PrintType
 
-        /**
-         * Instead of s"${toCString(typ)}[]", we intentionally translate array types into integer types, such that
-         * we can model list x as integer x, and model reading from list x as reading an integer that is smaller
-         * than integer x. See ArrayRead and ArrayLength in PreDefinedFunctions.scala and their semantics in
-         * Interpreter.scala.
-         */
-        "int"
+  object CPrintType extends PrintType
+
+  object QFuzzPrintType extends PrintType
+
+  object PrintType {
+    def print(typ: T, printType: PrintType): String = {
+      printType match {
+        case CPrintType =>
+          typ match {
+            case INT => "int"
+            case BOOL => "int"
+            case VOID => "void"
+            case FLOAT => "float"
+            case STRING => "$string$" // Intentionally invalid type name for C
+            case ARRAY(_: T) =>
+
+              /**
+               * Instead of s"${toCString(typ)}[]", we intentionally translate array types into integer types, such that
+               * we can model list x as integer x, and model reading from list x as reading an integer that is smaller
+               * than integer x. See ArrayRead and ArrayLength in PreDefinedFunctions.scala and their semantics in
+               * Interpreter.scala.
+               */
+              "int"
+          }
+        case QFuzzPrintType =>
+          typ match {
+            case INT => "int"
+            case BOOL => "int"
+            case VOID => "void"
+            case FLOAT => "float"
+            case STRING => throw new Exception
+            case ARRAY(innerType: T) => s"${print(innerType, printType)}[]"
+          }
+        case _ => throw new Exception
+      }
     }
   }
 }

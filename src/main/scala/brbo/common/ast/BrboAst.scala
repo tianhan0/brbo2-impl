@@ -44,14 +44,27 @@ case class BrboProgram(className: String,
 
   override def printToQFuzzJava(indent: Int): String = {
     val arrayReadFunction =
-      s"""int ${PreDefinedFunctions.ArrayRead.name}(int[] array, index) {
-         |  return array[index];
-         |}""".stripMargin
+      s"""  int ${PreDefinedFunctions.ArrayRead.name}(int[] array, index) {
+         |    return array[index];
+         |  }""".stripMargin
     val arrayLengthFunction =
-      s"""int ${PreDefinedFunctions.ArrayLength.name}(int[] array) {
-         |  return array.length;
-         |}""".stripMargin
-    ???
+      s"""  int ${PreDefinedFunctions.ArrayLength.name}(int[] array) {
+         |    return array.length;
+         |  }""".stripMargin
+    val predefinedFunctions =
+      s"""$arrayReadFunction
+         |$arrayLengthFunction""".stripMargin
+    val nonPredefinedFunctions =
+      this.nonPredefinedFunctions.map(function => function.printToQFuzzJava(indent)).mkString("\n")
+    val packageString = packageName match {
+      case Some(value) => s"package $value;"
+      case None => ""
+    }
+    s"""$packageString
+       |abstract class $className {
+       |$nonPredefinedFunctions
+       |$predefinedFunctions
+       |}""".stripMargin
   }
 
   def replaceMainFunction(newMainFunction: BrboFunction): BrboProgram =
@@ -109,47 +122,61 @@ case class BrboFunction(identifier: String,
       case _ => throw new Exception
     }
   }
+  private lazy val legacyGhostVariables: List[Identifier] =
+    groupIds.toList.sorted.map(id => GhostVariableUtils.generateVariable(Some(id), Resource, legacy = true))
+
+  private lazy val legacyGhostVariablesSum = legacyGhostVariables.foldLeft(Number(0): BrboExpr)({
+    case (soFar, variable) => Addition(soFar, variable)
+  })
+
+  lazy val nonGhostVariables: List[Identifier] = {
+    val variables = BrboAstUtils.collectCommands(body).flatMap({
+      case VariableDeclaration(identifier, _, _) => Some(identifier)
+      case _ => None
+    }).toList ::: parameters
+    variables.sortWith({
+      case (v1, v2) => v1.printToIR() < v2.printToIR()
+    })
+  }
 
   override def printToC(indent: Int): String = {
-    val parametersString = parameters.map(pair => s"${pair.typeNamePairInC()}").mkString(", ")
-    val indentString = " " * indent
-    s"$indentString${BrboType.toCString(returnType)} $identifier($parametersString) \n${bodyWithGhostInitialization.printToC(indent)}"
+    val parametersString = parameters.map(pair => s"${pair.typeNamePair(CPrintType)}").mkString(", ")
+    val indentString = " " * (indent + DEFAULT_INDENT)
+    s"$indentString${BrboType.PrintType.print(returnType, CPrintType)} $identifier($parametersString)\n${bodyWithGhostInitialization.printToC(indent + DEFAULT_INDENT)}"
   }
 
   override def printToBrboJava(indent: Int): String = printToBrboJavaWithBoundAssertions(indent, boundAssertions = Nil)
 
-  override def printToQFuzzJava(indent: Int): String = printToBrboJava(indent)
+  override def printToQFuzzJava(indent: Int): String = {
+    val parametersString = parameters.map(pair => s"${pair.typeNamePair(QFuzzPrintType)}").mkString(", ")
+    s"${indentString(indent + DEFAULT_INDENT)}${BrboType.PrintType.print(returnType, QFuzzPrintType)} $identifier($parametersString)\n" +
+      s"${body.printToQFuzzJava(indent + DEFAULT_INDENT)}"
+  }
 
   def printToBrboJavaWithBoundAssertions(indent: Int, boundAssertions: List[BoundAssertion]): String = {
-    val ghostVariables: List[Identifier] =
-      groupIds.toList.sorted.map(id => GhostVariableUtils.generateVariable(Some(id), Resource, legacy = true))
-    val ghostVariablesSum = ghostVariables.foldLeft(Number(0): BrboExpr)({
-      case (soFar, variable) => Addition(soFar, variable)
-    })
-    val boundAssertionExprs: List[BrboExpr] = boundAssertions.map({
+    val boundAssertionExprs: List[BrboExpr] = boundAssertionExpressions(boundAssertions)
+    val parametersString = parameters.map(pair => s"${pair.typeNamePair(CPrintType)}").mkString(", ")
+    val ghostVariableInitializations: List[Command] = groupIds.flatMap({
+      groupId => GhostVariableUtils.declareVariables(groupId, legacy = true)
+    }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
+    val bodyWithInitialization = BrboAstUtils.prepend(body, toPrepend = ghostVariableInitializations ::: boundAssertionExprs)
+    s"${indentString(indent + DEFAULT_INDENT)}${BrboType.PrintType.print(returnType, CPrintType)} $identifier($parametersString) \n" +
+      s"${bodyWithInitialization.printToBrboJava(indent + DEFAULT_INDENT)}"
+  }
+
+  private def boundAssertionExpressions(boundAssertions: List[BoundAssertion]): List[BrboExpr] = {
+    boundAssertions.map({
       boundAssertion =>
         boundAssertion.tag match {
           case PreDefinedFunctions.MostPreciseBound.name =>
-            val assertion = boundAssertion.replaceResourceVariable(into = ghostVariablesSum)
+            val assertion = boundAssertion.replaceResourceVariable(into = legacyGhostVariablesSum)
             FunctionCallExpr(PreDefinedFunctions.MostPreciseBound.name, List(assertion), PreDefinedFunctions.MostPreciseBound.returnType)
           case PreDefinedFunctions.LessPreciseBound.name =>
-            val assertion = boundAssertion.replaceResourceVariable(into = ghostVariablesSum)
+            val assertion = boundAssertion.replaceResourceVariable(into = legacyGhostVariablesSum)
             FunctionCallExpr(PreDefinedFunctions.LessPreciseBound.name, List(assertion), PreDefinedFunctions.LessPreciseBound.returnType)
           case _ => throw new Exception
         }
     })
-
-    val parametersString = parameters.map(pair => s"${pair.typeNamePairInC()}").mkString(", ")
-    val ghostVariableInitializations: List[Command] = groupIds.flatMap({
-      groupId => GhostVariableUtils.declareVariables(groupId, legacy = true)
-    }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
-    val bodyWithInitialization: Block = body match {
-      case Block(asts, _) => Block(ghostVariableInitializations ::: boundAssertionExprs ::: asts)
-      case _: ITE | _: Loop => Block((ghostVariableInitializations ::: boundAssertionExprs) :+ body)
-      case _ => throw new Exception
-    }
-    s"${indentString(indent)}${BrboType.toCString(returnType)} $identifier($parametersString) \n" +
-      s"\n${bodyWithInitialization.printToBrboJava(indent)}"
   }
 
   def replaceBodyWithoutGhostInitialization(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody, groupIds)
@@ -168,16 +195,6 @@ case class BrboFunction(identifier: String,
       case _ => false
     }
   }
-
-  lazy val nonGhostVariables: List[Identifier] = {
-    val variables = BrboAstUtils.collectCommands(body).flatMap({
-      case VariableDeclaration(identifier, _, _) => Some(identifier)
-      case _ => None
-    }).toList ::: parameters
-    variables.sortWith({
-      case (v1, v2) => v1.printToIR() < v2.printToIR()
-    })
-  }
 }
 
 abstract class BrboAst extends SameAs with Serializable with Print {
@@ -189,6 +206,7 @@ abstract class Statement(val uuid: UUID) extends BrboAst
 abstract class Command(val uuid: UUID) extends BrboAst with PrintToIR with GetFunctionCalls with UseDefVariables {
   def printToCInternal(indent: Int): String
 
+  // TODO: For `VariableDeclaration`, we need to declare array types!
   def printToBrboJava(indent: Int): String = printToC(indent)
 
   final override def printToIR(): String = {
@@ -343,7 +361,7 @@ case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, o
         case STRING => assert(initialValue.typ == STRING); initialValue.printNoOuterBrackets
         case _ => throw new Exception
       }
-    s"${indentString(indent)}${BrboType.toCString(identifier.typ)} ${identifier.name} = $initialValueString;"
+    s"${indentString(indent)}${BrboType.PrintType.print(identifier.typ, CPrintType)} ${identifier.name} = $initialValueString;"
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = initialValue.getFunctionCalls

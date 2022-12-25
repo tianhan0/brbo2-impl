@@ -1,6 +1,6 @@
 package brbo.common.ast
 
-import brbo.common.BrboType.{ARRAY, BOOL, INT, STRING}
+import brbo.common.BrboType.{ARRAY, BOOL, INT, PrintType, STRING}
 import brbo.common.{BrboType, PreDefinedFunctions, Z3Solver}
 import com.microsoft.z3.AST
 
@@ -44,7 +44,7 @@ case class Identifier(name: String, override val typ: BrboType.T, override val u
     s"${indentString(indent)}$name"
   }
 
-  def typeNamePairInC(): String = s"${BrboType.toCString(typ)} $name"
+  def typeNamePair(printType: PrintType): String = s"${BrboType.PrintType.print(typ, printType)} $name"
 
   override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
