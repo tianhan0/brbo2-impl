@@ -3,7 +3,7 @@ package brbo.backend2.qfuzz
 import brbo.common.BrboType
 import brbo.common.ast._
 
-object ProgramTransformation {
+object ProgramTransformer {
   def transform(program: BrboProgram): BrboProgram = {
     val mainFunction = program.mainFunction
     val mainFunctionBody = mainFunction.body

@@ -46,4 +46,9 @@ object StringFormatUtils {
     val unit = " KMGTPE".charAt(z)
     s"$size$unit"
   }
+
+  def prependIndentsPerLine(string: String, indent: Int): String = {
+    val indentString = " " * indent
+    indentString + string.replaceAll("\\n", s"\n$indentString")
+  }
 }

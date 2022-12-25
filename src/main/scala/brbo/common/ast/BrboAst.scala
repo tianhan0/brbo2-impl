@@ -56,12 +56,12 @@ case class BrboProgram(className: String,
          |$arrayLengthFunction""".stripMargin
     val nonPredefinedFunctions =
       this.nonPredefinedFunctions.map(function => function.printToQFuzzJava(indent)).mkString("\n")
-    val packageString = packageName match {
+    val packageString: String = packageName match {
       case Some(value) => s"package $value;"
       case None => ""
     }
     s"""$packageString
-       |abstract class $className {
+       |class $className {
        |$nonPredefinedFunctions
        |$predefinedFunctions
        |}""".stripMargin

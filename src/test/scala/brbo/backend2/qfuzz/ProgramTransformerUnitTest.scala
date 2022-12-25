@@ -5,18 +5,18 @@ import brbo.common.string.StringCompare
 import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.scalatest.flatspec.AnyFlatSpec
 
-class ProgramTransformationUnitTest extends AnyFlatSpec {
+class ProgramTransformerUnitTest extends AnyFlatSpec {
   "Transforming a program for QFuzz" should "be correct" in {
-    ProgramTransformationUnitTest.transformationTests.foreach({
+    ProgramTransformerUnitTest.transformationTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
-        val transformedProgram = ProgramTransformation.transform(targetProgram.program)
+        val transformedProgram = ProgramTransformer.transform(targetProgram.program)
         StringCompare.ignoreWhitespaces(transformedProgram.printToQFuzzJava(indent = 0), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }
 
-object ProgramTransformationUnitTest {
+object ProgramTransformerUnitTest {
   private val test01 =
     s"""class Test {
        |  void ${TargetProgram.MAIN_FUNCTION}(int n) {
@@ -41,7 +41,7 @@ object ProgramTransformationUnitTest {
 
   private val transformationTests = List(
     TestCase("Test 01", test01,
-      """abstract class Test {
+      """class Test {
         |  void execute(int n, int INDEX_VARIABLE)
         |  {
         |    if (8 < n)
@@ -83,7 +83,7 @@ object ProgramTransformationUnitTest {
         |  }
         |}""".stripMargin),
     TestCase("Test 02", test02,
-      """abstract class Test {
+      """class Test {
         |  void execute(int[] array, int INDEX_VARIABLE)
         |  {
         |    int x = arrayLength(array);
