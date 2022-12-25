@@ -17,6 +17,7 @@ public class DriverGreedy {
   public final static int MAX_ARRAY_SIZE = 16;
   private final static short MAX_INTEGER = 30;
   private final static short MIN_INTEGER = 1;
+  private final static int MAX_NUMBER_OF_USES_TO_TRACK = 1000;
 
   /* Minimum distance between clusters. */
   public final static double epsilon = 1.0;
@@ -49,27 +50,21 @@ public class DriverGreedy {
     }
 
     int[] public_input = new int[values.size()];
-    int[] secrets = new int[public_input.length];
 
     for (int i = 0; i < values.size() - 1; i++) {
       public_input[i] = values.get(i);
     }
     int public_input_2 = values.get(values.size() - 1);
 
-    for (int i = 0; i < public_input.length; i++) {
-      // secret[i] means collecting accumulated resource consumption up to the secret[i]-th uses
-      secrets[i] = i + 1;
-    }
-
     System.out.println("public: " + Arrays.toString(public_input));
-    System.out.println("secrets: " + Arrays.toString(secrets));
 
-    long[] observations = new long[secrets.length];
+    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
     Mem.clear(true);
-    for (int i = 0; i < secrets.length; i++) {
+    for (int i = 0; i < MAX_NUMBER_OF_USES_TO_TRACK; i++) {
+      // In the i-th iteration, we collect accumulated resource consumption up to the secret[i]-th uses
       Mem.clear(false);
       // Resource.run(public_input, secrets[i]);
-      Resource.run3(public_input, public_input_2, secrets[i]);
+      Resource.run3(public_input, public_input_2, i);
       if (i == 0) {
         observations[i] = Mem.instrCost;
       } else {
