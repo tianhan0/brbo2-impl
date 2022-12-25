@@ -51,6 +51,13 @@ object BrboAstUtils {
     }
   }
 
+  /**
+   *
+   * @param body
+   * @param replacements
+   * @param omitResetPlaceHolders Whether to replace reset placeholders with comments
+   * @return
+   */
   def replaceCommands(body: BrboAst, replacements: Map[Command, BrboAst], omitResetPlaceHolders: Boolean): BrboAst = {
     body match {
       case command: Command =>
@@ -217,6 +224,20 @@ object BrboAstUtils {
             getLoopConditionals(thenAst) ++ getLoopConditionals(elseAst)
           case Loop(condition, loopBody, _) =>
             getLoopConditionals(loopBody) + condition
+          case _ => throw new Exception
+        }
+      case _ => throw new Exception
+    }
+  }
+
+  def prepend(ast: BrboAst, toPrepend: Iterable[BrboAst]): BrboAst = {
+    val list = toPrepend.toList
+    ast match {
+      case _: Command => Block(list :+ ast)
+      case statement: Statement =>
+        statement match {
+          case Block(asts, _) => Block(list ::: asts)
+          case _: ITE | _: Loop => Block(list :+ statement)
           case _ => throw new Exception
         }
       case _ => throw new Exception

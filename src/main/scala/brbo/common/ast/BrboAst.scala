@@ -12,8 +12,10 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
                        boundAssertions: List[BoundAssertion] = Nil,
                        functions: List[BrboFunction] = Nil, uuid: UUID = UUID.randomUUID())
   extends PrintToC with SameAs with Serializable {
+  lazy val allFunctions: List[BrboFunction] = functions :+ mainFunction
+
   override def printToC(indent: Int): String = {
-    val functionsString = (functions :+ mainFunction).map(function => function.printToC(indent)).mkString("\n")
+    val functionsString = allFunctions.map(function => function.printToC(indent)).mkString("\n")
     s"${PreDefinedFunctions.ATOMIC_FUNCTIONS_C_DECLARATION}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
   }
 
@@ -27,7 +29,7 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
       |  public abstract void resetPlaceHolder();""".stripMargin
 
   def printToJava(): String = {
-    val functionsString = (functions :+ mainFunction).filterNot({
+    val functionsString = allFunctions.filterNot({
       function => PreDefinedFunctions.functions.exists(predefined => predefined.name == function.identifier)
     }).map(function => function.printToJava(indent = 2, boundAssertions)).mkString("\n")
     s"""abstract class ${name.stripSuffix(s".${TargetProgram.MAIN_FUNCTION}")} {
