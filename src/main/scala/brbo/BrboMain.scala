@@ -99,7 +99,7 @@ object BrboMain {
         inputFilePath = Driver.getInputFilePath(useProvidedInputs = arguments.getUseProvidedInputs, sourceFile))
       val startTime = System.nanoTime
       val decomposedProgram = driver.decompose()
-      val newDecomposition = decomposedProgram.printToJava()
+      val newDecomposition = decomposedProgram.printToBrboJava()
       val endTime = System.nanoTime
       val outputPath = {
         val parent = FilenameUtils.getBaseName(Paths.get(sourceFilePath).getParent.toAbsolutePath.toString)

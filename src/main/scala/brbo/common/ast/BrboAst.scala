@@ -28,10 +28,10 @@ case class BrboProgram(name: String, mainFunction: BrboFunction,
       |  public abstract void lessPreciseBound(boolean assertion);
       |  public abstract void resetPlaceHolder();""".stripMargin
 
-  def printToJava(): String = {
+  def printToBrboJava(): String = {
     val functionsString = allFunctions.filterNot({
       function => PreDefinedFunctions.functions.exists(predefined => predefined.name == function.identifier)
-    }).map(function => function.printToJava(indent = 2, boundAssertions)).mkString("\n")
+    }).map(function => function.printToBrboJava(indent = 2, boundAssertions)).mkString("\n")
     s"""abstract class ${name.stripSuffix(s".${TargetProgram.MAIN_FUNCTION}")} {
        |$functionsString
        |$abstractMethods
@@ -94,7 +94,7 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
     s"$indentString${BrboType.toCString(returnType)} $identifier($parametersString) \n${bodyWithInitialization.printToC(indent)}"
   }
 
-  def printToJava(indent: Int, boundAssertions: List[BoundAssertion]): String = {
+  def printToBrboJava(indent: Int, boundAssertions: List[BoundAssertion]): String = {
     val ghostVariables: List[Identifier] =
       groupIds.toList.sorted.map(id => GhostVariableUtils.generateVariable(Some(id), Resource, legacy = true))
     val ghostVariablesSum = ghostVariables.foldLeft(Number(0): BrboExpr)({
@@ -123,7 +123,7 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
       case _ => throw new Exception
     }
     s"${indentString(indent)}${BrboType.toCString(returnType)} $identifier($parametersString) \n" +
-      s"\n${bodyWithInitialization.printToJava(indent)}"
+      s"\n${bodyWithInitialization.printToBrboJava(indent)}"
   }
 
   def replaceBodyWithoutInitialization(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody, groupIds)
@@ -155,7 +155,7 @@ case class BrboFunction(identifier: String, returnType: BrboType.T, parameters: 
 }
 
 abstract class BrboAst extends SameAs with Serializable with PrintToC {
-  def printToJava(indent: Int): String
+  def printToBrboJava(indent: Int): String
 }
 
 abstract class Statement(val uuid: UUID) extends BrboAst
@@ -163,7 +163,7 @@ abstract class Statement(val uuid: UUID) extends BrboAst
 abstract class Command(val uuid: UUID) extends BrboAst with PrintToIR with GetFunctionCalls with UseDefVariables {
   def printToCInternal(indent: Int): String
 
-  def printToJava(indent: Int): String = printToC(indent)
+  def printToBrboJava(indent: Int): String = printToC(indent)
 
   final override def printToIR(): String = {
     this match {
@@ -204,8 +204,8 @@ case class Block(asts: List[BrboAst], override val uuid: UUID = UUID.randomUUID(
     s"${indentString(indent)}{\n${asts.map(t => t.printToC(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
   }
 
-  override def printToJava(indent: Int): String = {
-    s"${indentString(indent)}{\n${asts.map(t => t.printToJava(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
+  override def printToBrboJava(indent: Int): String = {
+    s"${indentString(indent)}{\n${asts.map(t => t.printToBrboJava(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
   }
 
   override def sameAs(other: Any): Boolean = {
@@ -232,8 +232,8 @@ case class Loop(condition: BrboExpr, loopBody: BrboAst, override val uuid: UUID 
     s"${indentString(indent)}while ($conditionString)\n$bodyString"
   }
 
-  override def printToJava(indent: Int): String = {
-    val bodyString = loopBodyBlock.printToJava(indent)
+  override def printToBrboJava(indent: Int): String = {
+    val bodyString = loopBodyBlock.printToBrboJava(indent)
     s"${indentString(indent)}while ($conditionString)\n$bodyString"
   }
 
@@ -267,9 +267,9 @@ case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, override
     s"${indentString(indent)}if ($conditionString)\n$thenString\n${indentString(indent)}else\n$elseString"
   }
 
-  override def printToJava(indent: Int): String = {
-    val thenString = thenBlock.printToJava(indent)
-    val elseString = elseBlock.printToJava(indent)
+  override def printToBrboJava(indent: Int): String = {
+    val thenString = thenBlock.printToBrboJava(indent)
+    val elseString = elseBlock.printToBrboJava(indent)
     s"${indentString(indent)}if ($conditionString)\n$thenString\n${indentString(indent)}else\n$elseString"
   }
 
@@ -628,7 +628,7 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
     ast.printToC(indent)
   }
 
-  override def printToJava(indent: Int): String = {
+  override def printToBrboJava(indent: Int): String = {
     if (groupId.isEmpty) {
       // When a use command is not assigned with a group (i.e., the command is not decomposed),
       // print the original assignment commands over `R`.
@@ -637,7 +637,7 @@ case class Use(groupId: Option[Int], update: BrboExpr, condition: BrboExpr = Boo
     val resourceVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Resource, legacy = true)
     val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
     val ast = generateAst(assignmentCommand)
-    ast.printToJava(indent)
+    ast.printToBrboJava(indent)
   }
 
   private def generateAst(assignment: Assignment): BrboAst = {
@@ -690,7 +690,7 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
     ast.map(ast => ast.printToC(indent)).mkString("\n")
   }
 
-  override def printToJava(indent: Int): String = {
+  override def printToBrboJava(indent: Int): String = {
     val (resourceVariable: Identifier, starVariable: Identifier, counterVariable: Identifier) =
       GhostVariableUtils.generateVariables(Some(groupId), legacy = true)
     val maxStatement: ITE = {
@@ -701,7 +701,7 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
     val resetCommand: Assignment = Assignment(resourceVariable, Number(0))
     val counterCommand: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
     val ast = generateAst(updateStar = maxStatement, updateResource = resetCommand, updateCounter = counterCommand)
-    ast.map(ast => ast.printToJava(indent)).mkString("\n")
+    ast.map(ast => ast.printToBrboJava(indent)).mkString("\n")
   }
 
   private def generateAst(updateStar: ITE, updateResource: Command, updateCounter: Command): List[BrboAst] = {

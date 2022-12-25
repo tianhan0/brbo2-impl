@@ -16,7 +16,7 @@ abstract class BrboExpr(val typ: BrboType.T, uuid: UUID) extends Command(uuid)
     else string
   }
 
-  override def printToJava(indent: Int): String = printToC(indent)
+  override def printToBrboJava(indent: Int): String = printToC(indent)
 
   def uniqueCopyExpr: BrboExpr
 }

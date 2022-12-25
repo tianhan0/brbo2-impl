@@ -53,10 +53,10 @@ class BrboAstUnitTest extends AnyFlatSpec {
   }
 
   "Printing a program to Java" should "be correct" in {
-    BrboAstUnitTest.printToJavaTests.foreach({
+    BrboAstUnitTest.printToBrboJavaTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
-        StringCompare.ignoreWhitespaces(targetProgram.program.printToJava(), testCase.expectedOutput, s"${testCase.name} failed")
+        StringCompare.ignoreWhitespaces(targetProgram.program.printToBrboJava(), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }
@@ -298,7 +298,7 @@ object BrboAstUnitTest {
         |""".stripMargin),
   )
 
-  private val printToJavaTest1 =
+  private val printToBrboJavaTest1 =
     s"""abstract class Test {
       |  void ${TargetProgram.MAIN_FUNCTION}(int x, int[] array) {
       |    use(1, 10, x > 10);
@@ -331,8 +331,8 @@ object BrboAstUnitTest {
       |  public abstract void lessPreciseBound(boolean assertion);
       |}""".stripMargin
 
-  val printToJavaTests: List[TestCase] = List(
-    TestCase("printToJavaTest1", printToJavaTest1,
+  val printToBrboJavaTests: List[TestCase] = List(
+    TestCase("printToBrboJavaTest1", printToBrboJavaTest1,
       s"""abstract class Test {
         |  void ${TargetProgram.MAIN_FUNCTION}(int x, int array)
         |
