@@ -172,19 +172,8 @@ object BrboMain {
       s"// $duration,$numberOfTraces,${arguments.getFuzzSamples},${arguments.getAlgorithm}"
   }
 
-  def diffFiles(file1: Path, file2: Path): String = {
-    val command =
-      s"diff -u ${file1.toString} ${file2.toString}".split(" ").toList.asJava
-    val processBuilder: java.lang.ProcessBuilder =
-      new java.lang.ProcessBuilder(command).redirectErrorStream(true)
-    val process: java.lang.Process = processBuilder.start()
-    try {
-      process.waitFor(5, TimeUnit.SECONDS)
-    } catch {
-      case _: Exception =>
-    }
-    s"\n${IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)}"
-  }
+  def diffFiles(file1: Path, file2: Path): String =
+    executeCommand(s"diff -u ${file1.toString} ${file2.toString}", environment = Map())
 
   def readFromFile(path: String): String = {
     val source = scala.io.Source.fromFile(path)
@@ -200,4 +189,38 @@ object BrboMain {
     fileWriter.write(content)
     fileWriter.close()
   }
+
+  def executeCommandWithLogger(command: String,
+                               logger: MyLogger,
+                               environment: Map[String, String] = Map(),
+                               timeout: Int = 5): Unit = {
+    logger.info(s"Execute `$command`")
+    logger.info(s"Output:\n${executeCommand(command, environment, timeout)}")
+  }
+
+  def executeCommand(command: String,
+                     environment: Map[String, String] = Map(),
+                     timeout: Int = 5): String = {
+    val processBuilder: java.lang.ProcessBuilder =
+      new java.lang.ProcessBuilder(command.split(" ").toList.asJava)
+        .redirectErrorStream(true)
+    environment.foreach({ case (key, value) => processBuilder.environment().put(key, value) })
+    val process: java.lang.Process = processBuilder.start()
+    // val environmentString = processBuilder.environment().asScala.map({ case (key, value) => s"$key: $value" })
+    // println(environmentString.mkString("\n"))
+    try {
+      if (!process.waitFor(timeout, TimeUnit.SECONDS)) {
+        val output = s"\n${getProcessOutput(process)}"
+        process.destroyForcibly()
+        output
+      } else {
+        s"\n${getProcessOutput(process)}"
+      }
+    } catch {
+      case e: Exception => s"Ran into an exception:\n${e.toString}"
+    }
+  }
+
+  private def getProcessOutput(process: Process): String =
+    IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
 }

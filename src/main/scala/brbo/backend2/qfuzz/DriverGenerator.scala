@@ -15,7 +15,7 @@ object DriverGenerator {
   def run(program: BrboProgram): String = {
     val (declarations, initializations) = declarationsAndInitializations(program.mainFunction.parameters)
     val transformedProgram = ProgramTransformer.transform(program)
-    s"""package brbo.fuzz;
+    s"""package $DRIVER_PACKAGE_NAME;
        |
        |import edu.cmu.sv.kelinci.Kelinci;
        |import edu.cmu.sv.kelinci.Mem;
@@ -30,7 +30,7 @@ object DriverGenerator {
        |import java.util.Arrays;
        |import java.util.List;
        |
-       |public class ${driverName(program.className)} {
+       |public class ${driverClassName(program.className)} {
        |  public final static int ARRAY_SIZE = $ARRAY_SIZE;
        |  private final static short MAX_INTEGER = $MAX_INTEGER;
        |  private final static short MIN_INTEGER = $MIN_INTEGER;
@@ -96,7 +96,11 @@ object DriverGenerator {
        |${transformedProgram.printToQFuzzJava(indent = 0)}""".stripMargin
   }
 
-  def driverName(className: String): String = s"${className}QFuzzDriver"
+  def driverClassName(className: String): String = s"${className}QFuzzDriver"
+
+  def driverFullyQualifiedClassName(className: String): String = s"$DRIVER_PACKAGE_NAME.${driverClassName(className)}"
+
+  private val DRIVER_PACKAGE_NAME = "brbo.fuzz"
 
   def prependIndents(lines: List[String], indent: Int): List[String] =
     lines.map(line => StringFormatUtils.prependIndentsPerLine(line, indent))
