@@ -1,5 +1,6 @@
 package brbo.backend2.learning
 
+import brbo.BrboMain
 import brbo.common.MyLogger
 import org.apache.commons.io.IOUtils
 
@@ -98,7 +99,7 @@ object ScriptRunner {
     val process: java.lang.Process = processBuilder.start()
     if (process.waitFor(TIMEOUT_DURATION, TimeUnit.SECONDS) && process.exitValue() == 0) {
       // logger.traceOrError(s"Read labels from ${outputFile.toAbsolutePath}")
-      val outputFileContents = Files.readString(outputFile)
+      val outputFileContents = BrboMain.readFromFile(outputFile.toAbsolutePath.toString)
       // logger.traceOrError(s"Output file content: $outputFileContents")
       Files.deleteIfExists(inputFile)
       Files.deleteIfExists(outputFile)

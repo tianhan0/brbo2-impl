@@ -86,7 +86,7 @@ class UAutomizerVerifier(override val arguments: Arguments) extends Verifier {
         else Duration.Inf
       }
       val result: Int = {
-        if (!process.waitFor(actualTimeout.toSeconds, TimeUnit.SECONDS)) {
+        /*if (!process.waitFor(actualTimeout.toSeconds, TimeUnit.SECONDS)) {
           logger.fatal(s"`$toolName` timed out after `$actualTimeout`!")
           process.descendants().forEach({
             handle =>
@@ -97,7 +97,8 @@ class UAutomizerVerifier(override val arguments: Arguments) extends Verifier {
           process.destroy(); // consider using destroyForcibly instead
           -1
         }
-        else process.exitValue()
+        else process.exitValue()*/
+        ???
       }
       val stdout = {
         try {

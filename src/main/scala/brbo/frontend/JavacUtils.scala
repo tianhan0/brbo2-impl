@@ -28,7 +28,9 @@ object JavacUtils {
       // System.setErr(newErrSteam)
       // System.setOut(newOutSteam)
       val fileObject = new JavaSourceFromString(compilationUnitName, sourceCode)
-      javac.compile(createJavaList(fileObject), createJavaList(compilationUnitName), createJavaList(processor), createJavaList())
+      // javac.compile(createJavaList(fileObject), createJavaList(compilationUnitName), createJavaList(processor), createJavaList())
+      import com.sun.tools.javac.util.List
+      javac.compile(List.of(fileObject), List.of(compilationUnitName), List.of(processor))
 
       /*val javac2 = ToolProvider.getSystemJavaCompiler
       val diagnostics: DiagnosticCollector[JavaFileObject] = new DiagnosticCollector[JavaFileObject]
