@@ -22,10 +22,10 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |int[] b = new int[ARRAY_SIZE];
         |int[] c = new int[ARRAY_SIZE];
         |int d = values.get(17);
-        |for (int i = 0; i < ARRAY_SIZE; i++) {
+        |for (int i = 0; i < ARRAY_SIZE && 1 + i < values.size(); i++) {
         |  b[i] = values.get(1 + i);
         |}
-        |for (int i = 0; i < ARRAY_SIZE; i++) {
+        |for (int i = 0; i < ARRAY_SIZE && 9 + i < values.size(); i++) {
         |  c[i] = values.get(9 + i);
         |}""".stripMargin)
   }
@@ -87,7 +87,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    int a = values.get(0);
         |    int[] array = new int[ARRAY_SIZE];
         |    int b = values.get(9);
-        |    for (int i = 0; i < ARRAY_SIZE; i++) {
+        |    for (int i = 0; i < ARRAY_SIZE && 1 + i < values.size(); i++) {
         |      array[i] = values.get(1 + i);
         |    }
         |
@@ -96,14 +96,14 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
         |    Test program = new Test();
         |    Mem.clear(true);
-        |    for (int i_th_use = 0; i_th_use < MAX_NUMBER_OF_USES_TO_TRACK; i_th_use++) {
+        |    for (int iUse = 0; iUse < MAX_NUMBER_OF_USES_TO_TRACK; iUse++) {
         |      // In the i-th iteration, we collect accumulated resource consumption up to the secret[i]-th uses
         |      Mem.clear(false);
-        |      program.execute(a, array, b, i_th_use);
-        |      if (i_th_use == 0) {
-        |        observations[i_th_use] = Mem.instrCost;
+        |      program.execute(a, array, b, iUse);
+        |      if (iUse == 0) {
+        |        observations[iUse] = Mem.instrCost;
         |      } else {
-        |        observations[i_th_use] = Mem.instrCost - observations[i_th_use - 1];
+        |        observations[iUse] = Mem.instrCost - observations[iUse - 1];
         |      }
         |    }
         |    System.out.println("observations: " + Arrays.toString(observations));

@@ -73,14 +73,14 @@ object DriverGenerator {
        |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
        |    ${program.className} program = new ${program.className}();
        |    Mem.clear(true);
-       |    for (int i_th_use = 0; i_th_use < MAX_NUMBER_OF_USES_TO_TRACK; i_th_use++) {
+       |    for (int iUse = 0; iUse < MAX_NUMBER_OF_USES_TO_TRACK; iUse++) {
        |      // In the i-th iteration, we collect accumulated resource consumption up to the secret[i]-th uses
        |      Mem.clear(false);
-       |      program.${TargetProgram.MAIN_FUNCTION}(${program.mainFunction.parameters.map({ identifier => identifier.name }).mkString(", ")}, i_th_use);
-       |      if (i_th_use == 0) {
-       |        observations[i_th_use] = Mem.instrCost;
+       |      program.${TargetProgram.MAIN_FUNCTION}(${program.mainFunction.parameters.map({ identifier => identifier.name }).mkString(", ")}, iUse);
+       |      if (iUse == 0) {
+       |        observations[iUse] = Mem.instrCost;
        |      } else {
-       |        observations[i_th_use] = Mem.instrCost - observations[i_th_use - 1];
+       |        observations[iUse] = Mem.instrCost - observations[iUse - 1];
        |      }
        |    }
        |    System.out.println("observations: " + Arrays.toString(observations));
@@ -115,7 +115,7 @@ object DriverGenerator {
           case BrboType.ARRAY(BrboType.INT) =>
             val declaration = s"${parameter.typeNamePair(QFuzzPrintType)} = new int[ARRAY_SIZE];"
             val initialization =
-              s"""for (int i = 0; i < ARRAY_SIZE; i++) {
+              s"""for (int i = 0; i < ARRAY_SIZE && $indexSoFar + i < values.size(); i++) {
                  |  ${parameter.name}[i] = values.get($indexSoFar + i);
                  |}""".stripMargin
             (indexSoFar + ARRAY_SIZE,
