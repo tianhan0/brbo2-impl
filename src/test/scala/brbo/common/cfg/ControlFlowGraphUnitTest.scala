@@ -92,22 +92,22 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(s"root: ${root.printToIR()}\n$copiedGraphDot",
       """root: (2) int i = 0;
         |strict digraph G {
-        |  1 [ shape=rectangle label="(2) int i = 0;" ];
-        |  2 [ shape=oval label="(3) [Branch Head]" ];
-        |  3 [ shape=diamond label="(4) (i < 5)" ];
-        |  4 [ shape=diamond label="(5) !((i < 5))" ];
-        |  5 [ shape=oval label="(6) [Loop Exit]" ];
-        |  6 [ shape=oval label="(1) [Function Exit]" ];
-        |  7 [ shape=oval label="(7) [Branch Head]" ];
-        |  8 [ shape=diamond label="(8) (i < 7)" ];
-        |  9 [ shape=diamond label="(9) !((i < 7))" ];
-        |  10 [ shape=oval label="(10) [Loop Exit]" ];
-        |  11 [ shape=rectangle label="(16) i = 12;" ];
-        |  12 [ shape=oval label="(11) [Branch Head]" ];
-        |  13 [ shape=diamond label="(12) (i < 10)" ];
-        |  14 [ shape=diamond label="(13) !((i < 10))" ];
-        |  15 [ shape=rectangle label="(15) continue;" ];
-        |  16 [ shape=rectangle label="(14) break;" ];
+        |  1 [ label="(2) int i = 0;" shape="rectangle" ];
+        |  2 [ label="(3) [Branch Head]" shape="oval" ];
+        |  3 [ label="(4) (i < 5)" shape="diamond" ];
+        |  4 [ label="(5) !((i < 5))" shape="diamond" ];
+        |  5 [ label="(6) [Loop Exit]" shape="oval" ];
+        |  6 [ label="(1) [Function Exit]" shape="oval" ];
+        |  7 [ label="(7) [Branch Head]" shape="oval" ];
+        |  8 [ label="(8) (i < 7)" shape="diamond" ];
+        |  9 [ label="(9) !((i < 7))" shape="diamond" ];
+        |  10 [ label="(10) [Loop Exit]" shape="oval" ];
+        |  11 [ label="(16) i = 12;" shape="rectangle" ];
+        |  12 [ label="(11) [Branch Head]" shape="oval" ];
+        |  13 [ label="(12) (i < 10)" shape="diamond" ];
+        |  14 [ label="(13) !((i < 10))" shape="diamond" ];
+        |  15 [ label="(15) continue;" shape="rectangle" ];
+        |  16 [ label="(14) break;" shape="rectangle" ];
         |  1 -> 2 [ label="1.0" ];
         |  2 -> 3 [ label="1.0" ];
         |  2 -> 4 [ label="1.0" ];
@@ -126,8 +126,7 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
         |  15 -> 7 [ label="1.0" ];
         |  13 -> 16 [ label="1.0" ];
         |  16 -> 10 [ label="1.0" ];
-        |}
-        |""".stripMargin)
+        |}""".stripMargin)
 
     val (reversedCopiedGraph, reversedRoot) = ControlFlowGraph.deepCopySimpleDirectedGraph(
       graph = controlFlowGraph.jgraphtGraph,
@@ -141,22 +140,22 @@ class ControlFlowGraphUnitTest extends AnyFlatSpec {
     StringCompare.ignoreWhitespaces(s"root: ${reversedRoot.printToIR()}\n$reversedCopiedGraphDot",
       """root: (1) [Function Exit]
         |strict digraph G {
-        |  1 [ shape=rectangle label="(2) int i = 0;" ];
-        |  2 [ shape=oval label="(3) [Branch Head]" ];
-        |  3 [ shape=diamond label="(4) (i < 5)" ];
-        |  4 [ shape=diamond label="(5) !((i < 5))" ];
-        |  5 [ shape=oval label="(6) [Loop Exit]" ];
-        |  6 [ shape=oval label="(1) [Function Exit]" ];
-        |  7 [ shape=oval label="(7) [Branch Head]" ];
-        |  8 [ shape=diamond label="(8) (i < 7)" ];
-        |  9 [ shape=diamond label="(9) !((i < 7))" ];
-        |  10 [ shape=oval label="(10) [Loop Exit]" ];
-        |  11 [ shape=rectangle label="(16) i = 12;" ];
-        |  12 [ shape=oval label="(11) [Branch Head]" ];
-        |  13 [ shape=diamond label="(12) (i < 10)" ];
-        |  14 [ shape=diamond label="(13) !((i < 10))" ];
-        |  15 [ shape=rectangle label="(15) continue;" ];
-        |  16 [ shape=rectangle label="(14) break;" ];
+        |  1 [ label="(2) int i = 0;" shape="rectangle" ];
+        |  2 [ label="(3) [Branch Head]" shape="oval" ];
+        |  3 [ label="(4) (i < 5)" shape="diamond" ];
+        |  4 [ label="(5) !((i < 5))" shape="diamond" ];
+        |  5 [ label="(6) [Loop Exit]" shape="oval" ];
+        |  6 [ label="(1) [Function Exit]" shape="oval" ];
+        |  7 [ label="(7) [Branch Head]" shape="oval" ];
+        |  8 [ label="(8) (i < 7)" shape="diamond" ];
+        |  9 [ label="(9) !((i < 7))" shape="diamond" ];
+        |  10 [ label="(10) [Loop Exit]" shape="oval" ];
+        |  11 [ label="(16) i = 12;" shape="rectangle" ];
+        |  12 [ label="(11) [Branch Head]" shape="oval" ];
+        |  13 [ label="(12) (i < 10)" shape="diamond" ];
+        |  14 [ label="(13) !((i < 10))" shape="diamond" ];
+        |  15 [ label="(15) continue;" shape="rectangle" ];
+        |  16 [ label="(14) break;" shape="rectangle" ];
         |  2 -> 1 [ label="1.0" ];
         |  3 -> 2 [ label="1.0" ];
         |  4 -> 2 [ label="1.0" ];
@@ -189,42 +188,42 @@ object ControlFlowGraphUnitTest {
   }
   private val test01Expected =
     """strict digraph G {
-      |  1 [ shape=oval label="(1) [Function Exit]" ];
-      |  2 [ shape=rectangle label="(2) int i = 0;" ];
-      |  3 [ shape=oval label="(3) [Branch Head]" ];
-      |  4 [ shape=diamond label="(4) (i < 10)" ];
-      |  5 [ shape=diamond label="(5) !((i < 10))" ];
-      |  6 [ shape=oval label="(6) [Loop Exit]" ];
-      |  7 [ shape=rectangle label="(7) i = i + 1;" ];
-      |  8 [ shape=rectangle label="(8) break;" ];
-      |  9 [ shape=oval label="(9) [Function Exit]" ];
-      |  10 [ shape=rectangle label="(10) int x = ndInt();" ];
-      |  11 [ shape=oval label="(11) [Branch Head]" ];
-      |  12 [ shape=diamond label="(12) (!((x < 0)) && !((x == 0)))" ];
-      |  13 [ shape=diamond label="(13) !((!((x < 0)) && !((x == 0))))" ];
-      |  14 [ shape=rectangle label="(14) return true;" ];
-      |  15 [ shape=rectangle label="(15) return false;" ];
-      |  16 [ shape=oval label="(16) [Function Exit]" ];
-      |  17 [ shape=diamond label="(17) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)))" ];
-      |  18 [ shape=oval label="(18) [Function Exit]" ];
-      |  19 [ shape=rectangle label="(19) int x = ndInt();" ];
-      |  20 [ shape=diamond label="(20) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)))" ];
-      |  21 [ shape=rectangle label="(21) return x;" ];
-      |  22 [ shape=oval label="(22) [Function Exit]" ];
-      |  23 [ shape=rectangle label="(23) return __VERIFIER_nondet_int();" ];
-      |  24 [ shape=oval label="(24) [Function Exit]" ];
-      |  25 [ shape=oval label="(25) [Branch Head]" ];
-      |  26 [ shape=diamond label="(26) !(cond)" ];
-      |  27 [ shape=diamond label="(27) !(!(cond))" ];
-      |  28 [ shape=diamond label="(28) abort()" ];
-      |  29 [ shape=rectangle label="(29) ;" ];
-      |  30 [ shape=oval label="(30) [Function Exit]" ];
-      |  31 [ shape=oval label="(31) [Branch Head]" ];
-      |  32 [ shape=diamond label="(32) !(cond)" ];
-      |  33 [ shape=diamond label="(33) !(!(cond))" ];
-      |  34 [ shape=rectangle label="(34) ERROR: __VERIFIER_error();" ];
-      |  35 [ shape=rectangle label="(35) ;" ];
-      |  36 [ shape=rectangle label="(36) return;" ];
+      |  1 [ label="(1) [Function Exit]" shape="oval" ];
+      |  2 [ label="(2) int i = 0;" shape="rectangle" ];
+      |  3 [ label="(3) [Branch Head]" shape="oval" ];
+      |  4 [ label="(4) (i < 10)" shape="diamond" ];
+      |  5 [ label="(5) !((i < 10))" shape="diamond" ];
+      |  6 [ label="(6) [Loop Exit]" shape="oval" ];
+      |  7 [ label="(7) i = i + 1;" shape="rectangle" ];
+      |  8 [ label="(8) break;" shape="rectangle" ];
+      |  9 [ label="(9) [Function Exit]" shape="oval" ];
+      |  10 [ label="(10) int x = ndInt();" shape="rectangle" ];
+      |  11 [ label="(11) [Branch Head]" shape="oval" ];
+      |  12 [ label="(12) (!((x < 0)) && !((x == 0)))" shape="diamond" ];
+      |  13 [ label="(13) !((!((x < 0)) && !((x == 0))))" shape="diamond" ];
+      |  14 [ label="(14) return true;" shape="rectangle" ];
+      |  15 [ label="(15) return false;" shape="rectangle" ];
+      |  16 [ label="(16) [Function Exit]" shape="oval" ];
+      |  17 [ label="(17) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)))" shape="diamond" ];
+      |  18 [ label="(18) [Function Exit]" shape="oval" ];
+      |  19 [ label="(19) int x = ndInt();" shape="rectangle" ];
+      |  20 [ label="(20) assume(((lower < x) || (lower == x)) && ((x < upper) || (x == upper)))" shape="diamond" ];
+      |  21 [ label="(21) return x;" shape="rectangle" ];
+      |  22 [ label="(22) [Function Exit]" shape="oval" ];
+      |  23 [ label="(23) return __VERIFIER_nondet_int();" shape="rectangle" ];
+      |  24 [ label="(24) [Function Exit]" shape="oval" ];
+      |  25 [ label="(25) [Branch Head]" shape="oval" ];
+      |  26 [ label="(26) !(cond)" shape="diamond" ];
+      |  27 [ label="(27) !(!(cond))" shape="diamond" ];
+      |  28 [ label="(28) abort()" shape="diamond" ];
+      |  29 [ label="(29) ;" shape="rectangle" ];
+      |  30 [ label="(30) [Function Exit]" shape="oval" ];
+      |  31 [ label="(31) [Branch Head]" shape="oval" ];
+      |  32 [ label="(32) !(cond)" shape="diamond" ];
+      |  33 [ label="(33) !(!(cond))" shape="diamond" ];
+      |  34 [ label="(34) ERROR: __VERIFIER_error();" shape="rectangle" ];
+      |  35 [ label="(35) ;" shape="rectangle" ];
+      |  36 [ label="(36) return;" shape="rectangle" ];
       |  8 -> 6 [ label="0.0" ];
       |  7 -> 8 [ label="0.0" ];
       |  3 -> 4 [ label="1.0" ];
@@ -269,14 +268,14 @@ object ControlFlowGraphUnitTest {
   }
   private val test02Expected =
     """strict digraph G {
-      |  1 [ shape=oval label="(1) [Function Exit]" ];
-      |  2 [ shape=rectangle label="(2) int i = 0;" ];
-      |  3 [ shape=oval label="(3) [Branch Head]" ];
-      |  4 [ shape=diamond label="(4) (i < 10)" ];
-      |  5 [ shape=diamond label="(5) !((i < 10))" ];
-      |  6 [ shape=oval label="(6) [Loop Exit]" ];
-      |  7 [ shape=rectangle label="(7) continue;" ];
-      |  8 [ shape=rectangle label="(8) i = i + 1;" ];
+      |  1 [ label="(1) [Function Exit]" shape="oval" ];
+      |  2 [ label="(2) int i = 0;" shape="rectangle" ];
+      |  3 [ label="(3) [Branch Head]" shape="oval" ];
+      |  4 [ label="(4) (i < 10)" shape="diamond" ];
+      |  5 [ label="(5) !((i < 10))" shape="diamond" ];
+      |  6 [ label="(6) [Loop Exit]" shape="oval" ];
+      |  7 [ label="(7) continue;" shape="rectangle" ];
+      |  8 [ label="(8) i = i + 1;" shape="rectangle" ];
       |  7 -> 3 [ label="0.0" ];
       |  3 -> 4 [ label="1.0" ];
       |  3 -> 5 [ label="-1.0" ];
@@ -295,8 +294,8 @@ object ControlFlowGraphUnitTest {
   }
   private val test03Expected =
     """strict digraph G {
-      |  1 [ shape=oval label="(1) [Function Exit]" ];
-      |  2 [ shape=rectangle label="(2) int i = ndInt2(0, 1);" ];
+      |  1 [ label="(1) [Function Exit]" shape="oval" ];
+      |  2 [ label="(2) int i = ndInt2(0, 1);" shape="rectangle" ];
       |  2 -> 1 [ label="0.0" ];
       |}""".stripMargin
 
@@ -315,14 +314,14 @@ object ControlFlowGraphUnitTest {
   }
   private val test04Expected =
     """strict digraph G {
-      |  1 [ shape=oval label="(1) [Function Exit]" ];
-      |  2 [ shape=rectangle label="(2) int i = 0;" ];
-      |  3 [ shape=oval label="(3) [Branch Head]" ];
-      |  4 [ shape=diamond label="(4) (i < 5)" ];
-      |  5 [ shape=diamond label="(5) !((i < 5))" ];
-      |  6 [ shape=rectangle label="(6) i = 1;" ];
-      |  7 [ shape=rectangle label="(7) i = 2;" ];
-      |  8 [ shape=rectangle label="(8) i = 3;" ];
+      |  1 [ label="(1) [Function Exit]" shape="oval" ];
+      |  2 [ label="(2) int i = 0;" shape="rectangle" ];
+      |  3 [ label="(3) [Branch Head]" shape="oval" ];
+      |  4 [ label="(4) (i < 5)" shape="diamond" ];
+      |  5 [ label="(5) !((i < 5))" shape="diamond" ];
+      |  6 [ label="(6) i = 1;" shape="rectangle" ];
+      |  7 [ label="(7) i = 2;" shape="rectangle" ];
+      |  8 [ label="(8) i = 3;" shape="rectangle" ];
       |  3 -> 4 [ label="1.0" ];
       |  3 -> 5 [ label="-1.0" ];
       |  4 -> 6 [ label="0.0" ];
@@ -351,22 +350,22 @@ object ControlFlowGraphUnitTest {
   }
   private val test05Expected =
     """strict digraph G {
-      |  1 [ shape=oval label="(1) [Function Exit]" ];
-      |  2 [ shape=rectangle label="(2) int i = 0;" ];
-      |  3 [ shape=oval label="(3) [Branch Head]" ];
-      |  4 [ shape=diamond label="(4) (i < 5)" ];
-      |  5 [ shape=diamond label="(5) !((i < 5))" ];
-      |  6 [ shape=oval label="(6) [Loop Exit]" ];
-      |  7 [ shape=oval label="(7) [Branch Head]" ];
-      |  8 [ shape=diamond label="(8) (i < 7)" ];
-      |  9 [ shape=diamond label="(9) !((i < 7))" ];
-      |  10 [ shape=oval label="(10) [Loop Exit]" ];
-      |  11 [ shape=oval label="(11) [Branch Head]" ];
-      |  12 [ shape=diamond label="(12) (i < 10)" ];
-      |  13 [ shape=diamond label="(13) !((i < 10))" ];
-      |  14 [ shape=rectangle label="(14) break;" ];
-      |  15 [ shape=rectangle label="(15) continue;" ];
-      |  16 [ shape=rectangle label="(16) i = 12;" ];
+      |  1 [ label="(1) [Function Exit]" shape="oval" ];
+      |  2 [ label="(2) int i = 0;" shape="rectangle" ];
+      |  3 [ label="(3) [Branch Head]" shape="oval" ];
+      |  4 [ label="(4) (i < 5)" shape="diamond" ];
+      |  5 [ label="(5) !((i < 5))" shape="diamond" ];
+      |  6 [ label="(6) [Loop Exit]" shape="oval" ];
+      |  7 [ label="(7) [Branch Head]" shape="oval" ];
+      |  8 [ label="(8) (i < 7)" shape="diamond" ];
+      |  9 [ label="(9) !((i < 7))" shape="diamond" ];
+      |  10 [ label="(10) [Loop Exit]" shape="oval" ];
+      |  11 [ label="(11) [Branch Head]" shape="oval" ];
+      |  12 [ label="(12) (i < 10)" shape="diamond" ];
+      |  13 [ label="(13) !((i < 10))" shape="diamond" ];
+      |  14 [ label="(14) break;" shape="rectangle" ];
+      |  15 [ label="(15) continue;" shape="rectangle" ];
+      |  16 [ label="(16) i = 12;" shape="rectangle" ];
       |  14 -> 10 [ label="0.0" ];
       |  15 -> 7 [ label="0.0" ];
       |  11 -> 12 [ label="1.0" ];
@@ -397,10 +396,10 @@ object ControlFlowGraphUnitTest {
   }
   private val test06Expected =
     """strict digraph G {
-      |  1 [ shape=oval label="(1) [Function Exit]" ];
-      |  2 [ shape=rectangle label="(2) int i = 0;" ];
-      |  3 [ shape=rectangle label="(3) if ((i < 0) || (i == 0)) reset R1" ];
-      |  4 [ shape=rectangle label="(4) if (!((i < 5)) && !((i == 5))) use R1 i" ];
+      |  1 [ label="(1) [Function Exit]" shape="oval" ];
+      |  2 [ label="(2) int i = 0;" shape="rectangle" ];
+      |  3 [ label="(3) if ((i < 0) || (i == 0)) reset R1" shape="rectangle" ];
+      |  4 [ label="(4) if (!((i < 5)) && !((i == 5))) use R1 i" shape="rectangle" ];
       |  2 -> 3 [ label="0.0" ];
       |  3 -> 4 [ label="0.0" ];
       |  4 -> 1 [ label="0.0" ];

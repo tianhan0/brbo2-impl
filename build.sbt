@@ -20,9 +20,9 @@ libraryDependencies += "com.ibm.wala" % "com.ibm.wala.util" % "1.5.5"
 
 libraryDependencies += "args4j" % "args4j" % "2.33"
 
-libraryDependencies += "org.jgrapht" % "jgrapht-core" % "1.5.1"
+libraryDependencies += "org.jgrapht" % "jgrapht-core" % "1.4.0"
 // libraryDependencies += "org.jgrapht" % "jgrapht-ext" % "1.5.1"
-libraryDependencies += "org.jgrapht" % "jgrapht-io" % "1.5.1"
+libraryDependencies += "org.jgrapht" % "jgrapht-io" % "1.4.0"
 
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.3"
 

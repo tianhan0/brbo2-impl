@@ -1,5 +1,6 @@
 package brbo.backend.verifier.modelchecker
 
+/*
 import apron.memory.ObjectManager
 
 object ApronMemoryManager {
@@ -89,3 +90,4 @@ object ApronMemoryManager {
     })*/
   }
 }
+*/

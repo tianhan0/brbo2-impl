@@ -195,7 +195,7 @@ class AbstractMachine(brboProgram: BrboProgram, arguments: Arguments) {
       }
     }
     // Release all native memory occupied by apron states
-    ApronMemoryManager.releaseMemory()
+    // ApronMemoryManager.releaseMemory()
     Result(result, maximalPathsZ3)
   }
 

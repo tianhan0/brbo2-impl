@@ -362,7 +362,7 @@ object ControlFlowGraph {
             case _: CFGOnly => "oval"
             case _ => "rectangle"
           }
-        map.put("shape", new DefaultAttribute(shape, AttributeType.IDENTIFIER))
+        map.put("shape", new DefaultAttribute(shape, AttributeType.STRING))
         map
     })
     exporter.setEdgeAttributeProvider({
