@@ -101,19 +101,31 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
         |    Test program = new Test();
         |    Mem.clear(true);
-        |    for (int iUse = 0; iUse < MAX_NUMBER_OF_USES_TO_TRACK; iUse++) {
+        |    long lastCost = 0;
+        |    int iUse = 1;
+        |    for (; iUse <= MAX_NUMBER_OF_USES_TO_TRACK; iUse++) {
         |      // In the i-th iteration, we collect accumulated resource consumption up to the secret[i]-th uses
         |      Mem.clear(false);
         |      program.execute(a, array, b, iUse);
-        |      if (iUse == 0) {
-        |        observations[iUse] = Mem.instrCost;
-        |      } else {
-        |        observations[iUse] = Mem.instrCost - observations[iUse - 1];
+        |      if (Mem.instrCost == lastCost)  {
+        |        // When the cost of a run begins to stabilize, we should stop
+        |        break;
         |      }
+        |      // System.out.println("cost: " + Mem.instrCost);
+        |      lastCost = Mem.instrCost;
+        |      int index = iUse - 1;
+        |      if (iUse == 1) {
+        |        observations[index] = Mem.instrCost;
+        |      } else {
+        |        observations[index] = Mem.instrCost - observations[index - 1];
+        |      }
+        |      assert (observations[index] >= 0);
         |    }
-        |    System.out.println("observations: " + Arrays.toString(observations));
+        |    long[] actualObservations = new long[iUse - 1];
+        |    System.arraycopy(observations, 0, actualObservations, 0, actualObservations.length);
+        |    System.out.println("observations: " + Arrays.toString(actualObservations));
         |
-        |    PartitionSet clusters = PartitionSet.createFromObservations(epsilon, observations, clusterAlgorithm);
+        |    PartitionSet clusters = PartitionSet.createFromObservations(epsilon, actualObservations, clusterAlgorithm);
         |    // Give feedback to fuzzer: Number of clusters, min distance between clusters
         |    Kelinci.setObserverdClusters(clusters.getClusterAverageValues(), clusters.getMinimumDeltaValue());
         |
