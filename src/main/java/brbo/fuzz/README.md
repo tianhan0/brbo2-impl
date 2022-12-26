@@ -11,15 +11,15 @@
    ```
 3. Compile the driver and the program of interest (that consumes resources), and then instrument the `*.class` files:
     ```shell
-    ./scripts/prepare.sh
+    ./scripts_docker/prepare.sh
     ```
 4. Start kelinci server that invokes the fuzzing engine and gives feedback about which inputs are interesting:
     ```shell
-    ./scripts/server.sh
+    ./scripts_docker/server.sh
     ```
 5. Start the fuzzing engine:
     ```shell
-    ./scripts/afl.sh
+    ./scripts_docker/afl.sh
     ```
 
 ## References
