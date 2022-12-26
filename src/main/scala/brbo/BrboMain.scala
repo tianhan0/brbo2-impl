@@ -201,26 +201,35 @@ object BrboMain {
   def executeCommand(command: String,
                      environment: Map[String, String] = Map(),
                      timeout: Int = 5): String = {
+    val stderrFile = Files.createTempFile(Paths.get(OUTPUT_DIRECTORY), "stderr", ".txt")
+    val stdoutFile = Files.createTempFile(Paths.get(OUTPUT_DIRECTORY), "stdout", ".txt")
+
+    def getProcessOutput: String = {
+      val stdout = FileUtils.readFileToString(new File(stdoutFile.toAbsolutePath.toString), StandardCharsets.UTF_8)
+      val stderr = FileUtils.readFileToString(new File(stderrFile.toAbsolutePath.toString), StandardCharsets.UTF_8)
+      stdout + "\n" + stderr
+    }
+
     val processBuilder: java.lang.ProcessBuilder =
       new java.lang.ProcessBuilder(command.split(" ").toList.asJava)
-        .redirectErrorStream(true)
+        .redirectError(stderrFile.toFile)
+        .redirectOutput(stdoutFile.toFile)
     environment.foreach({ case (key, value) => processBuilder.environment().put(key, value) })
     val process: java.lang.Process = processBuilder.start()
     // val environmentString = processBuilder.environment().asScala.map({ case (key, value) => s"$key: $value" })
     // println(environmentString.mkString("\n"))
     try {
       if (!process.waitFor(timeout, TimeUnit.SECONDS)) {
-        val output = s"\n${getProcessOutput(process)}"
         process.destroyForcibly()
-        output
+        getProcessOutput
       } else {
-        s"\n${getProcessOutput(process)}"
+        getProcessOutput
       }
     } catch {
       case e: Exception => s"Ran into an exception:\n${e.toString}"
+    } finally {
+      Files.deleteIfExists(stderrFile)
+      Files.deleteIfExists(stdoutFile)
     }
   }
-
-  private def getProcessOutput(process: Process): String =
-    IOUtils.toString(process.getInputStream, StandardCharsets.UTF_8)
 }
