@@ -15,8 +15,8 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
       Identifier("c", BrboType.ARRAY(BrboType.INT)),
       Identifier("d", BrboType.INT),
     )
-    val (declarations, initializations) = DriverGenerator.declarationsAndInitializations(parameters)
-    val result = (declarations ::: initializations).mkString("\n")
+    val (declarations, initializations, prints) = DriverGenerator.declarationsAndInitializations(parameters)
+    val result = (declarations ::: initializations ::: prints).mkString("\n")
     StringCompare.ignoreWhitespaces(result,
       """int a = values.get(0);
         |int[] b = new int[ARRAY_SIZE];
@@ -27,7 +27,11 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |}
         |for (int i = 0; i < ARRAY_SIZE && 9 + i < values.size(); i++) {
         |  c[i] = values.get(9 + i);
-        |}""".stripMargin)
+        |}
+        |System.out.println("a: " + a);
+        |System.out.println("b: " + Arrays.toString(b));
+        |System.out.println("c: " + Arrays.toString(c));
+        |System.out.println("d: " + d);""".stripMargin)
   }
 
   "Generating a QFuzz driver" should "be correct" in {
@@ -69,7 +73,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |
         |    List<Short> values = new ArrayList<>();
         |    try (FileInputStream inputStream = new FileInputStream(args[0])) {
-        |      System.out.printf("Reading shorts that are between [%d, %d]", MIN_INTEGER, MAX_INTEGER);
+        |      System.out.printf("Reading shorts that are between [%d, %d]\n", MIN_INTEGER, MAX_INTEGER);
         |      byte[] bytes = new byte[Short.BYTES];
         |      while ((inputStream.read(bytes) != -1)) {
         |        short value = ByteBuffer.wrap(bytes).getShort();
@@ -90,8 +94,9 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    for (int i = 0; i < ARRAY_SIZE && 1 + i < values.size(); i++) {
         |      array[i] = values.get(1 + i);
         |    }
-        |
-        |    // System.out.println("public: " + Arrays.toString(public_input));
+        |    System.out.println("a: " + a);
+        |    System.out.println("array: " + Arrays.toString(array));
+        |    System.out.println("b: " + b);
         |
         |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
         |    Test program = new Test();

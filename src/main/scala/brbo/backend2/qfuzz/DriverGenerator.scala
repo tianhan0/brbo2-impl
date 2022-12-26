@@ -13,7 +13,7 @@ object DriverGenerator {
   private val MAX_NUMBER_OF_USES_TO_TRACK = 1000;
 
   def run(program: BrboProgram): String = {
-    val (declarations, initializations) = declarationsAndInitializations(program.mainFunction.parameters)
+    val (declarations, initializations, prints) = declarationsAndInitializations(program.mainFunction.parameters)
     val transformedProgram = ProgramTransformer.transform(program)
     s"""package $DRIVER_PACKAGE_NAME;
        |
@@ -50,7 +50,7 @@ object DriverGenerator {
        |
        |    List<Short> values = new ArrayList<>();
        |    try (FileInputStream inputStream = new FileInputStream(args[0])) {
-       |      System.out.printf("Reading shorts that are between [%d, %d]", MIN_INTEGER, MAX_INTEGER);
+       |      System.out.printf("Reading shorts that are between [%d, %d]\\n", MIN_INTEGER, MAX_INTEGER);
        |      byte[] bytes = new byte[Short.BYTES];
        |      while ((inputStream.read(bytes) != -1)) {
        |        short value = ByteBuffer.wrap(bytes).getShort();
@@ -67,8 +67,7 @@ object DriverGenerator {
        |
        |${prependIndents(declarations, indent = 4).mkString("\n")}
        |${prependIndents(initializations, indent = 4).mkString("\n")}
-       |
-       |    // System.out.println("public: " + Arrays.toString(public_input));
+       |${prependIndents(prints, indent = 4).mkString("\n")}
        |
        |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
        |    ${program.className} program = new ${program.className}();
@@ -105,25 +104,28 @@ object DriverGenerator {
   def prependIndents(lines: List[String], indent: Int): List[String] =
     lines.map(line => StringFormatUtils.prependIndentsPerLine(line, indent))
 
-  def declarationsAndInitializations(parameters: List[Identifier]): (List[String], List[String]) = {
-    val (_, declarations, initializations) = parameters.foldLeft((0, Nil: List[String], Nil: List[String]))({
-      case ((indexSoFar, declarations, initializations), parameter) =>
+  def declarationsAndInitializations(parameters: List[Identifier]): (List[String], List[String], List[String]) = {
+    val (_, declarations, initializations, prints) = parameters.foldLeft((0, Nil: List[String], Nil: List[String], Nil: List[String]))({
+      case ((indexSoFar, declarations, initializations, prints), parameter) =>
         parameter.typ match {
           case BrboType.INT =>
             val declaration = s"${parameter.typeNamePair(QFuzzPrintType)} = values.get($indexSoFar);"
-            (indexSoFar + 1, declaration :: declarations, initializations)
+            val print = s"""System.out.println("${parameter.name}: " + ${parameter.name});"""
+            (indexSoFar + 1, declaration :: declarations, initializations, print :: prints)
           case BrboType.ARRAY(BrboType.INT) =>
             val declaration = s"${parameter.typeNamePair(QFuzzPrintType)} = new int[ARRAY_SIZE];"
             val initialization =
               s"""for (int i = 0; i < ARRAY_SIZE && $indexSoFar + i < values.size(); i++) {
                  |  ${parameter.name}[i] = values.get($indexSoFar + i);
                  |}""".stripMargin
+            val print = s"""System.out.println("${parameter.name}: " + Arrays.toString(${parameter.name}));"""
             (indexSoFar + ARRAY_SIZE,
               declaration :: declarations,
-              initialization :: initializations)
+              initialization :: initializations,
+              print :: prints)
           case _ => throw new Exception
         }
     })
-    (declarations.reverse, initializations.reverse)
+    (declarations.reverse, initializations.reverse, prints.reverse)
   }
 }
