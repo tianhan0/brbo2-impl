@@ -1,10 +1,12 @@
 package brbo.backend2.qfuzz
 
 import brbo.BrboMain
-import brbo.common.MyLogger
-import brbo.common.ast.BrboProgram
+import brbo.backend2.InputParser
+import brbo.common.ast._
 import brbo.common.commandline.FuzzingArguments
-import org.apache.commons.io.FileUtils
+import brbo.common.{BrboType, MyLogger}
+import org.apache.commons.io.{FileUtils, FilenameUtils}
+import play.api.libs.json.JsArray
 
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
@@ -15,7 +17,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 object Executor {
-  def run(program: BrboProgram, arguments: FuzzingArguments): Unit = {
+  def run(program: BrboProgram, sourceFilePath: String, arguments: FuzzingArguments): Unit = {
     val logger = MyLogger.createLogger(Executor.getClass, debugMode = arguments.getDebugMode)
 
     val QFUZZ_PATH = arguments.getQFuzzPath
@@ -58,11 +60,12 @@ object Executor {
       case "kelinci" => Future {
         logger.info(s"Step 3: Run Kelinci server. Timeout: $KELINCI_TIMEOUT_IN_SECONDS sec.")
         val driverFullyQualifiedClassName = DriverGenerator.driverFullyQualifiedClassName(program.className)
-        BrboMain.executeCommandWithLogger(
-          command = s"""java -cp .:$KELINCI_JAR_PATH:$TEMPORARY_DIRECTORY/bin-instr/ edu.cmu.sv.kelinci.Kelinci -K 100 $driverFullyQualifiedClassName @@""",
-          logger,
-          timeout = KELINCI_TIMEOUT_IN_SECONDS
-        )
+        val command = s"""java -cp .:$KELINCI_JAR_PATH:$TEMPORARY_DIRECTORY/bin-instr/ edu.cmu.sv.kelinci.Kelinci -K 100 $driverFullyQualifiedClassName @@"""
+        logger.info(s"Execute `$command`")
+        val kelinciOutput = BrboMain.executeCommand(command = command, timeout = KELINCI_TIMEOUT_IN_SECONDS)
+        val outputDirectory = s"${BrboMain.OUTPUT_DIRECTORY}/fuzz"
+        Files.createDirectories(Paths.get(outputDirectory))
+        BrboMain.writeToFile(s"$outputDirectory/kelinci_output.txt", kelinciOutput)
       }
       case "afl" => Future {
         logger.info(s"Step 4: Run AFL. Output directory: $FUZZ_OUT_DIRECTORY. Timeout: $AFL_TIMEOUT_IN_SECONDS sec.")
@@ -81,22 +84,73 @@ object Executor {
       }
     })
     Await.result(future, Duration.Inf)
-    logger.info(s"QFuzz output:\n${BrboMain.readFromFile(s"$FUZZ_OUT_DIRECTORY/afl/path_costs.csv")}")
+    val pathCostFileContents = BrboMain.readFromFile(s"$FUZZ_OUT_DIRECTORY/afl/path_costs.csv")
+    logger.info(s"QFuzz output:\n$pathCostFileContents")
+    val interestingInputFiles = pathCostFileContents.split("\n").filter({
+      line => line.contains("+partition")
+    }).map({
+      line =>
+        val items = line.split(";")
+        items(1).trim
+    })
+    logger.info(s"Interesting inputs:\n${interestingInputFiles.mkString("\n")}")
 
     logger.info(s"Step 5: Parse the interesting inputs")
-    FileUtils.listFiles(new File(FUZZ_OUT_DIRECTORY), null, true).asScala.foreach({
+    val listOfInputs = FileUtils.listFiles(new File(FUZZ_OUT_DIRECTORY), null, true).asScala.flatMap({
       file =>
-        if (file.getAbsolutePath.startsWith(s"$FUZZ_OUT_DIRECTORY/afl/queue/id") && file.isFile) {
-          logger.info(s"Read shorts that are between [${DriverGenerator.MIN_INTEGER}, ${DriverGenerator.MAX_INTEGER}] from ${file.getAbsolutePath}")
-          val shorts = parseBytesToShorts(file.getAbsolutePath)
-          val inputs = wrapShorts(shorts)
-          logger.info(s"Inputs: $inputs")
+        val absolutePath = file.getAbsolutePath
+        if (absolutePath.contains(s"$FUZZ_OUT_DIRECTORY/afl/queue/id") && file.isFile) {
+          if (interestingInputFiles.exists(interestingInput => absolutePath.contains(interestingInput))) {
+            logger.info(s"Read shorts that are between [${DriverGenerator.MIN_INTEGER}, ${DriverGenerator.MAX_INTEGER}] from $absolutePath")
+            val shorts = parseBytesToShorts(absolutePath)
+            val inputs = wrapShorts(shorts)
+            logger.info(s"Inputs: $inputs.")
+            Some(inputs)
+          } else {
+            logger.info(s"Not an interesting input: $absolutePath")
+            None
+          }
+        } else {
+          logger.info(s"Not an input file: $absolutePath (Is file? ${file.isFile})")
+          None
         }
     })
+    val interestingInputs = JsArray(
+      listOfInputs.map({
+        inputs =>
+          val inputValues = toInputValues(inputs, program.mainFunction.parameters)
+          JsArray(inputValues.map(inputValue => InputParser.toJson(inputValue)))
+      }).toList
+    )
+    val inputFilePath = getInputFilePath(sourceFilePath)
+    logger.info(s"Step 5: Write interesting inputs into file $inputFilePath")
+    BrboMain.writeToFile(path = inputFilePath, content = interestingInputs.toString())
 
     FileUtils.deleteDirectory(new File(FUZZ_OUT_DIRECTORY))
     FileUtils.deleteDirectory(new File(BINARY_PATH))
     FileUtils.deleteDirectory(new File(INSTRUMENTED_BINARY_PATH))
+  }
+
+  def getInputFilePath(sourceFilePath: String): String = {
+    assert(FilenameUtils.getExtension(sourceFilePath) == "java")
+    val fileName = s"${FilenameUtils.getBaseName(sourceFilePath)}_fuzzing.json"
+    s"${FilenameUtils.getFullPath(sourceFilePath)}$fileName"
+  }
+
+  def toInputValues(inputArray: List[Int], parameters: List[Identifier]): List[BrboValue] = {
+    val (_, inputValues) = parameters.foldLeft(0, Nil: List[BrboValue])({
+      case ((indexSoFar, inputValues), parameter) =>
+        parameter.typ match {
+          case BrboType.INT =>
+            (indexSoFar + 1, Number(inputArray(indexSoFar)) :: inputValues)
+          case BrboType.ARRAY(BrboType.INT) =>
+            val arrayValue: List[Int] = inputArray.slice(indexSoFar, indexSoFar + DriverGenerator.ARRAY_SIZE)
+            val inputValue = BrboArray(values = arrayValue.map(v => Number(v)), innerType = BrboType.INT)
+            (indexSoFar + DriverGenerator.ARRAY_SIZE, inputValue :: inputValues)
+          case _ => throw new Exception(s"Not support a parameter of type ${parameter.typ}")
+        }
+    })
+    inputValues.reverse
   }
 
   def prepareDirectory(directory: String): Unit = {
@@ -106,7 +160,7 @@ object Executor {
     Files.createDirectory(path)
   }
 
-  def parseBytesToShorts(path: String): List[java.lang.Short] = {
+  private def parseBytesToShorts(path: String): List[java.lang.Short] = {
     val byteArray: Array[Byte] = Files.readAllBytes(Paths.get(path))
     byteArray.toList.grouped(java.lang.Short.BYTES).flatMap({
       short: List[Byte] =>
@@ -119,9 +173,9 @@ object Executor {
     }).toList
   }
 
-  def wrapShorts(shorts: List[java.lang.Short],
-                 max: Int = DriverGenerator.MAX_INTEGER,
-                 min: Int = DriverGenerator.MIN_INTEGER): List[Int] = {
+  private def wrapShorts(shorts: List[java.lang.Short],
+                         max: Int = DriverGenerator.MAX_INTEGER,
+                         min: Int = DriverGenerator.MIN_INTEGER): List[Int] = {
     shorts.map({
       short =>
         var result: Int = if (short >= 0) short.toInt else -short

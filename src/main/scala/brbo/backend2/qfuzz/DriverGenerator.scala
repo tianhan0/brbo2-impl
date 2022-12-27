@@ -7,7 +7,7 @@ import brbo.common.string.StringFormatUtils
 import brbo.frontend.TargetProgram
 
 object DriverGenerator {
-  private val ARRAY_SIZE = 8;
+  val ARRAY_SIZE = 8;
   val MAX_INTEGER = 30;
   val MIN_INTEGER = 1;
   private val MAX_NUMBER_OF_USES_TO_TRACK = 1000;
@@ -138,7 +138,7 @@ object DriverGenerator {
               declaration :: declarations,
               initialization :: initializations,
               print :: prints)
-          case _ => throw new Exception
+          case _ => throw new Exception(s"Not support a parameter of type ${parameter.typ}")
         }
     })
     (declarations.reverse, initializations.reverse, prints.reverse)
