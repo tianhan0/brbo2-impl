@@ -12,9 +12,11 @@ brbo_jar="./target/scala-2.12/brbo2-impl.jar:$HOME/Desktop/brbo2-impl.jar"
 
 # Jars dependency
 # lib_jars="lib/com.microsoft.z3.jar"
-tools_jar="$HOME/.sdkman/candidates/java/current/lib/tools.jar" # This is needed for JDK 8, but not JDK 11
+# tools.jar is needed for JDK 8, but not JDK 11
+tools_jar_wsl="$HOME/.sdkman/candidates/java/current/lib/tools.jar"
+tools_jar_docker="/usr/lib/jvm/java-8-openjdk-amd64/lib/tools.jar"
 
-classpath=".:$brbo_jar:$tools_jar"
+classpath=".:$brbo_jar:$tools_jar_wsl:$tools_jar_docker"
 
 set -x
 time java -Dlog4j.configurationFile="src/resources/log4j2.properties" -cp $classpath brbo.BrboMain "${@:1}"

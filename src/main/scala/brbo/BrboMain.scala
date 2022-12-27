@@ -7,7 +7,7 @@ import brbo.common.cfg.ControlFlowGraph
 import brbo.common.commandline._
 import brbo.common.string.StringFormatUtils
 import brbo.frontend.{BasicProcessor, TargetProgram}
-import org.apache.commons.io.{FileUtils, FilenameUtils, IOUtils}
+import org.apache.commons.io.{FileUtils, FilenameUtils}
 
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
@@ -25,7 +25,6 @@ object BrboMain {
     val logger = MyLogger.createLogger(BrboMain.getClass, debugMode = arguments.getDebugMode)
     logger.info(s"$TOOL_NAME has started.")
 
-    arguments.toString.split("\n").foreach(s => logger.info(s"Command line argument - $s"))
     logger.warn(s"We assume each class contains exactly one method named `${TargetProgram.MAIN_FUNCTION}`")
 
     val sourceFiles: List[(File, String)] = {
@@ -195,7 +194,13 @@ object BrboMain {
                                environment: Map[String, String] = Map(),
                                timeout: Int = 5): Unit = {
     logger.info(s"Execute `$command`")
-    logger.info(s"Output:\n${executeCommand(command, environment, timeout)}")
+    val output = {
+      val output = executeCommand(command, environment, timeout)
+      // if (output.length > 10000) s"${output.slice(0, 10000)}\nThe output has been truncated."
+      // else output
+      output
+    }
+    logger.info(s"Output:\n$output")
   }
 
   def executeCommand(command: String,
@@ -203,12 +208,6 @@ object BrboMain {
                      timeout: Int = 5): String = {
     val stderrFile = Files.createTempFile(Paths.get(OUTPUT_DIRECTORY), "stderr", ".txt")
     val stdoutFile = Files.createTempFile(Paths.get(OUTPUT_DIRECTORY), "stdout", ".txt")
-
-    def getProcessOutput: String = {
-      val stdout = FileUtils.readFileToString(new File(stdoutFile.toAbsolutePath.toString), StandardCharsets.UTF_8)
-      val stderr = FileUtils.readFileToString(new File(stderrFile.toAbsolutePath.toString), StandardCharsets.UTF_8)
-      stdout + "\n" + stderr
-    }
 
     val processBuilder: java.lang.ProcessBuilder =
       new java.lang.ProcessBuilder(command.split(" ").toList.asJava)
@@ -219,12 +218,11 @@ object BrboMain {
     // val environmentString = processBuilder.environment().asScala.map({ case (key, value) => s"$key: $value" })
     // println(environmentString.mkString("\n"))
     try {
-      if (!process.waitFor(timeout, TimeUnit.SECONDS)) {
+      if (!process.waitFor(timeout, TimeUnit.SECONDS))
         process.destroyForcibly()
-        getProcessOutput
-      } else {
-        getProcessOutput
-      }
+      val stdout = FileUtils.readFileToString(new File(stdoutFile.toAbsolutePath.toString), StandardCharsets.UTF_8)
+      val stderr = FileUtils.readFileToString(new File(stderrFile.toAbsolutePath.toString), StandardCharsets.UTF_8)
+      stdout + "\n" + stderr
     } catch {
       case e: Exception => s"Ran into an exception:\n${e.toString}"
     } finally {

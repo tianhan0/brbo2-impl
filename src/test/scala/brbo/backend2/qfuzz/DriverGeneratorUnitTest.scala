@@ -77,6 +77,9 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |      byte[] bytes = new byte[Short.BYTES];
         |      while ((inputStream.read(bytes) != -1)) {
         |        short value = ByteBuffer.wrap(bytes).getShort();
+        |        System.out.println("Read raw value: " + value);
+        |        if (value == Short.MIN_VALUE)
+        |          continue;
         |        value = value >= 0 ? value : (short) -value;
         |        value = (short) (value % (MAX_INTEGER - MIN_INTEGER + 1) + MIN_INTEGER);
         |        System.out.println("Read value: " + value);
