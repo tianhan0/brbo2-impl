@@ -71,7 +71,7 @@ object ProgramTransformer {
     val n = Identifier("n", BrboType.INT)
     val declaration = VariableDeclaration(i, Number(0))
     val increment = Assignment(i, Addition(i, Number(1)))
-    val loop = Loop(LessThan(i, n), increment)
+    val loop = Loop(LessThan(i, Multiplication(n, Number(10))), increment)
     BrboFunction(
       identifier = USE_FUNCTION_NAME,
       returnType = BrboType.VOID,

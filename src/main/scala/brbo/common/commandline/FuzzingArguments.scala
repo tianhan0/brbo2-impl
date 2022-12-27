@@ -17,11 +17,17 @@ class FuzzingArguments extends CommonArguments {
     usage = "The directory for storing QFuzz outputs.")
   protected var outputPath: String = Files.createTempDirectory("qfuzz").toAbsolutePath.toString
 
+  @Option(name = "--input", aliases = Array("-i"), required = false,
+    usage = "The directory that stores the initial inputs for QFuzz.")
+  protected var inputPath: String = s"${System.getProperty("user.dir")}/src/main/java/brbo/fuzz/inputs"
+
   def getAflTimeoutInSeconds: Int = aflTimeoutInSeconds
 
   def getQFuzzPath: String = qfuzzPath
 
   def getOutputPath: String = outputPath
+
+  def getInputPath: String = inputPath
 
   override def toString: String = {
     val strings = List[String]()

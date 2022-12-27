@@ -15,8 +15,6 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 object Executor {
-  private val INPUT_SEED_PATH = s"${System.getProperty("user.dir")}/src/main/java/brbo/fuzz/inputs"
-
   def run(program: BrboProgram, arguments: FuzzingArguments): Unit = {
     val logger = MyLogger.createLogger(Executor.getClass, debugMode = arguments.getDebugMode)
 
@@ -28,6 +26,7 @@ object Executor {
     val FUZZ_OUT_DIRECTORY = s"$TEMPORARY_DIRECTORY/fuzz-out"
     val BINARY_PATH = s"$TEMPORARY_DIRECTORY/bin"
     val INSTRUMENTED_BINARY_PATH = s"$TEMPORARY_DIRECTORY/bin-instr"
+    val INPUT_SEED_PATH = arguments.getInputPath
 
     logger.info(s"Step 1: Prepare a QFuzz driver")
     val driverFileContents = DriverGenerator.run(program)
@@ -69,7 +68,7 @@ object Executor {
         logger.info(s"Step 4: Run AFL. Output directory: $FUZZ_OUT_DIRECTORY. Timeout: $AFL_TIMEOUT_IN_SECONDS sec.")
         // Ensure kelinci server starts first
         // Remember to use https://github.com/litho17/qfuzz/commit/5dbe56efc6a9d9f77c320f1a8f801f6c4d6400e3
-        BrboMain.executeCommandWithLogger(command = "sleep 5", logger)
+        BrboMain.executeCommandWithLogger(command = "sleep 3", logger)
         BrboMain.executeCommandWithLogger(
           command = s"""$QFUZZ_PATH/tool/afl-2.51b-qfuzz/afl-fuzz -i $INPUT_SEED_PATH -o $FUZZ_OUT_DIRECTORY -c quantify -K 100 -S afl -t 999999999 $QFUZZ_PATH/tool/fuzzerside/interface -K 100 @@""",
           logger,
