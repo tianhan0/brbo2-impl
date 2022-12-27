@@ -282,21 +282,21 @@ object InterpreterUnitTest {
     TestCase("arrayReadTest", arrayReadTest,
       """GoodState
         |Value: None
-        |Store: (element1 -> 101, element2 -> 17, x -> {101,17})
-        |Trace: [Store: (x -> {101,17})]
-        |       [x ==> Store: (x -> {101,17})]
-        |       [0 ==> Store: (x -> {101,17})]
-        |       [int element1 = arrayRead(x, 0); ==> Store: (element1 -> 101, x -> {101,17})]
-        |       [x ==> Store: (element1 -> 101, x -> {101,17})]
-        |       [1 ==> Store: (element1 -> 101, x -> {101,17})]
-        |       [int element2 = arrayRead(x, 1); ==> Store: (element1 -> 101, element2 -> 17, x -> {101,17})]""".stripMargin),
+        |Store: (element1 -> 101, element2 -> 17, x -> [101,17])
+        |Trace: [Store: (x -> [101,17])]
+        |       [x ==> Store: (x -> [101,17])]
+        |       [0 ==> Store: (x -> [101,17])]
+        |       [int element1 = arrayRead(x, 0); ==> Store: (element1 -> 101, x -> [101,17])]
+        |       [x ==> Store: (element1 -> 101, x -> [101,17])]
+        |       [1 ==> Store: (element1 -> 101, x -> [101,17])]
+        |       [int element2 = arrayRead(x, 1); ==> Store: (element1 -> 101, element2 -> 17, x -> [101,17])]""".stripMargin),
     TestCase("arrayLengthTest", arrayLengthTest,
       """GoodState
         |Value: None
-        |Store: (length -> 2, x -> {101,17})
-        |Trace: [Store: (x -> {101,17})]
-        |       [x ==> Store: (x -> {101,17})]
-        |       [int length = arrayLength(x); ==> Store: (length -> 2, x -> {101,17})]""".stripMargin)
+        |Store: (length -> 2, x -> [101,17])
+        |Trace: [Store: (x -> [101,17])]
+        |       [x ==> Store: (x -> [101,17])]
+        |       [int length = arrayLength(x); ==> Store: (length -> 2, x -> [101,17])]""".stripMargin)
   )
 
   private val assignmentTest =

@@ -42,16 +42,16 @@ class FuzzerUnitTest extends AnyFlatSpec {
 
     val arrays = fuzzer.randomValues(BrboType.ARRAY(BrboType.INT), samples, seed = Fuzzer.SEED).map(v => v.printToIR())
     StringCompare.ignoreWhitespaces(arrays,
-      """{0,12,8}
-        |{10,6}
-        |{12,24,19,0}
-        |{2,14,10,21,18}
-        |{26,22}
-        |{30,10}
-        |{30,25,6,2,14}
-        |{4,28,9}
-        |{8,20,15}
-        |{9,5,17}""".stripMargin, "Enumerating integer arrays failed")
+      """[0,12,8]
+        |[10,6]
+        |[12,24,19,0]
+        |[2,14,10,21,18]
+        |[26,22]
+        |[30,10]
+        |[30,25,6,2,14]
+        |[4,28,9]
+        |[8,20,15]
+        |[9,5,17]""".stripMargin, "Enumerating integer arrays failed")
   }
 }
 

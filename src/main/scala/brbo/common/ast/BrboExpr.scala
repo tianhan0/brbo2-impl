@@ -144,7 +144,7 @@ case class BrboArray(values: List[BrboValue], innerType: BrboType.T, override va
   assert(values.forall(v => v.typ == innerType))
 
   override def printToCInternal(indent: Int): String =
-    s"${indentString(indent)}{${values.map(v => v.printToCInternal(0)).mkString(",")}}"
+    s"${indentString(indent)}[${values.map(v => v.printToCInternal(0)).mkString(",")}]"
 
   override def sameAs(other: Any): Boolean = {
     other match {
