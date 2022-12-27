@@ -89,7 +89,7 @@ object ProgramTransformerUnitTest {
         |  void use(int n)
         |  {
         |    int i = 0;
-        |    while (i < n)
+        |    while (i < (n * 10))
         |    {
         |      i = i + 1;
         |    }
@@ -117,7 +117,7 @@ object ProgramTransformerUnitTest {
         |  void use(int n)
         |  {
         |    int i = 0;
-        |    while (i < n)
+        |    while (i < (n * 10))
         |    {
         |      i = i + 1;
         |    }
