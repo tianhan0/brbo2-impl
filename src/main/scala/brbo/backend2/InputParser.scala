@@ -29,4 +29,13 @@ object InputParser {
       case JsString(_) | JsObject(_) | JsNull => throw new Exception
     }
   }
+
+  def toJson(value: BrboValue): JsValue = {
+    value match {
+      case Number(n, _) => JsNumber(n)
+      case Bool(b, _) => JsBoolean(b)
+      case BrboArray(values, _, _) => JsArray(values.map(v => toJson(v)))
+      case _ => throw new Exception
+    }
+  }
 }
