@@ -76,13 +76,12 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |      System.out.printf("Reading shorts that are between [%d, %d]\n", MIN_INTEGER, MAX_INTEGER);
         |      byte[] bytes = new byte[Short.BYTES];
         |      while ((inputStream.read(bytes) != -1)) {
-        |        short value = ByteBuffer.wrap(bytes).getShort();
-        |        System.out.println("Read raw value: " + value);
-        |        if (value == Short.MIN_VALUE)
+        |        short rawValue = ByteBuffer.wrap(bytes).getShort();
+        |        if (rawValue == Short.MIN_VALUE)
         |          continue;
-        |        value = value >= 0 ? value : (short) -value;
+        |        short value = rawValue >= 0 ? rawValue : (short) -rawValue;
         |        value = (short) (value % (MAX_INTEGER - MIN_INTEGER + 1) + MIN_INTEGER);
-        |        System.out.println("Read value: " + value);
+        |        System.out.printf("Read value: %d (raw: %d)\n", value, rawValue);
         |        values.add(value);
         |      }
         |    } catch (IOException e) {
@@ -104,25 +103,26 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
         |    Test program = new Test();
         |    Mem.clear(true);
-        |    long lastCost = 0;
+        |    long lastMemInstrCost = 0L;
         |    int iUse = 1;
         |    for (; iUse <= MAX_NUMBER_OF_USES_TO_TRACK; iUse++) {
         |      // In the i-th iteration, we collect accumulated resource consumption up to the secret[i]-th uses
         |      Mem.clear(false);
         |      program.execute(a, array, b, iUse);
-        |      if (Mem.instrCost == lastCost)  {
+        |      if (Mem.instrCost == lastMemInstrCost)  {
         |        // When the cost of a run begins to stabilize, we should stop
         |        break;
         |      }
-        |      // System.out.println("cost: " + Mem.instrCost);
-        |      lastCost = Mem.instrCost;
-        |      int index = iUse - 1;
+        |      System.out.println("cost: " + Mem.instrCost);
+        |      long thisCost = 0L;
         |      if (iUse == 1) {
-        |        observations[index] = Mem.instrCost;
+        |        thisCost = Mem.instrCost;
         |      } else {
-        |        observations[index] = Mem.instrCost - observations[index - 1];
+        |        thisCost = Mem.instrCost - lastMemInstrCost;
         |      }
-        |      assert (observations[index] >= 0);
+        |      assert (thisCost >= 0);
+        |      observations[iUse - 1] = thisCost;
+        |      lastMemInstrCost = Mem.instrCost;
         |    }
         |    long[] actualObservations = new long[iUse - 1];
         |    System.arraycopy(observations, 0, actualObservations, 0, actualObservations.length);
@@ -171,7 +171,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |  void use(int n)
         |  {
         |    int i = 0;
-        |    while (i < n)
+        |    while (i < (n * 10))
         |    {
         |      i = i + 1;
         |    }
