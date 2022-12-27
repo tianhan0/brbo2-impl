@@ -24,6 +24,7 @@ object BrboMain {
     val arguments = parseArguments(args)
     val logger = MyLogger.createLogger(BrboMain.getClass, debugMode = arguments.getDebugMode)
     logger.info(s"$TOOL_NAME has started.")
+    Files.createDirectories(Paths.get(OUTPUT_DIRECTORY))
 
     logger.warn(s"We assume each class contains exactly one method named `${TargetProgram.MAIN_FUNCTION}`")
 
@@ -206,8 +207,10 @@ object BrboMain {
   def executeCommand(command: String,
                      environment: Map[String, String] = Map(),
                      timeout: Int = 5): String = {
-    val stderrFile = Files.createTempFile(Paths.get(OUTPUT_DIRECTORY), "stderr", ".txt")
-    val stdoutFile = Files.createTempFile(Paths.get(OUTPUT_DIRECTORY), "stdout", ".txt")
+    val outputPath = Paths.get(s"$OUTPUT_DIRECTORY/cmd")
+    Files.createDirectories(outputPath)
+    val stderrFile = Files.createTempFile(outputPath, "stderr", ".txt")
+    val stdoutFile = Files.createTempFile(outputPath, "stdout", ".txt")
 
     val processBuilder: java.lang.ProcessBuilder =
       new java.lang.ProcessBuilder(command.split(" ").toList.asJava)
