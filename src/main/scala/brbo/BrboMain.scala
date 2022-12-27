@@ -57,7 +57,7 @@ object BrboMain {
     groups.foreach({
       case (innerMostPackageName, list) =>
         logger.info(s"Run $TOOL_NAME on files in package `$innerMostPackageName`")
-        logger.info(s"Run $TOOL_NAME on programs in batches. Batch size: `$BATCH_SIZE`")
+        logger.info(s"Run $TOOL_NAME on programs in batches. Batch size: $BATCH_SIZE")
         list.grouped(BATCH_SIZE).zipWithIndex.foreach({
           case (batch, index) => runBatch(logger, batch, index, sourceFiles.size, arguments)
         })
@@ -81,15 +81,15 @@ object BrboMain {
   private def runBatch(logger: MyLogger, sourceFiles: List[(File, String)], batchIndex: Int,
                        totalFiles: Int, arguments: CommonArguments): Unit = {
     val batchString = s"${StringFormatUtils.integer(batchIndex * BATCH_SIZE, 3)}-${StringFormatUtils.integer((batchIndex + 1) * BATCH_SIZE - 1, 3)}"
-    logger.info(s"Run `$batchIndex`-th batch`: $batchString")
+    logger.info(s"Run batch $batchIndex: $batchString")
 
     sourceFiles.zipWithIndex.foreach({
       case ((sourceFile: File, sourceFileContents: String), index) =>
         val fileIndex = index + batchIndex * BATCH_SIZE
         val progress: Double = fileIndex.toDouble / totalFiles * 100
-        logger.info(s"Process `$fileIndex`-th input file. Progress: ${StringFormatUtils.float(progress, 2)}%")
+        logger.info(s"Process input file $fileIndex. Progress: ${StringFormatUtils.float(progress, 2)}%")
         val sourceFilePath = sourceFile.getAbsolutePath
-        logger.info(s"Process file `$sourceFilePath`")
+        logger.info(s"Process file $sourceFilePath")
         val className: String = getClassName(sourceFilePath)
         logger.info(s"Class name: `$className`")
         if (className == "brbo.benchmarks.Common") {
@@ -100,18 +100,27 @@ object BrboMain {
 
         arguments match {
           case arguments: DecompositionArguments =>
-            decompose(targetProgram, logger, sourceFilePath, arguments)
+            decompose(
+              targetProgram = targetProgram,
+              logger = logger,
+              sourceFilePath = sourceFilePath,
+              arguments = arguments
+            )
             logger.info(s"Finished decomposing ${sourceFile.getAbsolutePath}")
           // TODO: Store results into csv files
           case arguments: FuzzingArguments =>
-            fuzzing(targetProgram, arguments)
+            fuzzing(
+              targetProgram = targetProgram,
+              sourceFilePath = sourceFilePath,
+              arguments = arguments
+            )
           case _ => throw new Exception
         }
     })
   }
 
-  def fuzzing(targetProgram: TargetProgram, arguments: FuzzingArguments): Unit = {
-    Executor.run(targetProgram.program, arguments)
+  def fuzzing(targetProgram: TargetProgram, sourceFilePath: String, arguments: FuzzingArguments): Unit = {
+    Executor.run(targetProgram.program, sourceFilePath, arguments)
   }
 
   def decompose(targetProgram: TargetProgram,
@@ -124,7 +133,8 @@ object BrboMain {
     val driver = new DecompositionDriver(
       arguments = arguments,
       program = targetProgram.program,
-      inputFilePath = DecompositionDriver.getInputFilePath(useProvidedInputs = arguments.getUseProvidedInputs, sourceFilePath)
+      userProvidedInputFile = DecompositionDriver.getInputFilePath(useProvidedInputs = arguments.getUseProvidedInputs, sourceFilePath),
+      qfuzzInputFile = Executor.getInputFilePath(sourceFilePath),
     )
     val startTime = System.nanoTime
     val decomposedProgram = driver.decompose()

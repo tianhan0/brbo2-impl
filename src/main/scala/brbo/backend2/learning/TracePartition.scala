@@ -7,17 +7,27 @@ object TracePartition {
   private val logger = MyLogger.createLogger(TracePartition.getClass, debugMode = false)
   private val numberOfTraces = 1
 
-  def selectRepresentatives(userProvidedTraces: List[Trace], fuzzerGeneratedTraces: List[Trace]): Map[Trace, List[Trace]] = {
+  def selectRepresentatives(userProvidedTraces: List[Trace],
+                            fuzzerGeneratedTraces: List[Trace],
+                            qfuzzGeneratedTraces: List[Trace]): Map[Trace, List[Trace]] = {
     val prefix = "Step 2:"
     logger.info(s"$prefix Assume all traces are similar")
-    if (userProvidedTraces.isEmpty) {
+    if (userProvidedTraces.isEmpty && qfuzzGeneratedTraces.isEmpty) {
       logger.info(s"$prefix Select representatives from fuzzer generated traces")
       return select(fuzzerGeneratedTraces)
     }
-    logger.info(s"$prefix Select representatives from user-provided traces")
-    select(userProvidedTraces).map({
+    if (userProvidedTraces.nonEmpty) {
+      logger.info(s"$prefix Select representatives from user-provided traces")
+      return select(userProvidedTraces).map({
+        case (trace, similarTraces) =>
+          // Ensure the fuzzer generated traces will be used for testing generality
+          (trace, similarTraces ::: fuzzerGeneratedTraces ::: qfuzzGeneratedTraces)
+      })
+    }
+    logger.info(s"$prefix Select representatives from qfuzz generated traces")
+    select(qfuzzGeneratedTraces).map({
       case (trace, similarTraces) =>
-        // Ensure the user-provided traces will be used for testing generality
+        // Ensure the fuzzer generated traces will be used for testing generality
         (trace, similarTraces ::: fuzzerGeneratedTraces)
     })
   }

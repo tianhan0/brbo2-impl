@@ -1,6 +1,6 @@
 package brbo.backend2
 
-import brbo.BrboMain.readFromFile
+import brbo.BrboMain
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.backend2.learning.SegmentClustering.printSegments
@@ -11,9 +11,12 @@ import brbo.common.commandline.DecompositionArguments
 import brbo.common.{BrboType, GhostVariableUtils, MyLogger}
 import org.apache.commons.io.FilenameUtils
 
-import java.io.File
+import java.nio.file.{Files, Paths}
 
-class DecompositionDriver(arguments: DecompositionArguments, program: BrboProgram, inputFilePath: Option[String]) {
+class DecompositionDriver(arguments: DecompositionArguments,
+                          program: BrboProgram,
+                          userProvidedInputFile: Option[String],
+                          qfuzzInputFile: String) {
   private val debugMode = arguments.getDebugMode
   private val logger = MyLogger.createLogger(classOf[DecompositionDriver], debugMode)
   logger.info(s"Step 0: Insert reset place holders")
@@ -28,35 +31,57 @@ class DecompositionDriver(arguments: DecompositionArguments, program: BrboProgra
     algorithm = arguments.getAlgorithm,
     threads = arguments.getThreads,
   )
-  private var numberOfTraces = 0
 
   def decompose(): BrboProgram = {
     logger.info(s"Step 1: Generate traces")
     logger.info(s"Step 1.1: User-provided inputs")
     val userProvidedTraces: List[Trace] = {
-      if (arguments.getUseProvidedInputs && inputFilePath.isDefined) {
-        val inputFileContents = readFromFile(inputFilePath.get)
-        val inputs = InputParser.parse(inputFileContents)
-        Interpreter.generateTraces(inputs = inputs, interpreter = interpreter,
-          threads = arguments.getThreads, debugMode = debugMode)
-      } else Nil
+      if (arguments.getUseProvidedInputs && userProvidedInputFile.isDefined)
+        generateTraces(userProvidedInputFile.get)
+      else
+        Nil
     }
     logger.info(s"Step 1.2: Fuzzer generated inputs")
     val fuzzerGeneratedTraces: List[Trace] = {
-      Fuzzer.fuzz(brboProgram = instrumentedProgram, interpreter = interpreter, debugMode = debugMode,
-        samples = arguments.getFuzzSamples, threads = arguments.getThreads)
+      Fuzzer.fuzz(
+        brboProgram = instrumentedProgram,
+        interpreter = interpreter,
+        debugMode = debugMode,
+        samples = arguments.getFuzzSamples,
+        threads = arguments.getThreads
+      )
     }
-    numberOfTraces = userProvidedTraces.size + fuzzerGeneratedTraces.size
+    logger.info(s"Step 1.3: QFuzz generated inputs")
+    val qfuzzGeneratedTraces: List[Trace] = {
+      if (Files.exists(Paths.get(qfuzzInputFile)))
+        generateTraces(qfuzzInputFile)
+      else
+        Nil
+    }
+
     logger.info(s"Step 2: Select representative traces")
     val representatives = TracePartition.selectRepresentatives(
       userProvidedTraces = userProvidedTraces,
-      fuzzerGeneratedTraces = fuzzerGeneratedTraces)
+      fuzzerGeneratedTraces = fuzzerGeneratedTraces,
+      qfuzzGeneratedTraces = qfuzzGeneratedTraces
+    )
     logger.info(s"Step 3: Decompose ${representatives.size} selected traces")
     val decomposedPrograms = representatives.zipWithIndex.map({
       case ((traceRepresentative, similarTraces), index) =>
         decomposeTrace(traceRepresentative, index, similarTraces)
     })
     decomposedPrograms.head
+  }
+
+  private def generateTraces(inputFilePath: String): List[Trace] = {
+    val inputFileContents = BrboMain.readFromFile(inputFilePath)
+    val inputs = InputParser.parse(inputFileContents)
+    Interpreter.generateTraces(
+      inputs = inputs,
+      interpreter = interpreter,
+      threads = arguments.getThreads,
+      debugMode = debugMode
+    )
   }
 
   private def decomposeTrace(trace: Trace, index: Int, similarTraces: Iterable[Trace]): BrboProgram = {
@@ -121,12 +146,12 @@ object DecompositionDriver {
     program.replaceMainFunction(mainFunctionWithResetPlaceHolders)
   }
 
-  def getInputFilePath(useProvidedInputs: Boolean, javaFilePath: String): Option[String] = {
+  def getInputFilePath(useProvidedInputs: Boolean, sourceFilePath: String): Option[String] = {
     if (!useProvidedInputs)
       return None
-    assert(FilenameUtils.getExtension(javaFilePath) == "java")
-    val testFileName = s"${FilenameUtils.getBaseName(javaFilePath)}.json"
-    Some(s"${FilenameUtils.getFullPath(javaFilePath)}$testFileName")
+    assert(FilenameUtils.getExtension(sourceFilePath) == "java")
+    val fileName = s"${FilenameUtils.getBaseName(sourceFilePath)}.json"
+    Some(s"${FilenameUtils.getFullPath(sourceFilePath)}$fileName")
   }
 
   def classifierFeatures(program: BrboProgram): List[Identifier] = {
