@@ -18,16 +18,18 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
     val (declarations, initializations, prints) = DriverGenerator.declarationsAndInitializations(parameters)
     val result = (declarations ::: initializations ::: prints).mkString("\n")
     StringCompare.ignoreWhitespaces(result,
-      """int a = values.get(0);
+      """int a = 0;
         |int[] b = new int[ARRAY_SIZE];
         |int[] c = new int[ARRAY_SIZE];
-        |int d = values.get(17);
+        |int d = 0;
+        |a = values.get(0);
         |for (int i = 0; i < ARRAY_SIZE && 1 + i < values.size(); i++) {
         |  b[i] = values.get(1 + i);
         |}
         |for (int i = 0; i < ARRAY_SIZE && 9 + i < values.size(); i++) {
         |  c[i] = values.get(9 + i);
         |}
+        |d = values.get(17);
         |System.out.println("a: " + a);
         |System.out.println("b: " + Arrays.toString(b));
         |System.out.println("c: " + Arrays.toString(c));
@@ -38,7 +40,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
     val targetProgram = BasicProcessor.getTargetProgram("Test", test01)
     val result = DriverGenerator.run(targetProgram.program)
     StringCompare.ignoreWhitespaces(result,
-      """package brbo.fuzz;
+      """package brbo.fuzz.drivers;
         |
         |import edu.cmu.sv.kelinci.Kelinci;
         |import edu.cmu.sv.kelinci.Mem;
@@ -90,11 +92,21 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |      return;
         |    }
         |
-        |    int a = values.get(0);
+        |    int a = 0;
         |    int[] array = new int[ARRAY_SIZE];
-        |    int b = values.get(9);
-        |    for (int i = 0; i < ARRAY_SIZE && 1 + i < values.size(); i++) {
-        |      array[i] = values.get(1 + i);
+        |    int b = 0;
+        |    try {
+        |      a = values.get(0);
+        |      for (int i = 0; i < ARRAY_SIZE && 1 + i < values.size(); i++) {
+        |        array[i] = values.get(1 + i);
+        |      }
+        |      b = values.get(9);
+        |    } catch (IndexOutOfBoundsException exception) {
+        |      long[] actualObservations = new long[0];
+        |      PartitionSet clusters = PartitionSet.createFromObservations(epsilon, actualObservations, clusterAlgorithm);
+        |      Kelinci.setObserverdClusters(clusters.getClusterAverageValues(), clusters.getMinimumDeltaValue());
+        |      System.out.println("Not sufficient inputs!");
+        |      return;
         |    }
         |    System.out.println("a: " + a);
         |    System.out.println("array: " + Arrays.toString(array));

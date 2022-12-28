@@ -68,7 +68,15 @@ object DriverGenerator {
        |    }
        |
        |${prependIndents(declarations, indent = 4).mkString("\n")}
-       |${prependIndents(initializations, indent = 4).mkString("\n")}
+       |    try {
+       |${prependIndents(initializations, indent = 6).mkString("\n")}
+       |    } catch (IndexOutOfBoundsException exception) {
+       |      long[] actualObservations = new long[0];
+       |      PartitionSet clusters = PartitionSet.createFromObservations(epsilon, actualObservations, clusterAlgorithm);
+       |      Kelinci.setObserverdClusters(clusters.getClusterAverageValues(), clusters.getMinimumDeltaValue());
+       |      System.out.println("Not sufficient inputs!");
+       |      return;
+       |    }
        |${prependIndents(prints, indent = 4).mkString("\n")}
        |
        |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
@@ -114,7 +122,7 @@ object DriverGenerator {
 
   def driverFullyQualifiedClassName(className: String): String = s"$DRIVER_PACKAGE_NAME.${driverClassName(className)}"
 
-  private val DRIVER_PACKAGE_NAME = "brbo.fuzz"
+  private val DRIVER_PACKAGE_NAME = "brbo.fuzz.drivers"
 
   def prependIndents(lines: List[String], indent: Int): List[String] =
     lines.map(line => StringFormatUtils.prependIndentsPerLine(line, indent))
@@ -124,9 +132,13 @@ object DriverGenerator {
       case ((indexSoFar, declarations, initializations, prints), parameter) =>
         parameter.typ match {
           case BrboType.INT =>
-            val declaration = s"${parameter.typeNamePair(QFuzzPrintType)} = values.get($indexSoFar);"
+            val declaration = s"${parameter.typeNamePair(QFuzzPrintType)} = 0;"
+            val initialization = s"${parameter.name} = values.get($indexSoFar);"
             val print = s"""System.out.println("${parameter.name}: " + ${parameter.name});"""
-            (indexSoFar + 1, declaration :: declarations, initializations, print :: prints)
+            (indexSoFar + 1,
+              declaration :: declarations,
+              initialization :: initializations,
+              print :: prints)
           case BrboType.ARRAY(BrboType.INT) =>
             val declaration = s"${parameter.typeNamePair(QFuzzPrintType)} = new int[ARRAY_SIZE];"
             val initialization =
