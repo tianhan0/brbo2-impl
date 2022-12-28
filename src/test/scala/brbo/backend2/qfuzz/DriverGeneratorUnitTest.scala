@@ -180,10 +180,12 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |  }
         |  void mostPreciseBound(boolean assertion) {}
         |  void lessPreciseBound(boolean assertion) {}
+        |  boolean ndBool() { return true; }
+        |  int ndInt2(int lower, int upper) { return upper > lower ? lower + 1 : upper; }
         |  void use(int n)
         |  {
         |    int i = 0;
-        |    while (i < (n * 10))
+        |    while (i < (n * 1000))
         |    {
         |      i = i + 1;
         |    }

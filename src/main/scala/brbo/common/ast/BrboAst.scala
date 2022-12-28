@@ -56,6 +56,7 @@ case class BrboProgram(className: String,
          |  void ${PreDefinedFunctions.MostPreciseBound.name}(boolean assertion) {}
          |  void ${PreDefinedFunctions.LessPreciseBound.name}(boolean assertion) {}
          |  boolean ndBool() { return true; }
+         |  int ndInt2(int lower, int upper) { return upper > lower ? lower + 1 : upper; }
          |${otherFunctions.find(f => f.identifier == PreDefinedFunctions.Use.name).get.printToQFuzzJava(indent = 0)}""".stripMargin
     val nonPredefinedFunctions =
       this.nonPredefinedFunctions.map(function => function.printToQFuzzJava(indent)).mkString("\n")
@@ -200,17 +201,16 @@ case class BrboFunction(identifier: String,
   }
 }
 
-abstract class BrboAst extends SameAs with Serializable with Print {
-  override def printToQFuzzJava(indent: Int): String = printToBrboJava(indent)
-}
+abstract class BrboAst extends SameAs with Serializable with Print
 
 abstract class Statement(val uuid: UUID) extends BrboAst
 
 abstract class Command(val uuid: UUID) extends BrboAst with PrintToIR with GetFunctionCalls with UseDefVariables {
   def printToCInternal(indent: Int): String
 
-  // TODO: For `VariableDeclaration`, we need to declare array types!
   def printToBrboJava(indent: Int): String = printToC(indent)
+
+  def printToQFuzzJava(indent: Int): String = printToBrboJava(indent)
 
   final override def printToIR(): String = {
     this match {
@@ -255,6 +255,10 @@ case class Block(asts: List[BrboAst], override val uuid: UUID = UUID.randomUUID(
     s"${indentString(indent)}{\n${asts.map(t => t.printToBrboJava(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
   }
 
+  override def printToQFuzzJava(indent: Int): String = {
+    s"${indentString(indent)}{\n${asts.map(t => t.printToQFuzzJava(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
+  }
+
   override def sameAs(other: Any): Boolean = {
     other match {
       case Block(otherAsts, _) =>
@@ -281,6 +285,11 @@ case class Loop(condition: BrboExpr, loopBody: BrboAst, override val uuid: UUID 
 
   override def printToBrboJava(indent: Int): String = {
     val bodyString = loopBodyBlock.printToBrboJava(indent)
+    s"${indentString(indent)}while ($conditionString)\n$bodyString"
+  }
+
+  override def printToQFuzzJava(indent: Int): String = {
+    val bodyString = loopBodyBlock.printToQFuzzJava(indent)
     s"${indentString(indent)}while ($conditionString)\n$bodyString"
   }
 
@@ -320,6 +329,12 @@ case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, override
     s"${indentString(indent)}if ($conditionString)\n$thenString\n${indentString(indent)}else\n$elseString"
   }
 
+  override def printToQFuzzJava(indent: Int): String = {
+    val thenString = thenBlock.printToQFuzzJava(indent)
+    val elseString = elseBlock.printToQFuzzJava(indent)
+    s"${indentString(indent)}if ($conditionString)\n$thenString\n${indentString(indent)}else\n$elseString"
+  }
+
   override def sameAs(other: Any): Boolean = {
     other match {
       case ITE(otherCondition, otherThenAst, otherElseAst, _) =>
@@ -356,15 +371,19 @@ case class Assume(condition: BrboExpr, override val uuid: UUID = UUID.randomUUID
 }
 
 case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
+  private val initialValueString = identifier.typ match {
+    case INT => assert(initialValue.typ == INT, s"variable: `$identifier` (type: `${identifier.typ}`); initialValue: `$initialValue` (type: `${initialValue.typ}`)"); initialValue.printNoOuterBrackets
+    case BOOL => assert(initialValue.typ == BOOL); initialValue.printNoOuterBrackets
+    case STRING => assert(initialValue.typ == STRING); initialValue.printNoOuterBrackets
+    case _ => throw new Exception
+  }
+
   override def printToCInternal(indent: Int): String = {
-    val initialValueString =
-      identifier.typ match {
-        case INT => assert(initialValue.typ == INT, s"variable: `$identifier` (type: `${identifier.typ}`); initialValue: `$initialValue` (type: `${initialValue.typ}`)"); initialValue.printNoOuterBrackets
-        case BOOL => assert(initialValue.typ == BOOL); initialValue.printNoOuterBrackets
-        case STRING => assert(initialValue.typ == STRING); initialValue.printNoOuterBrackets
-        case _ => throw new Exception
-      }
     s"${indentString(indent)}${BrboType.PrintType.print(identifier.typ, CPrintType)} ${identifier.name} = $initialValueString;"
+  }
+
+  override def printToQFuzzJava(indent: Int): String = {
+    s"${indentString(indent)}${BrboType.PrintType.print(identifier.typ, QFuzzPrintType)} ${identifier.name} = $initialValueString;"
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = initialValue.getFunctionCalls

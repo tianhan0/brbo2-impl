@@ -56,7 +56,7 @@ object BrboType {
         case QFuzzPrintType =>
           typ match {
             case INT => "int"
-            case BOOL => "int"
+            case BOOL => "boolean"
             case VOID => "void"
             case FLOAT => "float"
             case STRING => throw new Exception

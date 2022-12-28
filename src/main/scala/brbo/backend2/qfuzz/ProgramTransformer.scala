@@ -4,6 +4,10 @@ import brbo.common.BrboType
 import brbo.common.ast._
 
 object ProgramTransformer {
+  val USE_FUNCTION_NAME = "use"
+  private val INDEX_VARIABLE_NAME = "INDEX_VARIABLE"
+  private val MAX_LOOP_ITERATIONS = 8
+
   def transform(program: BrboProgram): BrboProgram = {
     val mainFunction = program.mainFunction
     val mainFunctionBody = mainFunction.body
@@ -49,10 +53,6 @@ object ProgramTransformer {
     )
   }
 
-  val USE_FUNCTION_NAME = "use"
-  private val INDEX_VARIABLE_NAME = "INDEX_VARIABLE"
-  private val MAX_LOOP_ITERATIONS = 8
-
   private def generateCallUse(use: Use): BrboAst = {
     val callUse = FunctionCallExpr(USE_FUNCTION_NAME, arguments = List(use.update), returnType = BrboType.VOID)
     use.condition match {
@@ -71,7 +71,7 @@ object ProgramTransformer {
     val n = Identifier("n", BrboType.INT)
     val declaration = VariableDeclaration(i, Number(0))
     val increment = Assignment(i, Addition(i, Number(1)))
-    val loop = Loop(LessThan(i, Multiplication(n, Number(10))), increment)
+    val loop = Loop(LessThan(i, Multiplication(n, Number(1000))), increment)
     BrboFunction(
       identifier = USE_FUNCTION_NAME,
       returnType = BrboType.VOID,
