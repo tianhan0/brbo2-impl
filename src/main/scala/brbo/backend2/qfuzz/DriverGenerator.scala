@@ -50,7 +50,7 @@ object DriverGenerator {
        |
        |    List<Short> values = new ArrayList<>();
        |    try (FileInputStream inputStream = new FileInputStream(arguments[0])) {
-       |      System.out.printf("Reading shorts that are between [%d, %d]\\n", MIN_INTEGER, MAX_INTEGER);
+       |      System.out.printf("Read shorts between [%d, %d]\\n", MIN_INTEGER, MAX_INTEGER);
        |      byte[] bytes = new byte[Short.BYTES];
        |      while ((inputStream.read(bytes) != -1)) {
        |        short rawValue = ByteBuffer.wrap(bytes).getShort();
@@ -83,27 +83,27 @@ object DriverGenerator {
        |    ${program.className} program = new ${program.className}();
        |    Mem.clear(true);
        |    long lastMemInstrCost = 0L;
-       |    int iUse = 1;
-       |    for (; iUse <= MAX_NUMBER_OF_USES_TO_TRACK; iUse++) {
+       |    int iThUse = 1;
+       |    for (; iThUse <= MAX_NUMBER_OF_USES_TO_TRACK; iThUse++) {
        |      // In the i-th iteration, we collect accumulated resource consumption up to the secret[i]-th uses
        |      Mem.clear(false);
-       |      program.${TargetProgram.MAIN_FUNCTION}(${program.mainFunction.parameters.map({ identifier => identifier.name }).mkString(", ")}, iUse);
+       |      program.${TargetProgram.MAIN_FUNCTION}(${program.mainFunction.parameters.map({ identifier => identifier.name }).mkString(", ")}, iThUse);
        |      if (Mem.instrCost == lastMemInstrCost)  {
        |        // When the cost of a run begins to stabilize, we should stop
        |        break;
        |      }
-       |      System.out.println("cost: " + Mem.instrCost);
+       |      System.out.println("iThUse: " + iThUse + "; cost: " + Mem.instrCost);
        |      long thisCost = 0L;
-       |      if (iUse == 1) {
+       |      if (iThUse == 1) {
        |        thisCost = Mem.instrCost;
        |      } else {
        |        thisCost = Mem.instrCost - lastMemInstrCost;
        |      }
        |      assert (thisCost >= 0);
-       |      observations[iUse - 1] = thisCost;
+       |      observations[iThUse - 1] = thisCost;
        |      lastMemInstrCost = Mem.instrCost;
        |    }
-       |    long[] actualObservations = new long[iUse - 1];
+       |    long[] actualObservations = new long[iThUse - 1];
        |    System.arraycopy(observations, 0, actualObservations, 0, actualObservations.length);
        |    System.out.println("observations: " + Arrays.toString(actualObservations));
        |
@@ -152,7 +152,8 @@ object DriverGenerator {
               print :: prints)
           case BrboType.BOOL =>
             val declaration = s"${parameter.typeNamePair(QFuzzPrintType)};"
-            val initialization = s"${parameter.name} = values.get($indexSoFar) > 0 ? true : false;"
+            val halfMaxValue = java.lang.Short.MAX_VALUE / 2
+            val initialization = s"${parameter.name} = values.get($indexSoFar) > $halfMaxValue ? true : false;"
             val print = s"""System.out.println("${parameter.name}: " + ${parameter.name});"""
             (indexSoFar + 1,
               declaration :: declarations,
