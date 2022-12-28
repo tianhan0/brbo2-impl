@@ -13,13 +13,13 @@ abstract public class SubstringsBetween extends Common {
     int list = 0;
     int pos = 0;
     while (pos < str - close) {
-      int start = ndBool() ? -1 : ndInt2(pos, str - 1);
-      if (start < 0) {
+      int start = ndInt2(pos, str);
+      if (start == str) {
         break;
       }
       start += open;
-      int end = ndBool() ? -1 : ndInt2(start, str - 1);
-      if (end < 0) {
+      int end = ndInt2(start, str);
+      if (end == str) {
         break;
       }
       list += end - start;

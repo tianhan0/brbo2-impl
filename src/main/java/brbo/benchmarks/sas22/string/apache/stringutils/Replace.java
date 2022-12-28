@@ -9,16 +9,13 @@ abstract public class Replace extends Common {
     }
     int dummy = 0;
     int start = 0;
-    int end = ndBool() ? -1 : ndInt2(start, text - 1);
-    if (end == -1) {
-      return;
-    }
+    int end = ndInt2(start, text - 1);
     int R = 0;
     mostPreciseBound(R <= text);
     lessPreciseBound(R <= MAX * text + MAX);
     int replLength = searchString;
     int buf = 0;
-    while (end != -1) {
+    while (end != text - 1) {
       buf += end - start;
       R = R + (end - start);
       buf += replacement;
@@ -28,7 +25,7 @@ abstract public class Replace extends Common {
       if (max == 0) {
         break;
       }
-      end = ndBool() ? -1 : ndInt2(start, text - 1);
+      end = ndInt2(start, text - 1);
     }
     buf += text - start;
     R = R + (text - start);

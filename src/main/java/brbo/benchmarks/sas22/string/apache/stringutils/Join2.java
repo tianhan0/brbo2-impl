@@ -17,14 +17,14 @@ abstract public class Join2 extends Common {
       return;
     }
 
-    if (ndBool()) {
+    if (ndBool2(iterator)) {
       buf++;
       R = R + 1;
     }
     while (iterator > 0) {
       buf++;
       R = R + 1;
-      if (ndBool()) {
+      if (ndBool2(iterator)) {
         buf++;
         R = R + 1;
       }

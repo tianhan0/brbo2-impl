@@ -14,38 +14,34 @@ abstract public class SplitByWholeSeparatorWorker extends Common {
     int numberOfStrings = 0;
     int beg = 0;
     int end = 0;
-    while (end < str) {
-      end = ndBool() ? -1 : ndInt2(beg, str - 1);
-      if (end > -1) {
+    while (end != str - 1) {
+      end = ndInt2(beg, str - 1);
+      if (end != str - 1) {
         if (end > beg) {
           numberOfStrings++;
           if (numberOfStrings == max) {
             end = str;
             substrings += str - beg;
             R = R + (str - beg);
-          }
-          else {
+          } else {
             substrings += end - beg;
             R = R + (end - beg);
             beg = end + separator;
           }
-        }
-        else {
+        } else {
           if (preserveAllTokens) {
             numberOfStrings++;
             if (numberOfStrings == max) {
               end = str;
               substrings += str - beg;
               R = R + (str - beg);
-            }
-            else {
+            } else {
               ;
             }
           }
           beg = end + separator;
         }
-      }
-      else {
+      } else {
         substrings += str - beg;
         R = R + (str - beg);
         end = str;

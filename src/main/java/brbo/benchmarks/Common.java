@@ -24,6 +24,8 @@ public abstract class Common {
 
   public abstract boolean ndBool(); // Non-deterministic boolean
 
+  public abstract boolean ndBool2(int... values); // Non-deterministic boolean, based on values
+
   public abstract void assume(boolean expression);
 
   public abstract void mostPreciseBound(boolean assertion);

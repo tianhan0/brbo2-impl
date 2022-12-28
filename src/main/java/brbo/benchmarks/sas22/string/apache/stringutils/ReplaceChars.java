@@ -13,8 +13,8 @@ abstract public class ReplaceChars extends Common {
     mostPreciseBound(R <= str);
     lessPreciseBound(R <= MAX * str + MAX);
     for (int i = 0; i < str; i++) {
-      int index = ndBool() ? -1 : ndInt2(0, searchChars - 1);
-      if (index >= 0) {
+      int index = ndInt2(0, searchChars - 1);
+      if (index != searchChars - 1) {
         modified = true;
         if (index < replaceChars) {
           buf++;

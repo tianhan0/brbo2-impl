@@ -12,7 +12,7 @@ abstract public class GetDigits extends Common {
     lessPreciseBound(R <= MAX * str);
     int strDigits = 0;
     for (int i = 0; i < str; i++) {
-      if (ndBool()) {
+      if (ndBool2(i)) {
         strDigits++;
         R = R + 1;
       }
