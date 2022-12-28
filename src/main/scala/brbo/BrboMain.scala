@@ -87,7 +87,7 @@ object BrboMain {
       case ((sourceFile: File, sourceFileContents: String), index) =>
         val fileIndex = index + batchIndex * BATCH_SIZE
         val progress: Double = fileIndex.toDouble / totalFiles * 100
-        logger.info(s"Process input file $fileIndex. Progress: ${StringFormatUtils.float(progress, 2)}%")
+        logger.info(s"\n\n\nProcess input file $fileIndex. Progress: ${StringFormatUtils.float(progress, 2)}%")
         val sourceFilePath = sourceFile.getAbsolutePath
         logger.info(s"Process file $sourceFilePath")
         val className: String = getClassName(sourceFilePath)
