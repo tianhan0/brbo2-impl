@@ -67,14 +67,14 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |  /* Cluster Algorithm */
         |  public static PartitionAlgorithm clusterAlgorithm = new Greedy(false);
         |
-        |  public static void main(String[] args) {
-        |    if (args.length != 1) {
+        |  public static void main(String[] arguments) {
+        |    if (arguments.length != 1) {
         |      System.out.println("Expects file name as parameter");
         |      return;
         |    }
         |
         |    List<Short> values = new ArrayList<>();
-        |    try (FileInputStream inputStream = new FileInputStream(args[0])) {
+        |    try (FileInputStream inputStream = new FileInputStream(arguments[0])) {
         |      System.out.printf("Reading shorts that are between [%d, %d]\n", MIN_INTEGER, MAX_INTEGER);
         |      byte[] bytes = new byte[Short.BYTES];
         |      while ((inputStream.read(bytes) != -1)) {
