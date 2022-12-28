@@ -11,7 +11,7 @@ class FuzzingArguments extends CommonArguments {
 
   @Option(name = "--qfuzz", required = false,
     usage = "The absolute path of QFuzz.")
-  protected var qfuzzPath: String = s"${System.getProperty("user.home")}/Documents/workspace/qfuzz"
+  protected var qfuzzPath: String = s"${System.getProperty("user.home")}/Documents/workspace/qfuzz_docker/"
 
   @Option(name = "--output", aliases = Array("-o"), required = false,
     usage = "The directory for storing QFuzz outputs.")
@@ -21,6 +21,10 @@ class FuzzingArguments extends CommonArguments {
     usage = "The directory that stores the initial inputs for QFuzz.")
   protected var inputPath: String = s"${System.getProperty("user.dir")}/src/main/java/brbo/fuzz/inputs"
 
+  @Option(name = "--dry", required = false,
+    usage = "Dry run: Do not write the QFuzz generated inputs into Json files.")
+  protected var dryRun: Boolean = false
+
   def getAflTimeoutInSeconds: Int = aflTimeoutInSeconds
 
   def getQFuzzPath: String = qfuzzPath
@@ -28,6 +32,8 @@ class FuzzingArguments extends CommonArguments {
   def getOutputPath: String = outputPath
 
   def getInputPath: String = inputPath
+
+  def getDryRun: Boolean = dryRun
 
   override def toString: String = {
     val strings = List[String]()

@@ -31,7 +31,7 @@ object Executor {
     val KELINCI_TIMEOUT_IN_SECONDS = AFL_TIMEOUT_IN_SECONDS + 3
 
     val OUTPUT_DIRECTORY: Path = Paths.get(arguments.getOutputPath)
-    val FUZZ_OUT_DIRECTORY = s"$OUTPUT_DIRECTORY/fuzz-out"
+    val FUZZ_OUT_DIRECTORY = s"$OUTPUT_DIRECTORY/fuzzer-out"
     val BINARY_PATH = s"$OUTPUT_DIRECTORY/bin"
     val INSTRUMENTED_BINARY_PATH = s"$OUTPUT_DIRECTORY/bin-instr"
 
@@ -125,20 +125,25 @@ object Executor {
         logger.info(s"New interesting input: ${newInterestingInput.map(v => v.printToIR()).mkString(", ")}")
     })
     val combinedInputs: List[List[BrboValue]] = existingInputs ::: newInterestingInputs
-    if (combinedInputs.nonEmpty) {
-      logger.info(s"Step 5: Write interesting inputs into file $inputFilePath")
-      val allInputsJson = JsArray(
-        deduplicate(combinedInputs).map({
-          inputs =>
-            logger.info(s"Interesting input: ${inputs.map(v => v.printToIR()).mkString(", ")}")
-            JsArray(inputs.map(input => InputParser.toJson(input)))
-        })
-      )
-      BrboMain.writeToFile(path = inputFilePath, content = Json.prettyPrint(allInputsJson))
+    if (arguments.getDryRun) {
+      logger.info(s"Step 5: Dry run. Not writing interesting inputs into Json files")
     } else {
-      logger.info(s"Step 5: No interesting inputs")
+      if (combinedInputs.nonEmpty) {
+        logger.info(s"Step 5: Write interesting inputs into file $inputFilePath")
+        val allInputsJson = JsArray(
+          deduplicate(combinedInputs).map({
+            inputs =>
+              logger.info(s"Interesting input: ${inputs.map(v => v.printToIR()).mkString(", ")}")
+              JsArray(inputs.map(input => InputParser.toJson(input)))
+          })
+        )
+        BrboMain.writeToFile(path = inputFilePath, content = Json.prettyPrint(allInputsJson))
+      } else {
+        logger.info(s"Step 5: No interesting inputs")
+      }
     }
 
+    logger.info(s"Step 6: Clean up the files generated when running QFuzz")
     FileUtils.deleteDirectory(new File(FUZZ_OUT_DIRECTORY))
     FileUtils.deleteDirectory(new File(BINARY_PATH))
     FileUtils.deleteDirectory(new File(INSTRUMENTED_BINARY_PATH))
