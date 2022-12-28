@@ -126,7 +126,7 @@ object Executor {
     })
     val combinedInputs: List[List[BrboValue]] = existingInputs ::: newInterestingInputs
     if (arguments.getDryRun) {
-      logger.info(s"Step 5: Dry run. Not writing interesting inputs into Json files")
+      logger.info(s"Step 5: Dry run. Not write interesting inputs into Json files")
     } else {
       if (combinedInputs.nonEmpty) {
         logger.info(s"Step 5: Write interesting inputs into file $inputFilePath")
@@ -143,7 +143,7 @@ object Executor {
       }
     }
 
-    logger.info(s"Step 6: Clean up the files generated when running QFuzz")
+    logger.info(s"Step 6: Clean up the generated files when running QFuzz")
     FileUtils.deleteDirectory(new File(FUZZ_OUT_DIRECTORY))
     FileUtils.deleteDirectory(new File(BINARY_PATH))
     FileUtils.deleteDirectory(new File(INSTRUMENTED_BINARY_PATH))
