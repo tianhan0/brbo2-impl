@@ -132,7 +132,7 @@ object DriverGenerator {
       case ((indexSoFar, declarations, initializations, prints), parameter) =>
         parameter.typ match {
           case BrboType.INT =>
-            val declaration = s"${parameter.typeNamePair(QFuzzPrintType)} = 0;"
+            val declaration = s"${parameter.typeNamePair(QFuzzPrintType)};"
             val initialization = s"${parameter.name} = values.get($indexSoFar);"
             val print = s"""System.out.println("${parameter.name}: " + ${parameter.name});"""
             (indexSoFar + 1,
@@ -147,6 +147,14 @@ object DriverGenerator {
                  |}""".stripMargin
             val print = s"""System.out.println("${parameter.name}: " + Arrays.toString(${parameter.name}));"""
             (indexSoFar + ARRAY_SIZE,
+              declaration :: declarations,
+              initialization :: initializations,
+              print :: prints)
+          case BrboType.BOOL =>
+            val declaration = s"${parameter.typeNamePair(QFuzzPrintType)};"
+            val initialization = s"${parameter.name} = values.get($indexSoFar) > 0 ? true : false;"
+            val print = s"""System.out.println("${parameter.name}: " + ${parameter.name});"""
+            (indexSoFar + 1,
               declaration :: declarations,
               initialization :: initializations,
               print :: prints)

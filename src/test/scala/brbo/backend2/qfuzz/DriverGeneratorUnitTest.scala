@@ -13,15 +13,15 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
       Identifier("a", BrboType.INT),
       Identifier("b", BrboType.ARRAY(BrboType.INT)),
       Identifier("c", BrboType.ARRAY(BrboType.INT)),
-      Identifier("d", BrboType.INT),
+      Identifier("d", BrboType.BOOL),
     )
     val (declarations, initializations, prints) = DriverGenerator.declarationsAndInitializations(parameters)
     val result = (declarations ::: initializations ::: prints).mkString("\n")
     StringCompare.ignoreWhitespaces(result,
-      """int a = 0;
+      """int a;
         |int[] b = new int[ARRAY_SIZE];
         |int[] c = new int[ARRAY_SIZE];
-        |int d = 0;
+        |boolean d;
         |a = values.get(0);
         |for (int i = 0; i < ARRAY_SIZE && 1 + i < values.size(); i++) {
         |  b[i] = values.get(1 + i);
@@ -29,7 +29,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |for (int i = 0; i < ARRAY_SIZE && 9 + i < values.size(); i++) {
         |  c[i] = values.get(9 + i);
         |}
-        |d = values.get(17);
+        |d = values.get(17) > 0 ? true : false;
         |System.out.println("a: " + a);
         |System.out.println("b: " + Arrays.toString(b));
         |System.out.println("c: " + Arrays.toString(c));
@@ -92,15 +92,17 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |      return;
         |    }
         |
-        |    int a = 0;
+        |    int a;
         |    int[] array = new int[ARRAY_SIZE];
-        |    int b = 0;
+        |    int b;
+        |    boolean c;
         |    try {
         |      a = values.get(0);
         |      for (int i = 0; i < ARRAY_SIZE && 1 + i < values.size(); i++) {
         |        array[i] = values.get(1 + i);
         |      }
         |      b = values.get(9);
+        |      c = values.get(10) > 0 ? true : false;
         |    } catch (IndexOutOfBoundsException exception) {
         |      long[] actualObservations = new long[0];
         |      PartitionSet clusters = PartitionSet.createFromObservations(epsilon, actualObservations, clusterAlgorithm);
@@ -111,6 +113,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    System.out.println("a: " + a);
         |    System.out.println("array: " + Arrays.toString(array));
         |    System.out.println("b: " + b);
+        |    System.out.println("c: " + c);
         |
         |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
         |    Test program = new Test();
@@ -120,7 +123,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    for (; iUse <= MAX_NUMBER_OF_USES_TO_TRACK; iUse++) {
         |      // In the i-th iteration, we collect accumulated resource consumption up to the secret[i]-th uses
         |      Mem.clear(false);
-        |      program.execute(a, array, b, iUse);
+        |      program.execute(a, array, b, c, iUse);
         |      if (Mem.instrCost == lastMemInstrCost)  {
         |        // When the cost of a run begins to stabilize, we should stop
         |        break;
@@ -150,7 +153,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |
         |
         |class Test {
-        |  void execute(int a, int[] array, int b, int INDEX_VARIABLE)
+        |  void execute(int a, int[] array, int b, boolean c, int INDEX_VARIABLE)
         |  {
         |    int x = arrayLength(array);
         |    x = arraySum(array);
@@ -197,7 +200,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
 object DriverGeneratorUnitTest {
   private val test01 =
     s"""abstract class Test {
-       |  void ${TargetProgram.MAIN_FUNCTION}(int a, int[] array, int b) {
+       |  void ${TargetProgram.MAIN_FUNCTION}(int a, int[] array, int b, boolean c) {
        |    int x = arrayLength(array);
        |    x = arraySum(array);
        |    x = arrayRead(array, 3);
