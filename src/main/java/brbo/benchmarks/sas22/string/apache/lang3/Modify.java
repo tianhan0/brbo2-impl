@@ -13,10 +13,10 @@ abstract public class Modify extends Common {
     lessPreciseBound(R <= MAX * str + MAX);
     int i = 0;
     while (i < str) {
-      if (ndBool()) {
-        buffer++;
-        R = R + 1;
-      }
+      // if (ndBool()) {
+      buffer++;
+      R = R + 1;
+      // }
       i++;
     }
   }

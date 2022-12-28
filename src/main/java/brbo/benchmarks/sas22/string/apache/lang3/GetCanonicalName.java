@@ -9,7 +9,8 @@ abstract public class GetCanonicalName extends Common {
     }
     int className_ = className;
     int dim = 0;
-    while (ndBool() && className_ > 0) {
+    // while (ndBool() && className_ > 0) {
+    while (className_ > 0) {
       dim++;
       className_--;
     }

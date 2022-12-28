@@ -19,8 +19,8 @@ abstract public class GetFormattedExceptionMessage extends Common {
     int iterator = contextValues;
     while (iterator > 0) {
       int entry = ndInt2(1, iterator);
-      int key = ndInt2(1, entry);
-      int value = ndInt2(1, entry - key);
+      // int key = ndInt2(1, entry);
+      // int value = ndInt2(1, entry - key);
       iterator -= entry;
 
       buffer++;
@@ -31,19 +31,19 @@ abstract public class GetFormattedExceptionMessage extends Common {
       buffer++;
       R = R + 1;
 
-      buffer += key;
-      R = R + key;
+      buffer += entry;
+      R = R + entry;
 
       buffer++;
       R = R + 1;
-      if (ndBool()) {
+      if (ndBool2(iterator)) {
         buffer++;
         R = R + 1;
       }
-      else {
+      /*else {
         buffer += value;
         R = R + value;
-      }
+      }*/
       buffer++;
       R = R + 1;
     }

@@ -12,7 +12,7 @@ abstract public class DbgPrint extends Common {
     mostPreciseBound(R <= src);
     lessPreciseBound(R <= MAX * src + MAX);
     for (int i = 0; i < src; i++) {
-      if (ndBool()) {
+      if (ndBool2(i)) {
         sb++;
         R = R + 1;
       }

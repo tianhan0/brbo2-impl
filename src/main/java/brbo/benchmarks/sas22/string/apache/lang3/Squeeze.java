@@ -12,7 +12,7 @@ abstract public class Squeeze extends Common {
     mostPreciseBound(R <= str);
     lessPreciseBound(R <= MAX * str + MAX);
     for (int i = 1; i < str; i++) {
-      if (ndBool()) {
+      /*if (ndBool()) {
         if (ndBool()) {
           continue;
         }
@@ -21,7 +21,7 @@ abstract public class Squeeze extends Common {
             continue;
           }
         }
-      }
+      }*/
       buffer++;
       R = R + 1;
     }

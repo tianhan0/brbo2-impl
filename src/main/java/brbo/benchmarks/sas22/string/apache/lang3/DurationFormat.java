@@ -19,20 +19,20 @@ abstract public class DurationFormat extends Common {
     while (iterator > 0) {
       int entry = ndInt2(1, iterator);
       iterator -= entry;
-      if (ndBool()) {
-        buffer += entry;
-        R = R + entry;
-      } else {
-        if (ndBool()) {
-          buffer += years;
-          R = R + years;
-        } else {
-          if (ndBool()) {
-            buffer += months;
-            R = R + months;
-          }
-        }
-      }
+      // if (ndBool()) {
+      buffer += entry;
+      R = R + entry;
+      // } else {
+      //   if (ndBool()) {
+      buffer += years;
+      R = R + years;
+      // } else {
+      //     if (ndBool()) {
+      buffer += months;
+      R = R + months;
+      //     }
+      //   }
+      // }
     }
   }
 }

@@ -12,40 +12,37 @@ abstract public class ParseToken extends Common {
     mostPreciseBound(R <= pattern + 1);
     lessPreciseBound(R <= MAX * pattern + MAX);
     int i = ndInt2(0, pattern - 1);
-    if (ndBool()) {
+    if (ndBool2(i)) {
       buf++;
       R = R + 1;
       while (i + 1 < pattern) {
-        if (ndBool()) {
-          buf++;
-          R = R + 1;
-        }
-        else {
-          break;
-        }
+        // if (ndBool()) {
+        buf++;
+        R = R + 1;
+        // } else {
+        //  break;
+        // }
+        i++;
       }
-    }
-    else {
+    } else {
       buf++;
       R = R + 1;
       for (; i < pattern; i++) {
-        if (ndBool()) {
-          if (ndBool()) {
-            i++;
-            buf++;
-            R = R + 1;
-          }
-        }
-        else {
+        // if (ndBool()) {
+        //  if (ndBool()) {
+        i++;
+        buf++;
+        R = R + 1;
+        //  }
+        /*} else {
           if (ndBool()) {
             i--;
             break;
-          }
-          else {
+          } else {
             buf++;
             R = R + 1;
           }
-        }
+        }*/
       }
     }
   }

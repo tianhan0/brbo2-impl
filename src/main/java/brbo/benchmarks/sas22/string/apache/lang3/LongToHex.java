@@ -11,11 +11,11 @@ abstract public class LongToHex extends Common {
     int R = 0;
     mostPreciseBound(R <= nHexs);
     lessPreciseBound(R <= MAX * nHexs + MAX);
-    for (int i = 0;i < nHexs; i++) {
-      if (ndBool()) {
-        sb++;
-        R = R + 1;
-      }
+    for (int i = 0; i < nHexs; i++) {
+      // if (ndBool()) {
+      sb++;
+      R = R + 1;
+      // }
     }
   }
 }

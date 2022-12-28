@@ -16,13 +16,19 @@ abstract public class DiffResultToString extends Common {
     while (iterator > 0) {
       int entry = ndInt2(1, iterator);
       iterator -= entry;
+      R = R + entry;
+      /*
       int fieldName = ndInt2(1, entry);
+      if (entry - fieldName < 1)
+        break;
       int left = ndInt2(1, entry - fieldName);
+      if (entry - fieldName - left < 1)
+        break;
       int right = ndInt2(1, entry - fieldName - left);
       lhsBuilder += fieldName + left;
       R = R + (fieldName + left);
       rhsBuilder += fieldName + right;
-      R = R + (fieldName + right);
+      R = R + (fieldName + right);*/
     }
   }
 }

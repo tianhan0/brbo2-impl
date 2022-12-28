@@ -13,13 +13,13 @@ abstract public class Literal extends Common {
     lessPreciseBound(R <= MAX * pattern + MAX);
     int currentIdx = ndInt2(0, pattern - 1);
     while (currentIdx < pattern) {
-      if (ndBool()) {
+      /*if (ndBool2(currentIdx)) {
         break;
       } else {
-        if (ndBool()) {
+        if (ndBool2(currentIdx)) {
           continue;
         }
-      }
+      }*/
       ++currentIdx;
       sb++;
       R = R + 1;
