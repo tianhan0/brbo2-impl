@@ -63,9 +63,9 @@ case class BrboProgram(className: String,
          |    // mod 2 results in a higher chance of producing an alternative value, when compared with mod 3
          |    return sum % 2 == 0;
          |  }
-         |  int ndInt2(int lower, int upper) throws Exception {
+         |  int ndInt2(int lower, int upper) {
          |    if (upper < lower)
-         |      throw new Exception();
+         |      System.exit(-1);
          |    return upper > lower ? lower + 1 : upper;
          |  }
          |${otherFunctions.find(f => f.identifier == PreDefinedFunctions.Use.name).get.printToQFuzzJava(indent = 0)}""".stripMargin

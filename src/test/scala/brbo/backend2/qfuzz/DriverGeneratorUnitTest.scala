@@ -29,7 +29,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |for (int i = 0; i < ARRAY_SIZE && 9 + i < values.size(); i++) {
         |  c[i] = values.get(9 + i);
         |}
-        |d = values.get(17) > 0 ? true : false;
+        |d = values.get(17) > 16383 ? true : false;
         |System.out.println("a: " + a);
         |System.out.println("b: " + Arrays.toString(b));
         |System.out.println("c: " + Arrays.toString(c));
@@ -75,7 +75,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |
         |    List<Short> values = new ArrayList<>();
         |    try (FileInputStream inputStream = new FileInputStream(arguments[0])) {
-        |      System.out.printf("Reading shorts that are between [%d, %d]\n", MIN_INTEGER, MAX_INTEGER);
+        |      System.out.printf("Read shorts between [%d, %d]\n", MIN_INTEGER, MAX_INTEGER);
         |      byte[] bytes = new byte[Short.BYTES];
         |      while ((inputStream.read(bytes) != -1)) {
         |        short rawValue = ByteBuffer.wrap(bytes).getShort();
@@ -102,7 +102,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |        array[i] = values.get(1 + i);
         |      }
         |      b = values.get(9);
-        |      c = values.get(10) > 0 ? true : false;
+        |      c = values.get(10) > 16383 ? true : false;
         |    } catch (IndexOutOfBoundsException exception) {
         |      long[] actualObservations = new long[0];
         |      PartitionSet clusters = PartitionSet.createFromObservations(epsilon, actualObservations, clusterAlgorithm);
@@ -118,28 +118,26 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
         |    Test program = new Test();
         |    Mem.clear(true);
+        |    int useCount = 0;
         |    long lastMemInstrCost = 0L;
-        |    int iUse = 1;
-        |    for (; iUse <= MAX_NUMBER_OF_USES_TO_TRACK; iUse++) {
+        |    int iThUse = 1;
+        |    for (; iThUse <= MAX_NUMBER_OF_USES_TO_TRACK; iThUse++) {
         |      // In the i-th iteration, we collect accumulated resource consumption up to the secret[i]-th uses
         |      Mem.clear(false);
-        |      program.execute(a, array, b, c, iUse);
-        |      if (Mem.instrCost == lastMemInstrCost)  {
-        |        // When the cost of a run begins to stabilize, we should stop
-        |        break;
-        |      }
-        |      System.out.println("cost: " + Mem.instrCost);
+        |      useCount = program.execute(a, array, b, c, iThUse);
+        |      if (iThUse <= useCount)
+        |        System.out.printf("iThUse: %d; cost: %d; useCount: %d\n", iThUse, Mem.instrCost, useCount);
         |      long thisCost = 0L;
-        |      if (iUse == 1) {
+        |      if (iThUse == 1) {
         |        thisCost = Mem.instrCost;
         |      } else {
         |        thisCost = Mem.instrCost - lastMemInstrCost;
         |      }
         |      assert (thisCost >= 0);
-        |      observations[iUse - 1] = thisCost;
+        |      observations[iThUse - 1] = thisCost;
         |      lastMemInstrCost = Mem.instrCost;
         |    }
-        |    long[] actualObservations = new long[iUse - 1];
+        |    long[] actualObservations = new long[useCount];
         |    System.arraycopy(observations, 0, actualObservations, 0, actualObservations.length);
         |    System.out.println("observations: " + Arrays.toString(actualObservations));
         |
@@ -153,38 +151,52 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |
         |
         |class Test {
-        |  void execute(int a, int[] array, int b, boolean c, int INDEX_VARIABLE)
+        |  int execute(int a, int[] array, int b, boolean c, int INDEX_VARIABLE)
         |  {
+        |    int USE_COUNT = 0;
         |    int x = arrayLength(array);
         |    x = arraySum(array);
         |    x = arrayRead(array, 3);
         |    int R = 0;
         |    {
         |      use(3);
+        |      USE_COUNT = USE_COUNT + 1;
         |      INDEX_VARIABLE = INDEX_VARIABLE - 1;
         |      if (INDEX_VARIABLE == 0)
         |      {
-        |        return;
+        |        return USE_COUNT;
         |      }
         |      else
         |      {
         |        ;
         |      }
         |    }
+        |    return USE_COUNT;
         |  }
         |  int arrayRead(int[] array, int index) { return array[index]; }
         |  int arrayLength(int[] array) { return array.length; }
         |  int arraySum(int[] array) {
         |    int sum = 0;
-        |    for (int i = 0; i < array.length; i++) {
-        |      sum += array[i];
+        |    for (int element : array) {
+        |      sum += element;
         |    }
         |    return sum;
         |  }
         |  void mostPreciseBound(boolean assertion) {}
         |  void lessPreciseBound(boolean assertion) {}
-        |  boolean ndBool() { return true; }
-        |  int ndInt2(int lower, int upper) { return upper > lower ? lower + 1 : upper; }
+        |  boolean ndBool2(int... values) {
+        |    int sum = 0;
+        |    for (int value : values) {
+        |      sum += value;
+        |    }
+        |    // mod 2 results in a higher chance of producing an alternative value, when compared with mod 3
+        |    return sum % 2 == 0;
+        |  }
+        |  int ndInt2(int lower, int upper) {
+        |    if (upper < lower)
+        |      System.exit(-1);
+        |    return upper > lower ? lower + 1 : upper;
+        |  }
         |  void use(int n)
         |  {
         |    int i = 0;

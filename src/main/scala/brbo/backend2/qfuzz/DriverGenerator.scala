@@ -7,10 +7,10 @@ import brbo.common.string.StringFormatUtils
 import brbo.frontend.TargetProgram
 
 object DriverGenerator {
-  val ARRAY_SIZE = 8;
-  val MAX_INTEGER = 30;
-  val MIN_INTEGER = 1;
-  private val MAX_NUMBER_OF_USES_TO_TRACK = 1000;
+  val ARRAY_SIZE = 8
+  val MAX_INTEGER = 30
+  val MIN_INTEGER = 1
+  private val MAX_NUMBER_OF_USES_TO_TRACK = 1000
 
   def run(program: BrboProgram): String = {
     val (declarations, initializations, prints) = declarationsAndInitializations(program.mainFunction.parameters)
@@ -82,17 +82,15 @@ object DriverGenerator {
        |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
        |    ${program.className} program = new ${program.className}();
        |    Mem.clear(true);
+       |    int useCount = 0;
        |    long lastMemInstrCost = 0L;
        |    int iThUse = 1;
        |    for (; iThUse <= MAX_NUMBER_OF_USES_TO_TRACK; iThUse++) {
        |      // In the i-th iteration, we collect accumulated resource consumption up to the secret[i]-th uses
        |      Mem.clear(false);
-       |      program.${TargetProgram.MAIN_FUNCTION}(${program.mainFunction.parameters.map({ identifier => identifier.name }).mkString(", ")}, iThUse);
-       |      if (Mem.instrCost == lastMemInstrCost)  {
-       |        // When the cost of a run begins to stabilize, we should stop
-       |        break;
-       |      }
-       |      System.out.println("iThUse: " + iThUse + "; cost: " + Mem.instrCost);
+       |      useCount = program.${TargetProgram.MAIN_FUNCTION}(${program.mainFunction.parameters.map({ identifier => identifier.name }).mkString(", ")}, iThUse);
+       |      if (iThUse <= useCount)
+       |        System.out.printf("iThUse: %d; cost: %d; useCount: %d\\n", iThUse, Mem.instrCost, useCount);
        |      long thisCost = 0L;
        |      if (iThUse == 1) {
        |        thisCost = Mem.instrCost;
@@ -103,7 +101,7 @@ object DriverGenerator {
        |      observations[iThUse - 1] = thisCost;
        |      lastMemInstrCost = Mem.instrCost;
        |    }
-       |    long[] actualObservations = new long[iThUse - 1];
+       |    long[] actualObservations = new long[useCount];
        |    System.arraycopy(observations, 0, actualObservations, 0, actualObservations.length);
        |    System.out.println("observations: " + Arrays.toString(actualObservations));
        |

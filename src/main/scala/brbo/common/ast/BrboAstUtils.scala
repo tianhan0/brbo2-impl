@@ -243,4 +243,18 @@ object BrboAstUtils {
       case _ => throw new Exception
     }
   }
+
+  def append(ast: BrboAst, toAppend: Iterable[BrboAst]): BrboAst = {
+    val list = toAppend.toList
+    ast match {
+      case _: Command => Block(ast :: list)
+      case statement: Statement =>
+        statement match {
+          case Block(asts, _) => Block(asts ::: list)
+          case _: ITE | _: Loop => Block(statement :: list)
+          case _ => throw new Exception
+        }
+      case _ => throw new Exception
+    }
+  }
 }

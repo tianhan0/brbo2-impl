@@ -5,43 +5,55 @@ import brbo.common.ast._
 
 object ProgramTransformer {
   val USE_FUNCTION_NAME = "use"
-  private val INDEX_VARIABLE_NAME = "INDEX_VARIABLE"
+  // This variable tracks the cost of every use command.
+  // This variable decrements with the execution of any use command. When the variable equals 0, the program exits.
+  private val indexVariable = Identifier(name = "INDEX_VARIABLE", typ = BrboType.INT)
+  // This variable tracks the number of use commands that are executed per run.
+  private val useCountVariable = Identifier(name = "USE_COUNT", typ = BrboType.INT)
+  private val returnUseCountVariable = Return(expression = Some(useCountVariable))
+  private val specialVariables = List(indexVariable, useCountVariable)
+
   private val MAX_LOOP_ITERATIONS = 8
 
   def transform(program: BrboProgram): BrboProgram = {
     val mainFunction = program.mainFunction
     val mainFunctionBody = mainFunction.body
     val useDefVariables = BrboAstUtils.collectUseDefVariables(mainFunction.bodyWithGhostInitialization)
-    // Generate a variable that decrements with the execution of any use command. When the variable equals 0, the program exits.
-    // This variable is used to track the cost of every use command.
-    val indexVariable = generateIndexVariable(useDefVariables)
+    assert(useDefVariables.forall(identifier => !specialVariables.exists(anotherIdentifier => identifier.sameAs(anotherIdentifier))))
 
     // Replace all `R = R + e` with `use(e); index--; if (index == 0) return;` where use is a new function
     assert(program.allFunctions.forall(function => function.identifier != USE_FUNCTION_NAME))
-    val replacements = BrboAstUtils.collectCommands(mainFunctionBody).filter(command => command.isInstanceOf[Use]).map({
-      case use: Use =>
-        val newUse = generateCallUse(use)
-        val decrementIndexVariable = Assignment(indexVariable, Subtraction(indexVariable, Number(1)))
-        val returnIfZero = ITE(Equal(indexVariable, Number(0)), Return(expression = None), Skip())
-        (use.asInstanceOf[Command], Block(List(newUse, decrementIndexVariable, returnIfZero)))
-    }).toMap
+    val replacements =
+      BrboAstUtils.collectCommands(mainFunctionBody)
+        .filter(command => command.isInstanceOf[Use] || command.isInstanceOf[Return])
+        .map({
+          case use: Use =>
+            val newUse = generateCallUse(use)
+            val incrementUseCountVariable = Assignment(useCountVariable, Addition(useCountVariable, Number(1)))
+            val decrementIndexVariable = Assignment(indexVariable, Subtraction(indexVariable, Number(1)))
+            val returnIfZero = ITE(Equal(indexVariable, Number(0)), returnUseCountVariable, Skip())
+            (use.asInstanceOf[Command], Block(List(newUse, incrementUseCountVariable, decrementIndexVariable, returnIfZero)))
+          case _return: Return =>
+            (_return.asInstanceOf[Command], returnUseCountVariable)
+        }).toMap
     val newBody = BrboAstUtils.replaceCommands(mainFunctionBody, replacements = replacements, omitResetPlaceHolders = false)
 
     // Early return if any variable used in loop conditions is beyond `MAX_LOOP_ITERATIONS`, to avoid executing a loop
     // for too many times, which makes it expensive to choose segments.
     val loopConditionals = BrboAstUtils.getLoopConditionals(mainFunctionBody)
-    val earlyReturns: Iterable[BrboAst] = mainFunction.parameters.filter({
+    val earlyReturns: List[BrboAst] = mainFunction.parameters.filter({
       identifier => identifier.typ == BrboType.INT && loopConditionals.exists({ e => e.getUses.contains(identifier) })
     }).map({
-      identifier => ITE(LessThan(Number(MAX_LOOP_ITERATIONS), identifier), Return(expression = None), Skip())
+      identifier => ITE(LessThan(Number(MAX_LOOP_ITERATIONS), identifier), returnUseCountVariable, Skip())
     })
 
-    val newBody2 = BrboAstUtils.prepend(newBody, toPrepend = earlyReturns)
+    val newBody2 = BrboAstUtils.prepend(newBody, toPrepend = VariableDeclaration(useCountVariable, Number(0)) :: earlyReturns)
+    val newBody3 = BrboAstUtils.append(newBody2, toAppend = List(returnUseCountVariable))
     val newMainFunction = BrboFunction(
       identifier = mainFunction.identifier,
-      returnType = mainFunction.returnType,
+      returnType = BrboType.INT, // Return the number of uses in a run
       parameters = mainFunction.parameters :+ indexVariable,
-      body = newBody2.asInstanceOf[Statement],
+      body = newBody3.asInstanceOf[Statement],
       groupIds = mainFunction.groupIds
     )
     BrboProgram(
@@ -59,11 +71,6 @@ object ProgramTransformer {
       case Bool(true, _) => callUse
       case _ => ITE(use.condition, callUse, Skip())
     }
-  }
-
-  private def generateIndexVariable(useDefVariables: Iterable[Identifier]): Identifier = {
-    assert(useDefVariables.forall(identifier => identifier.name != INDEX_VARIABLE_NAME))
-    Identifier(name = INDEX_VARIABLE_NAME, typ = BrboType.INT)
   }
 
   private val useFunction = {
