@@ -48,15 +48,26 @@ case class BrboProgram(className: String,
          |  int ${PreDefinedFunctions.ArrayLength.name}(int[] array) { return array.length; }
          |  int ${PreDefinedFunctions.ArraySum.name}(int[] array) {
          |    int sum = 0;
-         |    for (int i = 0; i < array.length; i++) {
-         |      sum += array[i];
+         |    for (int element : array) {
+         |      sum += element;
          |    }
          |    return sum;
          |  }
          |  void ${PreDefinedFunctions.MostPreciseBound.name}(boolean assertion) {}
          |  void ${PreDefinedFunctions.LessPreciseBound.name}(boolean assertion) {}
-         |  boolean ndBool() { return true; }
-         |  int ndInt2(int lower, int upper) { return upper > lower ? lower + 1 : upper; }
+         |  boolean ndBool2(int... values) {
+         |    int sum = 0;
+         |    for (int value : values) {
+         |      sum += value;
+         |    }
+         |    // mod 2 results in a higher chance of producing an alternative value, when compared with mod 3
+         |    return sum % 2 == 0;
+         |  }
+         |  int ndInt2(int lower, int upper) throws Exception {
+         |    if (upper < lower)
+         |      throw new Exception();
+         |    return upper > lower ? lower + 1 : upper;
+         |  }
          |${otherFunctions.find(f => f.identifier == PreDefinedFunctions.Use.name).get.printToQFuzzJava(indent = 0)}""".stripMargin
     val nonPredefinedFunctions =
       this.nonPredefinedFunctions.map(function => function.printToQFuzzJava(indent)).mkString("\n")

@@ -152,6 +152,14 @@ object PreDefinedFunctions {
     def returnType: BrboType.T = cRepresentation.returnType
   }
 
+  object NdBool2 extends PreDefinedFunction("ndBool2") {
+    override def cStringRepresentation: String = throw new RepresentationNotExist
+
+    override def cRepresentation: BrboFunction = throw new RepresentationNotExist
+
+    def returnType: BrboType.T = BrboType.BOOL
+  }
+
   object BoundAssertion extends PreDefinedFunction("boundAssertion") {
     override def cStringRepresentation: String = throw new RepresentationNotExist
 
@@ -243,7 +251,7 @@ object PreDefinedFunctions {
   val functions: List[PreDefinedFunction] = List(
     VerifierError, VerifierNondetInt, Abort, // C functions whose semantics are built into verifiers
     Assert, Assume,
-    NdInt, NdInt2, NdInt3, NdBool,
+    NdInt, NdInt2, NdInt3, NdBool, NdBool2,
     BoundAssertion, UpperBound,
     Uninitialize,
     Use, Reset,
