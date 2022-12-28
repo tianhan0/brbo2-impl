@@ -55,6 +55,7 @@ case class BrboProgram(className: String,
          |  }
          |  void ${PreDefinedFunctions.MostPreciseBound.name}(boolean assertion) {}
          |  void ${PreDefinedFunctions.LessPreciseBound.name}(boolean assertion) {}
+         |  boolean ndBool() { return true; }
          |${otherFunctions.find(f => f.identifier == PreDefinedFunctions.Use.name).get.printToQFuzzJava(indent = 0)}""".stripMargin
     val nonPredefinedFunctions =
       this.nonPredefinedFunctions.map(function => function.printToQFuzzJava(indent)).mkString("\n")
