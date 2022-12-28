@@ -24,6 +24,8 @@ object Executor {
 
     val QFUZZ_PATH = arguments.getQFuzzPath
     val KELINCI_JAR_PATH = s"$QFUZZ_PATH/tool/instrumentor/build/libs/kelinci.jar"
+    val AFL_PATH = s"$QFUZZ_PATH/tool/afl-2.51b-qfuzz/afl-fuzz"
+    val INTERFACE_C_PATH = s"$QFUZZ_PATH/tool/fuzzerside/interface"
 
     val AFL_TIMEOUT_IN_SECONDS = arguments.getAflTimeoutInSeconds
     val KELINCI_TIMEOUT_IN_SECONDS = AFL_TIMEOUT_IN_SECONDS + 3
@@ -51,7 +53,7 @@ object Executor {
     BrboMain.executeCommandWithLogger(
       // IMPORTANT: Avoid using quotes when specifying class path
       // To debug, add "-verbose" option and check the class paths
-      command = s"""javac -cp .:$KELINCI_JAR_PATH $driverFilePath -d $OUTPUT_DIRECTORY/bin""",
+      command = s"""javac -cp .:$KELINCI_JAR_PATH $driverFilePath -d $BINARY_PATH""",
       logger
     )
     logger.info(s"Step 2.2: Instrument the QFuzz driver")
@@ -66,7 +68,7 @@ object Executor {
       case "kelinci" => Future {
         logger.info(s"Step 3: Run Kelinci server. Timeout: $KELINCI_TIMEOUT_IN_SECONDS sec.")
         val driverFullyQualifiedClassName = DriverGenerator.driverFullyQualifiedClassName(program.className)
-        val command = s"""java -cp .:$KELINCI_JAR_PATH:$OUTPUT_DIRECTORY/bin-instr/ edu.cmu.sv.kelinci.Kelinci -K 100 $driverFullyQualifiedClassName @@"""
+        val command = s"""java -cp .:$KELINCI_JAR_PATH:$INSTRUMENTED_BINARY_PATH edu.cmu.sv.kelinci.Kelinci -K 100 $driverFullyQualifiedClassName @@"""
         logger.info(s"Execute `$command`")
         val kelinciOutput = BrboMain.executeCommand(command = command, timeout = KELINCI_TIMEOUT_IN_SECONDS)
         val outputDirectory = s"${BrboMain.OUTPUT_DIRECTORY}/fuzz"
@@ -79,7 +81,7 @@ object Executor {
         // Remember to use https://github.com/litho17/qfuzz/commit/5dbe56efc6a9d9f77c320f1a8f801f6c4d6400e3
         BrboMain.executeCommandWithLogger(command = "sleep 3", logger)
         BrboMain.executeCommandWithLogger(
-          command = s"""$QFUZZ_PATH/tool/afl-2.51b-qfuzz/afl-fuzz -i $INPUT_SEED_PATH -o $FUZZ_OUT_DIRECTORY -c quantify -K 100 -S afl -t 999999999 $QFUZZ_PATH/tool/fuzzerside/interface -K 100 @@""",
+          command = s"""$AFL_PATH -i $INPUT_SEED_PATH -o $FUZZ_OUT_DIRECTORY -c quantify -K 100 -S afl -t 999999999 $INTERFACE_C_PATH -K 100 @@""",
           logger,
           environment = Map(
             "AFL_SKIP_CPUFREQ" -> "1",
@@ -93,10 +95,10 @@ object Executor {
     val pathCostFileContents = BrboMain.readFromFile(s"$FUZZ_OUT_DIRECTORY/afl/path_costs.csv")
     logger.info(s"QFuzz output:\n$pathCostFileContents")
     val interestingInputFiles = interestingInputFileNames(pathCostFileContents)
-    logger.info(s"Interesting inputs:\n${interestingInputFiles.mkString("\n")}")
+    logger.info(s"Interesting input files:\n${interestingInputFiles.mkString("\n")}")
 
     logger.info(s"Step 5: Parse the interesting inputs")
-    val listOfInputs = FileUtils.listFiles(new File(FUZZ_OUT_DIRECTORY), null, true).asScala.flatMap({
+    val listOfInputs: Iterable[List[Int]] = FileUtils.listFiles(new File(FUZZ_OUT_DIRECTORY), null, true).asScala.flatMap({
       file =>
         val absolutePath = file.getAbsolutePath
         if (absolutePath.contains(s"$FUZZ_OUT_DIRECTORY/afl/queue/id") && file.isFile) {
@@ -104,7 +106,7 @@ object Executor {
             logger.info(s"Read shorts that are between [${DriverGenerator.MIN_INTEGER}, ${DriverGenerator.MAX_INTEGER}] from $absolutePath")
             val shorts = parseBytesToShorts(absolutePath)
             val inputs = wrapShorts(shorts)
-            logger.info(s"Inputs: $inputs.")
+            // logger.info(s"Inputs: $inputs")
             Some(inputs)
           } else {
             logger.info(s"Not an interesting input: $absolutePath")
@@ -117,14 +119,21 @@ object Executor {
     })
     val inputFilePath: String = getInputFilePath(sourceFilePath)
     val existingInputs: List[List[BrboValue]] = readExistingInputs(inputFilePath)
-    val combinedInputs: List[List[BrboValue]] = existingInputs ::: listOfInputs.map({
-      inputs => toInputValues(inputs, program.mainFunction.parameters)
-    }).toList
+    val newInterestingInputs = listOfInputs.map({ inputs => toInputValues(inputs, program.mainFunction.parameters) }).toList
+    newInterestingInputs.foreach({
+      newInterestingInput =>
+        logger.info(s"New interesting input: ${newInterestingInput.map(v => v.printToIR()).mkString(", ")}")
+    })
+    val combinedInputs: List[List[BrboValue]] = existingInputs ::: newInterestingInputs
     if (combinedInputs.nonEmpty) {
-      val allInputsJson = JsArray(
-        combinedInputs.map({ inputs => JsArray(inputs.map(inputValue => InputParser.toJson(inputValue))) })
-      )
       logger.info(s"Step 5: Write interesting inputs into file $inputFilePath")
+      val allInputsJson = JsArray(
+        deduplicate(combinedInputs).map({
+          inputs =>
+            logger.info(s"Interesting input: ${inputs.map(v => v.printToIR()).mkString(", ")}")
+            JsArray(inputs.map(input => InputParser.toJson(input)))
+        })
+      )
       BrboMain.writeToFile(path = inputFilePath, content = Json.prettyPrint(allInputsJson))
     } else {
       logger.info(s"Step 5: No interesting inputs")
@@ -133,6 +142,13 @@ object Executor {
     FileUtils.deleteDirectory(new File(FUZZ_OUT_DIRECTORY))
     FileUtils.deleteDirectory(new File(BINARY_PATH))
     FileUtils.deleteDirectory(new File(INSTRUMENTED_BINARY_PATH))
+  }
+
+  private def deduplicate(inputs: List[List[BrboValue]]): List[List[BrboValue]] = {
+    def toString(list: List[BrboValue]): String = list.map(v => v.printToIR()).mkString(", ")
+
+    inputs.map({ input => (toString(input), input) }).toMap.values
+      .toList.sortWith({ case (list1, list2) => toString(list1) < toString(list2) })
   }
 
   private def interestingInputFileNames(pathCostFileContents: String): Array[String] = {
