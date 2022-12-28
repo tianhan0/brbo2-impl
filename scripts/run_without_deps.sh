@@ -8,7 +8,7 @@ mkdir -p output/cfg
 mkdir -p output/amortizations
 
 # Machine-dependent path configurations
-brbo_jar="./target/scala-2.12/brbo2-impl.jar:$HOME/Desktop/brbo2-impl.jar"
+brbo_jar="./target/scala-2.12/brbo2-impl.jar"
 
 # Jars dependency
 # lib_jars="lib/com.microsoft.z3.jar"
