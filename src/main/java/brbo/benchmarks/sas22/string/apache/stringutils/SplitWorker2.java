@@ -18,7 +18,7 @@ abstract public class SplitWorker2 extends Common {
     boolean lastMatch = false;
     if (separatorChars == 0) {
       while (i < str) {
-        if (ndBool2(str, i)) {
+        if (ndBool2(i)) {
           if (match || preserveAllTokens) {
             lastMatch = true;
             if (sizePlus1 == max) {
@@ -41,7 +41,7 @@ abstract public class SplitWorker2 extends Common {
     } else {
       if (separatorChars == 1) {
         while (i < str) {
-          if (ndBool2(str, i)) {
+          if (ndBool2(i)) {
             if (match || preserveAllTokens) {
               lastMatch = true;
               if (sizePlus1 == max) {
@@ -63,7 +63,7 @@ abstract public class SplitWorker2 extends Common {
         }
       } else {
         while (i < str) {
-          if (ndBool2(str, i)) {
+          if (ndBool2(i)) {
             if (match || preserveAllTokens) {
               lastMatch = true;
               if (sizePlus1 == max) {
