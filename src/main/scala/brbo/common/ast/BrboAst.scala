@@ -2,6 +2,7 @@ package brbo.common.ast
 
 import brbo.common.BrboType._
 import brbo.common.GhostVariableTyp._
+import brbo.common.ast.BrboAstUtils.Prepend
 import brbo.common.{BrboType, GhostVariableUtils, PreDefinedFunctions, SameAs}
 
 import java.util.UUID
@@ -174,7 +175,7 @@ case class BrboFunction(identifier: String,
     val ghostVariableInitializations: List[Command] = groupIds.flatMap({
       groupId => GhostVariableUtils.declareVariables(groupId, legacy = true)
     }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
-    val bodyWithInitialization = BrboAstUtils.prepend(body, toPrepend = ghostVariableInitializations ::: boundAssertionExprs)
+    val bodyWithInitialization = BrboAstUtils.insert(body, toInsert = ghostVariableInitializations ::: boundAssertionExprs, operation = Prepend)
     s"${indentString(indent + DEFAULT_INDENT)}${BrboType.PrintType.print(returnType, CPrintType)} $identifier($parametersString) \n" +
       s"${bodyWithInitialization.printToBrboJava(indent + DEFAULT_INDENT)}"
   }
@@ -225,7 +226,7 @@ abstract class Command(val uuid: UUID) extends BrboAst with PrintToIR with GetFu
 
   final override def printToIR(): String = {
     this match {
-      case _: BrboExpr => printToCInternal(0)
+      case _: BrboExpr => printToCInternal(indent = 0)
       case BeforeFunctionCall(callee, actualArguments, _) =>
         val argumentsString =
           if (actualArguments.nonEmpty) s" with `${actualArguments.map(a => a.printToIR()).mkString(", ")}`"
@@ -243,7 +244,7 @@ abstract class Command(val uuid: UUID) extends BrboAst with PrintToIR with GetFu
           case _ => s"if (${condition.printNoOuterBrackets}) "
         }
         s"${conditionString}reset ${reset.resourceVariable.name}"
-      case _: Command => printToC(0)
+      case _: Command => printToC(indent = 0)
       case _ => throw new Exception()
     }
   }

@@ -230,28 +230,38 @@ object BrboAstUtils {
     }
   }
 
-  def prepend(ast: BrboAst, toPrepend: Iterable[BrboAst]): BrboAst = {
-    val list = toPrepend.toList
+  abstract class InsertOperation
+
+  object Prepend extends InsertOperation
+
+  object Append extends InsertOperation
+
+  def insert(ast: BrboAst, toInsert: Iterable[BrboAst], operation: InsertOperation): BrboAst = {
+    val list = toInsert.toList
     ast match {
-      case _: Command => Block(list :+ ast)
-      case statement: Statement =>
-        statement match {
-          case Block(asts, _) => Block(list ::: asts)
-          case _: ITE | _: Loop => Block(list :+ statement)
+      case _: Command =>
+        val block = operation match {
+          case Append => ast :: list
+          case Prepend => list :+ ast
           case _ => throw new Exception
         }
-      case _ => throw new Exception
-    }
-  }
-
-  def append(ast: BrboAst, toAppend: Iterable[BrboAst]): BrboAst = {
-    val list = toAppend.toList
-    ast match {
-      case _: Command => Block(ast :: list)
+        Block(block)
       case statement: Statement =>
         statement match {
-          case Block(asts, _) => Block(asts ::: list)
-          case _: ITE | _: Loop => Block(statement :: list)
+          case Block(asts, _) =>
+            val block = operation match {
+              case Append => asts ::: list
+              case Prepend => list ::: asts
+              case _ => throw new Exception
+            }
+            Block(block)
+          case _: ITE | _: Loop =>
+          val block = operation match {
+            case Append => statement :: list
+            case Prepend => list :+ statement
+            case _ => throw new Exception
+          }
+            Block(block)
           case _ => throw new Exception
         }
       case _ => throw new Exception
