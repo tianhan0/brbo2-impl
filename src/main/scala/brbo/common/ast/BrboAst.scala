@@ -2,7 +2,7 @@ package brbo.common.ast
 
 import brbo.common.BrboType._
 import brbo.common.GhostVariableTyp._
-import brbo.common.ast.BrboAstUtils.Prepend
+import brbo.common.ast.BrboAstUtils.PrependOperation
 import brbo.common.{BrboType, GhostVariableUtils, PreDefinedFunctions, SameAs}
 
 import java.util.UUID
@@ -34,7 +34,9 @@ case class BrboProgram(className: String,
          |  public abstract void ${PreDefinedFunctions.Assume.name}(boolean expression);
          |  public abstract void ${PreDefinedFunctions.MostPreciseBound.name}(boolean assertion);
          |  public abstract void ${PreDefinedFunctions.LessPreciseBound.name}(boolean assertion);
-         |  public abstract void ${PreDefinedFunctions.ResetPlaceHolder.name}();""".stripMargin
+         |  public abstract void ${PreDefinedFunctions.ResetPlaceHolder.name}();
+         |  public abstract int ${PreDefinedFunctions.ArrayLength.name}();
+         |  public int ${PreDefinedFunctions.ArraySum.name}(int array) { return array; }""".stripMargin
     val nonPredefinedFunctions =
       this.nonPredefinedFunctions.map(function => function.printToBrboJavaWithBoundAssertions(indent, boundAssertions)).mkString("\n")
     s"""abstract class $className {
@@ -170,12 +172,30 @@ case class BrboFunction(identifier: String,
   }
 
   def printToBrboJavaWithBoundAssertions(indent: Int, boundAssertions: List[BoundAssertion]): String = {
+    // TODO: Assume that for any array-typed input x, there exists at most 1 arrayRead(x, i) for any i
+    val arrayGhostVariables: List[Identifier] = parameters.flatMap({
+      case parameter@Identifier(_, BrboType.ARRAY(BrboType.INT), _) =>
+        List(
+          BrboAstUtils.arrayGhostVariable(parameter, BrboAstUtils.ArrayTemporary),
+          BrboAstUtils.arrayGhostVariable(parameter, BrboAstUtils.ArrayLastIndex)
+        )
+      case Identifier(_, BrboType.INT, _) => Nil
+      case Identifier(_, BrboType.BOOL, _) => Nil
+      case _ => throw new Exception
+    })
+    // Declare ghost variables used for translating array operations
+    val arrayGhostVariableDeclarations =
+      arrayGhostVariables.map({ arrayGhostVariable => VariableDeclaration(arrayGhostVariable, Number(0)) })
     val boundAssertionExprs: List[BrboExpr] = boundAssertionExpressions(boundAssertions)
     val parametersString = parameters.map(pair => s"${pair.typeNamePair(CPrintType)}").mkString(", ")
-    val ghostVariableInitializations: List[Command] = groupIds.flatMap({
+    val ghostVariableDeclarations: List[Command] = groupIds.flatMap({
       groupId => GhostVariableUtils.declareVariables(groupId, legacy = true)
     }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
-    val bodyWithInitialization = BrboAstUtils.insert(body, toInsert = ghostVariableInitializations ::: boundAssertionExprs, operation = Prepend)
+    val bodyWithInitialization = BrboAstUtils.insert(
+      ast = body,
+      toInsert = ghostVariableDeclarations ::: arrayGhostVariableDeclarations ::: boundAssertionExprs,
+      operation = PrependOperation
+    )
     s"${indentString(indent + DEFAULT_INDENT)}${BrboType.PrintType.print(returnType, CPrintType)} $identifier($parametersString) \n" +
       s"${bodyWithInitialization.printToBrboJava(indent + DEFAULT_INDENT)}"
   }
@@ -218,11 +238,9 @@ abstract class BrboAst extends SameAs with Serializable with Print
 abstract class Statement(val uuid: UUID) extends BrboAst
 
 abstract class Command(val uuid: UUID) extends BrboAst with GetFunctionCalls with UseDefVariables {
-  def printToCInternal(indent: Int): String
-
   def printToBrboJava(indent: Int): String = printToC(indent)
 
-  def printToQFuzzJava(indent: Int): String = printToBrboJava(indent)
+  def printToQFuzzJava(indent: Int): String = printToC(indent)
 
   final def printToIR(): String = {
     this match {
@@ -256,6 +274,8 @@ abstract class Command(val uuid: UUID) extends BrboAst with GetFunctionCalls wit
       case _ => throw new Exception()
     }
   }
+
+  def printToCInternal(indent: Int): String
 
   override def getUses: Set[Identifier] = Set()
 
@@ -426,6 +446,36 @@ case class Assignment(identifier: Identifier, expression: BrboExpr, override val
 
   override def printToCInternal(indent: Int): String = {
     s"${indentString(indent)}${identifier.name} = ${expression.printNoOuterBrackets};"
+  }
+
+  override def printToBrboJava(indent: Int): String = {
+    expression match {
+      case ArrayRead(array, _, _) =>
+        // Assume that every array element is read exactly once in any run
+        val temporaryVariable = BrboAstUtils.arrayGhostVariable(array.asInstanceOf[Identifier], BrboAstUtils.ArrayTemporary)
+        val lastIndexVariable = BrboAstUtils.arrayGhostVariable(array.asInstanceOf[Identifier], BrboAstUtils.ArrayLastIndex)
+        val arraySum = FunctionCallExpr(
+          identifier = PreDefinedFunctions.ArraySum.name,
+          arguments = List(identifier),
+          returnType = PreDefinedFunctions.ArraySum.returnType
+        )
+        val assignTemporary = Assignment(
+          temporaryVariable,
+          FunctionCallExpr(
+            identifier = PreDefinedFunctions.NdInt2.name,
+            arguments = List(lastIndexVariable, arraySum),
+            returnType = PreDefinedFunctions.NdInt2.returnType
+          )
+        )
+        val updateLastIndex = Assignment(
+          lastIndexVariable,
+          Addition(lastIndexVariable, temporaryVariable)
+        )
+        val actualAssignment = Assignment(identifier, temporaryVariable)
+        val block = Block(List(assignTemporary, updateLastIndex, actualAssignment))
+        block.printToBrboJava(indent)
+      case _ => super.printToBrboJava(indent)
+    }
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = expression.getFunctionCalls

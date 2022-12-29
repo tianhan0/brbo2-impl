@@ -1,7 +1,7 @@
 package brbo.backend2.qfuzz
 
 import brbo.common.BrboType
-import brbo.common.ast.BrboAstUtils.{Append, Prepend}
+import brbo.common.ast.BrboAstUtils.{AppendOperation, PrependOperation}
 import brbo.common.ast._
 
 object ProgramTransformer {
@@ -48,8 +48,8 @@ object ProgramTransformer {
       identifier => ITE(LessThan(Number(MAX_LOOP_ITERATIONS), identifier), returnUseCountVariable, Skip())
     })
 
-    val newBody2 = BrboAstUtils.insert(newBody, toInsert = VariableDeclaration(useCountVariable, Number(0)) :: earlyReturns, operation = Prepend)
-    val newBody3 = BrboAstUtils.insert(newBody2, toInsert = List(returnUseCountVariable), operation = Append)
+    val newBody2 = BrboAstUtils.insert(newBody, toInsert = VariableDeclaration(useCountVariable, Number(0)) :: earlyReturns, operation = PrependOperation)
+    val newBody3 = BrboAstUtils.insert(newBody2, toInsert = List(returnUseCountVariable), operation = AppendOperation)
     val newMainFunction = BrboFunction(
       identifier = mainFunction.identifier,
       returnType = BrboType.INT, // Return the number of uses in a run

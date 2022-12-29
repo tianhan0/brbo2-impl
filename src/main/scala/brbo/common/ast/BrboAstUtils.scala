@@ -1,5 +1,7 @@
 package brbo.common.ast
 
+import brbo.common.BrboType
+
 import scala.annotation.tailrec
 
 object BrboAstUtils {
@@ -232,17 +234,17 @@ object BrboAstUtils {
 
   abstract class InsertOperation
 
-  object Prepend extends InsertOperation
+  object PrependOperation extends InsertOperation
 
-  object Append extends InsertOperation
+  object AppendOperation extends InsertOperation
 
   def insert(ast: BrboAst, toInsert: Iterable[BrboAst], operation: InsertOperation): BrboAst = {
     val list = toInsert.toList
     ast match {
       case _: Command =>
         val block = operation match {
-          case Append => ast :: list
-          case Prepend => list :+ ast
+          case AppendOperation => ast :: list
+          case PrependOperation => list :+ ast
           case _ => throw new Exception
         }
         Block(block)
@@ -250,20 +252,39 @@ object BrboAstUtils {
         statement match {
           case Block(asts, _) =>
             val block = operation match {
-              case Append => asts ::: list
-              case Prepend => list ::: asts
+              case AppendOperation => asts ::: list
+              case PrependOperation => list ::: asts
               case _ => throw new Exception
             }
             Block(block)
           case _: ITE | _: Loop =>
-          val block = operation match {
-            case Append => statement :: list
-            case Prepend => list :+ statement
-            case _ => throw new Exception
-          }
+            val block = operation match {
+              case AppendOperation => statement :: list
+              case PrependOperation => list :+ statement
+              case _ => throw new Exception
+            }
             Block(block)
           case _ => throw new Exception
         }
+      case _ => throw new Exception
+    }
+  }
+
+  abstract class ArrayGhostVariable
+
+  object ArrayLastIndex extends ArrayGhostVariable
+
+  object ArrayTemporary extends ArrayGhostVariable
+
+  def arrayGhostVariable(array: Identifier, arrayGhostVariable: ArrayGhostVariable): Identifier = {
+    array match {
+      case Identifier(arrayName, BrboType.ARRAY(BrboType.INT), _) =>
+        val name = arrayGhostVariable match {
+          case ArrayLastIndex => s"lastIndexOf${arrayName.capitalize}"
+          case ArrayTemporary => s"temporary${arrayName.capitalize}"
+          case _ => throw new Exception
+        }
+        Identifier(name, BrboType.INT)
       case _ => throw new Exception
     }
   }

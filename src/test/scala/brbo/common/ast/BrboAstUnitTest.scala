@@ -56,7 +56,8 @@ class BrboAstUnitTest extends AnyFlatSpec {
     BrboAstUnitTest.printToBrboJavaTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
-        StringCompare.ignoreWhitespaces(targetProgram.program.printToBrboJava(indent = 0), testCase.expectedOutput, s"${testCase.name} failed")
+        val result = targetProgram.program.printToBrboJava(indent = 0)
+        StringCompare.ignoreWhitespaces(result, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }
@@ -315,6 +316,8 @@ object BrboAstUnitTest {
       |    boolean a6 = ndBool();
       |    mostPreciseBound(R + arraySum(array) > 10);
       |    lessPreciseBound(R + arraySum(array) < 10);
+      |    int a7 = 0;
+      |    a7 = arrayRead(array, 0);
       |  }
       |
       |  void use(int x, int cost, boolean condition) {}
@@ -349,6 +352,8 @@ object BrboAstUnitTest {
         |    int D3p = 0;
         |    int D4 = 0;
         |    int D4p = 0;
+        |    int temporaryArray = 0;
+        |    int lastIndexOfArray = 0;
         |    lessPreciseBound((((((0 + D1) + D2) + D3) + D4) + arraySum(array)) < 10);
         |    mostPreciseBound(!(((((((0 + D1) + D2) + D3) + D4) + arraySum(array)) < 10)) && !(((((((0 + D1) + D2) + D3) + D4) + arraySum(array)) == 10)));
         |    if (!((x < 10)) && !((x == 10)))
@@ -397,6 +402,12 @@ object BrboAstUnitTest {
         |    int a6 = ndBool();
         |    // mostPreciseBound(R + arraySum(array) > 10)
         |    // lessPreciseBound(R + arraySum(array) < 10)
+        |    int a7 = 0;
+        |    {
+        |      temporaryArray = ndInt2(lastIndexOfArray, arraySum(a7));
+        |      lastIndexOfArray = lastIndexOfArray + temporaryArray;
+        |      a7 = temporaryArray;
+        |    }
         |  }
         |  public abstract int ndInt();
         |  public abstract int ndInt2(int lower, int upper);
@@ -405,7 +416,8 @@ object BrboAstUnitTest {
         |  public abstract void mostPreciseBound(boolean assertion);
         |  public abstract void lessPreciseBound(boolean assertion);
         |  public abstract void resetPlaceHolder();
-        |}
-        |""".stripMargin)
+        |  public abstract int arrayLength();
+        |  public int arraySum(int array) { return array; }
+        |}""".stripMargin)
   )
 }
