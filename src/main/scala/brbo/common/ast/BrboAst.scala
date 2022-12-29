@@ -217,14 +217,14 @@ abstract class BrboAst extends SameAs with Serializable with Print
 
 abstract class Statement(val uuid: UUID) extends BrboAst
 
-abstract class Command(val uuid: UUID) extends BrboAst with PrintToIR with GetFunctionCalls with UseDefVariables {
+abstract class Command(val uuid: UUID) extends BrboAst with GetFunctionCalls with UseDefVariables {
   def printToCInternal(indent: Int): String
 
   def printToBrboJava(indent: Int): String = printToC(indent)
 
   def printToQFuzzJava(indent: Int): String = printToBrboJava(indent)
 
-  final override def printToIR(): String = {
+  final def printToIR(): String = {
     this match {
       case _: BrboExpr => printToCInternal(indent = 0)
       case BeforeFunctionCall(callee, actualArguments, _) =>
@@ -256,6 +256,12 @@ abstract class Command(val uuid: UUID) extends BrboAst with PrintToIR with GetFu
       case _ => throw new Exception()
     }
   }
+
+  override def getUses: Set[Identifier] = Set()
+
+  override def getDefs: Set[Identifier] = Set()
+
+  override def getFunctionCalls: List[FunctionCallExpr] = Nil
 }
 
 case class Block(asts: List[BrboAst], override val uuid: UUID = UUID.randomUUID()) extends Statement(uuid) {
@@ -368,8 +374,6 @@ case class Assume(condition: BrboExpr, override val uuid: UUID = UUID.randomUUID
 
   override def getUses: Set[Identifier] = condition.getUses
 
-  override def getDefs: Set[Identifier] = Set()
-
   override def sameAs(other: Any): Boolean = {
     other match {
       case command: Command =>
@@ -448,12 +452,6 @@ case class Skip(override val uuid: UUID = UUID.randomUUID()) extends Command(uui
     s"${indentString(indent)};"
   }
 
-  override def getFunctionCalls: List[FunctionCallExpr] = Nil
-
-  override def getUses: Set[Identifier] = Set()
-
-  override def getDefs: Set[Identifier] = Set()
-
   override def sameAs(other: Any): Boolean = {
     other match {
       case command: Command =>
@@ -491,8 +489,6 @@ case class Return(expression: Option[BrboExpr], override val uuid: UUID = UUID.r
     }
   }
 
-  override def getDefs: Set[Identifier] = Set()
-
   override def sameAs(other: Any): Boolean = {
     other match {
       case command: Command =>
@@ -515,12 +511,6 @@ case class Break(override val uuid: UUID = UUID.randomUUID()) extends Command(uu
     s"${indentString(indent)}break;"
   }
 
-  override def getFunctionCalls: List[FunctionCallExpr] = Nil
-
-  override def getUses: Set[Identifier] = Set()
-
-  override def getDefs: Set[Identifier] = Set()
-
   override def sameAs(other: Any): Boolean = {
     other match {
       case Break(_) => true
@@ -533,12 +523,6 @@ case class Continue(override val uuid: UUID = UUID.randomUUID()) extends Command
   override def printToCInternal(indent: Int): String = {
     s"${indentString(indent)}continue;"
   }
-
-  override def getFunctionCalls: List[FunctionCallExpr] = Nil
-
-  override def getUses: Set[Identifier] = Set()
-
-  override def getDefs: Set[Identifier] = Set()
 
   override def sameAs(other: Any): Boolean = {
     other match {
@@ -576,12 +560,6 @@ case class Comment(content: String, override val uuid: UUID = UUID.randomUUID())
     s"${indentString(indent)}// ${content.replace("\n", " ")}"
   }
 
-  override def getFunctionCalls: List[FunctionCallExpr] = Nil
-
-  override def getUses: Set[Identifier] = Set()
-
-  override def getDefs: Set[Identifier] = Set()
-
   override def sameAs(other: Any): Boolean = {
     other match {
       case Comment(otherContent, _) => content == otherContent
@@ -594,13 +572,6 @@ sealed trait CFGOnly
 
 case class FunctionExit(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with CFGOnly {
   override def printToCInternal(indent: Int): String = "[Function Exit]"
-
-
-  override def getFunctionCalls: List[FunctionCallExpr] = Nil
-
-  override def getUses: Set[Identifier] = Set()
-
-  override def getDefs: Set[Identifier] = Set()
 
   override def sameAs(other: Any): Boolean = {
     other match {
@@ -617,12 +588,6 @@ case class FunctionExit(override val uuid: UUID = UUID.randomUUID()) extends Com
 case class LoopExit(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with CFGOnly {
   override def printToCInternal(indent: Int): String = "[Loop Exit]"
 
-  override def getFunctionCalls: List[FunctionCallExpr] = Nil
-
-  override def getUses: Set[Identifier] = Set()
-
-  override def getDefs: Set[Identifier] = Set()
-
   override def sameAs(other: Any): Boolean = {
     other match {
       case command: Command =>
@@ -638,13 +603,6 @@ case class LoopExit(override val uuid: UUID = UUID.randomUUID()) extends Command
 case class Empty(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with CFGOnly {
   override def printToCInternal(indent: Int): String = "[Empty Node]"
 
-
-  override def getFunctionCalls: List[FunctionCallExpr] = Nil
-
-  override def getUses: Set[Identifier] = Set()
-
-  override def getDefs: Set[Identifier] = Set()
-
   override def sameAs(other: Any): Boolean = {
     other match {
       case command: Command =>
@@ -659,12 +617,6 @@ case class Empty(override val uuid: UUID = UUID.randomUUID()) extends Command(uu
 
 case class BranchingHead(override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) with CFGOnly {
   override def printToCInternal(indent: Int): String = "[Branch Head]"
-
-  override def getFunctionCalls: List[FunctionCallExpr] = Nil
-
-  override def getUses: Set[Identifier] = Set()
-
-  override def getDefs: Set[Identifier] = Set()
 
   override def sameAs(other: Any): Boolean = {
     other match {
@@ -725,8 +677,6 @@ case class Use( // When None, this command represents updating the original reso
 
   override def getUses: Set[Identifier] = update.getUses ++ condition.getUses
 
-  override def getDefs: Set[Identifier] = Set()
-
   override def sameAs(other: Any): Boolean = {
     other match {
       case command: Command =>
@@ -756,8 +706,6 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
   val updateStarITE: ITE = ITE(compareStarWithResource, assignToStar, Skip())
   val updateResource: Assignment = Assignment(resourceVariable, Number(0))
   val updateCounter: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
-
-  override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
   override def printToCInternal(indent: Int): String = {
     val ast = generateAst(updateStar = updateStarITE, updateResource = updateResource, updateCounter = updateCounter)
@@ -792,8 +740,6 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
 
   override def getUses: Set[Identifier] = condition.getUses
 
-  override def getDefs: Set[Identifier] = Set()
-
   override def sameAs(other: Any): Boolean = {
     other match {
       case command: Command =>
@@ -811,16 +757,10 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
 case class ResetPlaceHolder(id: Int, override val uuid: UUID = UUID.randomUUID()) extends GhostCommand(uuid) {
   override def printToCInternal(indent: Int): String = s"${indentString(indent)}${PreDefinedFunctions.ResetPlaceHolder.name}_$id();"
 
-  override def getUses: Set[Identifier] = Set()
-
-  override def getDefs: Set[Identifier] = Set()
-
   override def sameAs(other: Any): Boolean = other match {
     case ResetPlaceHolder(otherId, _) => id == otherId
     case _ => false
   }
-
-  override def getFunctionCalls: List[FunctionCallExpr] = Nil
 
   override def replace(newGroupId: Int): GhostCommand = ???
 }
@@ -829,13 +769,7 @@ sealed trait CexPathOnly
 
 case class BeforeFunctionCall(callee: BrboFunction, actualArguments: List[BrboExpr], override val uuid: UUID = UUID.randomUUID())
   extends Command(uuid) with CexPathOnly {
-  override def getFunctionCalls: List[FunctionCallExpr] = throw new Exception
-
   override def printToCInternal(indent: Int): String = throw new Exception
-
-  override def getUses: Set[Identifier] = throw new Exception
-
-  override def getDefs: Set[Identifier] = throw new Exception
 
   override def sameAs(other: Any): Boolean = {
     other match {

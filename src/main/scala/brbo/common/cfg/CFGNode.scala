@@ -13,7 +13,7 @@ import com.ibm.wala.util.intset.{BimodalMutableIntSet, IntSet}
  */
 case class CFGNode(command: Command, function: Option[BrboFunction] = None, id: Int = CFGNode.DONT_CARE_ID)
   extends NodeWithNumber with INodeWithNumberedEdges
-    with PrintToIR with GetFunctionCalls with Serializable {
+    with GetFunctionCalls with Serializable {
   private val predNumbers = new BimodalMutableIntSet()
   private val succNumbers = new BimodalMutableIntSet()
   val functionIdentifier: String = function match {
@@ -45,7 +45,7 @@ case class CFGNode(command: Command, function: Option[BrboFunction] = None, id: 
     s"($id) ${command.printToIR()} [fun `$functionIdentifier`]"
   }
 
-  override def printToIR(): String = s"($id) ${command.printToIR()}"
+  def printToIR(): String = s"($id) ${command.printToIR()}"
 
   override def getFunctionCalls: List[FunctionCallExpr] = {
     command.getFunctionCalls
