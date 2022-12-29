@@ -62,30 +62,24 @@ object ProgramTransformerUnitTest {
         |    }
         |    else
         |    {
-        |
+        |      ;
         |    }
         |    int R = 0;
+        |    int i = 0;
+        |    while (i < n)
         |    {
-        |      int i = 0;
-        |      while (i < n)
+        |      use(5);
+        |      USE_COUNT = USE_COUNT + 1;
+        |      INDEX_VARIABLE = INDEX_VARIABLE - 1;
+        |      if (INDEX_VARIABLE == 0)
         |      {
-        |        {
-        |          {
-        |            use(5);
-        |            USE_COUNT = USE_COUNT + 1;
-        |            INDEX_VARIABLE = INDEX_VARIABLE - 1;
-        |            if (INDEX_VARIABLE == 0)
-        |            {
-        |              return USE_COUNT;
-        |            }
-        |            else
-        |            {
-        |              ;
-        |            }
-        |          }
-        |        }
-        |        i = i + 1;
+        |        return USE_COUNT;
         |      }
+        |      else
+        |      {
+        |        ;
+        |      }
+        |      i = i + 1;
         |    }
         |    return USE_COUNT;
         |  }

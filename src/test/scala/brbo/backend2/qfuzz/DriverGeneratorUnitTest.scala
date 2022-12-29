@@ -158,18 +158,16 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    x = arraySum(array);
         |    x = arrayRead(array, 3);
         |    int R = 0;
+        |    use(3);
+        |    USE_COUNT = USE_COUNT + 1;
+        |    INDEX_VARIABLE = INDEX_VARIABLE - 1;
+        |    if (INDEX_VARIABLE == 0)
         |    {
-        |      use(3);
-        |      USE_COUNT = USE_COUNT + 1;
-        |      INDEX_VARIABLE = INDEX_VARIABLE - 1;
-        |      if (INDEX_VARIABLE == 0)
-        |      {
-        |        return USE_COUNT;
-        |      }
-        |      else
-        |      {
-        |        ;
-        |      }
+        |      return USE_COUNT;
+        |    }
+        |    else
+        |    {
+        |      ;
         |    }
         |    return USE_COUNT;
         |  }

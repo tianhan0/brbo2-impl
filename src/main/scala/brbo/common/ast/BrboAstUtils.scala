@@ -288,4 +288,30 @@ object BrboAstUtils {
       case _ => throw new Exception
     }
   }
+
+  def flatten(brboAst: BrboAst): List[BrboAst] = {
+    brboAst match {
+      case command: Command => List(command)
+      case statement: Statement =>
+        statement match {
+          case Block(asts, _) => asts.flatMap(ast => flatten(ast))
+          case ITE(condition, thenAst, elseAst, _) =>
+            val ite = ITE(condition, blockify(flatten(thenAst)), blockify(flatten(elseAst)))
+            List(ite)
+          case Loop(condition, loopBody, _) =>
+            val loop = Loop(condition, blockify(flatten(loopBody)))
+            List(loop)
+          case _ => throw new Exception
+        }
+      case _ => throw new Exception
+    }
+  }
+
+  private def blockify(asts: List[BrboAst]): BrboAst = {
+    asts.size match {
+      case 0 => Skip()
+      case 1 => asts.head
+      case _ => Block(asts)
+    }
+  }
 }

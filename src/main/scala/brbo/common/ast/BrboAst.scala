@@ -285,16 +285,18 @@ abstract class Command(val uuid: UUID) extends BrboAst with GetFunctionCalls wit
 }
 
 case class Block(asts: List[BrboAst], override val uuid: UUID = UUID.randomUUID()) extends Statement(uuid) {
+  private val simplifiedAsts: List[BrboAst] = BrboAstUtils.flatten(this)
+
   override def printToC(indent: Int): String = {
-    s"${indentString(indent)}{\n${asts.map(t => t.printToC(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
+    s"${indentString(indent)}{\n${simplifiedAsts.map(t => t.printToC(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
   }
 
   override def printToBrboJava(indent: Int): String = {
-    s"${indentString(indent)}{\n${asts.map(t => t.printToBrboJava(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
+    s"${indentString(indent)}{\n${simplifiedAsts.map(t => t.printToBrboJava(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
   }
 
   override def printToQFuzzJava(indent: Int): String = {
-    s"${indentString(indent)}{\n${asts.map(t => t.printToQFuzzJava(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
+    s"${indentString(indent)}{\n${simplifiedAsts.map(t => t.printToQFuzzJava(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
   }
 
   override def sameAs(other: Any): Boolean = {

@@ -156,7 +156,7 @@ object BasicProcessorUnitTest {
           |  }
           |  else
           |  {
-          |
+          |    ;
           |  }
           |  if (((n < m) && ((n < m) || (n == m))) && !((n == m)))
           |  {
@@ -164,7 +164,7 @@ object BasicProcessorUnitTest {
           |  }
           |  else
           |  {
-          |
+          |    ;
           |  }
           |}""".stripMargin),
       TestCase("Compound assignments", ("Test", test05),
@@ -185,7 +185,7 @@ object BasicProcessorUnitTest {
           |  }
           |  else
           |  {
-          |
+          |    ;
           |  }
           |  z = z + 1;
           |  z = z + 1;
@@ -213,18 +213,14 @@ object BasicProcessorUnitTest {
       TestCase("For and Break", ("Test", test10),
         s"""void ${TargetProgram.MAIN_FUNCTION}(int n, int m)
           |{
+          |  int i = 0;
+          |  int k = 0;
+          |  while (i < 10)
           |  {
-          |    int i = 0;
-          |    int k = 0;
-          |    while (i < 10)
-          |    {
-          |      {
-          |        int j = 0;
-          |        break;
-          |      }
-          |      i = i + 1;
-          |      k = 1;
-          |    }
+          |    int j = 0;
+          |    break;
+          |    i = i + 1;
+          |    k = 1;
           |  }
           |}""".stripMargin),
       TestCase("While and Continue", ("Test", test11),
