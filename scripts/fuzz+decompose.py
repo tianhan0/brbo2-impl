@@ -4,15 +4,17 @@ import glob
 from pathlib import Path
 
 
-def run_command(command, cwd):
-    print(f"Execute command {command} under {cwd}")
+def run_command(command, cwd, dry):
+    print(f"Execute command {' '.join(command)} under {cwd}")
+    if dry:
+        return
     result = subprocess.run(
         command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=cwd
     )
     print(f"Output: {result.stdout}")
 
 
-def qfuzz_command(timeout, input):
+def qfuzz_command(timeout, input, qfuzz):
     return [
         "./scripts/run.sh",
         "fuzz",
@@ -24,7 +26,7 @@ def qfuzz_command(timeout, input):
         "src/main/java/brbo/fuzz/",
         "--dry",
         "--qfuzz",
-        Path("~/Documents/workspace/qfuzz_docker/").expanduser(),
+        f"{qfuzz}",
     ]
 
 
@@ -46,15 +48,15 @@ def decomposition_command(threads, samples, input):
     ]
 
 
-def verification_command(decomposed_file):
+def verification_command(decomposed_file, icra):
     return [
         "./scripts/run_without_deps.sh",
         "--directory",
-        decomposed_file,
+        f"{decomposed_file}",
         "--amortize",
         "transparent",
         "--icra-path",
-        Path("~/Documents/workspace/icra/icra").expanduser(),
+        f"{icra}",
     ]
 
 
@@ -92,6 +94,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "--brbo", type=str, default="~/brbo-impl", help="The directory of brbo-impl."
     )
+    parser.add_argument(
+        "--qfuzz", type=str, default=Path("~/Documents/workspace/qfuzz_docker/").expanduser(), help="The directory of qfuzz."
+    )
+    parser.add_argument(
+        "--icra", type=str, default=Path("~/Documents/workspace/icra/icra").expanduser(), help="The directory of executable file icra."
+    )
+    parser.add_argument(
+        "--dry", action='store_true', help="Print the commands without executing them."
+    )
+    parser.set_defaults(dry=False)
     args = parser.parse_args()
 
     java_files = []
@@ -108,7 +120,7 @@ if __name__ == "__main__":
     brbo2_root = Path(args.brbo2).expanduser()
     brbo_root = Path(args.brbo).expanduser()
 
-    run_qfuzz = qfuzz_command(timeout=args.timeout, input=args.input)
+    run_qfuzz = qfuzz_command(timeout=args.timeout, input=args.input, qfuzz=args.qfuzz)
     run_decomposition = decomposition_command(
         threads=args.threads, samples=args.samples, input=args.input
     )
@@ -116,13 +128,13 @@ if __name__ == "__main__":
     for java_file in java_files:
         print(f"Process file `{java_file}`")
 
-        run_command(command=run_qfuzz, cwd=brbo2_root)
+        run_command(command=run_qfuzz, cwd=brbo2_root, dry=args.dry)
 
-        run_command(command=run_decomposition, cwd=brbo2_root)
+        run_command(command=run_decomposition, cwd=brbo2_root, dry=args.dry)
 
         parts = java_file.parent.parts
         decomposed_file = (
             brbo2_root / "output" / "decomposed" / parts[-1] / java_file.name
         )
-        run_verification = verification_command(decomposed_file=decomposed_file)
-        run_command(command=run_verification, cwd=brbo_root)
+        run_verification = verification_command(decomposed_file=decomposed_file, icra=args.icra)
+        run_command(command=run_verification, cwd=brbo_root, dry=args.dry)
