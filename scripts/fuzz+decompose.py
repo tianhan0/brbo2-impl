@@ -95,13 +95,19 @@ if __name__ == "__main__":
         "--brbo", type=str, default="~/brbo-impl", help="The directory of brbo-impl."
     )
     parser.add_argument(
-        "--qfuzz", type=str, default=Path("~/Documents/workspace/qfuzz_docker/").expanduser(), help="The directory of qfuzz."
+        "--qfuzz",
+        type=str,
+        default=Path("~/Documents/workspace/qfuzz_docker/").expanduser(),
+        help="The directory of qfuzz.",
     )
     parser.add_argument(
-        "--icra", type=str, default=Path("~/Documents/workspace/icra/icra").expanduser(), help="The directory of executable file icra."
+        "--icra",
+        type=str,
+        default=Path("~/Documents/workspace/icra/icra").expanduser(),
+        help="The directory of executable file icra.",
     )
     parser.add_argument(
-        "--dry", action='store_true', help="Print the commands without executing them."
+        "--dry", action="store_true", help="Print the commands without executing them."
     )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
@@ -136,5 +142,7 @@ if __name__ == "__main__":
         decomposed_file = (
             brbo2_root / "output" / "decomposed" / parts[-1] / java_file.name
         )
-        run_verification = verification_command(decomposed_file=decomposed_file, icra=args.icra)
+        run_verification = verification_command(
+            decomposed_file=decomposed_file, icra=args.icra
+        )
         run_command(command=run_verification, cwd=brbo_root, dry=args.dry)
