@@ -1,7 +1,10 @@
 .DS_Store
 
 lib/
-output/
+output/amortizations/
+output/cfg/
+output/cmd/
+output/fuzz/
 src/main/python/*.json
 
 # Fuzzing related
