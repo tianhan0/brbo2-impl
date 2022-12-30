@@ -138,11 +138,14 @@ if __name__ == "__main__":
 
         run_command(command=run_decomposition, cwd=brbo2_root, dry=args.dry)
 
-        parts = java_file.parent.parts
-        decomposed_file = (
-            brbo2_root / "output" / "decomposed" / parts[-1] / java_file.name
-        )
+        decomposed_file_path = brbo2_root / "output" / "decomposed" / java_file.parent.parts[-1]
+        decomposed_file = decomposed_file_path / java_file.name
+        actual_decomposed_file = decomposed_file_path / f"{java_file.name}.actual"
+        if actual_decomposed_file.exists():
+            to_verify = actual_decomposed_file
+        else:
+            to_verify = decomposed_file
         run_verification = verification_command(
-            decomposed_file=decomposed_file, icra=args.icra
+            decomposed_file=to_verify, icra=args.icra
         )
         run_command(command=run_verification, cwd=brbo_root, dry=args.dry)
