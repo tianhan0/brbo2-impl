@@ -85,7 +85,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--samples",
         type=int,
-        default=10,
+        default=0,  # Disable generating traces from the dumb fuzzer, to avoid complicating the experiment setup
         help="The number of samples when randomly generating inputs for decomposing a program.",
     )
     parser.add_argument(
@@ -138,7 +138,9 @@ if __name__ == "__main__":
 
         run_command(command=run_decomposition, cwd=brbo2_root, dry=args.dry)
 
-        decomposed_file_path = brbo2_root / "output" / "decomposed" / java_file.parent.parts[-1]
+        decomposed_file_path = (
+            brbo2_root / "output" / "decomposed" / java_file.parent.parts[-1]
+        )
         decomposed_file = decomposed_file_path / java_file.name
         actual_decomposed_file = decomposed_file_path / f"{java_file.name}.actual"
         if actual_decomposed_file.exists():
