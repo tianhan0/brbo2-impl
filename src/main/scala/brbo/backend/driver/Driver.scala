@@ -8,6 +8,7 @@ import brbo.backend.verifier.cex.Path
 import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.backend.verifier.{InterpreterKind, SymbolicExecution, UAutomizerVerifier, VerifierResult}
 import brbo.common._
+import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.ast._
 import brbo.common.commandline.Arguments
 import brbo.common.string.StringFormatUtils
@@ -175,7 +176,7 @@ class Driver(arguments: Arguments, originalProgram: BrboProgram) {
 
   private def verify(program: BrboProgram, boundAssertion: BoundAssertion): VerifierResult = {
     val assertion = boundAssertion.replaceResourceVariable(program.mainFunction.approximatedResourceUsage)
-    logger.infoOrError(s"Verify global assertion `${assertion.printNoOuterBrackets}`")
+    logger.infoOrError(s"Verify global assertion `${assertion.printNoOuterBrackets(style = CStyle)}`")
     // val ubcheckInserted = insertUBCheck(program, boundAssertion)
     // val result = uAutomizerVerifier.verify(ubcheckInserted)
     val modelChecker = new AbstractMachine(program, arguments)

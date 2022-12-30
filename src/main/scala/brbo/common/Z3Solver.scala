@@ -1,7 +1,7 @@
 package brbo.common
 
 import brbo.common.BrboType.{BOOL, INT, VOID}
-import brbo.common.ast.{Identifier, Z3AST}
+import brbo.common.ast.Identifier
 import com.microsoft.z3._
 import org.apache.logging.log4j.LogManager
 

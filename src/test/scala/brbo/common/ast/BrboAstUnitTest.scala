@@ -354,8 +354,8 @@ object BrboAstUnitTest {
         |    int D4p = 0;
         |    int temporaryArray = 0;
         |    int lastIndexOfArray = 0;
-        |    lessPreciseBound((((((0 + D1) + D2) + D3) + D4) + arraySum(array)) < 10);
-        |    mostPreciseBound(!(((((((0 + D1) + D2) + D3) + D4) + arraySum(array)) < 10)) && !(((((((0 + D1) + D2) + D3) + D4) + arraySum(array)) == 10)));
+        |    lessPreciseBound((((((0 + D1) + D2) + D3) + D4) + array) < 10);
+        |    mostPreciseBound(!(((((((0 + D1) + D2) + D3) + D4) + array) < 10)) && !(((((((0 + D1) + D2) + D3) + D4) + array) == 10)));
         |    if (!((x < 10)) && !((x == 10)))
         |    {
         |      D1 = D1 + 10;
@@ -395,7 +395,7 @@ object BrboAstUnitTest {
         |    int R = 0;
         |    R = R + 1011;
         |    int a1 = arrayRead(array, 0);
-        |    int a2 = arraySum(array);
+        |    int a2 = array;
         |    int a3 = arrayLength(array);
         |    int a4 = ndInt();
         |    int a5 = ndInt2(12, 34);
@@ -409,15 +409,14 @@ object BrboAstUnitTest {
         |      a7 = temporaryArray;
         |    }
         |  }
+        |  // Declare these methods such that these generated code can be parsed
         |  public abstract int ndInt();
         |  public abstract int ndInt2(int lower, int upper);
         |  public abstract boolean ndBool();
         |  public abstract void assume(boolean expression);
         |  public abstract void mostPreciseBound(boolean assertion);
         |  public abstract void lessPreciseBound(boolean assertion);
-        |  public abstract void resetPlaceHolder();
-        |  public abstract int arrayLength();
-        |  public int arraySum(int array) { return array; }
+        |  public abstract int arrayLength(int array);
         |}""".stripMargin)
   )
 }

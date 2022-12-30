@@ -2,6 +2,7 @@ package brbo.backend.verifier.cex
 
 import brbo.common.BrboType.VOID
 import brbo.common.MyLogger
+import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 import org.jgrapht.Graph
@@ -346,7 +347,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
         logger.traceOrError(s"Expected UAutomizer string: `$expected` (`${command.getClass}`)")
         MatchResult(expected == exactString, matchedExpression = false, matchedTrueBranch = false)
       case brboExpr: BrboExpr =>
-        val expected = brboExpr.printNoOuterBrackets
+        val expected = brboExpr.printNoOuterBrackets(style = CStyle)
         val negated = s"!($expected)"
         logger.traceOrError(s"Expected UAutomizer string: `$expected`. Negated: `$negated`. Exact string: `$exactString`.")
         val matchedTrueBranch = expected == exactString
