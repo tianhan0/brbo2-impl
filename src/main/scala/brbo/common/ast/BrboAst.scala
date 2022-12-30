@@ -192,13 +192,13 @@ case class BrboFunction(identifier: String,
 
   def printToBrboJavaWithBoundAssertions(indent: Int, boundAssertions: List[BoundAssertion]): String = {
     val boundAssertionExprs: List[BrboExpr] = boundAssertionExpressions(boundAssertions)
-    val parametersString = parameters.map(pair => s"${pair.typeNamePair(CPrintType)}").mkString(", ")
+    val parametersString = parameters.map(pair => s"${pair.typeNamePair(BrboJavaPrintType)}").mkString(", ")
     val bodyWithDeclarations = BrboAstUtils.insert(
       ast = body,
       toInsert = predefinedVariableDeclarations ::: ghostVariableLegacyDeclarations ::: arrayGhostVariableDeclarations ::: boundAssertionExprs,
       operation = PrependOperation
     )
-    s"${indentString(indent + DEFAULT_INDENT)}${BrboType.PrintType.print(returnType, CPrintType)} $identifier($parametersString) \n" +
+    s"${indentString(indent + DEFAULT_INDENT)}${BrboType.PrintType.print(returnType, BrboJavaPrintType)} $identifier($parametersString) \n" +
       s"${bodyWithDeclarations.print(indent + DEFAULT_INDENT, style = BrboJavaStyle)}"
   }
 
@@ -216,8 +216,14 @@ case class BrboFunction(identifier: String,
     arrayGhostVariables.map({ arrayGhostVariable => VariableDeclaration(arrayGhostVariable, Number(0)) })
   }
 
-  private val predefinedVariableDeclarations: List[Command] = variables.keys.toList.sorted.map({
-    name => VariableDeclaration(Identifier(name, BrboType.INT), Number(variables(name)))
+  private val predefinedVariableDeclarations: List[Command] = variables.keys.toList.sorted.flatMap({
+    name =>
+      if (name == "BOOLEAN_SEPARATOR")
+        Some(VariableDeclaration(Identifier(name, BrboType.INT), Number(variables(name))))
+      else {
+        // To avoid a major change in brbo (that avoids declaring these variables twice), do not declare them here
+        None
+      }
   })
 
   private val ghostVariableLegacyDeclarations: List[Command] = groupIds.flatMap({
