@@ -6,9 +6,10 @@ import brbo.backend2.learning.DecisionTree.{ResetLeaf, TreeClassifier, UseLeaf}
 import brbo.backend2.learning.ScriptRunner.DecisionTreeLearning
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.GhostVariableUtils.{counterInitialValue, resourceInitialValue, starInitialValue}
+import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
-import brbo.common.{MyLogger, Print}
+import brbo.common.MyLogger
 import com.ibm.wala.util.graph.NumberedGraph
 import play.api.libs.json.Json
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
@@ -22,7 +23,7 @@ import scala.concurrent.{Await, Future}
 object Classifier {
   private val logger = MyLogger.createLogger(Classifier.getClass, debugMode = false)
 
-  case class GroupID(value: Int) extends Print {
+  case class GroupID(value: Int) {
     def print(): String = toString
   }
 
@@ -75,7 +76,7 @@ object Classifier {
 
   def resetLabelFromString(label: String): Boolean = label.toBoolean
 
-  abstract class BrboTable(features: List[BrboExpr]) extends Print {
+  abstract class BrboTable(features: List[BrboExpr]) {
     val tableName: String
 
     protected val table: Table = Table.create(tableName)
@@ -169,7 +170,9 @@ object Classifier {
     }
   }
 
-  abstract class Location extends Print
+  abstract class Location {
+    def print(): String
+  }
 
   /**
    *
@@ -356,7 +359,7 @@ object Classifier {
     "See below for a mapping from existing ASTs to new ASTs\n" +
       transformation.map({
         case (oldCommand, newAst) =>
-          s"${oldCommand.printToIR()} -> ${newAst.printToC(0)}"
+          s"${oldCommand.printToIR()} -> ${newAst.print(indent = 0, style = CStyle)}"
       }).mkString("\n")
   }
 

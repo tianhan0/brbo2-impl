@@ -2,6 +2,7 @@ package brbo.common
 
 import brbo.common.BrboType._
 import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
+import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.ast._
 import brbo.frontend.TargetProgram
 
@@ -27,7 +28,7 @@ object PreDefinedFunctions {
   class RepresentationNotExist extends Exception
 
   abstract class PreDefinedFunction(val name: String) {
-    def cStringRepresentation: String = cRepresentation.printToC(0)
+    def cStringRepresentation: String = cRepresentation.print(indent = 0, style = CStyle)
 
     def cRepresentation: BrboFunction
 

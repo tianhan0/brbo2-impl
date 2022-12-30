@@ -2,6 +2,7 @@ package brbo.backend.verifier.cex
 
 import brbo.backend.refiner.PrintPath
 import brbo.common.BrboType.BOOL
+import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.{GhostVariableUtils, MyLogger, PreDefinedFunctions}
@@ -104,10 +105,10 @@ object Path {
                   case condition: BrboExpr =>
                     condition match {
                       case Negation(Negation(cond, _), _) =>
-                        assert(cond.printToC(0) == "cond")
+                        assert(cond.print(indent = 0, style = CStyle) == "cond")
                         i = i + 2 // Directly exit
                       case Negation(cond, _) =>
-                        assert(cond.printToC(0) == "cond")
+                        assert(cond.print(indent = 0, style = CStyle) == "cond")
                         i = i + 3 // Reach the error location
                       case _ => throw new Exception
                     }

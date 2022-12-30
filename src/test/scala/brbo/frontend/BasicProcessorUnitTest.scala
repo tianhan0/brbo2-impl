@@ -1,6 +1,7 @@
 package brbo.frontend
 
 import brbo.TestCase
+import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.string.StringCompare
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -10,7 +11,7 @@ class BasicProcessorUnitTest extends AnyFlatSpec {
       testCase =>
         val (className, code) = testCase.input.asInstanceOf[(String, String)]
         val result = BasicProcessor.getTargetProgram(className, code)
-        StringCompare.ignoreWhitespaces(result.program.mainFunction.printToC(0), testCase.expectedOutput, s"`${testCase.name}` failed!")
+        StringCompare.ignoreWhitespaces(result.program.mainFunction.print(indent = 0, style = CStyle), testCase.expectedOutput, s"`${testCase.name}` failed!")
     })
   }
 }

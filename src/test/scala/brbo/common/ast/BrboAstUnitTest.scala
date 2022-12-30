@@ -3,9 +3,9 @@ package brbo.common.ast
 import brbo.TestCase
 import brbo.common.BrboType
 import brbo.common.BrboType.INT
+import brbo.common.ast.PrintStyle.{BrboJavaStyle, CStyle}
 import brbo.common.string.StringCompare
 import brbo.frontend.{BasicProcessor, TargetProgram}
-import org.apache.commons.text.StringEscapeUtils
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BrboAstUnitTest extends AnyFlatSpec {
@@ -34,7 +34,7 @@ class BrboAstUnitTest extends AnyFlatSpec {
   "Pretty-printing BrboAst to C statements" should "be correct" in {
     BrboAstUnitTest.prettyPrintToCUnitTest.foreach({
       testCase =>
-        val result = testCase.input.asInstanceOf[BrboAst].printToC(2)
+        val result = testCase.input.asInstanceOf[BrboAst].print(indent = 2, style = CStyle)
         StringCompare.compareLiteral(
           result,
           testCase.expectedOutput,
@@ -44,11 +44,11 @@ class BrboAstUnitTest extends AnyFlatSpec {
     })
   }
 
-  "Parsing Java programs into Brbo ASTs" should "be correct" in {
+  "Parsing Java programs into ASTs" should "be correct" in {
     BrboAstUnitTest.parsingAstTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
-        StringCompare.ignoreWhitespaces(targetProgram.program.mainFunction.printToC(0), testCase.expectedOutput, s"${testCase.name} failed")
+        StringCompare.ignoreWhitespaces(targetProgram.program.mainFunction.print(indent = 0, style = CStyle), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 
@@ -56,7 +56,7 @@ class BrboAstUnitTest extends AnyFlatSpec {
     BrboAstUnitTest.printToBrboJavaTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
-        val result = targetProgram.program.printToBrboJava(indent = 0)
+        val result = targetProgram.program.print(indent = 0, style = BrboJavaStyle)
         StringCompare.ignoreWhitespaces(result, testCase.expectedOutput, s"${testCase.name} failed")
     })
   }

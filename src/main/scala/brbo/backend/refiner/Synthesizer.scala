@@ -4,6 +4,7 @@ import brbo.backend.verifier.AbstractInterpreter.ModelCheckerResult
 import brbo.backend.verifier.modelchecker.AbstractMachine
 import brbo.backend.verifier.{AbstractInterpreter, InterpreterKind}
 import brbo.common._
+import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.commandline.Arguments
@@ -72,7 +73,7 @@ class Synthesizer(originalProgram: BrboProgram, argument: Arguments) {
 
     val newMainBody = (useReplacements ++ resetReplacements).foldLeft(originalProgram.mainFunction.body: BrboAst)({
       case (acc, (command, newCommands)) =>
-        val commandsInList = newCommands.toList.sortWith({ case (c1, c2) => c1.printToC(0) < c2.printToC(0) })
+        val commandsInList = newCommands.toList.sortWith({ case (c1, c2) => c1.print(indent = 0, style = CStyle) < c2.print(indent = 0, style = CStyle) })
         BrboAstUtils.replaceAst(acc, command, Block(commandsInList))
     })
     logger.infoOrError(s"Successful: New main function body:\n`$newMainBody`")

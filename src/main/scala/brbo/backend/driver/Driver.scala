@@ -95,7 +95,7 @@ class Driver(arguments: Arguments, originalProgram: BrboProgram) {
         tree.vertexSet().asScala.zipWithIndex.foreach({
           case (node, index) =>
             val programInC = BrboCProgram(node.program)
-            val cSourceCode = programInC.program.printToC(0)
+            val cSourceCode = programInC.program.print(indent = 0, style = CStyle)
             val file = new File(s"${BrboMain.OUTPUT_DIRECTORY}/amortizations/${originalProgram.className}-${StringFormatUtils.integer(index, 3)}.txt")
             FileUtils.writeStringToFile(file, cSourceCode, Charset.forName("UTF-8"))
         })
@@ -194,7 +194,7 @@ class Driver(arguments: Arguments, originalProgram: BrboProgram) {
           case Assignment(variable, expression, _) =>
             if (GhostVariableUtils.isGhostVariable(variable.name, GhostVariableTyp.Resource)) {
               val errorMessage = s"To successfully extract uses from assignments, the assignment must be in the form of " +
-                s"`${variable.name} = ${variable.name} + e` for some e, instead of `${command.printToC(0)}`"
+                s"`${variable.name} = ${variable.name} + e` for some e, instead of `${command.print(indent = 0, style = CStyle)}`"
               expression match {
                 case Addition(left, right, _) =>
                   left match {
@@ -239,7 +239,7 @@ class Driver(arguments: Arguments, originalProgram: BrboProgram) {
       val assertion = boundAssertion.replaceResourceVariable(sum)
       FunctionCallExpr(assertFunction.identifier, List(assertion), assertFunction.returnType)
     }
-    logger.infoOrError(s"Insert ub check assertion: `${assertion.printToC(0)}`")
+    logger.infoOrError(s"Insert ub check assertion: `${assertion.print(indent = 0, style = CStyle)}`")
 
     def generateNewUse(use: Use): List[Command] = {
       // Use the same uuid so that, we can succeed in using commands from the program without UB checks to match against

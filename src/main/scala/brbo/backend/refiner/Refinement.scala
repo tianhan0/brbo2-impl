@@ -1,6 +1,7 @@
 package brbo.backend.refiner
 
 import brbo.backend.refiner.Refinement._
+import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.ast._
 import brbo.common.cfg.CFGNode
 import brbo.common.string.StringFormatUtils
@@ -39,7 +40,7 @@ case class Refinement(path: List[CFGNode], splitUses: Map[Int, Replace], removeR
   def refinedPath(whereToInitializeGhostVariables: BrboFunction): List[CFGNode] = {
     val newGroupInitializations = groupIds.values.flatten.flatMap({
       groupId => GhostVariableUtils.declareVariables(groupId, legacy = false).map(c => CFGNode(c, Some(whereToInitializeGhostVariables), CFGNode.DONT_CARE_ID))
-    }).toList.sortWith({ case (n1, n2) => n1.command.asInstanceOf[Command].printToC(0) < n2.command.asInstanceOf[Command].printToC(0) })
+    }).toList.sortWith({ case (n1, n2) => n1.command.print(indent = 0, style = CStyle) < n2.command.print(indent = 0, style = CStyle) })
     // logger.traceOrError(s"Path (length `${path.size}`):\n`$path`")
     val afterSplit: List[CFGNode] = splitUses.foldLeft(path)({
       case (acc, (i, replacement)) => acc.updated(i, replacement.newNode)

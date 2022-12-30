@@ -2,6 +2,7 @@ package brbo.backend2.qfuzz
 
 import brbo.common.BrboType
 import brbo.common.BrboType.QFuzzPrintType
+import brbo.common.ast.PrintStyle.QFuzzJavaStyle
 import brbo.common.ast.{BrboProgram, Identifier}
 import brbo.common.string.StringFormatUtils
 import brbo.frontend.TargetProgram
@@ -113,7 +114,7 @@ object DriverGenerator {
        |  }
        |}
        |
-       |${transformedProgram.printToQFuzzJava(indent = 0)}""".stripMargin
+       |${transformedProgram.print(indent = 0, style = QFuzzJavaStyle)}""".stripMargin
   }
 
   def driverClassName(className: String): String = s"${className}QFuzzDriver"

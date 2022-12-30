@@ -4,6 +4,7 @@ import brbo.backend.verifier.AbstractInterpreter
 import brbo.backend.verifier.VerifierStatus.VerifierStatus
 import brbo.backend.verifier.cex.Path
 import brbo.common._
+import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.ast.{BoundAssertion, BrboProgram}
 import brbo.common.commandline.Arguments
 
@@ -35,7 +36,7 @@ class Refiner(arguments: Arguments) {
           val allGroupIds: Set[Int] = // Get all group IDs and then all ghost variables
             originalProgram.mainFunction.groupIds ++ refinement.groupIds.values.flatten
           val sum = GhostVariableUtils.approximatedResourceUsage(allGroupIds)
-          logger.traceOrError(s"Approximated resource usage: `${sum.printToC(0)}`")
+          logger.traceOrError(s"Approximated resource usage: `${sum.print(indent = 0, style = CStyle)}`")
           boundAssertion.replaceResourceVariable(sum)
         }
         val result = AbstractInterpreter.verifyPath(refinedPath, assertion, inputVariables, arguments)

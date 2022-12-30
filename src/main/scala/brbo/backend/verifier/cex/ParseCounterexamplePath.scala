@@ -359,7 +359,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
   @tailrec
   private def expectedUAutomizerString(command: Command): String = {
     def getRidOfSemicolon(command2: Command): String = {
-      val s = command2.printToC(0)
+      val s = command2.print(indent = 0, style = CStyle)
       assert(s.endsWith(";"))
       s.substring(0, s.length - 1)
     }
@@ -367,7 +367,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     command match {
       case Assignment(_, _, _) => getRidOfSemicolon(command)
       case LabeledCommand(_, command2, _) => expectedUAutomizerString(command2)
-      case _ => command.printToC(0)
+      case _ => command.print(indent = 0, style = CStyle)
     }
   }
 

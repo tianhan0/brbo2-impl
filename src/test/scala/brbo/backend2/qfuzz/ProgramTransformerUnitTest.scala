@@ -1,6 +1,7 @@
 package brbo.backend2.qfuzz
 
 import brbo.TestCase
+import brbo.common.ast.PrintStyle.QFuzzJavaStyle
 import brbo.common.string.StringCompare
 import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -11,7 +12,7 @@ class ProgramTransformerUnitTest extends AnyFlatSpec {
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
         val transformedProgram = ProgramTransformer.transform(targetProgram.program)
-        StringCompare.ignoreWhitespaces(transformedProgram.printToQFuzzJava(indent = 0), testCase.expectedOutput, s"${testCase.name} failed")
+        StringCompare.ignoreWhitespaces(transformedProgram.print(indent = 0, style = QFuzzJavaStyle), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }

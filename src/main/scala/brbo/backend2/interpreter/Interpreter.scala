@@ -1,9 +1,10 @@
 package brbo.backend2.interpreter
 
 import brbo.backend2.interpreter.Interpreter._
+import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.ast._
 import brbo.common.string.StringFormatUtils
-import brbo.common.{BrboType, MyLogger, PreDefinedFunctions, Print}
+import brbo.common.{BrboType, MyLogger, PreDefinedFunctions}
 import tech.tablesaw.api.{IntColumn, StringColumn, Table}
 
 import java.util.concurrent.Executors
@@ -510,7 +511,7 @@ object Interpreter {
     def print(onlyGhostCommand: Boolean, commandMaxLength: Int): (String, String) = {
       if (command.isInstanceOf[GhostCommand] || !onlyGhostCommand) {
         val commandString = {
-          val commandString = command.printToC(0)
+          val commandString = command.print(indent = 0, style = CStyle)
           if (commandString.length > commandMaxLength) s"${commandString.slice(0, commandMaxLength)}..."
           else commandString
         }
@@ -585,7 +586,7 @@ object Interpreter {
    * @param store          The current store
    * @param lastTransition The last transition that was evaluated
    */
-  case class TraceNode(store: Store, lastTransition: Option[Transition]) extends Print {
+  case class TraceNode(store: Store, lastTransition: Option[Transition]) {
     lastTransition match {
       case Some(transition) =>
         transition.command match {
@@ -595,7 +596,7 @@ object Interpreter {
       case None =>
     }
 
-    override def print(): String = {
+    def print(): String = {
       lastTransition match {
         case Some(lastTransition) =>
           s"${lastTransition.toString} ==> ${store.toString}"
@@ -604,7 +605,7 @@ object Interpreter {
     }
   }
 
-  case class Trace(nodes: List[TraceNode], inputs: Map[Identifier, BrboValue]) extends Print {
+  case class Trace(nodes: List[TraceNode], inputs: Map[Identifier, BrboValue]) {
     lazy val costTraceAssociation: CostTraceAssociation = {
       val indexMap =
         nodes.zipWithIndex.foldLeft(Map(): Map[Int, CostTraceNode])({
@@ -627,7 +628,7 @@ object Interpreter {
 
     def add(node: TraceNode): Trace = Trace(nodes :+ node, inputs)
 
-    override def print(): String = {
+    def print(): String = {
       val prefix = "Trace: "
       val linePrefix: String = " " * prefix.length
       val string = printNodes(nodes.map(n => s"[${n.print()}]"), 1, linePrefix, "==>")
@@ -698,20 +699,22 @@ object Interpreter {
     override def print(): String = "EmptyTrace"
   }
 
-  abstract class CostTraceNode extends Print {
+  abstract class CostTraceNode {
+    def print(): String
+
     def getGhostCommand: GhostCommand
   }
 
   case class UseNode(use: Use, cost: Int) extends CostTraceNode {
-    override def print(): String = {
+    def print(): String = {
       s"${use.printToIR()} (cost=$cost)"
     }
 
     override def getGhostCommand: GhostCommand = use
   }
 
-  case class CostTrace(nodes: List[CostTraceNode]) extends Print {
-    override def print(): String = {
+  case class CostTrace(nodes: List[CostTraceNode]) {
+    def print(): String = {
       val prefix = "Use Trace: "
       val linePrefix: String = " " * prefix.length
       val string = printNodes(nodes.map(n => n.print()), 1, linePrefix, "->")
@@ -755,7 +758,7 @@ object Interpreter {
   def printState(state: State): String = {
     state match {
       case state: FlowBeginState =>
-        s"${state.getClass.getSimpleName}\nCommand: ${state.ast.printToC(indent = 0)}\n${state.store}\n${state.trace.print()}"
+        s"${state.getClass.getSimpleName}\nCommand: ${state.ast.print(indent = 0, style = CStyle)}\n${state.store}\n${state.trace.print()}"
       case state: GoodState =>
         val valueString = state.value match {
           case Some(value) => s"Some(${value.printToIR()})"

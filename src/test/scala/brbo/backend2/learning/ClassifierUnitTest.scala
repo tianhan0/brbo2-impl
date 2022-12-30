@@ -9,6 +9,7 @@ import brbo.backend2.learning.ScriptRunner.{Euclidean, Optics}
 import brbo.backend2.learning.SegmentClustering.{Group, Segment}
 import brbo.backend2.learning.SegmentClusteringUnitTest.functionDefinitions
 import brbo.common.BrboType.INT
+import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.ast.{Command, Identifier, Number}
 import brbo.common.cfg.ControlFlowGraph
 import brbo.common.string.StringCompare
@@ -262,7 +263,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val classifierResults = tables.toProgramTables.generateClassifiers(debugMode = false)
     val transformation = classifierResults.toTransformation.map({
       case (command, ast) =>
-        s"Transform ${command.printToIR()} into:\n${ast.printToC(0)}"
+        s"Transform ${command.printToIR()} into:\n${ast.print(indent = 0, style = CStyle)}"
     }).toList.sorted.mkString("\n\n")
     StringCompare.ignoreWhitespaces(
       transformation,

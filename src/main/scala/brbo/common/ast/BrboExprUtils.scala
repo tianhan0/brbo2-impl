@@ -3,6 +3,7 @@ package brbo.common.ast
 import brbo.backend.verifier.modelchecker.AbstractMachine._
 import brbo.backend.verifier.modelchecker.Apron
 import brbo.backend.verifier.modelchecker.Apron._
+import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.{BrboType, MyLogger}
 
 import java.util.UUID
@@ -30,7 +31,7 @@ object BrboExprUtils {
   }
 
   def replace(body: BrboExpr, from: BrboExpr, to: BrboExpr): BrboExpr = {
-    if (from.printToC(0) == body.printToC(0)) {
+    if (from.sameAs(body)) {
       if (from.typ == body.typ) return to
       else throw new Exception("Type mismatch")
     }

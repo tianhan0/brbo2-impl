@@ -3,6 +3,7 @@ package brbo
 import brbo.backend2.DecompositionDriver
 import brbo.backend2.qfuzz.Executor
 import brbo.common.MyLogger
+import brbo.common.ast.PrintStyle.BrboJavaStyle
 import brbo.common.cfg.ControlFlowGraph
 import brbo.common.commandline._
 import brbo.common.string.StringFormatUtils
@@ -138,7 +139,7 @@ object BrboMain {
     )
     val startTime = System.nanoTime
     val decomposedProgram = driver.decompose()
-    val newDecomposition = decomposedProgram.printToBrboJava(indent = 0)
+    val newDecomposition = decomposedProgram.print(indent = 0, style = BrboJavaStyle)
     val endTime = System.nanoTime
     val outputPath = {
       val parent = FilenameUtils.getBaseName(Paths.get(sourceFilePath).getParent.toAbsolutePath.toString)

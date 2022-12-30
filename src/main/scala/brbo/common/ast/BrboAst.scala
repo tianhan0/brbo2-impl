@@ -22,12 +22,21 @@ case class BrboProgram(className: String,
     function => PreDefinedFunctions.functions.exists(predefined => predefined.name == function.identifier)
   })
 
-  override def printToC(indent: Int): String = {
-    val functionsString = nonPredefinedFunctions.map(function => function.printToC(indent)).mkString("\n")
+  override def print(indent: Int, style: AbstractStyle): String = {
+    style match {
+      case PrintStyle.BrboJavaStyle => printToBrboJava(indent)
+      case PrintStyle.CStyle => printToC(indent)
+      case PrintStyle.QFuzzJavaStyle => printToQFuzzJava(indent)
+      case _ => throw new Exception
+    }
+  }
+
+  private def printToC(indent: Int): String = {
+    val functionsString = nonPredefinedFunctions.map(function => function.print(indent, style = CStyle)).mkString("\n")
     s"${PreDefinedFunctions.ATOMIC_FUNCTIONS_C_DECLARATION}\n${PreDefinedFunctions.SYMBOLS_MACRO}\n$functionsString"
   }
 
-  override def printToBrboJava(indent: Int): String = {
+  private def printToBrboJava(indent: Int): String = {
     val predefinedFunctions =
       s"""  // Declare these methods such that these generated code can be parsed
          |  public abstract int ${PreDefinedFunctions.NdInt.name}();
@@ -45,7 +54,7 @@ case class BrboProgram(className: String,
        |}""".stripMargin
   }
 
-  override def printToQFuzzJava(indent: Int): String = {
+  private def printToQFuzzJava(indent: Int): String = {
     val predefinedFunctions =
       s"""  int ${PreDefinedFunctions.ArrayRead.name}(int[] array, int index) { return array[index]; }
          |  int ${PreDefinedFunctions.ArrayLength.name}(int[] array) { return array.length; }
@@ -71,9 +80,9 @@ case class BrboProgram(className: String,
          |      System.exit(-1);
          |    return upper > lower ? lower + 1 : upper;
          |  }
-         |${otherFunctions.find(f => f.identifier == PreDefinedFunctions.Use.name).get.printToQFuzzJava(indent = 0)}""".stripMargin
+         |${otherFunctions.find(f => f.identifier == PreDefinedFunctions.Use.name).get.print(indent = 0, style = QFuzzJavaStyle)}""".stripMargin
     val nonPredefinedFunctions =
-      this.nonPredefinedFunctions.map(function => function.printToQFuzzJava(indent)).mkString("\n")
+      this.nonPredefinedFunctions.map(function => function.print(indent, style = QFuzzJavaStyle)).mkString("\n")
     val packageString: String = packageName match {
       case Some(value) => s"// package $value;"
       case None => ""
@@ -157,18 +166,27 @@ case class BrboFunction(identifier: String,
     })
   }
 
-  override def printToC(indent: Int): String = {
-    val parametersString = parameters.map(pair => s"${pair.typeNamePair(CPrintType)}").mkString(", ")
-    val indentString = " " * (indent + DEFAULT_INDENT)
-    s"$indentString${BrboType.PrintType.print(returnType, CPrintType)} $identifier($parametersString)\n${bodyWithGhostInitialization.printToC(indent + DEFAULT_INDENT)}"
+  override def print(indent: Int, style: AbstractStyle): String = {
+    style match {
+      case PrintStyle.BrboJavaStyle => printToBrboJava(indent)
+      case PrintStyle.CStyle => printToC(indent)
+      case PrintStyle.QFuzzJavaStyle => printToQFuzzJava(indent)
+      case _ => throw new Exception
+    }
   }
 
-  override def printToBrboJava(indent: Int): String = printToBrboJavaWithBoundAssertions(indent, boundAssertions = Nil)
+  private def printToC(indent: Int): String = {
+    val parametersString = parameters.map(pair => s"${pair.typeNamePair(CPrintType)}").mkString(", ")
+    val indentString = " " * (indent + DEFAULT_INDENT)
+    s"$indentString${BrboType.PrintType.print(returnType, CPrintType)} $identifier($parametersString)\n${bodyWithGhostInitialization.print(indent + DEFAULT_INDENT, style = CStyle)}"
+  }
 
-  override def printToQFuzzJava(indent: Int): String = {
+  private def printToBrboJava(indent: Int): String = printToBrboJavaWithBoundAssertions(indent, boundAssertions = Nil)
+
+  private def printToQFuzzJava(indent: Int): String = {
     val parametersString = parameters.map(pair => s"${pair.typeNamePair(QFuzzPrintType)}").mkString(", ")
     s"${indentString(indent + DEFAULT_INDENT)}${BrboType.PrintType.print(returnType, QFuzzPrintType)} $identifier($parametersString)\n" +
-      s"${body.printToQFuzzJava(indent + DEFAULT_INDENT)}"
+      s"${body.print(indent + DEFAULT_INDENT, style = QFuzzJavaStyle)}"
   }
 
   def printToBrboJavaWithBoundAssertions(indent: Int, boundAssertions: List[BoundAssertion]): String = {
@@ -197,7 +215,7 @@ case class BrboFunction(identifier: String,
       operation = PrependOperation
     )
     s"${indentString(indent + DEFAULT_INDENT)}${BrboType.PrintType.print(returnType, CPrintType)} $identifier($parametersString) \n" +
-      s"${bodyWithInitialization.printToBrboJava(indent + DEFAULT_INDENT)}"
+      s"${bodyWithInitialization.print(indent + DEFAULT_INDENT, style = BrboJavaStyle)}"
   }
 
   private def boundAssertionExpressions(boundAssertions: List[BoundAssertion]): List[BrboExpr] = {
@@ -238,23 +256,13 @@ abstract class BrboAst extends SameAs with Serializable with Print
 abstract class Statement(val uuid: UUID) extends BrboAst
 
 abstract class Command(val uuid: UUID) extends BrboAst with GetFunctionCalls with UseDefVariables {
-  final override def printToC(indent: Int): String = {
+  final override def print(indent: Int, style: AbstractStyle): String = {
     this match {
-      case _: BrboExpr => printInternal(indent, style = CStyle) + ";"
-      case _: Command => printInternal(indent, style = CStyle)
+      case _: BrboExpr => printInternal(indent, style) + ";"
+      case _: Command => printInternal(indent, style)
       case _ => throw new Exception()
     }
   }
-
-  def printToBrboJava(indent: Int): String = {
-    this match {
-      case _: BrboExpr => printInternal(indent, style = BrboJavaStyle) + ";"
-      case _: Command => printInternal(indent, style = BrboJavaStyle)
-      case _ => throw new Exception()
-    }
-  }
-
-  def printToQFuzzJava(indent: Int): String = printToC(indent)
 
   final def printToIR(): String = {
     this match {
@@ -293,16 +301,8 @@ abstract class Command(val uuid: UUID) extends BrboAst with GetFunctionCalls wit
 case class Block(asts: List[BrboAst], override val uuid: UUID = UUID.randomUUID()) extends Statement(uuid) {
   private val simplifiedAsts: List[BrboAst] = BrboAstUtils.flatten(this)
 
-  override def printToC(indent: Int): String = {
-    s"${indentString(indent)}{\n${simplifiedAsts.map(t => t.printToC(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
-  }
-
-  override def printToBrboJava(indent: Int): String = {
-    s"${indentString(indent)}{\n${simplifiedAsts.map(t => t.printToBrboJava(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
-  }
-
-  override def printToQFuzzJava(indent: Int): String = {
-    s"${indentString(indent)}{\n${simplifiedAsts.map(t => t.printToQFuzzJava(indent + DEFAULT_INDENT)).mkString("\n")}\n${indentString(indent)}}"
+  override def print(indent: Int, style: AbstractStyle): String = {
+    s"${indentString(indent)}{\n${simplifiedAsts.map(t => t.print(indent + DEFAULT_INDENT, style)).mkString("\n")}\n${indentString(indent)}}"
   }
 
   override def sameAs(other: Any): Boolean = {
@@ -322,19 +322,9 @@ case class Loop(condition: BrboExpr, loopBody: BrboAst, override val uuid: UUID 
     case _ => throw new Exception
   }
 
-  override def printToC(indent: Int): String = {
-    val bodyString = loopBodyBlock.printToC(indent)
-    s"${indentString(indent)}while (${condition.printNoOuterBrackets(style = CStyle)})\n$bodyString"
-  }
-
-  override def printToBrboJava(indent: Int): String = {
-    val bodyString = loopBodyBlock.printToBrboJava(indent)
-    s"${indentString(indent)}while (${condition.printNoOuterBrackets(style = BrboJavaStyle)})\n$bodyString"
-  }
-
-  override def printToQFuzzJava(indent: Int): String = {
-    val bodyString = loopBodyBlock.printToQFuzzJava(indent)
-    s"${indentString(indent)}while (${condition.printNoOuterBrackets(style = QFuzzJavaStyle)})\n$bodyString"
+  override def print(indent: Int, style: AbstractStyle): String = {
+    val bodyString = loopBodyBlock.print(indent, style)
+    s"${indentString(indent)}while (${condition.printNoOuterBrackets(style)})\n$bodyString"
   }
 
   override def sameAs(other: Any): Boolean = {
@@ -359,22 +349,10 @@ case class ITE(condition: BrboExpr, thenAst: BrboAst, elseAst: BrboAst, override
     case _ => throw new Exception
   }
 
-  override def printToC(indent: Int): String = {
-    val thenString = thenBlock.printToC(indent)
-    val elseString = elseBlock.printToC(indent)
-    s"${indentString(indent)}if (${condition.printNoOuterBrackets(style = CStyle)})\n$thenString\n${indentString(indent)}else\n$elseString"
-  }
-
-  override def printToBrboJava(indent: Int): String = {
-    val thenString = thenBlock.printToBrboJava(indent)
-    val elseString = elseBlock.printToBrboJava(indent)
-    s"${indentString(indent)}if (${condition.printNoOuterBrackets(style = BrboJavaStyle)})\n$thenString\n${indentString(indent)}else\n$elseString"
-  }
-
-  override def printToQFuzzJava(indent: Int): String = {
-    val thenString = thenBlock.printToQFuzzJava(indent)
-    val elseString = elseBlock.printToQFuzzJava(indent)
-    s"${indentString(indent)}if (${condition.printNoOuterBrackets(style = QFuzzJavaStyle)})\n$thenString\n${indentString(indent)}else\n$elseString"
+  override def print(indent: Int, style: AbstractStyle): String = {
+    val thenString = thenBlock.print(indent, style)
+    val elseString = elseBlock.print(indent, style)
+    s"${indentString(indent)}if (${condition.printNoOuterBrackets(style)})\n$thenString\n${indentString(indent)}else\n$elseString"
   }
 
   override def sameAs(other: Any): Boolean = {
@@ -412,11 +390,15 @@ case class Assume(condition: BrboExpr, override val uuid: UUID = UUID.randomUUID
 
 case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends Command(uuid) {
   override def printInternal(indent: Int, style: AbstractStyle): String = {
-    s"${indentString(indent)}${BrboType.PrintType.print(identifier.typ, CPrintType)} ${identifier.name} = ${initialValueString(style)};"
-  }
-
-  override def printToQFuzzJava(indent: Int): String = {
-    s"${indentString(indent)}${BrboType.PrintType.print(identifier.typ, QFuzzPrintType)} ${identifier.name} = ${initialValueString(style = QFuzzJavaStyle)};"
+    style match {
+      case PrintStyle.BrboJavaStyle =>
+        s"${indentString(indent)}${BrboType.PrintType.print(identifier.typ, CPrintType)} ${identifier.name} = ${initialValueString(style = BrboJavaStyle)};"
+      case PrintStyle.CStyle =>
+        s"${indentString(indent)}${BrboType.PrintType.print(identifier.typ, CPrintType)} ${identifier.name} = ${initialValueString(style = CStyle)};"
+      case PrintStyle.QFuzzJavaStyle =>
+        s"${indentString(indent)}${BrboType.PrintType.print(identifier.typ, QFuzzPrintType)} ${identifier.name} = ${initialValueString(style = QFuzzJavaStyle)};"
+      case _ => throw new Exception
+    }
   }
 
   private def initialValueString(style: AbstractStyle) = identifier.typ match {
@@ -449,10 +431,15 @@ case class Assignment(identifier: Identifier, expression: BrboExpr, override val
   assert(identifier.typ == expression.typ)
 
   override def printInternal(indent: Int, style: AbstractStyle): String = {
-    s"${indentString(indent)}${identifier.name} = ${expression.printNoOuterBrackets(style)};"
+    style match {
+      case PrintStyle.BrboJavaStyle => printToBrboJava(indent)
+      case PrintStyle.CStyle | PrintStyle.QFuzzJavaStyle =>
+        s"${indentString(indent)}${identifier.name} = ${expression.printNoOuterBrackets(style)};"
+      case _ => throw new Exception
+    }
   }
 
-  override def printToBrboJava(indent: Int): String = {
+  private def printToBrboJava(indent: Int): String = {
     expression match {
       case ArrayRead(array, _, _) =>
         // Assume that every array element is read exactly once in any run
@@ -477,8 +464,8 @@ case class Assignment(identifier: Identifier, expression: BrboExpr, override val
         )
         val actualAssignment = Assignment(identifier, temporaryVariable)
         val block = Block(List(assignTemporary, updateLastIndex, actualAssignment))
-        block.printToBrboJava(indent)
-      case _ => super.printToBrboJava(indent)
+        block.print(indent, style = BrboJavaStyle)
+      case _ => s"${indentString(indent)}${identifier.name} = ${expression.printNoOuterBrackets(style = BrboJavaStyle)};"
     }
   }
 
@@ -590,7 +577,7 @@ case class LabeledCommand(label: String, command: Command, override val uuid: UU
   assert(!command.isInstanceOf[GhostCommand], s"Not allow ghost commands to be labeled, due to the translation in BrboAstInC")
 
   override def printInternal(indent: Int, style: AbstractStyle): String = {
-    s"${indentString(indent)}$label: ${command.printToC(0)}"
+    s"${indentString(indent)}$label: ${command.print(indent = 0, style)}"
   }
 
   override def getFunctionCalls: List[FunctionCallExpr] = command.getFunctionCalls
@@ -705,23 +692,22 @@ case class Use( // When None, this command represents updating the original reso
   override def printInternal(indent: Int, style: AbstractStyle): String = {
     val ast = generateAst(assignmentCommand)
     style match {
-      case PrintStyle.BrboJavaStyle => ast.printToBrboJava(indent)
-      case PrintStyle.CStyle => ast.printToC(indent)
-      case PrintStyle.QFuzzJavaStyle => ast.printToQFuzzJava(indent)
+      case PrintStyle.BrboJavaStyle => printToBrboJava(indent)
+      case PrintStyle.CStyle | PrintStyle.QFuzzJavaStyle => ast.print(indent, style)
       case _ => throw new Exception
     }
   }
 
-  override def printToBrboJava(indent: Int): String = {
+  private def printToBrboJava(indent: Int): String = {
     if (groupId.isEmpty) {
       // When a use command is not assigned with a group (i.e., the command is not decomposed),
       // print the original assignment commands over `R`.
-      return printInternal(indent, style = PrintStyle.BrboJavaStyle)
+      return this.assignmentCommand.print(indent, style = PrintStyle.BrboJavaStyle)
     }
     val resourceVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Resource, legacy = true)
     val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
     val ast = generateAst(assignmentCommand)
-    ast.printToBrboJava(indent)
+    ast.print(indent, style = BrboJavaStyle)
   }
 
   private def generateAst(assignment: Assignment): BrboAst = {
@@ -766,11 +752,16 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
   val updateCounter: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
 
   override def printInternal(indent: Int, style: AbstractStyle): String = {
-    val ast = generateAst(updateStar = updateStarITE, updateResource = updateResource, updateCounter = updateCounter)
-    ast.map(ast => ast.printToC(indent)).mkString("\n")
+    style match {
+      case PrintStyle.BrboJavaStyle => printToBrboJava(indent)
+      case PrintStyle.CStyle | PrintStyle.QFuzzJavaStyle =>
+        val ast = generateAst(updateStar = updateStarITE, updateResource = updateResource, updateCounter = updateCounter)
+        ast.map(ast => ast.print(indent, style)).mkString("\n")
+      case _ => throw new Exception
+    }
   }
 
-  override def printToBrboJava(indent: Int): String = {
+  private def printToBrboJava(indent: Int): String = {
     val (resourceVariable: Identifier, starVariable: Identifier, counterVariable: Identifier) =
       GhostVariableUtils.generateVariables(Some(groupId), legacy = true)
     val maxStatement: ITE = {
@@ -781,7 +772,7 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
     val resetCommand: Assignment = Assignment(resourceVariable, Number(0))
     val counterCommand: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
     val ast = generateAst(updateStar = maxStatement, updateResource = resetCommand, updateCounter = counterCommand)
-    ast.map(ast => ast.printToBrboJava(indent)).mkString("\n")
+    ast.map(ast => ast.print(indent, style = BrboJavaStyle)).mkString("\n")
   }
 
   private def generateAst(updateStar: ITE, updateResource: Command, updateCounter: Command): List[BrboAst] = {
