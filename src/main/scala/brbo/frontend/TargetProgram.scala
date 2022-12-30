@@ -1,9 +1,10 @@
 package brbo.frontend
 
 import brbo.common.GhostVariableUtils.isGhostVariable
+import brbo.common.PredefinedVariables.variables
 import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo, notEqual}
 import brbo.common.ast._
-import brbo.common.{GhostVariableTyp, GhostVariableUtils, MyLogger, PreDefinedFunctions}
+import brbo.common.{GhostVariableTyp, GhostVariableUtils, MyLogger, PreDefinedFunctions, PredefinedVariables}
 import brbo.frontend.JavaTreeUtils.isCommand
 import brbo.frontend.TargetProgram.toBrboFunction
 import com.sun.source.tree.Tree.Kind
@@ -61,9 +62,6 @@ case class TargetProgram(fullQualifiedClassName: String,
 
 object TargetProgram {
   val MAIN_FUNCTION = "execute"
-  val MAX = 8
-  val LARGE_INT = 10000000
-  val PREDEFINED_VARIABLES: Map[String, Int] = Map("MAX" -> MAX, "LARGE_INT" -> LARGE_INT)
 
   private val logger = MyLogger.createLogger(TargetProgram.getClass, debugMode = false)
 
@@ -241,7 +239,7 @@ object TargetProgram {
           variables.get(name) match {
             case Some(identifier) => Left(identifier)
             case None =>
-              PREDEFINED_VARIABLES.get(name) match {
+              PredefinedVariables.variables.get(name) match {
                 case Some(value) => Left(Number(value))
                 case None => throw new Exception(s"Variable `$name` is neither an input or a local variable")
               }

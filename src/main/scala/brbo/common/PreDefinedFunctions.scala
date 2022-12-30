@@ -4,14 +4,13 @@ import brbo.common.BrboType._
 import brbo.common.ast.BrboExprUtils.{greaterThan, lessThanOrEqualTo}
 import brbo.common.ast.PrintStyle.CStyle
 import brbo.common.ast._
-import brbo.frontend.TargetProgram
 
 object PreDefinedFunctions {
   val ATOMIC_FUNCTIONS_C_DECLARATION: String =
     List(VerifierError, VerifierNondetInt, Abort, ArrayRead, ArrayLength)
       .map(f => f.cStringRepresentation).mkString("\n")
   val SYMBOLS_MACRO: String = {
-    val predefinedVariables = TargetProgram.PREDEFINED_VARIABLES.map({ case (name, value) => s"#define $name $value" }).toList.sorted.mkString("\n")
+    val predefinedVariables = PredefinedVariables.variables.map({ case (name, value) => s"#define $name $value" }).toList.sorted.mkString("\n")
     s"""#define true 1
        |#define false 0
        |#define boolean int

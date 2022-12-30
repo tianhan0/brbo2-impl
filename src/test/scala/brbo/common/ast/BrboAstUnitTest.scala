@@ -340,6 +340,9 @@ object BrboAstUnitTest {
         |  void ${TargetProgram.MAIN_FUNCTION}(int x, int array)
         |
         |  {
+        |    int BOOLEAN_SEPARATOR = 15;
+        |    int LARGE_INT = 10000000;
+        |    int MAX = 8;
         |    int C1 = -1;
         |    int C2 = -1;
         |    int C3 = -1;

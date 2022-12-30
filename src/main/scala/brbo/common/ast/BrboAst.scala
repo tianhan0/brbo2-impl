@@ -2,6 +2,7 @@ package brbo.common.ast
 
 import brbo.common.BrboType._
 import brbo.common.GhostVariableTyp._
+import brbo.common.PredefinedVariables.variables
 import brbo.common.ast.BrboAstUtils.PrependOperation
 import brbo.common.ast.PrintStyle._
 import brbo.common.{BrboType, GhostVariableUtils, PreDefinedFunctions, SameAs}
@@ -140,14 +141,14 @@ case class BrboFunction(identifier: String,
 
   // Declare and initialize ghost variables in the function
   val bodyWithGhostInitialization: Statement = {
-    val ghostVariableInitializations: List[Command] = groupIds.flatMap({
+    val ghostVariableNonLegacyDeclarations: List[Command] = groupIds.flatMap({
       groupId => GhostVariableUtils.declareVariables(groupId, legacy = false)
     }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
-    body match {
-      case Block(asts, _) => Block(ghostVariableInitializations ::: asts)
-      case ITE(_, _, _, _) | Loop(_, _, _) => Block(ghostVariableInitializations :+ body)
-      case _ => throw new Exception
-    }
+    BrboAstUtils.insert(
+      ast = body,
+      toInsert = ghostVariableNonLegacyDeclarations,
+      operation = PrependOperation
+    ).asInstanceOf[Statement]
   }
   private lazy val legacyGhostVariables: List[Identifier] =
     groupIds.toList.sorted.map(id => GhostVariableUtils.generateVariable(Some(id), Resource, legacy = true))
@@ -190,6 +191,19 @@ case class BrboFunction(identifier: String,
   }
 
   def printToBrboJavaWithBoundAssertions(indent: Int, boundAssertions: List[BoundAssertion]): String = {
+    val boundAssertionExprs: List[BrboExpr] = boundAssertionExpressions(boundAssertions)
+    val parametersString = parameters.map(pair => s"${pair.typeNamePair(CPrintType)}").mkString(", ")
+    val bodyWithDeclarations = BrboAstUtils.insert(
+      ast = body,
+      toInsert = predefinedVariableDeclarations ::: ghostVariableLegacyDeclarations ::: arrayGhostVariableDeclarations ::: boundAssertionExprs,
+      operation = PrependOperation
+    )
+    s"${indentString(indent + DEFAULT_INDENT)}${BrboType.PrintType.print(returnType, CPrintType)} $identifier($parametersString) \n" +
+      s"${bodyWithDeclarations.print(indent + DEFAULT_INDENT, style = BrboJavaStyle)}"
+  }
+
+  // Declare ghost variables used for translating array operations
+  private val arrayGhostVariableDeclarations = {
     // TODO: Assume that for any array-typed input x, there exists at most 1 arrayRead(x, i) for any i
     val arrayGhostVariables: List[Identifier] = parameters.flatMap({
       case parameter@Identifier(_, BrboType.ARRAY(BrboType.INT), _) =>
@@ -197,26 +211,18 @@ case class BrboFunction(identifier: String,
           BrboAstUtils.arrayGhostVariable(parameter, BrboAstUtils.ArrayTemporary),
           BrboAstUtils.arrayGhostVariable(parameter, BrboAstUtils.ArrayLastIndex)
         )
-      case Identifier(_, BrboType.INT, _) => Nil
-      case Identifier(_, BrboType.BOOL, _) => Nil
-      case _ => throw new Exception
+      case _ => Nil
     })
-    // Declare ghost variables used for translating array operations
-    val arrayGhostVariableDeclarations =
-      arrayGhostVariables.map({ arrayGhostVariable => VariableDeclaration(arrayGhostVariable, Number(0)) })
-    val boundAssertionExprs: List[BrboExpr] = boundAssertionExpressions(boundAssertions)
-    val parametersString = parameters.map(pair => s"${pair.typeNamePair(CPrintType)}").mkString(", ")
-    val ghostVariableDeclarations: List[Command] = groupIds.flatMap({
-      groupId => GhostVariableUtils.declareVariables(groupId, legacy = true)
-    }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
-    val bodyWithInitialization = BrboAstUtils.insert(
-      ast = body,
-      toInsert = ghostVariableDeclarations ::: arrayGhostVariableDeclarations ::: boundAssertionExprs,
-      operation = PrependOperation
-    )
-    s"${indentString(indent + DEFAULT_INDENT)}${BrboType.PrintType.print(returnType, CPrintType)} $identifier($parametersString) \n" +
-      s"${bodyWithInitialization.print(indent + DEFAULT_INDENT, style = BrboJavaStyle)}"
+    arrayGhostVariables.map({ arrayGhostVariable => VariableDeclaration(arrayGhostVariable, Number(0)) })
   }
+
+  private val predefinedVariableDeclarations: List[Command] = variables.keys.toList.sorted.map({
+    name => VariableDeclaration(Identifier(name, BrboType.INT), Number(variables(name)))
+  })
+
+  private val ghostVariableLegacyDeclarations: List[Command] = groupIds.flatMap({
+    groupId => GhostVariableUtils.declareVariables(groupId, legacy = true)
+  }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
 
   private def boundAssertionExpressions(boundAssertions: List[BoundAssertion]): List[BrboExpr] = {
     boundAssertions.map({
