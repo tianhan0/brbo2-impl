@@ -1,6 +1,9 @@
 package brbo.common.string
 
+import brbo.BrboMain
 import org.apache.commons.text.StringEscapeUtils
+
+import java.nio.file.{Files, Paths}
 
 object StringCompare {
   private val dashes = "$" * 80
@@ -17,9 +20,20 @@ object StringCompare {
         if (printEscaped) StringEscapeUtils.escapeJava(newExpected)
         else newExpected
       val lineSeparator = s"$dashes\n"
-      System.err.println(s"Error message: $message\nActual:\n$printActual\n${lineSeparator}Expected:\n$printExpected\n$lineSeparator")
+      System.err.println(s"Error message: $message\nActual:\n$printActual\n${lineSeparator}Expected:\n$printExpected\n$lineSeparator\n${diffSummary(actual = actual, expected = expected)}")
     }
     result
+  }
+
+  private def diffSummary(actual: String, expected: String): String = {
+    val expectedFile = Paths.get(s"${BrboMain.OUTPUT_DIRECTORY}/expected.txt")
+    val actualFile = Paths.get(s"${BrboMain.OUTPUT_DIRECTORY}/actual.txt")
+    BrboMain.writeToFile(path = expectedFile, content = expected)
+    BrboMain.writeToFile(path = actualFile, content = actual)
+    val diffSummary = BrboMain.diffFiles(expectedFile, actualFile)
+    Files.deleteIfExists(expectedFile)
+    Files.deleteIfExists(actualFile)
+    diffSummary
   }
 
   private def replaceCarriageReturn(string: String): String = string.replaceAll("\\r\\n", "\n")
@@ -28,7 +42,7 @@ object StringCompare {
     val result = actual.replaceAll("(?s)\\s+", " ").trim == expected.replaceAll("(?s)\\s+", " ").trim
     if (!result) {
       val lineSeparator = s"$dashes\n"
-      System.err.println(s"Error message: $message\nActual:\n$actual\n${lineSeparator}Expected:\n$expected\n$lineSeparator")
+      System.err.println(s"Error message: $message\nActual:\n$actual\n${lineSeparator}Expected:\n$expected\n$lineSeparator\n${diffSummary(actual = actual, expected = expected)}")
     }
     result
   }
