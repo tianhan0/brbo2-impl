@@ -31,6 +31,8 @@ object BrboType {
 
   object CPrintType extends PrintType
 
+  object BrboJavaPrintType extends PrintType
+
   object QFuzzPrintType extends PrintType
 
   object PrintType {
@@ -61,6 +63,15 @@ object BrboType {
             case FLOAT => "float"
             case STRING => throw new Exception
             case ARRAY(innerType: T) => s"${print(innerType, printType)}[]"
+          }
+        case BrboJavaPrintType =>
+          typ match {
+            case INT => "int"
+            case BOOL => "boolean"
+            case VOID => "void"
+            case FLOAT => "float"
+            case STRING => throw new Exception
+            case ARRAY(innerType: T) => "int"
           }
         case _ => throw new Exception
       }
