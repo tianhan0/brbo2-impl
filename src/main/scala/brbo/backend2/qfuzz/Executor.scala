@@ -118,7 +118,7 @@ object Executor {
         }
     })
     val inputFilePath: String = getInputFilePath(sourceFilePath)
-    val existingInputs: List[List[BrboValue]] = readExistingInputs(inputFilePath)
+    val existingInputs: List[List[BrboValue]] = Nil // readExistingInputs(inputFilePath)
     val newInterestingInputs = listOfInputs.map({ inputs => toInputValues(inputs, program.mainFunction.parameters) }).toList
     newInterestingInputs.foreach({
       newInterestingInput =>
