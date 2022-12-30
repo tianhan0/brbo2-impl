@@ -29,7 +29,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |for (int i = 0; i < ARRAY_SIZE && 9 + i < values.size(); i++) {
         |  c[i] = values.get(9 + i);
         |}
-        |d = values.get(17) > 16383 ? true : false;
+        |d = values.get(17) > 16383;
         |System.out.println("a: " + a);
         |System.out.println("b: " + Arrays.toString(b));
         |System.out.println("c: " + Arrays.toString(c));
@@ -102,7 +102,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |        array[i] = values.get(1 + i);
         |      }
         |      b = values.get(9);
-        |      c = values.get(10) > 16383 ? true : false;
+        |      c = values.get(10) > 16383;
         |    } catch (IndexOutOfBoundsException exception) {
         |      long[] actualObservations = new long[0];
         |      PartitionSet clusters = PartitionSet.createFromObservations(epsilon, actualObservations, clusterAlgorithm);

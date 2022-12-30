@@ -191,9 +191,12 @@ object Executor {
   def toInputValues(inputArray: List[Int], parameters: List[Identifier]): List[BrboValue] = {
     val (_, inputValues) = parameters.foldLeft(0, Nil: List[BrboValue])({
       case ((indexSoFar, inputValues), parameter) =>
+        // Keep in sync with the initializations of input values in DriverGenerator.declarationsAndInitializations
         parameter.typ match {
           case BrboType.INT =>
             (indexSoFar + 1, Number(inputArray(indexSoFar)) :: inputValues)
+          case BrboType.BOOL =>
+            (indexSoFar + 1, Bool(inputArray(indexSoFar) > DriverGenerator.HALF_MAX_VALUE) :: inputValues)
           case BrboType.ARRAY(BrboType.INT) =>
             val arrayValue: List[Int] = inputArray.slice(indexSoFar, indexSoFar + DriverGenerator.ARRAY_SIZE)
             val inputValue = BrboArray(values = arrayValue.map(v => Number(v)), innerType = BrboType.INT)

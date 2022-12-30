@@ -11,6 +11,7 @@ object DriverGenerator {
   val ARRAY_SIZE = 8
   val MAX_INTEGER = 30
   val MIN_INTEGER = 1
+  val HALF_MAX_VALUE: Int = java.lang.Short.MAX_VALUE / 2
   private val MAX_NUMBER_OF_USES_TO_TRACK = 1000
 
   def run(program: BrboProgram): String = {
@@ -151,8 +152,7 @@ object DriverGenerator {
               print :: prints)
           case BrboType.BOOL =>
             val declaration = s"${parameter.typeNamePair(QFuzzPrintType)};"
-            val halfMaxValue = java.lang.Short.MAX_VALUE / 2
-            val initialization = s"${parameter.name} = values.get($indexSoFar) > $halfMaxValue ? true : false;"
+            val initialization = s"${parameter.name} = values.get($indexSoFar) > $HALF_MAX_VALUE;"
             val print = s"""System.out.println("${parameter.name}: " + ${parameter.name});"""
             (indexSoFar + 1,
               declaration :: declarations,
