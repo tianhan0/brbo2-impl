@@ -445,16 +445,11 @@ case class Assignment(identifier: Identifier, expression: BrboExpr, override val
         // Assume that every array element is read exactly once in any run
         val temporaryVariable = BrboAstUtils.arrayGhostVariable(array.asInstanceOf[Identifier], BrboAstUtils.ArrayTemporary)
         val lastIndexVariable = BrboAstUtils.arrayGhostVariable(array.asInstanceOf[Identifier], BrboAstUtils.ArrayLastIndex)
-        val arraySum = FunctionCallExpr(
-          identifier = PreDefinedFunctions.ArraySum.name,
-          arguments = List(identifier),
-          returnType = PreDefinedFunctions.ArraySum.returnType
-        )
         val assignTemporary = Assignment(
           temporaryVariable,
           FunctionCallExpr(
             identifier = PreDefinedFunctions.NdInt2.name,
-            arguments = List(lastIndexVariable, arraySum),
+            arguments = List(lastIndexVariable, identifier),
             returnType = PreDefinedFunctions.NdInt2.returnType
           )
         )
