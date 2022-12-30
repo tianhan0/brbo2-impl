@@ -1,19 +1,20 @@
 abstract class TemplateEngine {
-  void main(int text) 
-
+  void execute(int text) 
   {
     int C0 = -1;
     int D0 = 0;
     int D0p = 0;
-    lessPreciseBound(((0 + D0) < ((8 * arraySum(text)) + 8)) || ((0 + D0) == ((8 * arraySum(text)) + 8)));
-    mostPreciseBound(((0 + D0) < arraySum(text)) || ((0 + D0) == arraySum(text)));
-    if ((arraySum(text) < 0) || (arraySum(text) == 0))
+    int temporaryText = 0;
+    int lastIndexOfText = 0;
+    lessPreciseBound(((0 + D0) < ((8 * text) + 8)) || ((0 + D0) == ((8 * text) + 8)));
+    mostPreciseBound(((0 + D0) < text) || ((0 + D0) == text));
+    if ((text < 0) || (text == 0))
     {
       return;
     }
     else
     {
-
+      ;
     }
     int R = 0;
     // mostPreciseBound(R <= arraySum(text))
@@ -21,25 +22,36 @@ abstract class TemplateEngine {
     int chunk = 0;
     int tag = 0;
     int i = 0;
-    chunk = arrayRead(text, i);
+    {
+      temporaryText = ndInt2(lastIndexOfText, chunk);
+      lastIndexOfText = lastIndexOfText + temporaryText;
+      chunk = temporaryText;
+    }
     D0 = D0 + chunk;
     i = i + 1;
     while ((i + 1) < arrayLength(text))
     {
-      // reset R0
       {
-        tag = arrayRead(text, i);
-        chunk = arrayRead(text, (i + 1));
-        D0 = D0 + chunk;
-        i = i + 2;
+        temporaryText = ndInt2(lastIndexOfText, tag);
+        lastIndexOfText = lastIndexOfText + temporaryText;
+        tag = temporaryText;
       }
+      {
+        temporaryText = ndInt2(lastIndexOfText, chunk);
+        lastIndexOfText = lastIndexOfText + temporaryText;
+        chunk = temporaryText;
+      }
+      D0 = D0 + chunk;
+      i = i + 2;
+      // reset R0
     }
   }
+  // Declare these methods such that these generated code can be parsed
   public abstract int ndInt();
   public abstract int ndInt2(int lower, int upper);
   public abstract boolean ndBool();
   public abstract void assume(boolean expression);
   public abstract void mostPreciseBound(boolean assertion);
   public abstract void lessPreciseBound(boolean assertion);
-  public abstract void resetPlaceHolder();
+  public abstract int arrayLength(int array);
 }
