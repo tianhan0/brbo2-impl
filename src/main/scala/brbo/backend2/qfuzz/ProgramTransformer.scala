@@ -6,6 +6,7 @@ import brbo.common.ast._
 
 object ProgramTransformer {
   val USE_FUNCTION_NAME = "use"
+  val LOOP_ITERATION_MULTIPLIER = 1
   // This variable tracks the cost of every use command.
   // This variable decrements with the execution of any use command. When the variable equals 0, the program exits.
   private val indexVariable = Identifier(name = "INDEX_VARIABLE", typ = BrboType.INT)
@@ -79,7 +80,7 @@ object ProgramTransformer {
     val n = Identifier("n", BrboType.INT)
     val declaration = VariableDeclaration(i, Number(0))
     val increment = Assignment(i, Addition(i, Number(1)))
-    val loop = Loop(LessThan(i, Multiplication(n, Number(1000))), increment)
+    val loop = Loop(LessThan(i, Multiplication(n, Number(LOOP_ITERATION_MULTIPLIER))), increment)
     BrboFunction(
       identifier = USE_FUNCTION_NAME,
       returnType = BrboType.VOID,
