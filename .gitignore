@@ -11,6 +11,7 @@ src/main/python/*.json
 fuzzer-out/
 bin/
 bin-instr/
+*_fuzzing.json
 *QFuzzDriver.java
 
 # Intellij
