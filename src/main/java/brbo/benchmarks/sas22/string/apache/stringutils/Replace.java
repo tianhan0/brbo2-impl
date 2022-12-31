@@ -3,31 +3,28 @@ package brbo.benchmarks.sas22.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class Replace extends Common {
-  void execute(int text, int searchString, int replacement, int max) {
-    if (text <= 0 || searchString <= 0 || max <= 0 || replacement <= 0) {
+  void execute(int[] text, int searchString, int replacement, int max) {
+    if (arraySum(text) <= 0 || searchString <= 0 || max <= 0 || replacement <= 0) {
       return;
     }
-    int dummy = 0;
-    int start = 0;
-    int end = ndInt2(start, text - 1);
     int R = 0;
-    mostPreciseBound(R <= text);
-    lessPreciseBound(R <= MAX * text + MAX);
-    int replLength = searchString;
-    int buf = 0;
-    while (end != text - 1) {
-      buf += end - start;
-      R = R + (end - start);
-      buf += replacement;
-      // R = R + replacement;
-      start = end + replLength;
-      max--;
-      if (max == 0) {
-        break;
+    mostPreciseBound(R <= arraySum(text));
+    lessPreciseBound(R <= MAX * arraySum(text) + MAX);
+    int chunk = 0;
+    for (int i = 0; i < arrayLength(text);) {
+      chunk = arrayRead(text, i);
+      R = R + chunk;
+      if (i + 1 < arrayLength(text)) {
+        chunk = arrayRead(text, i + 1);
+        // R = R + replacement
+        max--;
+        if (max == 0) {
+          break;
+        }
+        i += 2;
+      } else {
+        i++;
       }
-      end = ndInt2(start, text - 1);
     }
-    buf += text - start;
-    R = R + (text - start);
   }
 }

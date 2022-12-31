@@ -3,8 +3,8 @@ package brbo.benchmarks.sas22.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class Join2 extends Common {
-  void execute(int n) {
-    if (n <= 0) {
+  void execute(int n, int[] choices) {
+    if (n <= 0 || arrayLength(choices) < n) {
       return;
     }
     int iterator = n;
@@ -17,14 +17,16 @@ abstract public class Join2 extends Common {
       return;
     }
 
-    if (ndBool2(iterator)) {
+    int choice = arrayRead(choices, iterator);
+    if (choice > BOOLEAN_SEPARATOR) {
       buf++;
       R = R + 1;
     }
     while (iterator > 0) {
       buf++;
       R = R + 1;
-      if (ndBool2(iterator)) {
+      choice = arrayRead(choices, iterator);
+      if (choice > BOOLEAN_SEPARATOR) {
         buf++;
         R = R + 1;
       }

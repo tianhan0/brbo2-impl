@@ -3,8 +3,15 @@ package brbo.benchmarks.sas22.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class SplitWorker2 extends Common {
-  void execute(int str, int separatorChars, int max, boolean preserveAllTokens) {
-    if (str <= 0 || max <= 0 || separatorChars < 0) {
+  void execute(int str,
+               int separatorChars,
+               int max,
+               boolean preserveAllTokens,
+               int[] choices1,
+               int[] choices2,
+               int[] choices3) {
+    if (str <= 0 || max <= 0 || separatorChars < 0 ||
+        arrayLength(choices1) < str || arrayLength(choices2) < str || arrayLength(choices3) < str) {
       return;
     }
     int R = 0;
@@ -18,7 +25,7 @@ abstract public class SplitWorker2 extends Common {
     boolean lastMatch = false;
     if (separatorChars == 0) {
       while (i < str) {
-        if (ndBool2(i)) {
+        if (arrayRead(choices1, i) > BOOLEAN_SEPARATOR) {
           if (match || preserveAllTokens) {
             lastMatch = true;
             if (sizePlus1 == max) {
@@ -41,7 +48,7 @@ abstract public class SplitWorker2 extends Common {
     } else {
       if (separatorChars == 1) {
         while (i < str) {
-          if (ndBool2(i)) {
+          if (arrayRead(choices2, i) > BOOLEAN_SEPARATOR) {
             if (match || preserveAllTokens) {
               lastMatch = true;
               if (sizePlus1 == max) {
@@ -63,7 +70,7 @@ abstract public class SplitWorker2 extends Common {
         }
       } else {
         while (i < str) {
-          if (ndBool2(i)) {
+          if (arrayRead(choices3, i) > BOOLEAN_SEPARATOR) {
             if (match || preserveAllTokens) {
               lastMatch = true;
               if (sizePlus1 == max) {

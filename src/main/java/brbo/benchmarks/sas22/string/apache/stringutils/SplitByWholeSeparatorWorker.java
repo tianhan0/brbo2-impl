@@ -3,48 +3,33 @@ package brbo.benchmarks.sas22.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class SplitByWholeSeparatorWorker extends Common {
-  void execute(int str, int separator, int max, boolean preserveAllTokens) {
-    if (str <= 0 || separator <= 0 || max <= 0) {
+  void execute(int[] str,
+               int[] isSeparator,
+               int separator,
+               int max,
+               boolean preserveAllTokens) {
+    if (arraySum(str) <= 0 || separator <= 0 || max <= 0) {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= str);
-    lessPreciseBound(R <= MAX * str + MAX);
-    int substrings = 0;
+    mostPreciseBound(R <= arraySum(str));
+    lessPreciseBound(R <= MAX * arraySum(str) + MAX);
     int numberOfStrings = 0;
-    int beg = 0;
-    int end = 0;
-    while (end != str - 1) {
-      end = ndInt2(beg, str - 1);
-      if (end != str - 1) {
-        if (end > beg) {
-          numberOfStrings++;
-          if (numberOfStrings == max) {
-            end = str;
-            substrings += str - beg;
-            R = R + (str - beg);
-          } else {
-            substrings += end - beg;
-            R = R + (end - beg);
-            beg = end + separator;
-          }
-        } else {
-          if (preserveAllTokens) {
-            numberOfStrings++;
-            if (numberOfStrings == max) {
-              end = str;
-              substrings += str - beg;
-              R = R + (str - beg);
-            } else {
-              ;
-            }
-          }
-          beg = end + separator;
-        }
+    int chunk = 0;
+    int isSeparatorChunk = 0;
+    for (int i = 0; i < arrayLength(str); i++) {
+      chunk = arrayRead(str, i);
+      if (numberOfStrings >= max) {
+        R = R + chunk;
+        continue;
+      }
+      isSeparatorChunk = arrayRead(isSeparator, i);
+      if (isSeparatorChunk > BOOLEAN_SEPARATOR) {
+        // This chunk is a separator
+        numberOfStrings++;
       } else {
-        substrings += str - beg;
-        R = R + (str - beg);
-        end = str;
+        // This chunk is not a separator
+        R = R + chunk;
       }
     }
   }

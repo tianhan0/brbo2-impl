@@ -3,8 +3,8 @@ package brbo.benchmarks.sas22.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class SplitWorker extends Common {
-  void execute(int str, boolean preserveAllTokens) {
-    if (str <= 0) {
+  void execute(int str, boolean preserveAllTokens, int[] choices) {
+    if (str <= 0 || arrayLength(choices) < str) {
       return;
     }
     int R = 0;
@@ -16,7 +16,7 @@ abstract public class SplitWorker extends Common {
     boolean match = false;
     boolean lastMatch = false;
     while (i < str) {
-      if (ndBool2(i)) {
+      if (arrayRead(choices, i) > BOOLEAN_SEPARATOR) {
         if (match || preserveAllTokens) {
           list += i - start;
           R = R + (i - start);
