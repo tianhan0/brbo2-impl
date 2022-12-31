@@ -198,7 +198,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |  void use(int n)
         |  {
         |    int i = 0;
-        |    while (i < (n * 1000))
+        |    while (i < (n * 1))
         |    {
         |      i = i + 1;
         |    }

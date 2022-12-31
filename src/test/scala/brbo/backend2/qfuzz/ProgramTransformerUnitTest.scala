@@ -45,7 +45,7 @@ object ProgramTransformerUnitTest {
 
   private val transformationTests = List(
     TestCase("Test 01", test01,
-      """class Test {
+      s"""class Test {
         |  int execute(int n, int INDEX_VARIABLE)
         |  {
         |    int USE_COUNT = 0;
@@ -111,14 +111,14 @@ object ProgramTransformerUnitTest {
         |  void use(int n)
         |  {
         |    int i = 0;
-        |    while (i < (n * 1000))
+        |    while (i < (n * ${ProgramTransformer.LOOP_ITERATION_MULTIPLIER}))
         |    {
         |      i = i + 1;
         |    }
         |  }
         |}""".stripMargin),
     TestCase("Test 02", test02,
-      """class Test {
+      s"""class Test {
         |  int execute(int[] array, int INDEX_VARIABLE)
         |  {
         |    int USE_COUNT = 0;
@@ -154,7 +154,7 @@ object ProgramTransformerUnitTest {
         |  void use(int n)
         |  {
         |    int i = 0;
-        |    while (i < (n * 1000))
+        |    while (i < (n * ${ProgramTransformer.LOOP_ITERATION_MULTIPLIER}))
         |    {
         |      i = i + 1;
         |    }
