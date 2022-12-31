@@ -144,10 +144,9 @@ if __name__ == "__main__":
         decomposed_file = decomposed_file_path / java_file.name
         actual_decomposed_file = decomposed_file_path / f"{java_file.name}.actual"
         if actual_decomposed_file.exists():
-            to_verify = actual_decomposed_file
-        else:
-            to_verify = decomposed_file
+            print("Overwrite the existing decomposition")
+            run_command(["mv", actual_decomposed_file, decomposed_file], cwd=brbo2_root, dry=args.dry)
         run_verification = verification_command(
-            decomposed_file=to_verify, icra=args.icra
+            decomposed_file=decomposed_file, icra=args.icra
         )
         run_command(command=run_verification, cwd=brbo_root, dry=args.dry)
