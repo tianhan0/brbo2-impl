@@ -161,11 +161,17 @@ object Executor {
     val partitionLines = lines.filter(line => line.contains("+partition"))
     val interestingLines =
       if (partitionLines.nonEmpty) {
-        // Most interesting inputs
+        // Inputs that create new partitions w.r.t. the total runtime "cost"
         partitionLines
       } else {
-        // Less interesting inputs
-        lines.filter(line => line.contains("+delta"))
+        val deltaLines = lines.filter(line => line.contains("+delta"))
+        if (deltaLines.nonEmpty) {
+          // Inputs that have the same number of partition (the max partition seen so far), but the distance between partitions is larger
+          deltaLines
+        } else {
+          // Inputs that lead to a new edge in the control flow graph (i.e., it increases the edge coverage)
+          lines.filter(line => line.contains("+cov"))
+        }
       }
     interestingLines.map({
       line =>
