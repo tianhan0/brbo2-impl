@@ -26,14 +26,15 @@ public abstract class TemplateEngine2 extends Common {
     int tag = 0;
     while (i < templateds) {
       j = 0;
-      chunk = arrayRead(text, j);
-      R = R + chunk;
-      j++;
-      while (j + 1 < arrayLength(text)) {
-        tag = arrayRead(text, j);
-        chunk = arrayRead(text, j + 1);
+      while (j < arrayLength(text)) {
+        chunk = arrayRead(text, j);
         R = R + chunk;
-        j += 2;
+        if (j + 1 < arrayLength(text)) {
+          tag = arrayRead(text, j + 1);
+          j += 2;
+        } else {
+          j++;
+        }
       }
       i++;
       R = R + separator;
