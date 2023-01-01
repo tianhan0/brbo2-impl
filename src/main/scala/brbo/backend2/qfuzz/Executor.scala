@@ -94,19 +94,19 @@ object Executor {
     Await.result(future, Duration.Inf)
     val pathCostFileContents = BrboMain.readFromFile(s"$FUZZ_OUT_DIRECTORY/afl/path_costs.csv")
     logger.info(s"QFuzz output:\n$pathCostFileContents")
-    val interestingInputFiles = interestingInputFileNames(pathCostFileContents)
-    logger.info(s"Interesting input files:\n${interestingInputFiles.mkString("\n")}")
+    val rankedInputFiles = rankedInputFileNames(pathCostFileContents)
+    logger.info(s"Ranked input files:\n${rankedInputFiles.mkString("\n")}")
 
     logger.info(s"Step 5: Parse the interesting inputs")
     val listOfInputs: Iterable[List[Int]] = FileUtils.listFiles(new File(FUZZ_OUT_DIRECTORY), null, true).asScala.flatMap({
       file =>
         val absolutePath = file.getAbsolutePath
         if (absolutePath.contains(s"$FUZZ_OUT_DIRECTORY/afl/queue/id") && file.isFile) {
-          if (interestingInputFiles.exists(interestingInput => absolutePath.contains(interestingInput))) {
+          if (rankedInputFiles.exists(interestingInput => absolutePath.contains(interestingInput))) {
             logger.info(s"Read shorts that are between [${DriverGenerator.MIN_INTEGER}, ${DriverGenerator.MAX_INTEGER}] from $absolutePath")
             val shorts = parseBytesToShorts(absolutePath)
             val inputs = wrapShorts(shorts)
-            // logger.info(s"Inputs: $inputs")
+            logger.info(s"Interesting inputs: $inputs")
             Some(inputs)
           } else {
             logger.info(s"Not an interesting input: $absolutePath")
@@ -119,11 +119,11 @@ object Executor {
     })
     val inputFilePath: String = getInputFilePath(sourceFilePath)
     val existingInputs: List[List[BrboValue]] = Nil // readExistingInputs(inputFilePath)
-    val newInterestingInputs = listOfInputs.map({ inputs => toInputValues(inputs, program.mainFunction.parameters) }).toList
-    newInterestingInputs.foreach({
+    val newInterestingInputs = listOfInputs.flatMap({ inputs => toInputValues(inputs, program.mainFunction.parameters) }).toList
+    /*newInterestingInputs.foreach({
       newInterestingInput =>
         logger.info(s"New interesting input: ${newInterestingInput.map(v => v.printToIR()).mkString(", ")}")
-    })
+    })*/
     val combinedInputs: List[List[BrboValue]] = existingInputs ::: newInterestingInputs
     if (arguments.getDryRun) {
       logger.info(s"Step 5: Dry run. Not write interesting inputs into Json files")
@@ -156,27 +156,30 @@ object Executor {
       .toList.sortWith({ case (list1, list2) => toString(list1) < toString(list2) })
   }
 
-  private def interestingInputFileNames(pathCostFileContents: String): Array[String] = {
-    val lines = pathCostFileContents.split("\n")
-    val partitionLines = lines.filter(line => line.contains("+partition"))
-    val interestingLines =
-      if (partitionLines.nonEmpty) {
-        // Inputs that create new partitions w.r.t. the total runtime "cost"
-        partitionLines
-      } else {
-        val deltaLines = lines.filter(line => line.contains("+delta"))
-        if (deltaLines.nonEmpty) {
-          // Inputs that have the same number of partition (the max partition seen so far), but the distance between partitions is larger
-          deltaLines
-        } else {
-          // Inputs that lead to a new edge in the control flow graph (i.e., it increases the edge coverage)
-          lines.filter(line => line.contains("+cov"))
-        }
-      }
-    interestingLines.map({
+  private def rankedInputFileNames(pathCostFileContents: String): Array[String] = {
+    val lines = pathCostFileContents.split("\n").filter({
+      line => line != "Time(sec); File; #Partitions; MinDelta; AvgPartitionValues"
+    })
+    lines.map({
       line =>
-        val items = line.split(";")
-        items(1).trim
+        var score = 0
+        // Inputs that create new partitions w.r.t. the total runtime "cost"
+        if (line.contains("+partition"))
+          score += 8
+        // Inputs that have the same number of partition as the max partition seen so far, but the distance between partitions is larger
+        if (line.contains("+delta"))
+          score += 4
+        // Inputs that lead to a new edge in the control flow graph (i.e., it increases the edge coverage)
+        if (line.contains("+cov"))
+          score += 2
+        val fileName = line.split(";")(1).trim
+        (fileName, score)
+    }).sortWith({
+      case ((_, score1), (_, score2)) => score1 > score2
+    }).map({
+      case (fileName, _) => fileName
+    }).filter({
+      fileName => !fileName.contains("orig:") // Ignore the input seed (in case the seed does not provide sufficient inputs)
     })
   }
 
@@ -194,23 +197,29 @@ object Executor {
     s"${FilenameUtils.getFullPath(sourceFilePath)}$fileName"
   }
 
-  def toInputValues(inputArray: List[Int], parameters: List[Identifier]): List[BrboValue] = {
-    val (_, inputValues) = parameters.foldLeft(0, Nil: List[BrboValue])({
-      case ((indexSoFar, inputValues), parameter) =>
-        // Keep in sync with the initializations of input values in DriverGenerator.declarationsAndInitializations
-        parameter.typ match {
-          case BrboType.INT =>
-            (indexSoFar + 1, Number(inputArray(indexSoFar)) :: inputValues)
-          case BrboType.BOOL =>
-            (indexSoFar + 1, Bool(inputArray(indexSoFar) > DriverGenerator.HALF_MAX_VALUE) :: inputValues)
-          case BrboType.ARRAY(BrboType.INT) =>
-            val arrayValue: List[Int] = inputArray.slice(indexSoFar, indexSoFar + DriverGenerator.ARRAY_SIZE)
-            val inputValue = BrboArray(values = arrayValue.map(v => Number(v)), innerType = BrboType.INT)
-            (indexSoFar + DriverGenerator.ARRAY_SIZE, inputValue :: inputValues)
-          case _ => throw new Exception(s"Not support a parameter of type ${parameter.typ}")
-        }
-    })
-    inputValues.reverse
+  def toInputValues(inputArray: List[Int], parameters: List[Identifier]): Option[List[BrboValue]] = {
+    try {
+      val (_, inputValues) = parameters.foldLeft(0, Nil: List[BrboValue])({
+        case ((indexSoFar, inputValues), parameter) =>
+          // Keep in sync with the initializations of input values in DriverGenerator.declarationsAndInitializations
+          parameter.typ match {
+            case BrboType.INT =>
+              (indexSoFar + 1, Number(inputArray(indexSoFar)) :: inputValues)
+            case BrboType.BOOL =>
+              (indexSoFar + 1, Bool(inputArray(indexSoFar) > DriverGenerator.HALF_MAX_VALUE) :: inputValues)
+            case BrboType.ARRAY(BrboType.INT) =>
+              val arrayValue: List[Int] = inputArray.slice(indexSoFar, indexSoFar + DriverGenerator.ARRAY_SIZE)
+              val inputValue = BrboArray(values = arrayValue.map(v => Number(v)), innerType = BrboType.INT)
+              (indexSoFar + DriverGenerator.ARRAY_SIZE, inputValue :: inputValues)
+            case _ => throw new Exception(s"Not support a parameter of type ${parameter.typ}")
+          }
+      })
+      Some(inputValues.reverse)
+    } catch {
+      case _: IndexOutOfBoundsException =>
+        // Sometimes insufficient inputs may be considered as interesting
+        None
+    }
   }
 
   private def prepareDirectory(directory: String): Unit = {
