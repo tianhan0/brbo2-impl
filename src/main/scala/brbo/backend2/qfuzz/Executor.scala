@@ -97,41 +97,25 @@ object Executor {
     val rankedInputFiles = rankedInputFileNames(pathCostFileContents)
     logger.info(s"Ranked input files:\n${rankedInputFiles.mkString("\n")}")
 
-    logger.info(s"Step 5: Parse the interesting inputs")
-    val listOfInputs: Iterable[List[Int]] = FileUtils.listFiles(new File(FUZZ_OUT_DIRECTORY), null, true).asScala.flatMap({
-      file =>
-        val absolutePath = file.getAbsolutePath
-        if (absolutePath.contains(s"$FUZZ_OUT_DIRECTORY/afl/queue/id") && file.isFile) {
-          if (rankedInputFiles.exists(interestingInput => absolutePath.contains(interestingInput))) {
-            logger.info(s"Read shorts that are between [${DriverGenerator.MIN_INTEGER}, ${DriverGenerator.MAX_INTEGER}] from $absolutePath")
-            val shorts = parseBytesToShorts(absolutePath)
-            val inputs = wrapShorts(shorts)
-            logger.info(s"Interesting inputs: $inputs")
-            Some(inputs)
-          } else {
-            logger.info(s"Not an interesting input: $absolutePath")
-            None
-          }
-        } else {
-          logger.info(s"Not an input file: $absolutePath (Is file? ${file.isFile})")
-          None
-        }
+    logger.info(s"Step 5: Parse the QFuzz-generated inputs")
+    val listOfInputs: Iterable[List[Int]] = rankedInputFiles.map({
+      inputFile =>
+        val absolutePath = inputFile
+        logger.info(s"Read shorts that are between [${DriverGenerator.MIN_INTEGER}, ${DriverGenerator.MAX_INTEGER}] from $absolutePath")
+        val shorts = parseBytesToShorts(absolutePath)
+        val inputs = wrapShorts(shorts)
+        logger.info(s"Inputs: $inputs")
+        inputs
     })
     val inputFilePath: String = getInputFilePath(sourceFilePath)
-    val existingInputs: List[List[BrboValue]] = Nil // readExistingInputs(inputFilePath)
-    val newInterestingInputs = listOfInputs.flatMap({ inputs => toInputValues(inputs, program.mainFunction.parameters) }).toList
-    /*newInterestingInputs.foreach({
-      newInterestingInput =>
-        logger.info(s"New interesting input: ${newInterestingInput.map(v => v.printToIR()).mkString(", ")}")
-    })*/
-    val combinedInputs: List[List[BrboValue]] = existingInputs ::: newInterestingInputs
+    val listOfInputValues = listOfInputs.flatMap({ inputs => toInputValues(inputs, program.mainFunction.parameters) }).toList
     if (arguments.getDryRun) {
-      logger.info(s"Step 5: Dry run. Not write interesting inputs into Json files")
+      logger.info(s"Step 6: Dry run. Not write interesting inputs into Json files")
     } else {
-      if (combinedInputs.nonEmpty) {
-        logger.info(s"Step 5: Write interesting inputs into file $inputFilePath")
+      if (listOfInputValues.nonEmpty) {
+        logger.info(s"Step 6: Write interesting inputs (with descending interestingness) into file $inputFilePath")
         val allInputsJson = JsArray(
-          deduplicate(combinedInputs).map({
+          listOfInputValues.map({
             inputs =>
               logger.info(s"Interesting input: ${inputs.map(v => v.printToIR()).mkString(", ")}")
               JsArray(inputs.map(input => InputParser.toJson(input)))
@@ -139,11 +123,11 @@ object Executor {
         )
         BrboMain.writeToFile(path = inputFilePath, content = Json.prettyPrint(allInputsJson))
       } else {
-        logger.info(s"Step 5: No interesting inputs")
+        logger.info(s"Step 6: No interesting inputs")
       }
     }
 
-    logger.info(s"Step 6: Clean up the generated files when running QFuzz")
+    logger.info(s"Step 7: Clean up the generated files when running QFuzz")
     FileUtils.deleteDirectory(new File(FUZZ_OUT_DIRECTORY))
     FileUtils.deleteDirectory(new File(BINARY_PATH))
     FileUtils.deleteDirectory(new File(INSTRUMENTED_BINARY_PATH))
