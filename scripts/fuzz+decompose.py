@@ -1,11 +1,12 @@
 import argparse
 import subprocess
 import glob
+import getpass
 from pathlib import Path
 
 
 def run_command(command, cwd, dry):
-    print(f"Execute command {' '.join(command)} under {cwd}")
+    print(f"{getpass.getuser()}@{cwd}$ {' '.join(command)}")
     if dry:
         return
     result = subprocess.run(
@@ -19,14 +20,14 @@ def qfuzz_command(timeout, input, qfuzz):
         "./scripts/run.sh",
         "fuzz",
         "--timeout",
-        f"{timeout}",
+        str(timeout),
         "--directory",
-        f"{input}",
-        "-o",
-        "src/main/java/brbo/fuzz/",
-        "--dry",
+        str(input),
+        # "-o",
+        # "src/main/java/brbo/fuzz/",
+        # "--dry",
         "--qfuzz",
-        f"{qfuzz}",
+        str(qfuzz),
     ]
 
 
@@ -35,16 +36,16 @@ def decomposition_command(threads, samples, input):
         "./scripts/run.sh",
         "decompose",
         "--threads",
-        f"{threads}",
+        str(threads),
         "--debug",
         "--algorithm",
         "optics",
         "--parameter",
-        f"{0.1}",
+        str(0.1),
         "--samples",
-        f"{samples}",
+        str(samples),
         "--directory",
-        f"{input}",
+        str(input),
     ]
 
 
@@ -52,11 +53,13 @@ def verification_command(decomposed_file, icra):
     return [
         "./scripts/run_without_deps.sh",
         "--directory",
-        f"{decomposed_file}",
+        str(decomposed_file),
         "--amortize",
         "transparent",
         "--icra-path",
-        f"{icra}",
+        str(icra),
+        "--icra-timeout",
+        "60",
     ]
 
 
@@ -145,7 +148,11 @@ if __name__ == "__main__":
         actual_decomposed_file = decomposed_file_path / f"{java_file.name}.actual"
         if actual_decomposed_file.exists():
             print("Overwrite the existing decomposition")
-            run_command(["mv", actual_decomposed_file, decomposed_file], cwd=brbo2_root, dry=args.dry)
+            run_command(
+                ["mv", str(actual_decomposed_file), str(decomposed_file)],
+                cwd=brbo2_root,
+                dry=args.dry,
+            )
         run_verification = verification_command(
             decomposed_file=decomposed_file, icra=args.icra
         )
