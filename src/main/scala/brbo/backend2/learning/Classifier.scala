@@ -711,7 +711,7 @@ object Classifier {
     }
 
     def areActualSegmentCostsSimilar(segmentClustering: SegmentClustering,
-                                     differentIfNoSegmentAfterDecomposition: Boolean,
+                                     diffIfNoSegmentAfterDecomposition: Boolean,
                                      removeLastEmptySegmentAfterDecomposition: Boolean,
                                      stringBuilder: mutable.StringBuilder): Boolean = {
       val expectedDecomposition: List[List[Segment]] = {
@@ -727,8 +727,8 @@ object Classifier {
       val segments: List[Segment] = expectedDecomposition.flatten
       // stringBuilder.append(s"Final ghost state after trace decomposition: ${ghostStore.print()}\n")
       if (segments.forall(segment => segment.isEmpty)) {
-        stringBuilder.append(s"Empty segments are vacuously similar to each other. Return ${!differentIfNoSegmentAfterDecomposition}.\n")
-        return !differentIfNoSegmentAfterDecomposition
+        stringBuilder.append(s"Empty segments are vacuously similar to each other. Return ${!diffIfNoSegmentAfterDecomposition}.\n")
+        return !diffIfNoSegmentAfterDecomposition
       }
       val actualDecomposition: List[List[Segment]] = segmentClustering.clusterSimilarSegments(trace, segments).map({
         list => list.sortWith({ case (s1, s2) => s1.lessThan(s2) })

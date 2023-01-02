@@ -317,7 +317,7 @@ class SegmentClustering(sumWeight: Int,
                          * TODO: Empty segments are vacuously similar to each other, but if a grouping is truly
                          * generalizable to a similar trace, it should not result in all empty segments
                          */
-                        differentIfNoSegmentAfterDecomposition = true,
+                        diffIfNoSegmentAfterDecomposition = true,
 
                         /**
                          * TODO: This is a hack. We want to avoid guarding resets with predicates (which may cause the
