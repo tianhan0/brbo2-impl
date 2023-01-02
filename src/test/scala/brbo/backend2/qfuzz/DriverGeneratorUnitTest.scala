@@ -26,10 +26,10 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |for (int i = 0; i < ARRAY_SIZE && 1 + i < values.size(); i++) {
         |  b[i] = values.get(1 + i);
         |}
-        |for (int i = 0; i < ARRAY_SIZE && 9 + i < values.size(); i++) {
-        |  c[i] = values.get(9 + i);
+        |for (int i = 0; i < ARRAY_SIZE && 6 + i < values.size(); i++) {
+        |  c[i] = values.get(6 + i);
         |}
-        |d = values.get(17) > 16383;
+        |d = values.get(11) > 16383;
         |System.out.println("a: " + a);
         |System.out.println("b: " + Arrays.toString(b));
         |System.out.println("c: " + Arrays.toString(c));
@@ -56,7 +56,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |import java.util.List;
         |
         |public class TestQFuzzDriver {
-        |  public final static int ARRAY_SIZE = 8;
+        |  public final static int ARRAY_SIZE = 5;
         |  private final static short MAX_INTEGER = 30;
         |  private final static short MIN_INTEGER = 1;
         |  private final static int MAX_NUMBER_OF_USES_TO_TRACK = 1000;
@@ -101,8 +101,8 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |      for (int i = 0; i < ARRAY_SIZE && 1 + i < values.size(); i++) {
         |        array[i] = values.get(1 + i);
         |      }
-        |      b = values.get(9);
-        |      c = values.get(10) > 16383;
+        |      b = values.get(6);
+        |      c = values.get(7) > 16383;
         |    } catch (IndexOutOfBoundsException exception) {
         |      long[] actualObservations = new long[0];
         |      PartitionSet clusters = PartitionSet.createFromObservations(epsilon, actualObservations, clusterAlgorithm);

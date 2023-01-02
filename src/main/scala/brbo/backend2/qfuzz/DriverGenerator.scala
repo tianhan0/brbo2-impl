@@ -8,7 +8,7 @@ import brbo.common.string.StringFormatUtils
 import brbo.frontend.TargetProgram
 
 object DriverGenerator {
-  val ARRAY_SIZE = 8
+  val ARRAY_SIZE = 5
   val MAX_INTEGER = 30
   val MIN_INTEGER = 1
   val HALF_MAX_VALUE: Int = java.lang.Short.MAX_VALUE / 2

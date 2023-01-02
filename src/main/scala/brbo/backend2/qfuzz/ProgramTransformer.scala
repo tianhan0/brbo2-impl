@@ -15,7 +15,8 @@ object ProgramTransformer {
   private val returnUseCountVariable = Return(expression = Some(useCountVariable))
   private val specialVariables = List(indexVariable, useCountVariable)
 
-  private val MAX_LOOP_ITERATIONS = 8
+  private val MIN_LOOP_ITERATIONS = 2
+  private val MAX_LOOP_ITERATIONS = 3
 
   def transform(program: BrboProgram): BrboProgram = {
     val mainFunction = program.mainFunction
@@ -40,13 +41,18 @@ object ProgramTransformer {
         }).toMap
     val newBody = BrboAstUtils.replaceCommands(mainFunctionBody, replacements = replacements, omitResetPlaceHolders = false)
 
-    // Early return if any variable used in loop conditions is beyond `MAX_LOOP_ITERATIONS`, to avoid executing a loop
-    // for too many times, which makes it expensive to choose segments.
+    // Early return if any variable used in loop conditions is not in [MIN_LOOP_ITERATIONS, MAX_LOOP_ITERATIONS],
+    // to avoid executing a loop for too many (which makes it expensive to choose segments) or too few times (which ???).
     val loopConditionals = BrboAstUtils.getLoopConditionals(mainFunctionBody)
     val earlyReturns: List[BrboAst] = mainFunction.parameters.filter({
       identifier => identifier.typ == BrboType.INT && loopConditionals.exists({ e => e.getUses.contains(identifier) })
     }).map({
-      identifier => ITE(LessThan(Number(MAX_LOOP_ITERATIONS), identifier), returnUseCountVariable, Skip())
+      identifier =>
+        val goodIterationNumber = And(
+          BrboExprUtils.lessThanOrEqualTo(identifier, Number(MAX_LOOP_ITERATIONS)),
+          BrboExprUtils.greaterThanOrEqualTo(identifier, Number(MIN_LOOP_ITERATIONS))
+        )
+        ITE(goodIterationNumber, Skip(), returnUseCountVariable)
     })
 
     val newBody2 = BrboAstUtils.insert(newBody, toInsert = VariableDeclaration(useCountVariable, Number(0)) :: earlyReturns, operation = PrependOperation)

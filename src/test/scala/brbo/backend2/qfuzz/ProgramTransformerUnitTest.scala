@@ -46,119 +46,120 @@ object ProgramTransformerUnitTest {
   private val transformationTests = List(
     TestCase("Test 01", test01,
       s"""class Test {
-        |  int execute(int n, int INDEX_VARIABLE)
-        |  {
-        |    int USE_COUNT = 0;
-        |    if (8 < n)
-        |    {
-        |      return USE_COUNT;
-        |    }
-        |    else
-        |    {
-        |      ;
-        |    }
-        |    if (n < 5)
-        |    {
-        |      return USE_COUNT;
-        |    }
-        |    else
-        |    {
-        |      ;
-        |    }
-        |    int R = 0;
-        |    int i = 0;
-        |    while (i < n)
-        |    {
-        |      use(5);
-        |      USE_COUNT = USE_COUNT + 1;
-        |      INDEX_VARIABLE = INDEX_VARIABLE - 1;
-        |      if (INDEX_VARIABLE == 0)
-        |      {
-        |        return USE_COUNT;
-        |      }
-        |      else
-        |      {
-        |        ;
-        |      }
-        |      i = i + 1;
-        |    }
-        |    return USE_COUNT;
-        |  }
-        |  int arrayRead(int[] array, int index) { return array[index]; }
-        |  int arrayLength(int[] array) { return array.length; }
-        |  int arraySum(int[] array) {
-        |    int sum = 0;
-        |    for (int element : array) {
-        |      sum += element;
-        |    }
-        |    return sum;
-        |  }
-        |  void mostPreciseBound(boolean assertion) {}
-        |  void lessPreciseBound(boolean assertion) {}
-        |  boolean ndBool2(int... values) {
-        |    int sum = 0;
-        |    for (int value : values) {
-        |      sum += value;
-        |    }
-        |    // mod 2 results in a higher chance of producing an alternative value, when compared with mod 3
-        |    return sum % 2 == 0;
-        |  }
-        |  int ndInt2(int lower, int upper) {
-        |    if (upper < lower)
-        |      System.exit(-1);
-        |    return upper > lower ? lower + 1 : upper;
-        |  }
-        |  void use(int n)
-        |  {
-        |    int i = 0;
-        |    while (i < (n * ${ProgramTransformer.LOOP_ITERATION_MULTIPLIER}))
-        |    {
-        |      i = i + 1;
-        |    }
-        |  }
-        |}""".stripMargin),
+         |  int execute(int n, int INDEX_VARIABLE)
+         |  {
+         |    int USE_COUNT = 0;
+         |    if (((n < 3) || (n == 3)) && !((n < 2)))
+         |    {
+         |      ;
+         |    }
+         |    else
+         |    {
+         |      return USE_COUNT;
+         |    }
+         |    if (n < 5)
+         |    {
+         |      return USE_COUNT;
+         |    }
+         |    else
+         |    {
+         |      ;
+         |    }
+         |    int R = 0;
+         |    int i = 0;
+         |    while (i < n)
+         |    {
+         |      use(5);
+         |      USE_COUNT = USE_COUNT + 1;
+         |      INDEX_VARIABLE = INDEX_VARIABLE - 1;
+         |      if (INDEX_VARIABLE == 0)
+         |      {
+         |        return USE_COUNT;
+         |      }
+         |      else
+         |      {
+         |        ;
+         |      }
+         |      i = i + 1;
+         |    }
+         |    return USE_COUNT;
+         |  }
+         |  int arrayRead(int[] array, int index) { return array[index]; }
+         |  int arrayLength(int[] array) { return array.length; }
+         |  int arraySum(int[] array) {
+         |    int sum = 0;
+         |    for (int element : array) {
+         |      sum += element;
+         |    }
+         |    return sum;
+         |  }
+         |  void mostPreciseBound(boolean assertion) {}
+         |  void lessPreciseBound(boolean assertion) {}
+         |  boolean ndBool2(int... values) {
+         |    int sum = 0;
+         |    for (int value : values) {
+         |      sum += value;
+         |    }
+         |    // mod 2 results in a higher chance of producing an alternative value, when compared with mod 3
+         |    return sum % 2 == 0;
+         |  }
+         |  int ndInt2(int lower, int upper) {
+         |    if (upper < lower)
+         |      System.exit(-1);
+         |    return upper > lower ? lower + 1 : upper;
+         |  }
+         |  void use(int n)
+         |  {
+         |    int i = 0;
+         |    while (i < (n * 1))
+         |    {
+         |      i = i + 1;
+         |    }
+         |  }
+         |}
+         |""".stripMargin),
     TestCase("Test 02", test02,
       s"""class Test {
-        |  int execute(int[] array, int INDEX_VARIABLE)
-        |  {
-        |    int USE_COUNT = 0;
-        |    int x = arrayLength(array);
-        |    x = arraySum(array);
-        |    x = arrayRead(array, 3);
-        |    return USE_COUNT;
-        |  }
-        |  int arrayRead(int[] array, int index) { return array[index]; }
-        |  int arrayLength(int[] array) { return array.length; }
-        |  int arraySum(int[] array) {
-        |    int sum = 0;
-        |    for (int element : array) {
-        |      sum += element;
-        |    }
-        |    return sum;
-        |  }
-        |  void mostPreciseBound(boolean assertion) {}
-        |  void lessPreciseBound(boolean assertion) {}
-        |  boolean ndBool2(int... values) {
-        |    int sum = 0;
-        |    for (int value : values) {
-        |      sum += value;
-        |    }
-        |    // mod 2 results in a higher chance of producing an alternative value, when compared with mod 3
-        |    return sum % 2 == 0;
-        |  }
-        |  int ndInt2(int lower, int upper) {
-        |    if (upper < lower)
-        |      System.exit(-1);
-        |    return upper > lower ? lower + 1 : upper;
-        |  }
-        |  void use(int n)
-        |  {
-        |    int i = 0;
-        |    while (i < (n * ${ProgramTransformer.LOOP_ITERATION_MULTIPLIER}))
-        |    {
-        |      i = i + 1;
-        |    }
-        |  }
-        |}""".stripMargin),
+         |  int execute(int[] array, int INDEX_VARIABLE)
+         |  {
+         |    int USE_COUNT = 0;
+         |    int x = arrayLength(array);
+         |    x = arraySum(array);
+         |    x = arrayRead(array, 3);
+         |    return USE_COUNT;
+         |  }
+         |  int arrayRead(int[] array, int index) { return array[index]; }
+         |  int arrayLength(int[] array) { return array.length; }
+         |  int arraySum(int[] array) {
+         |    int sum = 0;
+         |    for (int element : array) {
+         |      sum += element;
+         |    }
+         |    return sum;
+         |  }
+         |  void mostPreciseBound(boolean assertion) {}
+         |  void lessPreciseBound(boolean assertion) {}
+         |  boolean ndBool2(int... values) {
+         |    int sum = 0;
+         |    for (int value : values) {
+         |      sum += value;
+         |    }
+         |    // mod 2 results in a higher chance of producing an alternative value, when compared with mod 3
+         |    return sum % 2 == 0;
+         |  }
+         |  int ndInt2(int lower, int upper) {
+         |    if (upper < lower)
+         |      System.exit(-1);
+         |    return upper > lower ? lower + 1 : upper;
+         |  }
+         |  void use(int n)
+         |  {
+         |    int i = 0;
+         |    while (i < (n * ${ProgramTransformer.LOOP_ITERATION_MULTIPLIER}))
+         |    {
+         |      i = i + 1;
+         |    }
+         |  }
+         |}""".stripMargin),
   )
 }
