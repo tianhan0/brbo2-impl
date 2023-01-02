@@ -64,7 +64,7 @@ def verification_command(decomposed_file, icra):
 
 
 if __name__ == "__main__":
-    # Usage: ~/brbo2-impl$ python3 scripts/fuzz+decompose.py  --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java
+    # Usage: ~/brbo2-impl$ python3 scripts/fuzz+decompose.py  --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java --qfuzz $HOME/qfuzz --brbo2 $HOME/Documents/workspace/brbo2-impl/ --brbo $HOME/Documents/workspace/brbo-impl/
     parser = argparse.ArgumentParser(
         description="Parse bytes from a file into a sequence of shorts."
     )
