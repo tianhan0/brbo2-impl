@@ -51,6 +51,7 @@ object JavacUtils {
       case _: EarlyStopException =>
         logger.trace(s"Early stop when running processor ${processor.toString}")
       case e: Throwable =>
+        logger.fatal(s"Exception during compilation:\n${e.toString}")
         // logger.fatal(s"Exception in running processor ${processor.toString} for source code:\n$sourceCode", e)
         // s"${bytesErr.toString}\n${bytesOut.toString}"
         throw e
