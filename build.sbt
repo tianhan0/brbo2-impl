@@ -36,10 +36,13 @@ libraryDependencies += "tech.tablesaw" % "tablesaw-core" % "0.43.1"
 
 // Add tools.jar such that sbt can find it
 unmanagedJars in Compile ~= {
-  uj: Classpath =>
+  classPath: Classpath =>
     Seq(
       Attributed.blank(file(System.getProperty("java.home").dropRight(3) + "lib/tools.jar")),
-    ) ++ uj
+      Attributed.blank(file(s"${System.getProperty("user.dir")}/lib/deps/japron.jar")),
+      Attributed.blank(file(s"${System.getProperty("user.dir")}/lib/deps/com.microsoft.z3.jar")),
+      Attributed.blank(file(s"${System.getProperty("user.dir")}/lib/deps/kelinci.jar")),
+    ) ++ classPath
 }
 // https://stackoverflow.com/questions/12409847/how-to-add-tools-jar-as-a-dynamic-dependency-in-sbt-is-it-possible/12508163
 
