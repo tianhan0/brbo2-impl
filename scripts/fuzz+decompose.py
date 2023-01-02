@@ -5,6 +5,10 @@ import getpass
 from pathlib import Path
 
 
+NO_DEPENDENCY_SCRIPT = "./scripts/run.sh"
+WITH_DEPENDENCY_SCRIPT = "./scripts/run_deps.sh"
+
+
 def run_command(command, cwd, dry):
     print(f"{getpass.getuser()}@{cwd}$ {' '.join(command)}")
     if dry:
@@ -15,9 +19,9 @@ def run_command(command, cwd, dry):
     print(f"Output: {result.stdout}")
 
 
-def qfuzz_command(timeout, input, qfuzz):
+def qfuzz_command(timeout, input, qfuzz, deps):
     return [
-        "./scripts/run.sh",
+        WITH_DEPENDENCY_SCRIPT if deps else NO_DEPENDENCY_SCRIPT,
         "fuzz",
         "--timeout",
         str(timeout),
@@ -31,9 +35,9 @@ def qfuzz_command(timeout, input, qfuzz):
     ]
 
 
-def decomposition_command(threads, samples, input):
+def decomposition_command(threads, samples, input, deps):
     return [
-        "./scripts/run.sh",
+        WITH_DEPENDENCY_SCRIPT if deps else NO_DEPENDENCY_SCRIPT,
         "decompose",
         "--threads",
         str(threads),
@@ -49,9 +53,9 @@ def decomposition_command(threads, samples, input):
     ]
 
 
-def verification_command(decomposed_file, icra):
+def verification_command(decomposed_file, icra, deps):
     return [
-        "./scripts/run_without_deps.sh",
+        WITH_DEPENDENCY_SCRIPT if deps else NO_DEPENDENCY_SCRIPT,
         "--directory",
         str(decomposed_file),
         "--amortize",
@@ -64,7 +68,13 @@ def verification_command(decomposed_file, icra):
 
 
 if __name__ == "__main__":
-    # Usage: ~/brbo2-impl$ python3 scripts/fuzz+decompose.py  --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java --qfuzz $HOME/qfuzz --brbo2 $HOME/Documents/workspace/brbo2-impl/ --brbo $HOME/Documents/workspace/brbo-impl/
+    """
+    Usage: ~/brbo2-impl$ python3 scripts/fuzz+decompose.py \
+      --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java \
+      --qfuzz $HOME/Documents/workspace/qfuzz/ \
+      --brbo2 $HOME/Documents/workspace/brbo2-impl/ \
+      --brbo $HOME/Documents/workspace/brbo-impl/
+    """
     parser = argparse.ArgumentParser(
         description="Parse bytes from a file into a sequence of shorts."
     )
@@ -112,6 +122,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dry", action="store_true", help="Print the commands without executing them."
     )
+    parser.add_argument(
+        "--deps",
+        action="store_true",
+        default=True,
+        help="Whether to run the script that assumes needing the jar dependencies.",
+    )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
 
@@ -129,9 +145,11 @@ if __name__ == "__main__":
     brbo2_root = Path(args.brbo2).expanduser()
     brbo_root = Path(args.brbo).expanduser()
 
-    run_qfuzz = qfuzz_command(timeout=args.timeout, input=args.input, qfuzz=args.qfuzz)
+    run_qfuzz = qfuzz_command(
+        timeout=args.timeout, input=args.input, qfuzz=args.qfuzz, deps=args.deps
+    )
     run_decomposition = decomposition_command(
-        threads=args.threads, samples=args.samples, input=args.input
+        threads=args.threads, samples=args.samples, input=args.input, deps=args.deps
     )
 
     for java_file in java_files:
@@ -154,6 +172,6 @@ if __name__ == "__main__":
                 dry=args.dry,
             )
         run_verification = verification_command(
-            decomposed_file=decomposed_file, icra=args.icra
+            decomposed_file=decomposed_file, icra=args.icra, deps=args.deps
         )
         run_command(command=run_verification, cwd=brbo_root, dry=args.dry)
