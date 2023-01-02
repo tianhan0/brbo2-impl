@@ -4,6 +4,8 @@ version := "0.1"
 
 scalaVersion := "2.12.12"
 
+mainClass in Compile := Some("brbo.BrboMain")
+
 libraryDependencies += "org.checkerframework" % "checker" % "3.18.0"
 
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
