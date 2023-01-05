@@ -82,7 +82,7 @@ if __name__ == "__main__":
         "--timeout",
         type=int,
         required=False,
-        default=3,
+        default=300,
         help="The timeout for running AFL in QFuzz (in seconds).",
     )
     parser.add_argument(
