@@ -57,7 +57,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |
         |public class TestQFuzzDriver {
         |  public final static int ARRAY_SIZE = 5;
-        |  private final static short MAX_INTEGER = 30;
+        |  private final static short MAX_INTEGER = 1000;
         |  private final static short MIN_INTEGER = 1;
         |  private final static int MAX_NUMBER_OF_USES_TO_TRACK = 1000;
         |
