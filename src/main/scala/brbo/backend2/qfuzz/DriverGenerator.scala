@@ -9,7 +9,7 @@ import brbo.frontend.TargetProgram
 
 object DriverGenerator {
   val ARRAY_SIZE = 5
-  val MAX_INTEGER = 30
+  val MAX_INTEGER = 1000
   val MIN_INTEGER = 1
   val HALF_MAX_VALUE: Int = java.lang.Short.MAX_VALUE / 2
   private val MAX_NUMBER_OF_USES_TO_TRACK = 1000
