@@ -392,7 +392,8 @@ object ControlFlowGraph {
                                           dominanceFrontiers: DominanceFrontiers[T],
                                           root: T,
                                           nodes: Set[T],
-                                          predicate: T => Boolean, visited: Set[T]): Option[T] = {
+                                          predicate: T => Boolean,
+                                          visited: Set[T]): Option[T] = {
     val isRootDominator = nodes.forall(node => dominanceFrontiers.isDominatedBy(node, root))
     if (!isRootDominator) return None
     val candidates: Iterator[T] = graph.getSuccNodes(root).asScala.flatMap({

@@ -3,8 +3,9 @@ package brbo.backend2
 import brbo.BrboMain
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.Trace
+import brbo.backend2.learning.Classifier.GroupID
 import brbo.backend2.learning.SegmentClustering.printSegments
-import brbo.backend2.learning.{Classifier, SegmentClustering, TracePartition}
+import brbo.backend2.learning.{Classifier, ResetPlaceHolderFinder, SegmentClustering, TracePartition}
 import brbo.common.ast._
 import brbo.common.cfg.ControlFlowGraph
 import brbo.common.commandline.DecompositionArguments
@@ -104,13 +105,18 @@ class DecompositionDriver(arguments: DecompositionArguments,
     }).mkString("\n")
     logger.info(s"Step 3.1: Selected decomposition:\n$groupsString\n${SegmentClustering.printDecomposition(trace, groups)}")
     logger.info(s"Step 3.2: Generate tables for training classifiers")
+    val resetPlaceHolderIndices: Map[GroupID, Set[Int]] = ResetPlaceHolderFinder.indices(
+      trace = trace,
+      groups = groups,
+      controlFlowGraph = ControlFlowGraph.toControlFlowGraph(instrumentedProgram),
+      throwIfNoResetPlaceHolder = false
+    )
     val tables = Classifier.generateTables(
       trace = trace,
       evaluate = Classifier.evaluateFromInterpreter(interpreter),
       groups = groups,
       features = features,
-      throwIfNoResetPlaceHolder = false,
-      controlFlowGraph = ControlFlowGraph.toControlFlowGraph(instrumentedProgram)
+      resetPlaceHolderIndices = resetPlaceHolderIndices,
     )
     // logger.traceOrError(s"Step 3.2: Generated tables:\n${tables.print()}")
     logger.info(s"Step 3.3: Generate classifiers on the tables")

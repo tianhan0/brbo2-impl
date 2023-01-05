@@ -10,7 +10,7 @@ import brbo.backend2.learning.SegmentClustering.{Group, Segment}
 import brbo.backend2.learning.SegmentClusteringUnitTest.functionDefinitions
 import brbo.common.BrboType.INT
 import brbo.common.ast.PrintStyle.CStyle
-import brbo.common.ast.{Command, Identifier, Number}
+import brbo.common.ast.{Identifier, Number}
 import brbo.common.cfg.ControlFlowGraph
 import brbo.common.string.StringCompare
 import brbo.frontend.TargetProgram
@@ -28,8 +28,12 @@ class ClassifierUnitTest extends AnyFlatSpec {
       Classifier.evaluateFromInterpreter(interpreter),
       groups1,
       features = List(Identifier("i", INT), Identifier("n", INT)),
-      throwIfNoResetPlaceHolder = false,
-      controlFlowGraph = controlFlowGraph
+      resetPlaceHolderIndices = ResetPlaceHolderFinder.indices(
+        trace = trace,
+        groups = groups1,
+        controlFlowGraph = controlFlowGraph,
+        throwIfNoResetPlaceHolder = false
+      ),
     )
     val decompositionExpected1 =
       """Index  |        Commands         |  Costs  |  SegmentIDs in GroupID(0)  |  SegmentIDs in GroupID(1)  |
@@ -113,8 +117,12 @@ class ClassifierUnitTest extends AnyFlatSpec {
       Classifier.evaluateFromInterpreter(interpreter),
       groups2,
       features = List(Identifier("i", INT), Identifier("n", INT)),
-      throwIfNoResetPlaceHolder = false,
-      controlFlowGraph = controlFlowGraph
+      resetPlaceHolderIndices = ResetPlaceHolderFinder.indices(
+        trace = trace,
+        groups = groups2,
+        controlFlowGraph = controlFlowGraph,
+        throwIfNoResetPlaceHolder = false
+      )
     )
     val decompositionExpected2 =
       """Index  |        Commands         |  Costs  |  SegmentIDs in GroupID(0)  |
@@ -198,8 +206,12 @@ class ClassifierUnitTest extends AnyFlatSpec {
       Classifier.evaluateFromInterpreter(interpreter),
       groups,
       features = List(Identifier("i", INT), Identifier("n", INT)),
-      throwIfNoResetPlaceHolder = false,
-      controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
+      resetPlaceHolderIndices = ResetPlaceHolderFinder.indices(
+        trace = trace,
+        groups = groups,
+        controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram),
+        throwIfNoResetPlaceHolder = false
+      )
     )
     val classifierResults = tables.toProgramTables.generateClassifiers(debugMode = false)
     val invalidBound = Number(2000)
@@ -257,8 +269,12 @@ class ClassifierUnitTest extends AnyFlatSpec {
       Classifier.evaluateFromInterpreter(interpreter),
       groups,
       features = List(Identifier("i", INT), Identifier("n", INT)),
-      throwIfNoResetPlaceHolder = false,
-      controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
+      resetPlaceHolderIndices = ResetPlaceHolderFinder.indices(
+        trace = trace,
+        groups = groups,
+        controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram),
+        throwIfNoResetPlaceHolder = false
+      )
     )
     val classifierResults = tables.toProgramTables.generateClassifiers(debugMode = false)
     val transformation = classifierResults.toTransformation.map({

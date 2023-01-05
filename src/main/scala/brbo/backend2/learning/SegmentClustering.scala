@@ -36,8 +36,10 @@ class SegmentClustering(sumWeight: Int,
     ExecutionContext.fromExecutor(executorService)
   }
 
-  def decompose(trace: Trace, similarTraces: Iterable[Trace],
-                interpreter: Interpreter, features: List[Identifier]): TraceDecomposition = {
+  def decompose(trace: Trace,
+                similarTraces: Iterable[Trace],
+                interpreter: Interpreter,
+                features: List[Identifier]): TraceDecomposition = {
     val decomposition = new TraceDecomposition(trace)
     var segmentLength = 1
     var excludeIndices: Set[Int] = Set()
@@ -58,7 +60,7 @@ class SegmentClustering(sumWeight: Int,
         logger.info(s"Visit $clusterId-th cluster (segment length: $segmentLength)")
         if (cluster.size > 1) {
           logger.info(s"Choose non-overlapping segments from $clusterId-th cluster")
-          val nonOverlappingGroups = findNonOverlappingSegments(cluster)
+          val nonOverlappingGroups: List[Group] = findNonOverlappingSegments(cluster)
           // Assume the selected traces ensure the selected groups are correct.
           // However, we still need to choose a generalization of the group, by choosing the reset locations.
           /* val generalizableGroups = chooseGeneralizableGroups(
@@ -275,13 +277,19 @@ class SegmentClustering(sumWeight: Int,
                 try {
                   logger.infoOrError(s"Train a classifier for ${groupIndex + 1}-th group (among ${groups.size}): " +
                     s"$printGroup ($printFeatures)")
+                  val groupsMap = Map[GroupID, Group](GeneralityTestGroup -> group)
+                  val resetPlaceHolderIndices: Map[GroupID, Set[Int]] = ResetPlaceHolderFinder.indices(
+                    trace = testTrace,
+                    groups = groupsMap,
+                    controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram),
+                    throwIfNoResetPlaceHolder = true
+                  )
                   val tables = Classifier.generateTables(
                     testTrace,
                     Classifier.evaluateFromInterpreter(interpreter),
-                    Map(GeneralityTestGroup -> group),
+                    groupsMap,
                     features = features,
-                    throwIfNoResetPlaceHolder = true,
-                    controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram)
+                    resetPlaceHolderIndices = resetPlaceHolderIndices,
                   )
                   val programTables = tables.toProgramTables
                   logger.infoOrError(s"Generated training data")
@@ -488,7 +496,7 @@ object SegmentClustering {
     def getCostSum(trace: Trace): Int = trace.costTraceAssociation.costSumAtIndices(indices)
   }
 
-  case class Group(segments: List[Segment]) {
+  abstract class AbstractGroup(val segments: List[Segment]) {
     val nonEmptySegments: List[Segment] = segments.filterNot(s => s.isEmpty)
     nonEmptySegments.zipWithIndex.foreach({
       case (segment, index) =>
@@ -561,6 +569,15 @@ object SegmentClustering {
           else soFar
       })
     }
+  }
+
+  // Locations of resets are not decided
+  case class Group(override val segments: List[Segment]) extends AbstractGroup(segments)
+
+  // Locations of resets are decided
+  case class GroupWithResets(override val segments: List[Segment],
+                             resets: List[Int]) extends AbstractGroup(segments) {
+    assert(segments.size == resets.size + 1)
   }
 
   def printGroups(groups: Iterable[Group], trace: Trace): String = {
