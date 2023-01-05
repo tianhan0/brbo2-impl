@@ -2,7 +2,7 @@
 
 ## Run from End to End
 
-### On Ubuntu Server
+### On Ubuntu Server or Mac
 
 ```shell
 ~/brbo2-impl$ python3 scripts/fuzz+decompose.py \
