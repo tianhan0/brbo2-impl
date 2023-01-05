@@ -5,9 +5,9 @@ import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.backend2.learning.Classifier._
 import brbo.backend2.learning.ScriptRunner._
 import brbo.backend2.learning.SegmentClustering._
-import brbo.common.MyLogger
 import brbo.common.ast._
 import brbo.common.cfg.ControlFlowGraph
+import brbo.common.{BrboType, MyLogger}
 import com.google.common.collect.Sets
 import tech.tablesaw.api.IntColumn
 
@@ -59,16 +59,17 @@ class SegmentClustering(sumWeight: Int,
         if (cluster.size > 1) {
           logger.info(s"Choose non-overlapping segments from $clusterId-th cluster")
           val nonOverlappingGroups = findNonOverlappingSegments(cluster)
-          val generalizableGroups = chooseGeneralizableGroups(
+          // Assume the selected traces ensure the selected groups are correct.
+          // However, we still need to choose a generalization of the group, by choosing the reset locations.
+          /* val generalizableGroups = chooseGeneralizableGroups(
             nonOverlappingGroups,
             testTrace = trace,
             similarTraces,
             interpreter,
             features = features,
             sampleKTraces = None
-          )
-          logger.info(s"Generalizable groups:\n${generalizableGroups.map({ group => printSegments(group.segments) }).mkString("  \n")}")
-          chooseGroup(generalizableGroups) match {
+          )*/
+          chooseGroup(nonOverlappingGroups) match {
             case Some(chosenGroup) =>
               decomposition.addGroup(chosenGroup)
               // Remove indices that have been grouped
@@ -136,7 +137,7 @@ class SegmentClustering(sumWeight: Int,
   private def segmentSimilarityWithInputs(segment: Segment, trace: Trace): Double = {
     val inputValues: Iterable[Value] = trace.inputs.flatMap({
       case (_, Number(n, _)) => Some(IntegerValue(n))
-      case (_, BrboArray(values, _, _)) => Some(ArrayValue(values.map({ case Number(n, _) => n })))
+      case (_, BrboArray(values, BrboType.INT, _)) => Some(ArrayValue(values.map({ case Number(n, _) => n })))
       case _ => None
     })
     val segmentCosts = segment.getCosts(trace)
@@ -352,9 +353,11 @@ class SegmentClustering(sumWeight: Int,
         // If a group contains a single segment, then we cannot witness (at least) two segments that have similar costs
         false
     })
-    groups.zip(result).flatMap({
+    val generalizableGroups = groups.zip(result).flatMap({
       case (group, areSimilar) => if (areSimilar) Some(group) else None
     })
+    logger.info(s"Generalizable groups:\n${generalizableGroups.map({ group => printSegments(group.segments) }).mkString("  \n")}")
+    generalizableGroups
   }
 }
 
