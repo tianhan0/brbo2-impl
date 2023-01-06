@@ -104,13 +104,14 @@ class DecompositionDriver(arguments: DecompositionArguments,
       case (groupID, group) => s"$groupID: ${printSegments(group.segments)}"
     }).mkString("\n")
     logger.info(s"Step 3.1: Selected decomposition:\n$groupsString\n${SegmentClustering.printDecomposition(trace, groups)}")
-    logger.info(s"Step 3.2: Generate tables for training classifiers")
+    // TODO: logger.info(s"Step 3.2: Select reset locations for the groups")
     val resetPlaceHolderIndices: Map[GroupID, Set[Int]] = ResetPlaceHolderFinder.indices(
       trace = trace,
       groups = groups,
       controlFlowGraph = ControlFlowGraph.toControlFlowGraph(instrumentedProgram),
       throwIfNoResetPlaceHolder = false
     )
+    logger.info(s"Step 3.3: Generate tables for training classifiers")
     val tables = Classifier.generateTables(
       trace = trace,
       evaluate = Classifier.evaluateFromInterpreter(interpreter),
@@ -119,9 +120,9 @@ class DecompositionDriver(arguments: DecompositionArguments,
       resetPlaceHolderIndices = resetPlaceHolderIndices,
     )
     // logger.traceOrError(s"Step 3.2: Generated tables:\n${tables.print()}")
-    logger.info(s"Step 3.3: Generate classifiers on the tables")
+    logger.info(s"Step 3.4: Generate classifiers on the tables")
     val classifierResults = tables.toProgramTables.generateClassifiers(debugMode)
-    logger.info(s"Step 3.4: Generate program transformations")
+    logger.info(s"Step 3.5: Generate program transformations")
     val transformation: Map[Command, BrboAst] = classifierResults.toTransformation
     logger.info(Classifier.printTransformation(transformation))
     val newBody = BrboAstUtils.replaceCommands(instrumentedProgram.mainFunction.body, transformation, omitResetPlaceHolders = true)
