@@ -141,198 +141,198 @@ object BrboAstUnitTest {
 
   private val useResetTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    use(1, 10, x > 10);
-      |    reset(2, x < 10);
-      |    use(3, 100);
-      |    reset(4);
-      |  }
-      |
-      |  void use(int x, int cost, boolean condition) {}
-      |  void use(int x, int cost) {}
-      |  void reset(int x, boolean condition) {}
-      |  void reset(int x) {}
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    use(1, 10, x > 10);
+       |    reset(2, x < 10);
+       |    use(3, 100);
+       |    reset(4);
+       |  }
+       |
+       |  void use(int x, int cost, boolean condition) {}
+       |  void use(int x, int cost) {}
+       |  void reset(int x, boolean condition) {}
+       |  void reset(int x) {}
+       |}""".stripMargin
 
   private val arrayInputTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
-      |  }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
+       |  }
+       |}""".stripMargin
 
   private val arrayReadTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
-      |    arrayRead(x, 0);
-      |    int y = arrayRead(x, 10);
-      |  }
-      |
-      |  int arrayRead(int[] x, int index) { return 0; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
+       |    arrayRead(x, 0);
+       |    int y = arrayRead(x, 10);
+       |  }
+       |
+       |  int arrayRead(int[] x, int index) { return 0; }
+       |}""".stripMargin
 
   private val arrayLengthTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
-      |    arrayLength(x);
-      |    int y = arrayLength(x);
-      |  }
-      |
-      |  int arrayLength(int[] x) { return 0; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
+       |    arrayLength(x);
+       |    int y = arrayLength(x);
+       |  }
+       |
+       |  int arrayLength(int[] x) { return 0; }
+       |}""".stripMargin
 
   private val arraySumTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
-      |    arraySum(x);
-      |    int y = arraySum(x);
-      |  }
-      |
-      |  int arraySum(int[] x) { return 0; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
+       |    arraySum(x);
+       |    int y = arraySum(x);
+       |  }
+       |
+       |  int arraySum(int[] x) { return 0; }
+       |}""".stripMargin
 
   private val upperBoundTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    upperBound(0, "tag", x + 1);
-      |  }
-      |
-      |  int upperBound(int group, String index, int bound) { return 0; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    upperBound(0, "tag", x + 1);
+       |  }
+       |
+       |  int upperBound(int group, String index, int bound) { return 0; }
+       |}""".stripMargin
 
   private val resourceVariableTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    int R = 0;
-      |    R = R + 22;
-      |  }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    int R = 0;
+       |    R = R + 22;
+       |  }
+       |}""".stripMargin
 
   val parsingAstTests: List[TestCase] = List(
     TestCase("useResetTest", useResetTest,
       s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
-        |{
-        |  int C1 = 0;
-        |  int C2 = 0;
-        |  int C3 = 0;
-        |  int C4 = 0;
-        |  int R1 = 0;
-        |  int R2 = 0;
-        |  int R3 = 0;
-        |  int R4 = 0;
-        |  int S1 = -2147483648;
-        |  int S2 = -2147483648;
-        |  int S3 = -2147483648;
-        |  int S4 = -2147483648;
-        |  if (!((x < 10)) && !((x == 10)))
-        |  {
-        |    R1 = R1 + 10;
-        |  }
-        |  else
-        |  {
-        |    ;
-        |  }
-        |  if (x < 10)
-        |  {
-        |    if (S2 < R2)
-        |    {
-        |      S2 = R2;
-        |    }
-        |    else
-        |    {
-        |      ;
-        |    }
-        |    R2 = 0;
-        |    C2 = C2 + 1;
-        |  }
-        |  else
-        |  {
-        |    ;
-        |  }
-        |  R3 = R3 + 100;
-        |  if (S4 < R4)
-        |  {
-        |    S4 = R4;
-        |  }
-        |  else
-        |  {
-        |    ;
-        |  }
-        |  R4 = 0;
-        |  C4 = C4 + 1;
-        |}
-        |
-        |""".stripMargin),
+         |{
+         |  int C1 = 0;
+         |  int C2 = 0;
+         |  int C3 = 0;
+         |  int C4 = 0;
+         |  int R1 = 0;
+         |  int R2 = 0;
+         |  int R3 = 0;
+         |  int R4 = 0;
+         |  int S1 = -2147483648;
+         |  int S2 = -2147483648;
+         |  int S3 = -2147483648;
+         |  int S4 = -2147483648;
+         |  if (!((x < 10)) && !((x == 10)))
+         |  {
+         |    R1 = R1 + 10;
+         |  }
+         |  else
+         |  {
+         |    ;
+         |  }
+         |  if (x < 10)
+         |  {
+         |    if (S2 < R2)
+         |    {
+         |      S2 = R2;
+         |    }
+         |    else
+         |    {
+         |      ;
+         |    }
+         |    R2 = 0;
+         |    C2 = C2 + 1;
+         |  }
+         |  else
+         |  {
+         |    ;
+         |  }
+         |  R3 = R3 + 100;
+         |  if (S4 < R4)
+         |  {
+         |    S4 = R4;
+         |  }
+         |  else
+         |  {
+         |    ;
+         |  }
+         |  R4 = 0;
+         |  C4 = C4 + 1;
+         |}
+         |
+         |""".stripMargin),
     TestCase("arrayInputTest", arrayInputTest,
       s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
-        |{
-        |
-        |}""".stripMargin),
+         |{
+         |
+         |}""".stripMargin),
     TestCase("arrayReadTest", arrayReadTest,
       s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
-        |{
-        |  arrayRead(x, 0);
-        |  int y = arrayRead(x, 10);
-        |}""".stripMargin),
+         |{
+         |  arrayRead(x, 0);
+         |  int y = arrayRead(x, 10);
+         |}""".stripMargin),
     TestCase("arrayLengthTest", arrayLengthTest,
       s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
-        |{
-        |  arrayLength(x);
-        |  int y = arrayLength(x);
-        |}""".stripMargin),
+         |{
+         |  arrayLength(x);
+         |  int y = arrayLength(x);
+         |}""".stripMargin),
     TestCase("arraySumTest", arraySumTest,
       s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
-        |{
-        |  arraySum(x);
-        |  int y = arraySum(x);
-        |}""".stripMargin),
+         |{
+         |  arraySum(x);
+         |  int y = arraySum(x);
+         |}""".stripMargin),
     TestCase("upperBoundTest", upperBoundTest,
       s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
-        |{
-        |  // upperBound(0, "tag", x + 1)
-        |}""".stripMargin),
+         |{
+         |  // upperBound(0, "tag", x + 1)
+         |}""".stripMargin),
     TestCase("resourceVariableTest", resourceVariableTest,
       s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
-        |{
-        |  int R = 0;
-        |  R = R + 22;
-        |}
-        |""".stripMargin),
+         |{
+         |  int R = 0;
+         |  R = R + 22;
+         |}
+         |""".stripMargin),
   )
 
   private val printToBrboJavaTest1 =
     s"""abstract class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x, int[] array) {
-      |    use(1, 10, x > 10);
-      |    reset(2, x < 10);
-      |    use(3, 100);
-      |    reset(4);
-      |    int R = 0;
-      |    R = R + 1011;
-      |    int a1 = arrayRead(array, 0);
-      |    int a2 = arraySum(array);
-      |    int a3 = arrayLength(array);
-      |    int a4 = ndInt();
-      |    int a5 = ndInt2(12, 34);
-      |    boolean a6 = ndBool();
-      |    mostPreciseBound(R + arraySum(array) > 10);
-      |    lessPreciseBound(R + arraySum(array) < 10);
-      |    int a7 = 0;
-      |    a7 = arrayRead(array, 0);
-      |  }
-      |
-      |  void use(int x, int cost, boolean condition) {}
-      |  void use(int x, int cost) {}
-      |  void reset(int x, boolean condition) {}
-      |  void reset(int x) {}
-      |  int arrayRead(int[] x, int index) { return 0; }
-      |  int arraySum(int[] x) { return 0; }
-      |  int arrayLength(int[] x) { return 0; }
-      |  public abstract int ndInt();
-      |  public abstract int ndInt2(int lower, int upper);
-      |  public abstract boolean ndBool();
-      |  public abstract void mostPreciseBound(boolean assertion);
-      |  public abstract void lessPreciseBound(boolean assertion);
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x, int[] array) {
+       |    use(1, 10, x > 10);
+       |    reset(2, x < 10);
+       |    use(3, 100);
+       |    reset(4);
+       |    int R = 0;
+       |    R = R + 1011;
+       |    int a1 = arrayRead(array, 0);
+       |    int a2 = arraySum(array);
+       |    int a3 = arrayLength(array);
+       |    int a4 = ndInt();
+       |    int a5 = ndInt2(12, 34);
+       |    boolean a6 = ndBool();
+       |    mostPreciseBound(R + arraySum(array) > 10);
+       |    lessPreciseBound(R + arraySum(array) < 10);
+       |    int a7 = 0;
+       |    a7 = arrayRead(array, 0);
+       |  }
+       |
+       |  void use(int x, int cost, boolean condition) {}
+       |  void use(int x, int cost) {}
+       |  void reset(int x, boolean condition) {}
+       |  void reset(int x) {}
+       |  int arrayRead(int[] x, int index) { return 0; }
+       |  int arraySum(int[] x) { return 0; }
+       |  int arrayLength(int[] x) { return 0; }
+       |  public abstract int ndInt();
+       |  public abstract int ndInt2(int lower, int upper);
+       |  public abstract boolean ndBool();
+       |  public abstract void mostPreciseBound(boolean assertion);
+       |  public abstract void lessPreciseBound(boolean assertion);
+       |}""".stripMargin
 
   val printToBrboJavaTests: List[TestCase] = List(
     TestCase("printToBrboJavaTest1", printToBrboJavaTest1,
