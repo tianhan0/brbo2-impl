@@ -13,8 +13,8 @@ abstract class TemplateEngine3 {
     int D2p = 0;
     int temporaryText = 0;
     int lastIndexOfText = 0;
-    lessPreciseBound(((((0 + D0) + D1) + D2) < (((((((((((((((((8 * text) * ts) + ((8 * text) * sep)) + ((8 * text) * text)) + ((8 * text) * rep)) + ((8 * ts) * sep)) + ((8 * ts) * text)) + ((8 * ts) * rep)) + ((8 * sep) * text)) + ((8 * sep) * rep)) + ((8 * text) * rep)) + (8 * text)) + (8 * ts)) + (8 * sep)) + (8 * text)) + (8 * rep)) + 8)) || ((((0 + D0) + D1) + D2) == (((((((((((((((((8 * text) * ts) + ((8 * text) * sep)) + ((8 * text) * text)) + ((8 * text) * rep)) + ((8 * ts) * sep)) + ((8 * ts) * text)) + ((8 * ts) * rep)) + ((8 * sep) * text)) + ((8 * sep) * rep)) + ((8 * text) * rep)) + (8 * text)) + (8 * ts)) + (8 * sep)) + (8 * text)) + (8 * rep)) + 8)));
-    mostPreciseBound(((((0 + D0) + D1) + D2) < (ts * ((text + (text * rep)) + sep))) || ((((0 + D0) + D1) + D2) == (ts * ((text + (text * rep)) + sep))));
+    lessPreciseBound(((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) + (D2 + (D2p * C2))) < (((((((((((((((((8 * text) * ts) + ((8 * text) * sep)) + ((8 * text) * text)) + ((8 * text) * rep)) + ((8 * ts) * sep)) + ((8 * ts) * text)) + ((8 * ts) * rep)) + ((8 * sep) * text)) + ((8 * sep) * rep)) + ((8 * text) * rep)) + (8 * text)) + (8 * ts)) + (8 * sep)) + (8 * text)) + (8 * rep)) + 8)) || ((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) + (D2 + (D2p * C2))) == (((((((((((((((((8 * text) * ts) + ((8 * text) * sep)) + ((8 * text) * text)) + ((8 * text) * rep)) + ((8 * ts) * sep)) + ((8 * ts) * text)) + ((8 * ts) * rep)) + ((8 * sep) * text)) + ((8 * sep) * rep)) + ((8 * text) * rep)) + (8 * text)) + (8 * ts)) + (8 * sep)) + (8 * text)) + (8 * rep)) + 8)));
+    mostPreciseBound(((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) + (D2 + (D2p * C2))) < (ts * ((text + (text * rep)) + sep))) || ((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) + (D2 + (D2p * C2))) == (ts * ((text + (text * rep)) + sep))));
     if (((((text < 0) || (text == 0)) || ((ts < 0) || (ts == 0))) || ((sep < 0) || (sep == 0))) || ((rep < 0) || (rep == 0)))
     {
       return;
@@ -40,21 +40,21 @@ abstract class TemplateEngine3 {
       }
       D2 = D2 + chunk;
       j = j + 1;
-      while (j < (text))
+      while ((j + 1) < text)
       {
-        {
-          temporaryText = ndInt2(lastIndexOfText, text);
-          chunk = temporaryText - lastIndexOfText;
-          lastIndexOfText = temporaryText;
-        }
         {
           temporaryText = ndInt2(lastIndexOfText, text);
           tag = temporaryText - lastIndexOfText;
           lastIndexOfText = temporaryText;
         }
+        {
+          temporaryText = ndInt2(lastIndexOfText, text);
+          chunk = temporaryText - lastIndexOfText;
+          lastIndexOfText = temporaryText;
+        }
         D2 = D2 + chunk;
         D0 = D0 + rep;
-        j = j + 1;
+        j = j + 2;
         // reset R2
         // reset R1
         D0p = D0;
@@ -79,4 +79,5 @@ abstract class TemplateEngine3 {
   public abstract void assume(boolean expression);
   public abstract void mostPreciseBound(boolean assertion);
   public abstract void lessPreciseBound(boolean assertion);
+  public abstract int arrayLength(int array);
 }

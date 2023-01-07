@@ -1,4 +1,4 @@
-abstract class TemplateEngine {
+abstract class TemplateEngineSimplified {
   void execute(int text) 
   {
     int BOOLEAN_SEPARATOR = 500;
@@ -30,21 +30,16 @@ abstract class TemplateEngine {
     }
     D0 = D0 + chunk;
     i = i + 1;
-    while ((i + 1) < text)
+    while (i < text)
     {
-      {
-        temporaryText = ndInt2(lastIndexOfText, text);
-        tag = temporaryText - lastIndexOfText;
-        lastIndexOfText = temporaryText;
-      }
       {
         temporaryText = ndInt2(lastIndexOfText, text);
         chunk = temporaryText - lastIndexOfText;
         lastIndexOfText = temporaryText;
       }
       D0 = D0 + chunk;
-      i = i + 2;
-      // resetPlaceHolder_1();
+      i = i + 1;
+      // reset R0
     }
   }
   // Declare these methods such that these generated code can be parsed
