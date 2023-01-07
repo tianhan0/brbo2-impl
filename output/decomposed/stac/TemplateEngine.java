@@ -54,5 +54,4 @@ abstract class TemplateEngine {
   public abstract void assume(boolean expression);
   public abstract void mostPreciseBound(boolean assertion);
   public abstract void lessPreciseBound(boolean assertion);
-  public abstract int arrayLength(int array);
 }
