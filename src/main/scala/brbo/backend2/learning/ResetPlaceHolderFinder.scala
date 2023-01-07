@@ -1,13 +1,43 @@
 package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter.{Trace, Transition}
-import brbo.backend2.learning.Classifier.{GroupID, TableGenerationError}
+import brbo.backend2.learning.Classifier.GroupID
 import brbo.backend2.learning.SegmentClustering.Group
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 import com.ibm.wala.util.graph.NumberedGraph
 
+import scala.collection.mutable
+
 object ResetPlaceHolderFinder {
+  // The index sets of any possible reset locations
+  def indices(trace: Trace,
+              group: Group,
+              throwIfNoResetPlaceHolder: Boolean): List[Set[Int]] = {
+    val resetPlaceHolders = group.getCommands(trace).filter(command => command.isInstanceOf[ResetPlaceHolder])
+    val stringBuilder = new mutable.StringBuilder()
+    val possibilities = resetPlaceHolders.zipWithIndex.flatMap({
+      case (resetPlaceHolder, index) =>
+        // Create a dummy group ID
+        val groupID = GroupID(index)
+        val groups = Map(groupID -> group)
+        // Assume that, all resets of a group must be at the same syntactic location
+        val resetPlaceHolderCandidates = Map[GroupID, Option[Command]](groupID -> Some(resetPlaceHolder))
+        try {
+          val indices = locations(trace, groups, resetPlaceHolderCandidates, throwIfNoResetPlaceHolder = true)(groupID)
+          Some(indices)
+        } catch {
+          case ResetPlaceHolderError(message) =>
+            stringBuilder.append(s"$message\n")
+            None
+        }
+    })
+    if (possibilities.isEmpty && throwIfNoResetPlaceHolder)
+      throw ResetPlaceHolderError(stringBuilder.toString().trim)
+    else
+      possibilities
+  }
+
   // From group IDs to the trace node indices into which resets need to be placed
   def indices(trace: Trace,
               groups: Map[GroupID, Group],
@@ -105,7 +135,7 @@ object ResetPlaceHolderFinder {
               val errorMessage = s"Failed to find a reset place holder between " +
                 s"${groupID.print()}'s $i and ${i + 1} segment (index range: [$begin, $end])\n" +
                 s"${SegmentClustering.printDecomposition(trace, groups)}"
-              if (throwIfNoResetPlaceHolder) throw TableGenerationError(errorMessage)
+              if (throwIfNoResetPlaceHolder) throw ResetPlaceHolderError(errorMessage)
           }
           i = i + 1
         }
@@ -127,4 +157,6 @@ object ResetPlaceHolderFinder {
       }
     }
   }
+
+  case class ResetPlaceHolderError(message: String) extends Exception
 }

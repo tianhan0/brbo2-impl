@@ -268,6 +268,15 @@ class SegmentClustering(sumWeight: Int,
     val result = groups.zipWithIndex.map({
       case (group, groupIndex) if group.segments.size > 1 =>
         val printGroup = printSegments(group.segments)
+        /* TODO: Select reset locations for the group, such that the generalization works for other traces
+        val resetPlaceHolderIndices: List[Set[Int]] = ResetPlaceHolderFinder.indices(
+          trace = testTrace,
+          group = group,
+          throwIfNoResetPlaceHolder = true
+        )
+        val groupsWithResets = resetPlaceHolderIndices.map({
+          resetIndices => GroupWithResets(group.segments, resetIndices)
+        })*/
         // If there exist a set of features under which the given group is generalizable to all traces
         val futures = Future.traverse(possibleFeatures)({
           features =>
@@ -576,7 +585,7 @@ object SegmentClustering {
 
   // Locations of resets are decided
   case class GroupWithResets(override val segments: List[Segment],
-                             resets: List[Int]) extends AbstractGroup(segments) {
+                             resets: Set[Int]) extends AbstractGroup(segments) {
     assert(segments.size == resets.size + 1)
   }
 
