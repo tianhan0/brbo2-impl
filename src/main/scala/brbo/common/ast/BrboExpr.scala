@@ -161,7 +161,16 @@ case class ArrayRead(array: BrboExpr, index: BrboExpr, override val uuid: UUID =
 case class ArrayLength(array: BrboExpr, override val uuid: UUID = UUID.randomUUID()) extends BrboExpr(INT, uuid) {
   assert(array.typ.isInstanceOf[BrboType.ARRAY])
 
-  override def printInternal(indent: Int, style: AbstractStyle): String = s"${indentString(indent)}${PreDefinedFunctions.ArrayLength.name}(${array.printInternal(indent = 0, style = style)})"
+  override def printInternal(indent: Int, style: AbstractStyle): String = {
+    style match {
+      case PrintStyle.BrboJavaStyle =>
+        // Let arrayLength(x) be x
+        array.printInternal(indent, style = PrintStyle.CStyle)
+      case PrintStyle.CStyle | PrintStyle.QFuzzJavaStyle =>
+        s"${indentString(indent)}${PreDefinedFunctions.ArrayLength.name}(${array.printInternal(indent = 0, style = style)})"
+      case _ => throw new Exception
+    }
+  }
 
   override def sameAs(other: Any): Boolean = {
     other match {

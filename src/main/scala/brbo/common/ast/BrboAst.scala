@@ -465,12 +465,13 @@ case class Assignment(identifier: Identifier, expression: BrboExpr, override val
             returnType = PreDefinedFunctions.NdInt2.returnType
           )
         )
-        val updateLastIndex = Assignment(
-          lastIndexVariable,
-          Addition(lastIndexVariable, temporaryVariable)
+        val actualAssignment = Assignment(
+          identifier,
+          Subtraction(temporaryVariable, lastIndexVariable)
         )
-        val actualAssignment = Assignment(identifier, temporaryVariable)
-        val block = Block(List(assignTemporary, updateLastIndex, actualAssignment))
+        val updateLastIndex = Assignment(lastIndexVariable, temporaryVariable)
+        // Such translation seems more friendly to ICRA
+        val block = Block(List(assignTemporary, actualAssignment, updateLastIndex))
         block.print(indent, style = BrboJavaStyle)
       case _ => s"${indentString(indent)}${identifier.name} = ${expression.printNoOuterBrackets(style = BrboJavaStyle)};"
     }
@@ -771,18 +772,20 @@ case class Reset(groupId: Int, condition: BrboExpr = Bool(b = true),
   private def printToBrboJava(indent: Int): String = {
     val (resourceVariable: Identifier, starVariable: Identifier, counterVariable: Identifier) =
       GhostVariableUtils.generateVariables(Some(groupId), legacy = true)
-    val maxStatement: ITE = {
+    /*val maxStatement: ITE = {
       val maxComparison: LessThan = LessThan(starVariable, resourceVariable)
       val maxAssignment: Assignment = Assignment(starVariable, resourceVariable)
       ITE(maxComparison, maxAssignment, Skip())
-    }
+    }*/
+    // Although unsound, such translation seems more friendly to ICRA
+    val maxAssignment: Assignment = Assignment(starVariable, resourceVariable)
     val resetCommand: Assignment = Assignment(resourceVariable, Number(0))
     val counterCommand: Assignment = Assignment(counterVariable, Addition(counterVariable, Number(1)))
-    val ast = generateAst(updateStar = maxStatement, updateResource = resetCommand, updateCounter = counterCommand)
+    val ast = generateAst(updateStar = maxAssignment, updateResource = resetCommand, updateCounter = counterCommand)
     ast.map(ast => ast.print(indent, style = BrboJavaStyle)).mkString("\n")
   }
 
-  private def generateAst(updateStar: ITE, updateResource: Command, updateCounter: Command): List[BrboAst] = {
+  private def generateAst(updateStar: BrboAst, updateResource: Command, updateCounter: Command): List[BrboAst] = {
     val list = List(updateStar, updateResource, updateCounter)
     condition match {
       case Bool(true, _) => list

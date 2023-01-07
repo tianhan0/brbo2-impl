@@ -337,87 +337,73 @@ object BrboAstUnitTest {
   val printToBrboJavaTests: List[TestCase] = List(
     TestCase("printToBrboJavaTest1", printToBrboJavaTest1,
       s"""abstract class Test {
-        |  void ${TargetProgram.MAIN_FUNCTION}(int x, int array)
-        |
-        |  {
-        |    int BOOLEAN_SEPARATOR = 500;
-        |    int C1 = -1;
-        |    int C2 = -1;
-        |    int C3 = -1;
-        |    int C4 = -1;
-        |    int D1 = 0;
-        |    int D1p = 0;
-        |    int D2 = 0;
-        |    int D2p = 0;
-        |    int D3 = 0;
-        |    int D3p = 0;
-        |    int D4 = 0;
-        |    int D4p = 0;
-        |    int temporaryArray = 0;
-        |    int lastIndexOfArray = 0;
-        |    lessPreciseBound((((((0 + D1) + D2) + D3) + D4) + array) < 10);
-        |    mostPreciseBound(!(((((((0 + D1) + D2) + D3) + D4) + array) < 10)) && !(((((((0 + D1) + D2) + D3) + D4) + array) == 10)));
-        |    if (!((x < 10)) && !((x == 10)))
-        |    {
-        |      D1 = D1 + 10;
-        |    }
-        |    else
-        |    {
-        |      ;
-        |    }
-        |    if (x < 10)
-        |    {
-        |      if (D2p < D2)
-        |      {
-        |        D2p = D2;
-        |      }
-        |      else
-        |      {
-        |        ;
-        |      }
-        |      D2 = 0;
-        |      C2 = C2 + 1;
-        |    }
-        |    else
-        |    {
-        |      ;
-        |    }
-        |    D3 = D3 + 100;
-        |    if (D4p < D4)
-        |    {
-        |      D4p = D4;
-        |    }
-        |    else
-        |    {
-        |      ;
-        |    }
-        |    D4 = 0;
-        |    C4 = C4 + 1;
-        |    int R = 0;
-        |    R = R + 1011;
-        |    int a1 = arrayRead(array, 0);
-        |    int a2 = array;
-        |    int a3 = arrayLength(array);
-        |    int a4 = ndInt();
-        |    int a5 = ndInt2(12, 34);
-        |    int a6 = ndBool();
-        |    // mostPreciseBound(R + arraySum(array) > 10)
-        |    // lessPreciseBound(R + arraySum(array) < 10)
-        |    int a7 = 0;
-        |    {
-        |      temporaryArray = ndInt2(lastIndexOfArray, a7);
-        |      lastIndexOfArray = lastIndexOfArray + temporaryArray;
-        |      a7 = temporaryArray;
-        |    }
-        |  }
-        |  // Declare these methods such that these generated code can be parsed
-        |  public abstract int ndInt();
-        |  public abstract int ndInt2(int lower, int upper);
-        |  public abstract boolean ndBool();
-        |  public abstract void assume(boolean expression);
-        |  public abstract void mostPreciseBound(boolean assertion);
-        |  public abstract void lessPreciseBound(boolean assertion);
-        |  public abstract int arrayLength(int array);
-        |}""".stripMargin)
+         |  void ${TargetProgram.MAIN_FUNCTION}(int x, int array)
+         |  {
+         |    int BOOLEAN_SEPARATOR = 500;
+         |    int C1 = -1;
+         |    int C2 = -1;
+         |    int C3 = -1;
+         |    int C4 = -1;
+         |    int D1 = 0;
+         |    int D1p = 0;
+         |    int D2 = 0;
+         |    int D2p = 0;
+         |    int D3 = 0;
+         |    int D3p = 0;
+         |    int D4 = 0;
+         |    int D4p = 0;
+         |    int temporaryArray = 0;
+         |    int lastIndexOfArray = 0;
+         |    lessPreciseBound((((((0 + D1) + D2) + D3) + D4) + array) < 10);
+         |    mostPreciseBound(!(((((((0 + D1) + D2) + D3) + D4) + array) < 10)) && !(((((((0 + D1) + D2) + D3) + D4) + array) == 10)));
+         |    if (!((x < 10)) && !((x == 10)))
+         |    {
+         |      D1 = D1 + 10;
+         |    }
+         |    else
+         |    {
+         |      ;
+         |    }
+         |    if (x < 10)
+         |    {
+         |      D2p = D2;
+         |      D2 = 0;
+         |      C2 = C2 + 1;
+         |    }
+         |    else
+         |    {
+         |      ;
+         |    }
+         |    D3 = D3 + 100;
+         |    D4p = D4;
+         |    D4 = 0;
+         |    C4 = C4 + 1;
+         |    int R = 0;
+         |    R = R + 1011;
+         |    int a1 = arrayRead(array, 0);
+         |    int a2 = array;
+         |    int a3 = array;
+         |    int a4 = ndInt();
+         |    int a5 = ndInt2(12, 34);
+         |    int a6 = ndBool();
+         |    // mostPreciseBound(R + arraySum(array) > 10)
+         |    // lessPreciseBound(R + arraySum(array) < 10)
+         |    int a7 = 0;
+         |    {
+         |      temporaryArray = ndInt2(lastIndexOfArray, a7);
+         |      a7 = temporaryArray - lastIndexOfArray;
+         |      lastIndexOfArray = temporaryArray;
+         |    }
+         |  }
+         |  // Declare these methods such that these generated code can be parsed
+         |  public abstract int ndInt();
+         |  public abstract int ndInt2(int lower, int upper);
+         |  public abstract boolean ndBool();
+         |  public abstract void assume(boolean expression);
+         |  public abstract void mostPreciseBound(boolean assertion);
+         |  public abstract void lessPreciseBound(boolean assertion);
+         |  public abstract int arrayLength(int array);
+         |}
+         |""".stripMargin)
   )
 }
