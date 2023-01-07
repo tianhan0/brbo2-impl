@@ -457,7 +457,7 @@ case class Assignment(identifier: Identifier, expression: BrboExpr, override val
           temporaryVariable,
           FunctionCallExpr(
             identifier = PreDefinedFunctions.NdInt2.name,
-            arguments = List(lastIndexVariable, identifier),
+            arguments = List(lastIndexVariable, array),
             returnType = PreDefinedFunctions.NdInt2.returnType
           )
         )

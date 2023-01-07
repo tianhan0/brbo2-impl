@@ -390,7 +390,7 @@ object BrboAstUnitTest {
          |    // lessPreciseBound(R + arraySum(array) < 10)
          |    int a7 = 0;
          |    {
-         |      temporaryArray = ndInt2(lastIndexOfArray, a7);
+         |      temporaryArray = ndInt2(lastIndexOfArray, array);
          |      a7 = temporaryArray - lastIndexOfArray;
          |      lastIndexOfArray = temporaryArray;
          |    }
