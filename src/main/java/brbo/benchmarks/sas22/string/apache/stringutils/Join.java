@@ -3,21 +3,24 @@ package brbo.benchmarks.sas22.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class Join extends Common {
-  void execute(int array, int startIndex, int endIndex) {
-    if (array <= 0 || startIndex <= 0 || endIndex <= 0 || endIndex - startIndex <= 0) {
+  void execute(int[] array, int startIndex, int endIndex) {
+    if (arraySum(array) <= 0 ||
+        startIndex <= 0 || startIndex >= arrayLength(array) ||
+        endIndex <= 0 || endIndex >= arrayLength(array) ||
+        endIndex - startIndex <= 0) {
       return;
     }
-    int noOfItems = endIndex - startIndex;
     int R = 0;
-    mostPreciseBound(R <= 1 + 2 * (endIndex - startIndex));
-    lessPreciseBound(R <= MAX + MAX * endIndex + MAX * startIndex + MAX * array);
-    int buf = 0;
-    buf++;
-    R = R + 1;
-    for (int i = startIndex + 1; i < endIndex; i++) {
-      buf++;
-      R = R + 1;
-      buf++;
+    mostPreciseBound(R <= arraySum(array) + arraySum(array));
+    lessPreciseBound(R <= MAX + MAX * arraySum(array) + MAX * arraySum(array));
+    int i = startIndex;
+    int chunk = 0;
+    chunk = arrayRead(array, i);
+    R = R + chunk;
+    i++;
+    for (; i < endIndex; i++) {
+      chunk = arrayRead(array, i);
+      R = R + chunk;
       R = R + 1;
     }
   }

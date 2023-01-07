@@ -3,34 +3,22 @@ package brbo.benchmarks.sas22.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class Join2 extends Common {
-  void execute(int n, int[] choices) {
-    if (n <= 0 || arrayLength(choices) < n) {
+  void execute(int[] objects) {
+    if (arrayLength(objects) <= 0) {
       return;
     }
-    int iterator = n;
     int R = 0;
-    mostPreciseBound(R <= 1 + 2 * n);
-    lessPreciseBound(R <= MAX + MAX * n);
-    int buf = 0;
-    iterator--;
-    if (iterator <= 0) {
-      return;
-    }
-
-    int choice = arrayRead(choices, iterator);
-    if (choice > BOOLEAN_SEPARATOR) {
-      buf++;
+    mostPreciseBound(R <= arraySum(objects) + arraySum(objects));
+    lessPreciseBound(R <= MAX + MAX * arraySum(objects) + MAX * arraySum(objects));
+    int i = 0;
+    int chunk = 0;
+    chunk = arrayRead(objects, i);
+    R = R + chunk;
+    i++;
+    for (; i < arrayLength(objects); i++) {
+      chunk = arrayRead(objects, i);
+      R = R + chunk;
       R = R + 1;
-    }
-    while (iterator > 0) {
-      buf++;
-      R = R + 1;
-      choice = arrayRead(choices, iterator);
-      if (choice > BOOLEAN_SEPARATOR) {
-        buf++;
-        R = R + 1;
-      }
-      iterator--;
     }
   }
 }

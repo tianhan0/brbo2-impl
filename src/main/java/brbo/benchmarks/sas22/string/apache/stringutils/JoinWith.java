@@ -3,28 +3,22 @@ package brbo.benchmarks.sas22.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class JoinWith extends Common {
-  void execute(int separator, int n) {
-    if (separator <= 0 || n <= 0) {
+  void execute(int[] objects, int separator) {
+    if (arrayLength(objects) <= 0) {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= n * separator + n);
-    lessPreciseBound(R <= MAX * n * n +
-        MAX * n * separator +
-        MAX * separator * separator +
-        MAX * n + MAX * separator +
-        MAX
-    );
-    int result = 0;
-    int iterator = n;
-    while (iterator > 0) {
-      iterator--;
-      result++;
-      R = R + 1;
-      if (iterator > 0) {
-        result += separator;
-        R = R + separator;
-      }
+    mostPreciseBound(R <= arraySum(objects) + arraySum(objects) * separator);
+    lessPreciseBound(R <= MAX + MAX * arraySum(objects) + MAX * arraySum(objects) * separator);
+    int i = 0;
+    int chunk = 0;
+    chunk = arrayRead(objects, i);
+    R = R + chunk;
+    i++;
+    for (; i < arrayLength(objects); i++) {
+      chunk = arrayRead(objects, i);
+      R = R + chunk;
+      R = R + separator;
     }
   }
 }
