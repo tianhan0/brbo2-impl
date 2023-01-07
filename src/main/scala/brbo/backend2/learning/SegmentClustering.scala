@@ -119,7 +119,7 @@ class SegmentClustering(sumWeight: Int,
       segment =>
         val indices = segment.indices.toSet
         val similarity = segmentSimilarityWithInputs(segment, trace)
-        val existBetterSimilarity = longerSegments.exists({
+        val betterSimilarity = longerSegments.find({
           longerSegment =>
             if (indices.subsetOf(longerSegment.indices.toSet)) {
               // A longer and subsuming segment must be less similar
@@ -129,10 +129,10 @@ class SegmentClustering(sumWeight: Int,
               false
             }
         })
-        if (existBetterSimilarity)
-          logger.info(s"Remove segment ${segment.printAsSet} because there exists a longer and subsuming segment " +
+        if (betterSimilarity.nonEmpty)
+          logger.info(s"Remove segment ${segment.printAsSet} because there exists a longer and subsuming segment ${betterSimilarity.get.printAsSet} " +
             s"whose similarity with inputs is better")
-        !existBetterSimilarity
+        betterSimilarity.isEmpty
     })
   }
 
