@@ -14,15 +14,14 @@ public abstract class TemplateEngine extends Common {
     int chunk = 0;
     int tag = 0;
     int i = 0;
-    while (i < arrayLength(text)) {
-      chunk = arrayRead(text, i);
+    chunk = arrayRead(text, i);
+    R = R + chunk;
+    i++;
+    while (i + 1 < arrayLength(text)) {
+      tag = arrayRead(text, i);
+      chunk = arrayRead(text, i + 1);
       R = R + chunk;
-      if (i + 1 < arrayLength(text)) {
-        tag = arrayRead(text, i + 1);
-        i += 2;
-      } else {
-        i++;
-      }
+      i += 2;
     }
   }
 }
