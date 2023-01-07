@@ -143,11 +143,17 @@ class SegmentClustering(sumWeight: Int,
       case _ => None
     })
     val segmentCosts = segment.getCosts(trace)
-    segmentCosts.size match {
-      case 0 => Value.MIN_SIMILARITY // We do not prefer empty segments
+    if (segmentCosts.isEmpty) return Value.MIN_SIMILARITY // We do not prefer empty segments
+    val useCommands = segment.getUses(trace)
+    // For use commands whose always have constant costs, we consider them as similar to the set of numbers, which is implicit input
+    val nonConstantSegmentCosts = segmentCosts.zipWithIndex.filter({
+      case (_, index) => !useCommands(index).isConstantUpdate
+    }).map({ case (cost, _) => cost })
+    nonConstantSegmentCosts.size match {
+      case 0 => Value.MAX_SIMILARITY // All costs in the segment are constants
       case 1 =>
         // If a segment has 1 cost, then this segment may be similar to an integer-typed input, or an array-typed input (with a single element)
-        val possibleValues = List(IntegerValue(segmentCosts.head), ArrayValue(segmentCosts))
+        val possibleValues = List(IntegerValue(nonConstantSegmentCosts.head), ArrayValue(nonConstantSegmentCosts))
         val similarities: List[Double] = possibleValues.flatMap({
           possibleValue =>
             Value.similarity(
@@ -160,7 +166,7 @@ class SegmentClustering(sumWeight: Int,
         similarities.max
       case _ =>
         val similarities = Value.similarity(
-          value = ArrayValue(segmentCosts),
+          value = ArrayValue(nonConstantSegmentCosts),
           values = inputValues,
           maxSimilarity = Value.MAX_SIMILARITY,
           minSimilarity = Value.MIN_SIMILARITY
@@ -501,6 +507,8 @@ object SegmentClustering {
     def add(index: Int): Segment = Segment(indices :+ index)
 
     def getCosts(trace: Trace): List[Int] = trace.costTraceAssociation.costsAtIndices(indices)
+
+    def getUses(trace: Trace): List[Use] = trace.costTraceAssociation.commandsAtIndices(indices)
 
     def getCostSum(trace: Trace): Int = trace.costTraceAssociation.costSumAtIndices(indices)
   }

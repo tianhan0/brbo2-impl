@@ -744,12 +744,29 @@ object Interpreter {
     def ghostCommandAtIndex(index: Int): GhostCommand = indexMap(index).getGhostCommand
 
     def costsAtIndices(indices: List[Int]): List[Int] = {
-      indexMap.filter({
+      val indexedList = indexMap.filter({
         case (index, _) => indices.contains(index)
-      }).map({
-        case (_, UseNode(_, cost)) => cost
-        case _ => 0
+      }).flatMap({
+        case (index, UseNode(_, cost)) => Some((index, cost))
+        case _ => None
       }).toList
+      sortIndexedList(indexedList)
+    }
+
+    def commandsAtIndices(indices: List[Int]): List[Use] = {
+      val indexedList = indexMap.filter({
+        case (index, _) => indices.contains(index)
+      }).flatMap({
+        case (index, UseNode(use, _)) => Some((index, use))
+        case _ => None
+      }).toList
+      sortIndexedList(indexedList)
+    }
+
+    private def sortIndexedList[T](list: List[(Int, T)]): List[T] = {
+      list
+        .sortWith({ case ((index1, _), (index2, _)) => index1 < index2 })
+        .map({ case (_, cost) => cost })
     }
 
     def costSumAtIndices(indices: List[Int]): Int = costsAtIndices(indices).sum

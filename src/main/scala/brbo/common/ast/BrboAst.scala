@@ -686,6 +686,11 @@ case class Use( // When None, this command represents updating the original reso
   assert(update.typ == BrboType.INT)
   assert(condition.typ == BrboType.BOOL)
 
+  val isConstantUpdate: Boolean = update match {
+    case _: Number => true
+    case _ => false
+  }
+
   val resourceVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Resource)
 
   val assignmentCommand: Assignment = Assignment(resourceVariable, Addition(resourceVariable, update))
