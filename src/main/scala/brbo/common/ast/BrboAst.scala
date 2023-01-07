@@ -45,8 +45,7 @@ case class BrboProgram(className: String,
          |  public abstract boolean ${PreDefinedFunctions.NdBool.name}();
          |  public abstract void ${PreDefinedFunctions.Assume.name}(boolean expression);
          |  public abstract void ${PreDefinedFunctions.MostPreciseBound.name}(boolean assertion);
-         |  public abstract void ${PreDefinedFunctions.LessPreciseBound.name}(boolean assertion);
-         |  public abstract int ${PreDefinedFunctions.ArrayLength.name}(int array);""".stripMargin
+         |  public abstract void ${PreDefinedFunctions.LessPreciseBound.name}(boolean assertion);""".stripMargin
     val nonPredefinedFunctions =
       this.nonPredefinedFunctions.map(function => function.printToBrboJavaWithBoundAssertions(indent, boundAssertions)).mkString("\n")
     s"""abstract class $className {
