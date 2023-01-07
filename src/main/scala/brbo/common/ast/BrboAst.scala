@@ -137,7 +137,7 @@ case class BrboFunction(identifier: String,
                         groupIds: Set[Int],
                         uuid: UUID = UUID.randomUUID())
   extends Print with SameAs with Serializable {
-  val approximatedResourceUsage: BrboExpr = GhostVariableUtils.approximatedResourceUsage(groupIds)
+  val approximatedResourceUsage: BrboExpr = GhostVariableUtils.approximatedResourceUsage(groupIds, legacy = false)
 
   // Declare and initialize ghost variables in the function
   val bodyWithGhostInitialization: Statement = {
@@ -150,12 +150,8 @@ case class BrboFunction(identifier: String,
       operation = PrependOperation
     ).asInstanceOf[Statement]
   }
-  private lazy val legacyGhostVariables: List[Identifier] =
-    groupIds.toList.sorted.map(id => GhostVariableUtils.generateVariable(Some(id), Resource, legacy = true))
 
-  private lazy val legacyGhostVariablesSum = legacyGhostVariables.foldLeft(Number(0): BrboExpr)({
-    case (soFar, variable) => Addition(soFar, variable)
-  })
+  private lazy val legacyGhostVariablesSum = GhostVariableUtils.approximatedResourceUsage(groupIds, legacy = true)
 
   lazy val nonGhostVariables: List[Identifier] = {
     val variables = BrboAstUtils.collectCommands(body).flatMap({
