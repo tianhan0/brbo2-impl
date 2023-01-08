@@ -16,9 +16,9 @@ abstract public class JoinWith extends Common {
     R = R + chunk;
     i++;
     for (; i < arrayLength(objects); i++) {
+      R = R + separator;
       chunk = arrayRead(objects, i);
       R = R + chunk;
-      R = R + separator;
     }
   }
 }

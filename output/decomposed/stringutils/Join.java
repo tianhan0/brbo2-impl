@@ -34,13 +34,13 @@ abstract class Join {
     i = i + 1;
     while (i < endIndex)
     {
+      D0 = D0 + 1;
       {
         temporaryArray = ndInt2(lastIndexOfArray, array);
         chunk = temporaryArray - lastIndexOfArray;
         lastIndexOfArray = temporaryArray;
       }
       D1 = D1 + chunk;
-      D0 = D0 + 1;
       i = i + 1;
       // reset R1
       D0p = D0;

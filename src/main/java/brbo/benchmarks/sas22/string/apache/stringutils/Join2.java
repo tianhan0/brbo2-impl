@@ -16,9 +16,9 @@ abstract public class Join2 extends Common {
     R = R + chunk;
     i++;
     for (; i < arrayLength(objects); i++) {
+      R = R + 1;
       chunk = arrayRead(objects, i);
       R = R + chunk;
-      R = R + 1;
     }
   }
 }

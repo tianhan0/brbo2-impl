@@ -34,13 +34,13 @@ abstract class Join2 {
     i = i + 1;
     while (i < objects)
     {
+      D0 = D0 + 1;
       {
         temporaryObjects = ndInt2(lastIndexOfObjects, objects);
         chunk = temporaryObjects - lastIndexOfObjects;
         lastIndexOfObjects = temporaryObjects;
       }
       D1 = D1 + chunk;
-      D0 = D0 + 1;
       i = i + 1;
       // reset R1
       D0p = D0;
