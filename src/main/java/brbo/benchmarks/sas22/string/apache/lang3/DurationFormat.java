@@ -3,36 +3,23 @@ package brbo.benchmarks.sas22.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class DurationFormat extends Common {
-  void execute(int tokens, int years, int months) {
-    if (tokens <= 0 || years <= 0 || months <= 0) {
+  void execute(int[] tokens, int years, int months) {
+    if (years <= 0 || months <= 0) {
       return;
     }
-    int buffer = 0;
     int R = 0;
-    mostPreciseBound(R <= tokens + tokens * (years + months));
-    lessPreciseBound(R <= MAX * tokens * tokens +
+    mostPreciseBound(R <= arraySum(tokens) + arraySum(tokens) * (years + months));
+    lessPreciseBound(R <= MAX * arraySum(tokens) * arraySum(tokens) +
         MAX * years * years + MAX * months * months +
-        MAX * tokens * years + MAX * tokens * months +
-        MAX * months + MAX * years + MAX * tokens + MAX
+        MAX * arraySum(tokens) * years + MAX * arraySum(tokens) * months +
+        MAX * months + MAX * years + MAX * arraySum(tokens) + MAX
     );
-    int iterator = tokens;
-    while (iterator > 0) {
-      int entry = ndInt2(1, iterator);
-      iterator -= entry;
-      // if (ndBool()) {
-      buffer += entry;
-      R = R + entry;
-      // } else {
-      //   if (ndBool()) {
-      buffer += years;
+    int chunk = 0;
+    for (int i = 0; i < arrayLength(tokens); i++) {
+      chunk = arrayRead(tokens, i);
+      R = R + chunk;
       R = R + years;
-      // } else {
-      //     if (ndBool()) {
-      buffer += months;
       R = R + months;
-      //     }
-      //   }
-      // }
     }
   }
 }
