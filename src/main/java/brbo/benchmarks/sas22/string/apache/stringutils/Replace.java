@@ -8,23 +8,22 @@ abstract public class Replace extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= arraySum(text));
-    lessPreciseBound(R <= MAX * arraySum(text) + MAX);
+    mostPreciseBound(R <= arraySum(text) + arraySum(text) * replacement);
+    lessPreciseBound(R <= MAX + MAX * arraySum(text) + MAX * arraySum(text) * replacement);
     int chunk = 0;
-    for (int i = 0; i < arrayLength(text);) {
+    int i = 0;
+    while (i + 1 < arrayLength(text)) {
       chunk = arrayRead(text, i);
       R = R + chunk;
-      if (i + 1 < arrayLength(text)) {
-        chunk = arrayRead(text, i + 1);
-        // R = R + replacement
-        max--;
-        if (max == 0) {
-          break;
-        }
-        i += 2;
-      } else {
-        i++;
-      }
+      R = R + replacement;
+      // max--;
+      // if (max == 0) {
+        // TODO: The `break` statement makes the reset place holder at the end of the loop body
+        //  no longer post-dominate the statements in the loop body
+        // break;
+      // }
+      chunk = arrayRead(text, i + 1);
+      i += 2;
     }
   }
 }
