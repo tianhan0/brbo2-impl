@@ -3,21 +3,18 @@ package brbo.benchmarks.sas22.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class DiffResultToString extends Common {
-  void execute(int diff) {
-    if (diff <= 0) {
-      return;
-    }
+  void execute(int[] diff) {
     int lhsBuilder = 0;
     int rhsBuilder = 0;
     int R = 0;
-    mostPreciseBound(R <= diff);
-    lessPreciseBound(R <= MAX * diff+ MAX);
-    int iterator = diff;
-    while (iterator > 0) {
-      int entry = ndInt2(1, iterator);
-      iterator -= entry;
-      R = R + entry;
-      /*
+    mostPreciseBound(R <= arraySum(diff));
+    lessPreciseBound(R <= MAX * arraySum(diff)+ MAX);
+    int chunk = 0;
+    for (int i = 0; i < arrayLength(diff); i++) {
+      chunk = arrayRead(diff, i);
+      R = R + chunk;
+    }
+    /*
       int fieldName = ndInt2(1, entry);
       if (entry - fieldName < 1)
         break;
@@ -29,6 +26,5 @@ abstract public class DiffResultToString extends Common {
       R = R + (fieldName + left);
       rhsBuilder += fieldName + right;
       R = R + (fieldName + right);*/
-    }
   }
 }
