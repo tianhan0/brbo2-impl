@@ -385,7 +385,7 @@ object BrboAstUnitTest {
          |    int a3 = array;
          |    int a4 = ndInt();
          |    int a5 = ndInt2(12, 34);
-         |    int a6 = ndBool();
+         |    boolean a6 = ndBool();
          |    // mostPreciseBound(R + arraySum(array) > 10)
          |    // lessPreciseBound(R + arraySum(array) < 10)
          |    int a7 = 0;
