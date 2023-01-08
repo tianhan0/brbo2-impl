@@ -113,7 +113,7 @@ Run on the SAS'21 docker image from the Ubuntu server:
 docker run -it --rm --privileged sas-artifact-41
 
 root@16144970debc:/home/sas-artifact-41/brbo-impl# ./scripts/run_with_deps_artifact.sh \
-  --directory src/main/java/brbo/benchmarks/containers/stac/TemplateEngine3.java \
   --amortize selective \
-  --icra-timeout 60
+  --icra-timeout 60 \
+  --directory src/main/java/brbo/benchmarks/containers/stac/TemplateEngine3.java
 ```
