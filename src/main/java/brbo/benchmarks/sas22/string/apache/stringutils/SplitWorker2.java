@@ -7,11 +7,9 @@ abstract public class SplitWorker2 extends Common {
                int separatorChars,
                int max,
                boolean preserveAllTokens,
-               int[] choices1,
-               int[] choices2,
-               int[] choices3) {
+               int[] choices) {
     if (str <= 0 || max <= 0 || separatorChars < 0 ||
-        arrayLength(choices1) < str || arrayLength(choices2) < str || arrayLength(choices3) < str) {
+        arrayLength(choices) < str) {
       return;
     }
     int R = 0;
@@ -23,9 +21,11 @@ abstract public class SplitWorker2 extends Common {
     int start = 0;
     boolean match = false;
     boolean lastMatch = false;
+    int choice = 0;
     if (separatorChars == 0) {
       while (i < str) {
-        if (arrayRead(choices1, i) > BOOLEAN_SEPARATOR) {
+        choice = arrayRead(choices, i);
+        if (choice > BOOLEAN_SEPARATOR) {
           if (match || preserveAllTokens) {
             lastMatch = true;
             if (sizePlus1 == max) {
@@ -48,7 +48,8 @@ abstract public class SplitWorker2 extends Common {
     } else {
       if (separatorChars == 1) {
         while (i < str) {
-          if (arrayRead(choices2, i) > BOOLEAN_SEPARATOR) {
+          choice = arrayRead(choices, i);
+          if (choice > BOOLEAN_SEPARATOR) {
             if (match || preserveAllTokens) {
               lastMatch = true;
               if (sizePlus1 == max) {
@@ -70,7 +71,8 @@ abstract public class SplitWorker2 extends Common {
         }
       } else {
         while (i < str) {
-          if (arrayRead(choices3, i) > BOOLEAN_SEPARATOR) {
+          choice = arrayRead(choices, i);
+          if (choice > BOOLEAN_SEPARATOR) {
             if (match || preserveAllTokens) {
               lastMatch = true;
               if (sizePlus1 == max) {
