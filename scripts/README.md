@@ -74,7 +74,19 @@ Compile ICRA:
 eval $(opam config env)
 ```
 
-## Selectively Decompose Programs
+## (Selectively) Decompose Programs
+
+Run on Mac (M2):
+```shell
+[~/Documents/workspace/brbo2-impl] ./scripts/run_deps.sh decompose \
+  --threads 6 \
+  --debug \
+  --algorithm optics \
+  --parameter 0.1 \
+  --samples 0 \
+  --directory src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/ReplaceChars.java \
+  --input
+```
 
 Run in WSL:
 ```shell
@@ -82,6 +94,8 @@ Run in WSL:
   --directory output/decomposed/stringutils/GetDigits.java \
   --amortize transparent
 ```
+
+## Verify (Decomposed) Programs:
 
 Run on the Ubuntu server:
 ```shell
