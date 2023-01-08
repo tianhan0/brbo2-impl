@@ -399,7 +399,7 @@ case class VariableDeclaration(identifier: Identifier, initialValue: BrboExpr, o
   override def printInternal(indent: Int, style: AbstractStyle): String = {
     style match {
       case PrintStyle.BrboJavaStyle =>
-        s"${indentString(indent)}${BrboType.PrintType.print(identifier.typ, CPrintType)} ${identifier.name} = ${initialValueString(style = BrboJavaStyle)};"
+        s"${indentString(indent)}${BrboType.PrintType.print(identifier.typ, BrboJavaPrintType)} ${identifier.name} = ${initialValueString(style = BrboJavaStyle)};"
       case PrintStyle.CStyle =>
         s"${indentString(indent)}${BrboType.PrintType.print(identifier.typ, CPrintType)} ${identifier.name} = ${initialValueString(style = CStyle)};"
       case PrintStyle.QFuzzJavaStyle =>
