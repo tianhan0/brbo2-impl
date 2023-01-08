@@ -3,6 +3,7 @@ package brbo.backend2.learning
 import brbo.backend2.interpreter.Interpreter.{Trace, Transition}
 import brbo.backend2.learning.Classifier.GroupID
 import brbo.backend2.learning.SegmentClustering.Group
+import brbo.common.MyLogger
 import brbo.common.ast._
 import brbo.common.cfg.{CFGNode, ControlFlowGraph}
 import com.ibm.wala.util.graph.NumberedGraph
@@ -10,6 +11,8 @@ import com.ibm.wala.util.graph.NumberedGraph
 import scala.collection.mutable
 
 object ResetPlaceHolderFinder {
+  private val logger = MyLogger.createLogger(ResetPlaceHolder.getClass, debugMode = false)
+
   // The index sets of any possible reset locations
   def indices(trace: Trace,
               group: Group,
@@ -27,13 +30,13 @@ object ResetPlaceHolderFinder {
           val indices = locations(trace, groups, resetPlaceHolderCandidates, throwIfNoResetPlaceHolder = true)(groupID)
           Some(indices)
         } catch {
-          case ResetPlaceHolderError(message) =>
+          case MissingResetPlaceHolder(message) =>
             stringBuilder.append(s"$message\n")
             None
         }
     })
     if (possibilities.isEmpty && throwIfNoResetPlaceHolder)
-      throw ResetPlaceHolderError(stringBuilder.toString().trim)
+      throw MissingResetPlaceHolder(stringBuilder.toString().trim)
     else
       possibilities
   }
@@ -46,7 +49,22 @@ object ResetPlaceHolderFinder {
     val resetPlaceHolderCandidates: Map[GroupID, Option[Command]] =
       asPostDominators(trace = trace, groups = groups, controlFlowGraph = controlFlowGraph)
 
-    locations(trace, groups, resetPlaceHolderCandidates, throwIfNoResetPlaceHolder)
+    val candidateLocations = resetPlaceHolderCandidates.map({
+      case (groupID: GroupID, maybeCommand) =>
+        s"${groupID.print()}: ${
+          maybeCommand match {
+            case Some(command) => command.printToIR()
+            case None => "None"
+          }
+        }"
+    }).mkString("\n")
+    logger.info(s"Reset place holder candidates:\n$candidateLocations")
+    val indices = locations(trace, groups, resetPlaceHolderCandidates, throwIfNoResetPlaceHolder)
+    val selectedLocations = indices.map({
+      case (groupID: GroupID, indices) => s"${groupID.print()}: $indices"
+    }).mkString("\n")
+    logger.info(s"Reset place holder locations:\n$selectedLocations")
+    indices
   }
 
   def asDominators(trace: Trace,
@@ -135,7 +153,8 @@ object ResetPlaceHolderFinder {
               val errorMessage = s"Failed to find a reset place holder between " +
                 s"${groupID.print()}'s $i and ${i + 1} segment (index range: [$begin, $end])\n" +
                 s"${SegmentClustering.printDecomposition(trace, groups)}"
-              if (throwIfNoResetPlaceHolder) throw ResetPlaceHolderError(errorMessage)
+              logger.error(errorMessage)
+              if (throwIfNoResetPlaceHolder) throw MissingResetPlaceHolder(errorMessage)
           }
           i = i + 1
         }
@@ -158,5 +177,5 @@ object ResetPlaceHolderFinder {
     }
   }
 
-  case class ResetPlaceHolderError(message: String) extends Exception
+  case class MissingResetPlaceHolder(message: String) extends Exception
 }

@@ -104,12 +104,12 @@ class DecompositionDriver(arguments: DecompositionArguments,
       case (groupID, group) => s"$groupID: ${printSegments(group.segments)}"
     }).mkString("\n")
     logger.info(s"Step 3.1: Selected decomposition:\n$groupsString\n${SegmentClustering.printDecomposition(trace, groups)}")
-    // TODO: logger.info(s"Step 3.2: Select reset locations for the groups")
+    logger.info(s"Step 3.2: (TODO) Select reset locations for the groups")
     val resetPlaceHolderIndices: Map[GroupID, Set[Int]] = ResetPlaceHolderFinder.indices(
       trace = trace,
       groups = groups,
       controlFlowGraph = ControlFlowGraph.toControlFlowGraph(instrumentedProgram),
-      throwIfNoResetPlaceHolder = false
+      throwIfNoResetPlaceHolder = true
     )
     logger.info(s"Step 3.3: Generate tables for training classifiers")
     val tables = Classifier.generateTables(

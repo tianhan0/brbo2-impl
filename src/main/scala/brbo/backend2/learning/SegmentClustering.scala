@@ -3,6 +3,7 @@ package brbo.backend2.learning
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.Trace
 import brbo.backend2.learning.Classifier._
+import brbo.backend2.learning.ResetPlaceHolderFinder.MissingResetPlaceHolder
 import brbo.backend2.learning.ScriptRunner._
 import brbo.backend2.learning.SegmentClustering._
 import brbo.common.ast._
@@ -313,6 +314,9 @@ class SegmentClustering(sumWeight: Int,
                   Some(classifierResults)
                 } catch {
                   case TableGenerationError(message) =>
+                    logger.infoOrError(s"Failed to train a classifier: $message")
+                    None
+                  case MissingResetPlaceHolder(message) =>
                     logger.infoOrError(s"Failed to train a classifier: $message")
                     None
                 }
