@@ -3,16 +3,15 @@ package brbo.benchmarks.sas22.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class ParseToken extends Common {
-  void execute(int pattern) {
-    if (pattern <= 0) {
+  void execute(int pattern, int i) {
+    if (pattern <= 0 || i >= pattern || i <= 0) {
       return;
     }
     int buf = 0;
     int R = 0;
     mostPreciseBound(R <= pattern + 1);
     lessPreciseBound(R <= MAX * pattern + MAX);
-    int i = ndInt2(0, pattern - 1);
-    if (ndBool2(i)) {
+    if (true) {
       buf++;
       R = R + 1;
       while (i + 1 < pattern) {

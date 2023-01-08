@@ -12,13 +12,8 @@ abstract public class SimpleQuote extends Common {
     mostPreciseBound(R <= value * 2 + 1);
     lessPreciseBound(R <= MAX * value + MAX);
     for (int i = 0; i < value; i++) {
-      if (ndBool2(i)) {
-        sb += 2;
-        R = R + 2;
-      } else {
-        sb++;
-        R = R + 1;
-      }
+      sb += 2;
+      R = R + 2;
     }
     // if (ndBool()) {
     sb++;
