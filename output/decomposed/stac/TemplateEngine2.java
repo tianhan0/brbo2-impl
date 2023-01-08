@@ -10,8 +10,8 @@ abstract class TemplateEngine2 {
     int D1p = 0;
     int temporaryText = 0;
     int lastIndexOfText = 0;
-    lessPreciseBound((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) < (((((((((((8 * text) * templateds) + ((8 * separator) * templateds)) + ((8 * separator) * text)) + ((8 * text) * text)) + ((8 * separator) * separator)) + ((8 * templateds) * templateds)) + (8 * text)) + (8 * templateds)) + (8 * separator)) + 8)) || (((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) == (((((((((((8 * text) * templateds) + ((8 * separator) * templateds)) + ((8 * separator) * text)) + ((8 * text) * text)) + ((8 * separator) * separator)) + ((8 * templateds) * templateds)) + (8 * text)) + (8 * templateds)) + (8 * separator)) + 8)));
-    mostPreciseBound((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) < ((text * templateds) + (separator * templateds))) || (((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) == ((text * templateds) + (separator * templateds))));
+    lessPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < (((((((((((8 * text) * templateds) + ((8 * separator) * templateds)) + ((8 * separator) * text)) + ((8 * text) * text)) + ((8 * separator) * separator)) + ((8 * templateds) * templateds)) + (8 * text)) + (8 * templateds)) + (8 * separator)) + 8)) || (((0 + (D0p * C0)) + (D1p * C1)) == (((((((((((8 * text) * templateds) + ((8 * separator) * templateds)) + ((8 * separator) * text)) + ((8 * text) * text)) + ((8 * separator) * separator)) + ((8 * templateds) * templateds)) + (8 * text)) + (8 * templateds)) + (8 * separator)) + 8)));
+    mostPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < ((text * templateds) + (separator * templateds))) || (((0 + (D0p * C0)) + (D1p * C1)) == ((text * templateds) + (separator * templateds))));
     if ((((text < 0) || (text == 0)) || ((templateds < 0) || (templateds == 0))) || ((separator < 0) || (separator == 0)))
     {
       return;
