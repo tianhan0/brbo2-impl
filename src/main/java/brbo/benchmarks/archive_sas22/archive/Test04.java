@@ -1,4 +1,4 @@
-package brbo.benchmarks.sas22.archive;
+package brbo.benchmarks.archive_sas22.archive;
 
 import brbo.benchmarks.Common;
 
