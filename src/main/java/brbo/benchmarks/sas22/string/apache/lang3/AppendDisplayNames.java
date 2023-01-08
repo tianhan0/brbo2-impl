@@ -3,32 +3,17 @@ package brbo.benchmarks.sas22.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class AppendDisplayNames extends Common {
-  void execute(int sorted) {
-    if (sorted <= 0) {
-      return;
-    }
-    int sb = 0;
+  void execute(int[] sorted) {
     int R = 0;
-    mostPreciseBound(R <= sorted + 2 * sorted);
-    lessPreciseBound(R <= MAX * sorted + MAX);
-    int iterator = sorted;
-    while (iterator > 0) {
-      int entry = ndInt2(1, iterator);
-      iterator -= entry;
-
-      for (int i = 0; i < entry; i++) {
-        if (ndBool2(i)) {
-          sb += 2;
-          R = R + 2;
-        } else {
-          sb++;
-          R = R + 1;
-        }
+    mostPreciseBound(R <= arraySum(sorted) + 2 * arraySum(sorted));
+    lessPreciseBound(R <= MAX * arraySum(sorted) + MAX);
+    int entry = 0;
+    for (int i = 0; i < arrayLength(sorted); i++) {
+      entry = arrayRead(sorted, i);
+      for (int j = 0; j < entry; j++) {
+        R = R + 2;
       }
-      // if (ndBool()) {
-      sb++;
       R = R + 1;
-      // }
     }
   }
 }
