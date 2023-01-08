@@ -8,8 +8,8 @@ abstract class PadStart {
     int D0p = 0;
     int D1 = 0;
     int D1p = 0;
-    lessPreciseBound((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) < (((8 * minLength) + (8 * string)) + 8)) || (((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) == (((8 * minLength) + (8 * string)) + 8)));
-    mostPreciseBound((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) < minLength) || (((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) == minLength));
+    lessPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < (((8 * minLength) + (8 * string)) + 8)) || (((0 + (D0p * C0)) + (D1p * C1)) == (((8 * minLength) + (8 * string)) + 8)));
+    mostPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < minLength) || (((0 + (D0p * C0)) + (D1p * C1)) == minLength));
     if (((string < 0) || (string == 0)) || ((minLength < 0) || (minLength == 0)))
     {
       return;
