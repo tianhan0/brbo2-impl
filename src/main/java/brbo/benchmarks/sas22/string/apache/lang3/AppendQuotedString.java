@@ -3,8 +3,8 @@ package brbo.benchmarks.sas22.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class AppendQuotedString extends Common {
-  void execute(int pattern, int pos) {
-    if (pattern <= 0 || pos <= 0 || pattern < pos) {
+  void execute(int pattern, int pos, int stopIndex) {
+    if (pattern <= 0 || pos <= 0 || pattern < pos || !(stopIndex <= pattern && stopIndex >= pos)) {
       return;
     }
     int appendTo = 0;
@@ -14,7 +14,7 @@ abstract public class AppendQuotedString extends Common {
     int start = pos;
     int lastHold = start;
     for (int i = pos; i < pattern; i++) {
-      if (ndBool2(i)) {
+      if (i == stopIndex) {
         pos++;
         appendTo += pos - lastHold;
         R = R + (pos - lastHold);
