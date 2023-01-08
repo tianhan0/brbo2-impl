@@ -3,8 +3,8 @@ package brbo.benchmarks.sas22.string.apache.lang3;
 import brbo.benchmarks.Common;
 
 abstract public class AppendRecursiveTypes extends Common {
-  void execute(int argumentTypes, int recursiveTypeIndexes) {
-    if (argumentTypes <= 0 || recursiveTypeIndexes <= 0) {
+  void execute(int argumentTypes, int recursiveTypeIndexes, int d) {
+    if (argumentTypes <= 0 || recursiveTypeIndexes <= 0 || !(d <= recursiveTypeIndexes && d >= 0)) {
       return;
     }
     int builder = 0;
@@ -16,7 +16,7 @@ abstract public class AppendRecursiveTypes extends Common {
 
       builder++;
       R = R + 1;
-      for (int i2 = 1; i2 < 1; i2++) {
+      for (int j = 1; j < 1; j++) {
         builder += sep;
         R = R + sep;
         builder++;
@@ -24,14 +24,13 @@ abstract public class AppendRecursiveTypes extends Common {
       }
     }
 
-    int d = ndInt2(0, recursiveTypeIndexes);
     int argumentsFiltered = argumentTypes - d;
 
     if (argumentsFiltered > 0) {
       builder++;
       R = R + 1;
       int sep2 = 2;
-      for (int i3 = 1; i3 < argumentsFiltered; i3++) {
+      for (int k = 1; k < argumentsFiltered; k++) {
         builder += sep2;
         R = R + sep2;
         builder++;
