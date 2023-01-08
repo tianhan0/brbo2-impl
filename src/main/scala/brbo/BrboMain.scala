@@ -97,24 +97,37 @@ object BrboMain {
           logger.info(s"Skip file `$sourceFilePath`")
           sys.exit()
         }
-        val targetProgram = BasicProcessor.getTargetProgram(className, sourceFileContents)
 
         arguments match {
           case arguments: DecompositionArguments =>
-            decompose(
-              targetProgram = targetProgram,
-              logger = logger,
-              sourceFilePath = sourceFilePath,
-              arguments = arguments
-            )
-            logger.info(s"Finished decomposing ${sourceFile.getAbsolutePath}")
-          // TODO: Store results into csv files
+            try {
+              val targetProgram = BasicProcessor.getTargetProgram(className, sourceFileContents)
+              decompose(
+                targetProgram = targetProgram,
+                logger = logger,
+                sourceFilePath = sourceFilePath,
+                arguments = arguments
+              )
+              logger.info(s"Finished decomposing ${sourceFile.getAbsolutePath}")
+              // TODO: Store results into csv files
+            } catch {
+              case e: Exception =>
+                logger.error(s"Failed to decompose program ${sourceFile.getAbsolutePath}")
+                logger.error(s"Reason: ${e.toString}")
+            }
           case arguments: FuzzingArguments =>
-            fuzzing(
-              targetProgram = targetProgram,
-              sourceFilePath = sourceFilePath,
-              arguments = arguments
-            )
+            try {
+              val targetProgram = BasicProcessor.getTargetProgram(className, sourceFileContents)
+              fuzzing(
+                targetProgram = targetProgram,
+                sourceFilePath = sourceFilePath,
+                arguments = arguments
+              )
+            } catch {
+              case e: Exception =>
+                logger.info(s"Failed to fuzz program ${sourceFile.getAbsolutePath}")
+                logger.error(s"Reason: ${e.toString}")
+            }
           case _ => throw new Exception
         }
     })
@@ -139,12 +152,22 @@ object BrboMain {
     )
     val startTime = System.nanoTime
     val decomposedProgram = driver.decompose()
-    val newDecomposition = decomposedProgram.print(indent = 0, style = BrboJavaStyle)
     val endTime = System.nanoTime
-    val outputPath = {
-      val parent = FilenameUtils.getBaseName(Paths.get(sourceFilePath).getParent.toAbsolutePath.toString)
-      Paths.get(OUTPUT_DIRECTORY, "decomposed", parent, s"${FilenameUtils.getBaseName(sourceFilePath)}.java")
-    }
+    writeAndCompareDecomposedProgram(
+      decomposedProgram = decomposedProgram.print(indent = 0, style = BrboJavaStyle),
+      outputPath = decomposedProgramPath(originalProgramPath = sourceFilePath),
+      logger = logger
+    )
+  }
+
+  private def decomposedProgramPath(originalProgramPath: String): Path = {
+    val parent = FilenameUtils.getBaseName(Paths.get(originalProgramPath).getParent.toAbsolutePath.toString)
+    Paths.get(OUTPUT_DIRECTORY, "decomposed", parent, s"${FilenameUtils.getBaseName(originalProgramPath)}.java")
+  }
+
+  private def writeAndCompareDecomposedProgram(decomposedProgram: String,
+                                               outputPath: Path,
+                                               logger: MyLogger): Unit = {
     Files.createDirectories(outputPath.getParent)
     // val duration = (endTime - startTime) / 1e9d
     // val statistics = getStatistics(duration, arguments, driver.getNumberOfTraces)
@@ -152,16 +175,16 @@ object BrboMain {
       val existingDecomposition = readFromFile(outputPath.toAbsolutePath.toString)
       val actualOutputPath = Paths.get(outputPath.toAbsolutePath.toString + ".actual")
       Files.deleteIfExists(actualOutputPath)
-      if (existingDecomposition != newDecomposition) {
+      if (existingDecomposition != decomposedProgram) {
         logger.info(s"Write into file $actualOutputPath")
-        writeToFile(actualOutputPath, newDecomposition)
+        writeToFile(actualOutputPath, decomposedProgram)
 
         logger.info(s"New decomposition differs from the existing decomposition")
         logger.info(diffFiles(outputPath, actualOutputPath))
       }
     } else {
       logger.info(s"Write into file $outputPath")
-      writeToFile(outputPath, newDecomposition)
+      writeToFile(outputPath, decomposedProgram)
     }
   }
 
