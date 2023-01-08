@@ -354,8 +354,8 @@ object BrboAstUnitTest {
          |    int D4p = 0;
          |    int temporaryArray = 0;
          |    int lastIndexOfArray = 0;
-         |    lessPreciseBound((((((0 + (D1 + (D1p * C1))) + (D2 + (D2p * C2))) + (D3 + (D3p * C3))) + (D4 + (D4p * C4))) + array) < 10);
-         |    mostPreciseBound(!(((((((0 + (D1 + (D1p * C1))) + (D2 + (D2p * C2))) + (D3 + (D3p * C3))) + (D4 + (D4p * C4))) + array) < 10)) && !(((((((0 + (D1 + (D1p * C1))) + (D2 + (D2p * C2))) + (D3 + (D3p * C3))) + (D4 + (D4p * C4))) + array) == 10)));
+         |    lessPreciseBound((((((0 + (D1p * C1)) + (D2p * C2)) + (D3p * C3)) + (D4p * C4)) + array) < 10);
+         |    mostPreciseBound(!(((((((0 + (D1p * C1)) + (D2p * C2)) + (D3p * C3)) + (D4p * C4)) + array) < 10)) && !(((((((0 + (D1p * C1)) + (D2p * C2)) + (D3p * C3)) + (D4p * C4)) + array) == 10)));
          |    if (!((x < 10)) && !((x == 10)))
          |    {
          |      D1 = D1 + 10;

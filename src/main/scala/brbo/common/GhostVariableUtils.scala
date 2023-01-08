@@ -25,9 +25,14 @@ object GhostVariableUtils {
     }
   }
 
-  def approximatedResourceUsage(groupIds: Set[Int], legacy: Boolean): BrboExpr = groupIds.toList.sorted.foldLeft(Number(0): BrboExpr)({
-    (acc, groupId) => Addition(acc, generateSum(Some(groupId), legacy))
-  })
+  def approximatedResourceUsage(groupIds: Set[Int],
+                                legacy: Boolean,
+                                cheat: Boolean // When cheat, we omit R_i from the sum
+                               ): BrboExpr = {
+    groupIds.toList.sorted.foldLeft(Number(0): BrboExpr)({
+      (acc, groupId) => Addition(acc, generateSum(groupId = Some(groupId), legacy = legacy, cheat = cheat))
+    })
+  }
 
   def generateVariable(groupId: Option[Int], typ: GhostVariableTyp, legacy: Boolean = false): Identifier = {
     groupId match {
@@ -43,9 +48,11 @@ object GhostVariableUtils {
     (resourceVariable, starVariable, counterVariable)
   }
 
-  def generateSum(groupId: Option[Int], legacy: Boolean): BrboExpr = {
+  def generateSum(groupId: Option[Int], legacy: Boolean, cheat: Boolean): BrboExpr = {
     val (resourceVariable, starVariable, counterVariable) = generateVariables(groupId, legacy)
-    Addition(resourceVariable, Multiplication(starVariable, counterVariable))
+    val multiplication = Multiplication(starVariable, counterVariable)
+    if (cheat) multiplication
+    else Addition(resourceVariable, multiplication)
   }
 
   def declareVariables(groupId: Int, legacy: Boolean): List[Command] = {

@@ -16,7 +16,7 @@ class AbstractMachineIntegrationTest extends AnyFlatSpec {
   private val a: Identifier = Identifier("a", INT)
   private val t = Identifier("t", BrboType.INT)
   private val groupId = 1
-  private val approximatedResourceUsage = GhostVariableUtils.generateSum(Some(groupId), legacy = false)
+  private val approximatedResourceUsage = GhostVariableUtils.generateSum(Some(groupId), legacy = false, cheat = false)
 
   private val program1: BrboProgram = {
     val i: Identifier = Identifier("i", INT)
