@@ -339,7 +339,7 @@ object BrboAstUnitTest {
       s"""abstract class Test {
          |  void ${TargetProgram.MAIN_FUNCTION}(int x, int array)
          |  {
-         |    int BOOLEAN_SEPARATOR = 500;
+         |    int BOOLEAN_SEPARATOR = 502;
          |    int C1 = -1;
          |    int C2 = -1;
          |    int C3 = -1;

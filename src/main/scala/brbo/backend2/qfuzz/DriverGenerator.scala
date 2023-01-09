@@ -10,7 +10,7 @@ import brbo.frontend.TargetProgram
 object DriverGenerator {
   val ARRAY_SIZE = 5
   val MAX_INTEGER = 1000
-  val MIN_INTEGER = 1
+  val MIN_INTEGER = 4
   val HALF_MAX_VALUE: Int = java.lang.Short.MAX_VALUE / 2
   val MIN_LOOP_ITERATIONS = 2
   val MAX_LOOP_ITERATIONS = 3
