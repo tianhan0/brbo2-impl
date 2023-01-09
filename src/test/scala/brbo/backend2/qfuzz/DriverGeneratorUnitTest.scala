@@ -14,15 +14,21 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
       Identifier("b", BrboType.ARRAY(BrboType.INT)),
       Identifier("c", BrboType.ARRAY(BrboType.INT)),
       Identifier("d", BrboType.BOOL),
+      Identifier("e", BrboType.INT),
     )
-    val (declarations, initializations, prints) = DriverGenerator.declarationsAndInitializations(parameters)
+    val (declarations, initializations, prints) = DriverGenerator.declarationsAndInitializations(
+      parameters = parameters,
+      parametersInLoopConditions = List(Identifier("e", BrboType.INT))
+    )
     val result = (declarations ::: initializations ::: prints).mkString("\n")
     StringCompare.ignoreWhitespaces(result,
       """int a;
         |int[] b = new int[ARRAY_SIZE];
         |int[] c = new int[ARRAY_SIZE];
         |boolean d;
+        |int e;
         |a = values.get(0);
+        |
         |for (int i = 0; i < ARRAY_SIZE && 1 + i < values.size(); i++) {
         |  b[i] = values.get(1 + i);
         |}
@@ -30,10 +36,13 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |  c[i] = values.get(6 + i);
         |}
         |d = values.get(11) > 16383;
+        |e = values.get(12);
+        |e = e % (MAX_LOOP_ITERATIONS - MIN_LOOP_ITERATIONS + 1) + MIN_LOOP_ITERATIONS;
         |System.out.println("a: " + a);
         |System.out.println("b: " + Arrays.toString(b));
         |System.out.println("c: " + Arrays.toString(c));
-        |System.out.println("d: " + d);""".stripMargin)
+        |System.out.println("d: " + d);
+        |System.out.println("e: " + e);""".stripMargin)
   }
 
   "Generating a QFuzz driver" should "be correct" in {
@@ -59,6 +68,8 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |  public final static int ARRAY_SIZE = 5;
         |  private final static short MAX_INTEGER = 1000;
         |  private final static short MIN_INTEGER = 1;
+        |  private final static short MAX_LOOP_ITERATIONS = 3;
+        |  private final static short MIN_LOOP_ITERATIONS = 2;
         |  private final static int MAX_NUMBER_OF_USES_TO_TRACK = 1000;
         |
         |  /* Minimum distance between clusters. */

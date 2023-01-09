@@ -22,11 +22,15 @@ class ExecutorUnitTest extends AnyFlatSpec {
       11, 12, 13, 14, 15,
       16000, 17000,
     )
-    val result = Executor.toInputValues(parameters = parameters, inputArray = inputArray).get
+    val result = Executor.toInputValues(
+      parameters = parameters,
+      inputArray = inputArray,
+      parametersInLoopConditions = List(Identifier("c", BrboType.INT))
+    ).get
     StringCompare.ignoreWhitespaces(result.map(v => v.printToIR()).mkString("\n"),
       """1
         |[2,3,4,5,6]
-        |10
+        |2
         |[11,12,13,14,15]
         |false
         |true""".stripMargin)

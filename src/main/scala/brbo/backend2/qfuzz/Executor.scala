@@ -2,6 +2,7 @@ package brbo.backend2.qfuzz
 
 import brbo.BrboMain
 import brbo.backend2.InputParser
+import brbo.backend2.qfuzz.DriverGenerator.parametersInLoopConditionals
 import brbo.common.ast._
 import brbo.common.commandline.FuzzingArguments
 import brbo.common.{BrboType, MyLogger}
@@ -11,7 +12,6 @@ import play.api.libs.json.{JsArray, Json}
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import java.nio.{BufferUnderflowException, ByteBuffer}
-import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -108,7 +108,13 @@ object Executor {
         inputs
     })
     val inputFilePath: String = getInputFilePath(sourceFilePath)
-    val listOfInputValues = listOfInputs.flatMap({ inputs => toInputValues(inputs, program.mainFunction.parameters) }).toList
+    val listOfInputValues = listOfInputs.flatMap({
+      inputs =>
+        toInputValues(
+          inputArray = inputs,
+          parameters = program.mainFunction.parameters,
+          parametersInLoopConditions = parametersInLoopConditionals(program.mainFunction))
+    }).toList
     if (arguments.getDryRun) {
       logger.info(s"Step 6: Dry run. Not write interesting inputs into Json files")
     } else {
@@ -181,14 +187,23 @@ object Executor {
     s"${FilenameUtils.getFullPath(sourceFilePath)}$fileName"
   }
 
-  def toInputValues(inputArray: List[Int], parameters: List[Identifier]): Option[List[BrboValue]] = {
+  def toInputValues(inputArray: List[Int],
+                    parameters: List[Identifier],
+                    parametersInLoopConditions: List[Identifier]): Option[List[BrboValue]] = {
     try {
       val (_, inputValues) = parameters.foldLeft(0, Nil: List[BrboValue])({
         case ((indexSoFar, inputValues), parameter) =>
           // Keep in sync with the initializations of input values in DriverGenerator.declarationsAndInitializations
           parameter.typ match {
             case BrboType.INT =>
-              (indexSoFar + 1, Number(inputArray(indexSoFar)) :: inputValues)
+              val number = inputArray(indexSoFar)
+              val actualNumber =
+                if (parametersInLoopConditions.exists(p => p.sameAs(parameter))) {
+                  // Keep in sync with the generated drivers
+                  number % (DriverGenerator.MAX_LOOP_ITERATIONS - DriverGenerator.MIN_LOOP_ITERATIONS) + DriverGenerator.MIN_LOOP_ITERATIONS
+                }
+                else number
+              (indexSoFar + 1, Number(actualNumber) :: inputValues)
             case BrboType.BOOL =>
               (indexSoFar + 1, Bool(inputArray(indexSoFar) > DriverGenerator.HALF_MAX_VALUE) :: inputValues)
             case BrboType.ARRAY(BrboType.INT) =>

@@ -49,14 +49,6 @@ object ProgramTransformerUnitTest {
          |  int execute(int n, int INDEX_VARIABLE)
          |  {
          |    int USE_COUNT = 0;
-         |    if (((n < 3) || (n == 3)) && !((n < 2)))
-         |    {
-         |      ;
-         |    }
-         |    else
-         |    {
-         |      return USE_COUNT;
-         |    }
          |    if (n < 5)
          |    {
          |      return USE_COUNT;
@@ -116,8 +108,7 @@ object ProgramTransformerUnitTest {
          |      i = i + 1;
          |    }
          |  }
-         |}
-         |""".stripMargin),
+         |}""".stripMargin),
     TestCase("Test 02", test02,
       s"""class Test {
          |  int execute(int[] array, int INDEX_VARIABLE)

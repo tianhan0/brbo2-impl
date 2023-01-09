@@ -3,7 +3,7 @@ package brbo.backend2.qfuzz
 import brbo.common.BrboType
 import brbo.common.BrboType.QFuzzPrintType
 import brbo.common.ast.PrintStyle.QFuzzJavaStyle
-import brbo.common.ast.{BrboProgram, Identifier}
+import brbo.common.ast.{BrboAstUtils, BrboFunction, BrboProgram, Identifier}
 import brbo.common.string.StringFormatUtils
 import brbo.frontend.TargetProgram
 
@@ -12,10 +12,15 @@ object DriverGenerator {
   val MAX_INTEGER = 1000
   val MIN_INTEGER = 1
   val HALF_MAX_VALUE: Int = java.lang.Short.MAX_VALUE / 2
+  val MIN_LOOP_ITERATIONS = 2
+  val MAX_LOOP_ITERATIONS = 3
   private val MAX_NUMBER_OF_USES_TO_TRACK = 1000
 
   def run(program: BrboProgram): String = {
-    val (declarations, initializations, prints) = declarationsAndInitializations(program.mainFunction.parameters)
+    val (declarations, initializations, prints) = declarationsAndInitializations(
+      parameters = program.mainFunction.parameters,
+      parametersInLoopConditions = parametersInLoopConditionals(program.mainFunction),
+    )
     val transformedProgram = ProgramTransformer.transform(program)
     s"""package $DRIVER_PACKAGE_NAME;
        |
@@ -36,6 +41,8 @@ object DriverGenerator {
        |  public final static int ARRAY_SIZE = $ARRAY_SIZE;
        |  private final static short MAX_INTEGER = $MAX_INTEGER;
        |  private final static short MIN_INTEGER = $MIN_INTEGER;
+       |  private final static short MAX_LOOP_ITERATIONS = $MAX_LOOP_ITERATIONS;
+       |  private final static short MIN_LOOP_ITERATIONS = $MIN_LOOP_ITERATIONS;
        |  private final static int MAX_NUMBER_OF_USES_TO_TRACK = $MAX_NUMBER_OF_USES_TO_TRACK;
        |
        |  /* Minimum distance between clusters. */
@@ -127,17 +134,25 @@ object DriverGenerator {
   def prependIndents(lines: List[String], indent: Int): List[String] =
     lines.map(line => StringFormatUtils.prependIndentsPerLine(line, indent))
 
-  def declarationsAndInitializations(parameters: List[Identifier]): (List[String], List[String], List[String]) = {
+  def declarationsAndInitializations(parameters: List[Identifier],
+                                     parametersInLoopConditions: List[Identifier]): (List[String], List[String], List[String]) = {
     val (_, declarations, initializations, prints) = parameters.foldLeft((0, Nil: List[String], Nil: List[String], Nil: List[String]))({
       case ((indexSoFar, declarations, initializations, prints), parameter) =>
         parameter.typ match {
           case BrboType.INT =>
             val declaration = s"${parameter.typeNamePair(QFuzzPrintType)};"
             val initialization = s"${parameter.name} = values.get($indexSoFar);"
+            val wrap =
+              if (parametersInLoopConditions.exists(p => p.sameAs(parameter))) {
+                // If a variable is used in loop conditions, then it must benot in [MIN_LOOP_ITERATIONS, MAX_LOOP_ITERATIONS],
+                // to avoid executing a loop for too many (which makes it expensive to choose segments) or too few times (which ???).
+                s"${parameter.name} = ${parameter.name} % (MAX_LOOP_ITERATIONS - MIN_LOOP_ITERATIONS + 1) + MIN_LOOP_ITERATIONS;"
+              }
+              else ""
             val print = s"""System.out.println("${parameter.name}: " + ${parameter.name});"""
             (indexSoFar + 1,
               declaration :: declarations,
-              initialization :: initializations,
+              wrap :: initialization :: initializations,
               print :: prints)
           case BrboType.ARRAY(BrboType.INT) =>
             val declaration = s"${parameter.typeNamePair(QFuzzPrintType)} = new int[ARRAY_SIZE];"
@@ -162,5 +177,12 @@ object DriverGenerator {
         }
     })
     (declarations.reverse, initializations.reverse, prints.reverse)
+  }
+
+  def parametersInLoopConditionals(function: BrboFunction): List[Identifier] = {
+    val loopConditionals = BrboAstUtils.getLoopConditionals(function.body)
+    function.parameters.filter({
+      identifier => identifier.typ == BrboType.INT && loopConditionals.exists({ e => e.getUses.contains(identifier) })
+    })
   }
 }
