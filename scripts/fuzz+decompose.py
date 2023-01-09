@@ -154,7 +154,7 @@ if __name__ == "__main__":
         run_command(command=run_qfuzz, cwd=brbo2_root, dry=args.dry)
 
         run_decomposition = decomposition_command(
-            threads=args.threads, samples=args.samples, input=java_file, deps=args.deps
+            threads=args.threads, input=java_file, samples=args.samples, deps=args.deps
         )
         run_command(command=run_decomposition, cwd=brbo2_root, dry=args.dry)
 
@@ -170,6 +170,8 @@ if __name__ == "__main__":
                 cwd=brbo2_root,
                 dry=args.dry,
             )
+        else:
+            print("Generated the expected decomposition")
         run_verification = verification_command(
             decomposed_file=decomposed_file, icra=args.icra, deps=args.deps
         )
