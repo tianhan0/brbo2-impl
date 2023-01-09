@@ -145,6 +145,7 @@ if __name__ == "__main__":
     brbo2_root = Path(args.brbo2).expanduser()
     brbo_root = Path(args.brbo).expanduser()
 
+    java_files = sorted(java_files, key=lambda path: str(path), reverse=False)
     for java_file in java_files:
         print(f"Process file `{java_file}`")
 
