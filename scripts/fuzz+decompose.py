@@ -145,18 +145,17 @@ if __name__ == "__main__":
     brbo2_root = Path(args.brbo2).expanduser()
     brbo_root = Path(args.brbo).expanduser()
 
-    run_qfuzz = qfuzz_command(
-        timeout=args.timeout, input=args.input, qfuzz=args.qfuzz, deps=args.deps
-    )
-    run_decomposition = decomposition_command(
-        threads=args.threads, samples=args.samples, input=args.input, deps=args.deps
-    )
-
     for java_file in java_files:
         print(f"Process file `{java_file}`")
 
+        run_qfuzz = qfuzz_command(
+            timeout=args.timeout, input=java_file, qfuzz=args.qfuzz, deps=args.deps
+        )
         run_command(command=run_qfuzz, cwd=brbo2_root, dry=args.dry)
 
+        run_decomposition = decomposition_command(
+            threads=args.threads, samples=args.samples, input=java_file, deps=args.deps
+        )
         run_command(command=run_decomposition, cwd=brbo2_root, dry=args.dry)
 
         decomposed_file_path = (
