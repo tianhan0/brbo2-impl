@@ -32,6 +32,7 @@ class SegmentClustering(sumWeight: Int,
                         threads: Int) {
   private val logger = MyLogger.createLogger(classOf[SegmentClustering], debugMode)
   private val MAX_SEGMENT_LENGTH = 3
+  private val TOO_MANY_NUMBER_OF_COSTS = 100
   private val executionContextExecutor = {
     val executorService = Executors.newFixedThreadPool(threads)
     ExecutionContext.fromExecutor(executorService)
@@ -102,6 +103,10 @@ class SegmentClustering(sumWeight: Int,
     val indices: util.Set[Int] = trace.costTraceAssociation.indexMap.keys.toSet.diff(excludeIndices).asJava
     logger.traceOrError(s"Choose segments with sizes of $segmentLength among trace node indices $indices")
     if (segmentLength > indices.size()) return Nil
+    if (indices.size() >= TOO_MANY_NUMBER_OF_COSTS) {
+      logger.info(s"Not generating segments due to too many nodes: more than $TOO_MANY_NUMBER_OF_COSTS")
+      return Nil
+    }
     Sets.combinations(indices, segmentLength).asScala
       .map(subset => Segment(subset.asScala.toList.sorted))
       .toList
