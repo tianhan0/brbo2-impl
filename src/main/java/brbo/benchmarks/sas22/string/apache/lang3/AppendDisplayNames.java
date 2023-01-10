@@ -4,6 +4,9 @@ import brbo.benchmarks.Common;
 
 abstract public class AppendDisplayNames extends Common {
   void execute(int[] sorted) {
+    if (arrayLength(sorted) <= 1) {
+      return;
+    }
     int R = 0;
     mostPreciseBound(R <= arraySum(sorted) + 2 * arraySum(sorted));
     lessPreciseBound(R <= MAX * arraySum(sorted) + MAX);

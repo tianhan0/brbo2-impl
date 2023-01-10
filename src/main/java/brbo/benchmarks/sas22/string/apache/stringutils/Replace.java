@@ -4,7 +4,7 @@ import brbo.benchmarks.Common;
 
 abstract public class Replace extends Common {
   void execute(int[] text, int searchString, int replacement, int max) {
-    if (arraySum(text) <= 0 || searchString <= 0 || max <= 0 || replacement <= 0) {
+    if (arrayLength(text) <= 1 || searchString <= 0 || max <= 0 || replacement <= 0) {
       return;
     }
     int R = 0;

@@ -4,6 +4,9 @@ import brbo.benchmarks.Common;
 
 abstract public class GetFormattedExceptionMessage extends Common {
   void execute(int[] baseMessage) {
+    if (arrayLength(baseMessage) <= 1) {
+      return;
+    }
     int buffer = 0;
     int R = 0;
     mostPreciseBound(R <= 3 + 6 * arraySum(baseMessage));

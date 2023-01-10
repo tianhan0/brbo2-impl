@@ -4,7 +4,7 @@ import brbo.benchmarks.Common;
 
 abstract public class DurationFormat extends Common {
   void execute(int[] tokens, int years, int months) {
-    if (years <= 0 || months <= 0) {
+    if (arrayLength(tokens) <= 1 || years <= 0 || months <= 0) {
       return;
     }
     int R = 0;

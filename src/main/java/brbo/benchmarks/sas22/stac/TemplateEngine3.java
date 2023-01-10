@@ -4,7 +4,7 @@ import brbo.benchmarks.Common;
 
 public abstract class TemplateEngine3 extends Common {
   void execute(int[] text, int ts, int sep, int rep) {
-    if (arraySum(text) <= 0 || ts <= 0 || sep <= 0 || rep <= 0) {
+    if (arrayLength(text) <= 1 || ts <= 0 || sep <= 0 || rep <= 0) {
       return;
     }
     int R = 0;

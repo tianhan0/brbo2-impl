@@ -6,7 +6,7 @@ abstract public class SplitByWholeSeparatorWorker extends Common {
   void execute(int[] str,
                int[] isSeparator,
                int max) {
-    if (arraySum(str) <= 0 || max <= 0 || arrayLength(isSeparator) < arrayLength(str)) {
+    if (arrayLength(str) <= 1 || max <= 0 || arrayLength(isSeparator) < arrayLength(str)) {
       return;
     }
     int R = 0;

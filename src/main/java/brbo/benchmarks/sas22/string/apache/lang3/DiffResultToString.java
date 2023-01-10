@@ -4,6 +4,9 @@ import brbo.benchmarks.Common;
 
 abstract public class DiffResultToString extends Common {
   void execute(int[] diff) {
+    if (arrayLength(diff) <= 1) {
+      return;
+    }
     int lhsBuilder = 0;
     int rhsBuilder = 0;
     int R = 0;

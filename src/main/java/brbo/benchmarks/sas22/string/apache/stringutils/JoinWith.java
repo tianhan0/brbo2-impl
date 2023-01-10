@@ -4,7 +4,7 @@ import brbo.benchmarks.Common;
 
 abstract public class JoinWith extends Common {
   void execute(int[] objects, int separator) {
-    if (arrayLength(objects) <= 0) {
+    if (arrayLength(objects) <= 1) {
       return;
     }
     int R = 0;

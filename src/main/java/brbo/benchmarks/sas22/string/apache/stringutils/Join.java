@@ -4,7 +4,7 @@ import brbo.benchmarks.Common;
 
 abstract public class Join extends Common {
   void execute(int[] array, int startIndex, int endIndex) {
-    if (arraySum(array) <= 0 ||
+    if (arrayLength(array) <= 1 ||
         startIndex <= 0 || startIndex >= arrayLength(array) ||
         endIndex <= 0 || endIndex >= arrayLength(array) ||
         endIndex - startIndex <= 0) {

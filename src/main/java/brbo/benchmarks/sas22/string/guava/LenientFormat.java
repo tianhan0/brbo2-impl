@@ -4,7 +4,7 @@ import brbo.benchmarks.Common;
 
 abstract public class LenientFormat extends Common {
   void execute(int[] template, int args) {
-    if (arraySum(template) <= 0 || args <= 0) {
+    if (arrayLength(template) <= 1 || args <= 0) {
       return;
     }
     int R = 0;
