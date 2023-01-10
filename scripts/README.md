@@ -9,7 +9,8 @@
       --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java \
       --qfuzz $HOME/Documents/workspace/qfuzz/ \
       --brbo2 $HOME/Documents/workspace/brbo2-impl/ \
-      --brbo $HOME/Documents/workspace/brbo-impl/
+      --brbo $HOME/Documents/workspace/brbo-impl/ \
+      > $HOME/Documents/workspace/log.txt 2>&1 &
 ```
 
 ## Generate Interesting Inputs via QFuzz
