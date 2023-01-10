@@ -150,9 +150,7 @@ object BrboMain {
       userProvidedInputFile = DecompositionDriver.getInputFilePath(useProvidedInputs = arguments.getUseProvidedInputs, sourceFilePath),
       qfuzzInputFile = Executor.getInputFilePath(sourceFilePath),
     )
-    val startTime = System.nanoTime
     val decomposedProgram = driver.decompose()
-    val endTime = System.nanoTime
     writeAndCompareDecomposedProgram(
       decomposedProgram = decomposedProgram.print(indent = 0, style = BrboJavaStyle),
       outputPath = decomposedProgramPath(originalProgramPath = sourceFilePath),
@@ -181,6 +179,8 @@ object BrboMain {
 
         logger.info(s"New decomposition differs from the existing decomposition")
         logger.info(diffFiles(outputPath, actualOutputPath))
+      } else {
+        logger.info(s"Generated the expected decomposition at $outputPath")
       }
     } else {
       logger.info(s"Write into file $outputPath")
