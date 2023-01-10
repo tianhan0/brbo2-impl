@@ -10,9 +10,9 @@ abstract class Replace {
     int D1p = 0;
     int temporaryText = 0;
     int lastIndexOfText = 0;
-    lessPreciseBound((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) < ((8 + (8 * text)) + ((8 * text) * replacement))) || (((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) == ((8 + (8 * text)) + ((8 * text) * replacement))));
-    mostPreciseBound((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) < (text + (text * replacement))) || (((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) == (text + (text * replacement))));
-    if (((((text < 0) || (text == 0)) || ((searchString < 0) || (searchString == 0))) || ((max < 0) || (max == 0))) || ((replacement < 0) || (replacement == 0)))
+    lessPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < ((8 + (8 * text)) + ((8 * text) * replacement))) || (((0 + (D0p * C0)) + (D1p * C1)) == ((8 + (8 * text)) + ((8 * text) * replacement))));
+    mostPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < (text + (text * replacement))) || (((0 + (D0p * C0)) + (D1p * C1)) == (text + (text * replacement))));
+    if (((((text < 1) || (text == 1)) || ((searchString < 0) || (searchString == 0))) || ((max < 0) || (max == 0))) || ((replacement < 0) || (replacement == 0)))
     {
       return;
     }

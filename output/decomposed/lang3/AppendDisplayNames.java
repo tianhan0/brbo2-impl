@@ -12,7 +12,14 @@ abstract class AppendDisplayNames {
     int lastIndexOfSorted = 0;
     lessPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < ((8 * sorted) + 8)) || (((0 + (D0p * C0)) + (D1p * C1)) == ((8 * sorted) + 8)));
     mostPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < (sorted + (2 * sorted))) || (((0 + (D0p * C0)) + (D1p * C1)) == (sorted + (2 * sorted))));
-    int sb = 0;
+    if ((sorted < 1) || (sorted == 1))
+    {
+      return;
+    }
+    else
+    {
+      ;
+    }
     int R = 0;
     // mostPreciseBound(R <= arraySum(sorted) + 2 * arraySum(sorted))
     // lessPreciseBound(R <= MAX * arraySum(sorted) + MAX)

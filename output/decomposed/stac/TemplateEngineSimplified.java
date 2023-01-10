@@ -9,7 +9,7 @@ abstract class TemplateEngineSimplified {
     int lastIndexOfText = 0;
     lessPreciseBound(((0 + (D0p * C0)) < ((8 * text) + 8)) || ((0 + (D0p * C0)) == ((8 * text) + 8)));
     mostPreciseBound(((0 + (D0p * C0)) < text) || ((0 + (D0p * C0)) == text));
-    if ((text < 0) || (text == 0))
+    if ((text < 1) || (text == 1))
     {
       return;
     }

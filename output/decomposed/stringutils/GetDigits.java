@@ -7,8 +7,8 @@ abstract class GetDigits {
     int D0p = 0;
     int temporaryChoices = 0;
     int lastIndexOfChoices = 0;
-    lessPreciseBound(((0 + (D0 + (D0p * C0))) < (8 * str)) || ((0 + (D0 + (D0p * C0))) == (8 * str)));
-    mostPreciseBound(((0 + (D0 + (D0p * C0))) < str) || ((0 + (D0 + (D0p * C0))) == str));
+    lessPreciseBound(((0 + (D0p * C0)) < (8 * str)) || ((0 + (D0p * C0)) == (8 * str)));
+    mostPreciseBound(((0 + (D0p * C0)) < str) || ((0 + (D0p * C0)) == str));
     if (((str < 0) || (str == 0)) || (choices < str))
     {
       return;
@@ -30,7 +30,7 @@ abstract class GetDigits {
         choice = temporaryChoices - lastIndexOfChoices;
         lastIndexOfChoices = temporaryChoices;
       }
-      if (!((choice < 500)) && !((choice == 500)))
+      if (!((choice < 502)) && !((choice == 502)))
       {
         strDigits = strDigits + 1;
         D0 = D0 + 1;

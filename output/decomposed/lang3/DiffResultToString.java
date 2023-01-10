@@ -9,6 +9,14 @@ abstract class DiffResultToString {
     int lastIndexOfDiff = 0;
     lessPreciseBound(((0 + (D0p * C0)) < ((8 * diff) + 8)) || ((0 + (D0p * C0)) == ((8 * diff) + 8)));
     mostPreciseBound(((0 + (D0p * C0)) < diff) || ((0 + (D0p * C0)) == diff));
+    if ((diff < 1) || (diff == 1))
+    {
+      return;
+    }
+    else
+    {
+      ;
+    }
     int lhsBuilder = 0;
     int rhsBuilder = 0;
     int R = 0;

@@ -10,9 +10,9 @@ abstract class Join2 {
     int D1p = 0;
     int temporaryObjects = 0;
     int lastIndexOfObjects = 0;
-    lessPreciseBound((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) < ((8 + (8 * objects)) + (8 * objects))) || (((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) == ((8 + (8 * objects)) + (8 * objects))));
-    mostPreciseBound((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) < (objects + objects)) || (((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) == (objects + objects)));
-    if ((objects < 0) || (objects == 0))
+    lessPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < ((8 + (8 * objects)) + (8 * objects))) || (((0 + (D0p * C0)) + (D1p * C1)) == ((8 + (8 * objects)) + (8 * objects))));
+    mostPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < (objects + objects)) || (((0 + (D0p * C0)) + (D1p * C1)) == (objects + objects)));
+    if ((objects < 1) || (objects == 1))
     {
       return;
     }

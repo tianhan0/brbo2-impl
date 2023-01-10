@@ -11,7 +11,7 @@ abstract class SplitByWholeSeparatorWorker {
     int lastIndexOfIsSeparator = 0;
     lessPreciseBound(((0 + (D0p * C0)) < ((8 * str) + 8)) || ((0 + (D0p * C0)) == ((8 * str) + 8)));
     mostPreciseBound(((0 + (D0p * C0)) < str) || ((0 + (D0p * C0)) == str));
-    if ((((str < 0) || (str == 0)) || ((max < 0) || (max == 0))) || (isSeparator < str))
+    if ((((str < 1) || (str == 1)) || ((max < 0) || (max == 0))) || (isSeparator < str))
     {
       return;
     }
@@ -48,7 +48,7 @@ abstract class SplitByWholeSeparatorWorker {
         isSeparatorChunk = temporaryIsSeparator - lastIndexOfIsSeparator;
         lastIndexOfIsSeparator = temporaryIsSeparator;
       }
-      if (!((isSeparatorChunk < 500)) && !((isSeparatorChunk == 500)))
+      if (!((isSeparatorChunk < 502)) && !((isSeparatorChunk == 502)))
       {
         numberOfStrings = numberOfStrings + 1;
       }

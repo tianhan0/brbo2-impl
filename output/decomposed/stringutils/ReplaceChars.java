@@ -29,7 +29,7 @@ abstract class ReplaceChars {
         choice = temporaryChoices - lastIndexOfChoices;
         lastIndexOfChoices = temporaryChoices;
       }
-      if (!((choice < 500)) && !((choice == 500)))
+      if (!((choice < 502)) && !((choice == 502)))
       {
         if (i < replaceChars)
         {

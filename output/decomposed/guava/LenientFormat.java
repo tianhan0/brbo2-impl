@@ -12,7 +12,7 @@ abstract class LenientFormat {
     int lastIndexOfTemplate = 0;
     lessPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < (((8 * template) + (8 * args)) + 8)) || (((0 + (D0p * C0)) + (D1p * C1)) == (((8 * template) + (8 * args)) + 8)));
     mostPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < (((template + args) + 2) + (2 * args))) || (((0 + (D0p * C0)) + (D1p * C1)) == (((template + args) + 2) + (2 * args))));
-    if (((template < 0) || (template == 0)) || ((args < 0) || (args == 0)))
+    if (((template < 1) || (template == 1)) || ((args < 0) || (args == 0)))
     {
       return;
     }

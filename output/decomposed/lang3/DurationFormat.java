@@ -15,7 +15,7 @@ abstract class DurationFormat {
     int lastIndexOfTokens = 0;
     lessPreciseBound(((((0 + (D0p * C0)) + (D1p * C1)) + (D2p * C2)) < ((((((((((8 * tokens) * tokens) + ((8 * years) * years)) + ((8 * months) * months)) + ((8 * tokens) * years)) + ((8 * tokens) * months)) + (8 * months)) + (8 * years)) + (8 * tokens)) + 8)) || ((((0 + (D0p * C0)) + (D1p * C1)) + (D2p * C2)) == ((((((((((8 * tokens) * tokens) + ((8 * years) * years)) + ((8 * months) * months)) + ((8 * tokens) * years)) + ((8 * tokens) * months)) + (8 * months)) + (8 * years)) + (8 * tokens)) + 8)));
     mostPreciseBound(((((0 + (D0p * C0)) + (D1p * C1)) + (D2p * C2)) < (tokens + (tokens * (years + months)))) || ((((0 + (D0p * C0)) + (D1p * C1)) + (D2p * C2)) == (tokens + (tokens * (years + months)))));
-    if (((years < 0) || (years == 0)) || ((months < 0) || (months == 0)))
+    if ((((tokens < 1) || (tokens == 1)) || ((years < 0) || (years == 0))) || ((months < 0) || (months == 0)))
     {
       return;
     }
@@ -23,7 +23,6 @@ abstract class DurationFormat {
     {
       ;
     }
-    int buffer = 0;
     int R = 0;
     // mostPreciseBound(R <= arraySum(tokens) + arraySum(tokens) * (years + months))
     // lessPreciseBound(R <= MAX * arraySum(tokens) * arraySum(tokens) + MAX * years * years + MAX * months * months + MAX * arraySum(tokens) * years + MAX * arraySum(tokens) * months + MAX * months + MAX * years + MAX * arraySum(tokens) + MAX)
@@ -37,8 +36,8 @@ abstract class DurationFormat {
         lastIndexOfTokens = temporaryTokens;
       }
       D2 = D2 + chunk;
-      D1 = D1 + years;
-      D0 = D0 + months;
+      D0 = D0 + years;
+      D1 = D1 + months;
       i = i + 1;
       // reset R2
       D1p = D1;

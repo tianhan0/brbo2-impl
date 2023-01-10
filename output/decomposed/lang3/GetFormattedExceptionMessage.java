@@ -12,6 +12,14 @@ abstract class GetFormattedExceptionMessage {
     int lastIndexOfBaseMessage = 0;
     lessPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < (8 + (8 * baseMessage))) || (((0 + (D0p * C0)) + (D1p * C1)) == (8 + (8 * baseMessage))));
     mostPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < (3 + (6 * baseMessage))) || (((0 + (D0p * C0)) + (D1p * C1)) == (3 + (6 * baseMessage))));
+    if ((baseMessage < 1) || (baseMessage == 1))
+    {
+      return;
+    }
+    else
+    {
+      ;
+    }
     int buffer = 0;
     int R = 0;
     // mostPreciseBound(R <= 3 + 6 * arraySum(baseMessage))

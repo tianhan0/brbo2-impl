@@ -10,9 +10,9 @@ abstract class Join {
     int D1p = 0;
     int temporaryArray = 0;
     int lastIndexOfArray = 0;
-    lessPreciseBound((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) < ((8 + (8 * array)) + (8 * array))) || (((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) == ((8 + (8 * array)) + (8 * array))));
-    mostPreciseBound((((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) < (array + array)) || (((0 + (D0 + (D0p * C0))) + (D1 + (D1p * C1))) == (array + array)));
-    if (((((((array < 0) || (array == 0)) || ((startIndex < 0) || (startIndex == 0))) || !((startIndex < array))) || ((endIndex < 0) || (endIndex == 0))) || !((endIndex < array))) || (((endIndex - startIndex) < 0) || ((endIndex - startIndex) == 0)))
+    lessPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < ((8 + (8 * array)) + (8 * array))) || (((0 + (D0p * C0)) + (D1p * C1)) == ((8 + (8 * array)) + (8 * array))));
+    mostPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < (array + array)) || (((0 + (D0p * C0)) + (D1p * C1)) == (array + array)));
+    if (((((((array < 1) || (array == 1)) || ((startIndex < 0) || (startIndex == 0))) || !((startIndex < array))) || ((endIndex < 0) || (endIndex == 0))) || !((endIndex < array))) || (((endIndex - startIndex) < 0) || ((endIndex - startIndex) == 0)))
     {
       return;
     }
