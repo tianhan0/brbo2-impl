@@ -15,30 +15,12 @@ abstract class GetCanonicalName {
     {
       ;
     }
-    int className_ = className;
-    int dim = 0;
-    while (!((className_ < 0)) && !((className_ == 0)))
-    {
-      dim = dim + 1;
-      className_ = className_ - 1;
-      // reset R0
-    }
-    int canonicalClassNameBuffer = 0;
     int R = 0;
     // mostPreciseBound(R <= className)
     // lessPreciseBound(R <= MAX * className + MAX)
-    if (dim < 1)
-    {
-      return;
-    }
-    else
-    {
-      ;
-    }
     int i = 0;
-    while (i < dim)
+    while (i < className)
     {
-      canonicalClassNameBuffer = canonicalClassNameBuffer + 1;
       D0 = D0 + 1;
       i = i + 1;
       D0p = D0;
