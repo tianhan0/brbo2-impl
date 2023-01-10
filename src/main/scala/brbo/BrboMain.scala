@@ -113,7 +113,7 @@ object BrboMain {
             } catch {
               case e: Exception =>
                 logger.error(s"Failed to decompose program ${sourceFile.getAbsolutePath}")
-                logger.error(s"Reason: ${e.toString}")
+                e.printStackTrace()
             }
           case arguments: FuzzingArguments =>
             try {
