@@ -1,7 +1,7 @@
 abstract class DiffResultToString {
   void execute(int diff) 
   {
-    int BOOLEAN_SEPARATOR = 500;
+    int BOOLEAN_SEPARATOR = 502;
     int C0 = -1;
     int D0 = 0;
     int D0p = 0;

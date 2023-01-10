@@ -1,7 +1,7 @@
 abstract class PadEnd {
   void execute(int string, int minLength) 
   {
-    int BOOLEAN_SEPARATOR = 500;
+    int BOOLEAN_SEPARATOR = 502;
     int C0 = -1;
     int C1 = -1;
     int D0 = 0;

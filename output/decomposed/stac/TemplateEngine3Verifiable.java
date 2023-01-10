@@ -1,7 +1,7 @@
 abstract class TemplateEngine3 {
   void execute(int text, int ts, int sep, int rep) 
   {
-    int BOOLEAN_SEPARATOR = 500;
+    int BOOLEAN_SEPARATOR = 502;
     int C0 = -1;
     int C1 = -1;
     int C2 = -1;

@@ -1,7 +1,7 @@
 abstract class SplitByWholeSeparatorWorker {
   void execute(int str, int isSeparator, int max) 
   {
-    int BOOLEAN_SEPARATOR = 500;
+    int BOOLEAN_SEPARATOR = 502;
     int C0 = -1;
     int D0 = 0;
     int D0p = 0;
