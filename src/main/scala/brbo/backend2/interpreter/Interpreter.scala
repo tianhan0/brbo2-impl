@@ -247,6 +247,9 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
               (left, right) match {
                 case (Number(n1, _), Number(n2, _)) => Bool(n1 == n2)
                 case (Bool(b1, _), Bool(b2, _)) => Bool(b1 == b2)
+                case (BrboArray(values1, BrboType.INT, _), BrboArray(values2, BrboType.INT, _)) =>
+                  val result = values1.map({ case Number(n, _) => n }) == values2.map({ case Number(n, _) => n })
+                  Bool(result)
                 case _ => throw new Exception
               }
           }
