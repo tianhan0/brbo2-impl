@@ -82,7 +82,7 @@ if __name__ == "__main__":
         "--timeout",
         type=int,
         required=False,
-        default=300,
+        default=30,
         help="The timeout for running AFL in QFuzz (in seconds).",
     )
     parser.add_argument(
@@ -92,7 +92,7 @@ if __name__ == "__main__":
         "--threads",
         type=int,
         required=False,
-        default=6,
+        default=4,
         help="The number of threads when decomposing a program.",
     )
     parser.add_argument(
