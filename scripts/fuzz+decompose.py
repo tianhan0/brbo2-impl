@@ -2,6 +2,7 @@ import argparse
 import subprocess
 import glob
 import getpass
+import os
 from pathlib import Path
 
 
@@ -9,14 +10,16 @@ NO_DEPENDENCY_SCRIPT = "./scripts/run.sh"
 WITH_DEPENDENCY_SCRIPT = "./scripts/run_deps.sh"
 
 
-def run_command(command, cwd, dry):
+def run_command(command, cwd=os.getcwd(), dry=False, printOutput=True) -> str:
     print(f"{getpass.getuser()}@{cwd}$ {' '.join(command)}")
     if dry:
         return
     result = subprocess.run(
         command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=cwd
     )
-    print(f"Output: {result.stdout}")
+    if printOutput:
+        print(f"Output: {result.stdout}")
+    return result.stdout
 
 
 def qfuzz_command(timeout, input, qfuzz, deps):
@@ -131,6 +134,10 @@ if __name__ == "__main__":
     parser.set_defaults(dry=False)
     args = parser.parse_args()
 
+    current_time = run_command(
+        command=["date", '+"%Y-%m-%d %H-%M-%S"'], printOutput=False
+    )
+    print(f"Current time is {current_time}")
     java_files = []
     input_path = Path(args.input)
     if input_path.is_file():
