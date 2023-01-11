@@ -3,23 +3,35 @@ import subprocess
 import glob
 import getpass
 import os
+import time
+import logging
+import sys
 from pathlib import Path
 
 
 NO_DEPENDENCY_SCRIPT = "./scripts/run.sh"
 WITH_DEPENDENCY_SCRIPT = "./scripts/run_deps.sh"
 
+logging.basicConfig(
+    stream=sys.stdout,
+    encoding="utf-8",
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)-8s %(message)s",
+)
+
 
 def run_command(command, cwd=os.getcwd(), dry=False, printOutput=True) -> str:
-    print(f"{getpass.getuser()}@{cwd}$ {' '.join(command)}")
+    start_time = time.time()
+    logging.info(f"Under `{getpass.getuser()}@{cwd}`: Execute `{' '.join(command)}`")
     if dry:
         return
     result = subprocess.run(
         command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=cwd
     )
+    logging.info(f"Done. Execution time: {time.time() - start_time} seconds")
     if printOutput:
-        print(f"Output: {result.stdout}")
-    return result.stdout
+        logging.info(f"Output: {result.stdout}")
+    return result.stdout.strip()
 
 
 def qfuzz_command(timeout, input, qfuzz, deps):
@@ -137,9 +149,9 @@ if __name__ == "__main__":
     current_time = run_command(
         command=["date", '+"%Y-%m-%d %H-%M-%S"'], printOutput=False
     )
-    print(f"Current time is {current_time}")
-    print("Arguments:")
-    print("\n".join(f"{k}\t\t   {v}" for k, v in vars(args).items()))
+    logging.info(f"Current time\t{current_time}")
+    for key, value in vars(args).items():
+        logging.info(f"{key}\t{value}")
 
     java_files = []
     input_path = Path(args.input)
@@ -149,7 +161,7 @@ if __name__ == "__main__":
         for java_file in glob.iglob(args.input + "**/*.java", recursive=True):
             java_files.append(Path(java_file).absolute())
     else:
-        print(f"{input_path} is neither a file nor a directory")
+        logging.error(f"{input_path} is neither a file nor a directory")
         sys.exit(-1)
 
     brbo2_root = Path(args.brbo2).expanduser()
@@ -157,7 +169,7 @@ if __name__ == "__main__":
 
     java_files = sorted(java_files, key=lambda path: str(path), reverse=False)
     for java_file in java_files:
-        print(f"Process file `{java_file}`")
+        logging.info(f"Process file `{java_file}`")
 
         run_qfuzz = qfuzz_command(
             timeout=args.timeout, input=java_file, qfuzz=args.qfuzz, deps=args.deps
@@ -175,14 +187,14 @@ if __name__ == "__main__":
         decomposed_file = decomposed_file_path / java_file.name
         actual_decomposed_file = decomposed_file_path / f"{java_file.name}.actual"
         if actual_decomposed_file.exists():
-            print("Overwrite the existing decomposition")
+            logging.info("Overwrite the existing decomposition")
             run_command(
                 ["mv", str(actual_decomposed_file), str(decomposed_file)],
                 cwd=brbo2_root,
                 dry=args.dry,
             )
         else:
-            print("Generated the expected decomposition")
+            logging.info("Generated the expected decomposition")
         run_verification = verification_command(
             decomposed_file=decomposed_file, icra=args.icra, deps=args.deps
         )
