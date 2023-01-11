@@ -1,7 +1,7 @@
 abstract class GetFormattedExceptionMessage {
   void execute(int baseMessage) 
   {
-    int BOOLEAN_SEPARATOR = 502;
+    int BOOLEAN_SEPARATOR = 102;
     int C0 = -1;
     int C1 = -1;
     int D0 = 0;
@@ -43,7 +43,6 @@ abstract class GetFormattedExceptionMessage {
       D0 = D0 + 1;
       D0 = D0 + 1;
       i = i + 1;
-      // reset R1
       // reset R0
     }
     D0 = D0 + 1;

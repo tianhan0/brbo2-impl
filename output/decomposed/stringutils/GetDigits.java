@@ -1,7 +1,7 @@
 abstract class GetDigits {
   void execute(int str, int choices) 
   {
-    int BOOLEAN_SEPARATOR = 502;
+    int BOOLEAN_SEPARATOR = 102;
     int C0 = -1;
     int D0 = 0;
     int D0p = 0;
@@ -30,7 +30,7 @@ abstract class GetDigits {
         choice = temporaryChoices - lastIndexOfChoices;
         lastIndexOfChoices = temporaryChoices;
       }
-      if (!((choice < 502)) && !((choice == 502)))
+      if (!((choice < 102)) && !((choice == 102)))
       {
         strDigits = strDigits + 1;
         D0 = D0 + 1;

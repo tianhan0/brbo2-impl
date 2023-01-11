@@ -1,7 +1,7 @@
 abstract class DbgPrint {
   void execute(int src) 
   {
-    int BOOLEAN_SEPARATOR = 502;
+    int BOOLEAN_SEPARATOR = 102;
     int C0 = -1;
     int D0 = 0;
     int D0p = 0;
