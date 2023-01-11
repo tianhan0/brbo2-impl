@@ -138,6 +138,9 @@ if __name__ == "__main__":
         command=["date", '+"%Y-%m-%d %H-%M-%S"'], printOutput=False
     )
     print(f"Current time is {current_time}")
+    print("Arguments:")
+    print("\n".join(f"{k}\t\t   {v}" for k, v in vars(args).items()))
+
     java_files = []
     input_path = Path(args.input)
     if input_path.is_file():
