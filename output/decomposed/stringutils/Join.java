@@ -1,7 +1,7 @@
 abstract class Join {
   void execute(int array, int startIndex, int endIndex) 
   {
-    int BOOLEAN_SEPARATOR = 502;
+    int BOOLEAN_SEPARATOR = 102;
     int C0 = -1;
     int C1 = -1;
     int D0 = 0;
@@ -32,7 +32,7 @@ abstract class Join {
     }
     D1 = D1 + chunk;
     i = i + 1;
-    while (i < endIndex)
+    while ((i < endIndex) && (i < array))
     {
       D0 = D0 + 1;
       {

@@ -1,7 +1,7 @@
 abstract class AppendRecursiveTypes {
   void execute(int argumentTypes, int recursiveTypeIndexes, int d) 
   {
-    int BOOLEAN_SEPARATOR = 502;
+    int BOOLEAN_SEPARATOR = 102;
     int C0 = -1;
     int C1 = -1;
     int D0 = 0;

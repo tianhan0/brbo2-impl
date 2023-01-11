@@ -43,6 +43,7 @@ abstract class GetFormattedExceptionMessage {
       D0 = D0 + 1;
       D0 = D0 + 1;
       i = i + 1;
+      // reset R1
       // reset R0
     }
     D0 = D0 + 1;

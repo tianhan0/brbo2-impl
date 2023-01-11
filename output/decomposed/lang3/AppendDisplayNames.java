@@ -1,7 +1,7 @@
 abstract class AppendDisplayNames {
   void execute(int sorted) 
   {
-    int BOOLEAN_SEPARATOR = 502;
+    int BOOLEAN_SEPARATOR = 102;
     int C0 = -1;
     int C1 = -1;
     int D0 = 0;
