@@ -52,7 +52,7 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
             var i = 0
             while (i < asts.length) {
               state match {
-                case JumpState(store, trace, jump) =>
+                case _: JumpState =>
                   return state
                 case GoodState(store, trace, _) =>
                   state = evaluateAst(InitialState(asts(i), store, trace))
@@ -81,12 +81,14 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
                       evaluateAst(InitialState(loopBody, store, trace)) match {
                         case GoodState(store, trace, _) =>
                           evaluateAst(InitialState(loop, store, trace))
-                        case JumpState(store, trace, jump) =>
+                        case jumpState@JumpState(store, trace, jump) =>
                           jump match {
                             case Interpreter.BreakJump =>
                               GoodState(store, trace, value)
                             case Interpreter.ContinueJump =>
                               evaluateAst(InitialState(loop, store, trace))
+                            case _: Interpreter.ReturnJump =>
+                              jumpState
                           }
                         case _ => throw new Exception
                       }
@@ -121,10 +123,10 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
           case Some(expression) =>
             evaluateExpr(InitialState(expression, initialState.store, initialState.trace)) match {
               case goodState@GoodState(store, _, value) =>
-                GoodState(store, appendToTraceFrom(goodState, Transition(ast)), value)
+                JumpState(store, appendToTraceFrom(goodState, Transition(ast)), ReturnJump(value))
               case _ => throw new Exception
             }
-          case None => GoodState(initialState.store, appendToTraceFrom(initialState, Transition(ast)), None)
+          case None => JumpState(initialState.store, appendToTraceFrom(initialState, Transition(ast)), ReturnJump())
         }
       case _: Assume => throw new Exception
       case use@Use(_, update, condition, _) =>
@@ -187,6 +189,7 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
   }
 
   private def evaluateExpr(initialState: InitialState): FlowEndState = {
+    // println(s"evaluateAst ${printState(initialState)}")
     val ast = initialState.ast
     ast match {
       case brboValue: BrboValue =>
@@ -393,9 +396,11 @@ class Interpreter(val brboProgram: BrboProgram, debugMode: Boolean = false) {
     })
     state match {
       case GoodState(_, trace, _) =>
+        // Restore to the store before the function call
         evaluateFunction(function, argumentValues.reverse, trace) match {
           case GoodState(_, trace, value) =>
-            // Restore to the store before the function call
+            GoodState(initialState.store, trace, value)
+          case JumpState(_, trace, ReturnJump(value)) =>
             GoodState(initialState.store, trace, value)
           case _ => throw new Exception
         }
@@ -561,6 +566,8 @@ object Interpreter {
   object BreakJump extends Jump
 
   object ContinueJump extends Jump
+
+  case class ReturnJump(value: Option[BrboValue] = None) extends Jump
 
   case class JumpState(override val store: Store,
                        override val trace: Trace,
@@ -810,14 +817,10 @@ object Interpreter {
     val futures = Future.traverse(inputs.zipWithIndex)({
       case (inputValues, index) =>
         Future {
-          if (debugMode) {
-            logger.info(s"Inputs: ${inputValues.map(v => v.printToIR())}")
-          } else {
-            if (index % (1 + random.nextInt(50)) == 0) {
-              val percentage = StringFormatUtils.float(index.toDouble / inputs.size * 100, digit = 2)
-              logger.info(s"Progress: $index / ${inputs.size} ($percentage%)")
-              logger.info(s"Inputs: ${inputValues.map(v => v.printToIR())}")
-            }
+          logger.info(s"Generate a trace with inputs: ${inputValues.map(v => v.printToIR())}")
+          if (index % (1 + random.nextInt(50)) == 0) {
+            val percentage = StringFormatUtils.float(index.toDouble / inputs.size * 100, digit = 2)
+            logger.info(s"Progress: $index / ${inputs.size} ($percentage%)")
           }
           val endState = interpreter.execute(inputValues)
           // logger.traceOrError(s"Trace:\n${endState.trace.toTable.printAll()}")

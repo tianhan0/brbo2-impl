@@ -52,93 +52,93 @@ class InterpreterUnitTest extends AnyFlatSpec {
 object InterpreterUnitTest {
   private val arithmeticTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    f(x + 10);
-      |    f(x - 5);
-      |    f(x * 2);
-      |  }
-      |
-      |  int f(int x) { return x; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    f(x + 10);
+       |    f(x - 5);
+       |    f(x * 2);
+       |  }
+       |
+       |  int f(int x) { return x; }
+       |}""".stripMargin
 
   private val negationTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    g(!true);
-      |    g(!false);
-      |  }
-      |
-      |  boolean g(boolean b) { return b; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    g(!true);
+       |    g(!false);
+       |  }
+       |
+       |  boolean g(boolean b) { return b; }
+       |}""".stripMargin
 
   private val greaterThanTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    g(10 > x);
-      |    g(x > 10);
-      |  }
-      |
-      |  boolean g(boolean b) { return b; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    g(10 > x);
+       |    g(x > 10);
+       |  }
+       |
+       |  boolean g(boolean b) { return b; }
+       |}""".stripMargin
 
   private val lessThanTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    g(10 < x);
-      |    g(x < 10);
-      |  }
-      |
-      |  boolean g(boolean b) { return b; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    g(10 < x);
+       |    g(x < 10);
+       |  }
+       |
+       |  boolean g(boolean b) { return b; }
+       |}""".stripMargin
 
   private val equalTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    g(10 == x);
-      |    g(true == false);
-      |  }
-      |
-      |  boolean g(boolean b) { return b; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    g(10 == x);
+       |    g(true == false);
+       |  }
+       |
+       |  boolean g(boolean b) { return b; }
+       |}""".stripMargin
 
   private val andTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    g(true && false);
-      |    g(true && true);
-      |  }
-      |
-      |  boolean g(boolean b) { return b; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    g(true && false);
+       |    g(true && true);
+       |  }
+       |
+       |  boolean g(boolean b) { return b; }
+       |}""".stripMargin
 
   private val orTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    g(true || false);
-      |    g(false || false);
-      |  }
-      |
-      |  boolean g(boolean b) { return b; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    g(true || false);
+       |    g(false || false);
+       |  }
+       |
+       |  boolean g(boolean b) { return b; }
+       |}""".stripMargin
 
   private val arrayReadTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
-      |    int element1 = arrayRead(x, 0);
-      |    int element2 = arrayRead(x, 1);
-      |  }
-      |
-      |  int arrayRead(int[] x, int index) { return 0; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
+       |    int element1 = arrayRead(x, 0);
+       |    int element2 = arrayRead(x, 1);
+       |  }
+       |
+       |  int arrayRead(int[] x, int index) { return 0; }
+       |}""".stripMargin
 
   private val arrayLengthTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
-      |    int length = arrayLength(x);
-      |  }
-      |
-      |  int arrayLength(int[] x) { return 0; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int[] x) {
+       |    int length = arrayLength(x);
+       |  }
+       |
+       |  int arrayLength(int[] x) { return 0; }
+       |}""".stripMargin
 
   val expressionTests: List[TestCase] = List(
     TestCase("ArithmeticTest", arithmeticTest,
@@ -301,108 +301,135 @@ object InterpreterUnitTest {
 
   private val assignmentTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    int y = x;
-      |    y = y + 100;
-      |  }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    int y = x;
+       |    y = y + 100;
+       |  }
+       |}""".stripMargin
 
   private val loopBreakTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    int i = 0;
-      |    while (i < 10) {
-      |      if (i == 2)
-      |        break;
-      |      i++;
-      |    }
-      |    i = 10000;
-      |  }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    int i = 0;
+       |    while (i < 10) {
+       |      if (i == 2)
+       |        break;
+       |      i++;
+       |    }
+       |    i = 10000;
+       |  }
+       |}""".stripMargin
 
   private val loopContinueTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    int i = 0;
-      |    while (i < 3) {
-      |      i++;
-      |      if (x == 10) {
-      |        continue;
-      |      }
-      |      i = 0;
-      |    }
-      |    i = 10000;
-      |  }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    int i = 0;
+       |    while (i < 3) {
+       |      i++;
+       |      if (x == 10) {
+       |        continue;
+       |      }
+       |      i = 0;
+       |    }
+       |    i = 10000;
+       |  }
+       |}""".stripMargin
 
   private val blockTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    int a = x;
-      |    int b = a + 10;
-      |    int c = b + 100;
-      |  }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    int a = x;
+       |    int b = a + 10;
+       |    int c = b + 100;
+       |  }
+       |}""".stripMargin
 
   private val iteTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    int a = 0;
-      |    if (x > 10) {
-      |      a = a + 100;
-      |    }
-      |    else {
-      |      a = a + 1000;
-      |    }
-      |  }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    int a = 0;
+       |    if (x > 10) {
+       |      a = a + 100;
+       |    }
+       |    else {
+       |      a = a + 1000;
+       |    }
+       |  }
+       |}""".stripMargin
 
   private val loopTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    int i = 0;
-      |    while (i < 4) {
-      |      i++;
-      |    }
-      |  }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    int i = 0;
+       |    while (i < 4) {
+       |      i++;
+       |    }
+       |  }
+       |}""".stripMargin
 
   private val returnTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    int i = x;
-      |    i++;
-      |  }
-      |
-      |  int f(int x) { return x; }
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    int i = x;
+       |    i++;
+       |  }
+       |
+       |  int f(int x) { return x; }
+       |}""".stripMargin
 
   private val useTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    use(1, 10, x > 10);
-      |    use(1, 100, x >= 10);
-      |  }
-      |
-      |  void use(int x, int cost, boolean condition) {}
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    use(1, 10, x > 10);
+       |    use(1, 100, x >= 10);
+       |  }
+       |
+       |  void use(int x, int cost, boolean condition) {}
+       |}""".stripMargin
 
   private val resetTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
-      |    use(1, 100);
-      |    reset(1, x >= 10);
-      |    use(1, 200);
-      |    reset(1, x > 10);
-      |    use(1, 300);
-      |    reset(1);
-      |  }
-      |
-      |  void use(int x, int cost, boolean condition) {}
-      |  void use(int x, int cost) {}
-      |  void reset(int x, boolean condition) {}
-      |  void reset(int x) {}
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    use(1, 100);
+       |    reset(1, x >= 10);
+       |    use(1, 200);
+       |    reset(1, x > 10);
+       |    use(1, 300);
+       |    reset(1);
+       |  }
+       |
+       |  void use(int x, int cost, boolean condition) {}
+       |  void use(int x, int cost) {}
+       |  void reset(int x, boolean condition) {}
+       |  void reset(int x) {}
+       |}""".stripMargin
+
+  private val earlyReturnTest =
+    s"""class Test {
+       |  int ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    int i = 0;
+       |    if (i == 0) {
+       |      return i;
+       |    }
+       |    i++;
+       |    i = 10000;
+       |    return 100;
+       |  }
+       |}""".stripMargin
+
+  private val loopEarlyReturnTest =
+    s"""class Test {
+       |  int ${TargetProgram.MAIN_FUNCTION}(int x) {
+       |    int i = 0;
+       |    while (i < 10) {
+       |      if (i == 2)
+       |        return i;
+       |      i++;
+       |    }
+       |    i = 10000;
+       |    return 0;
+       |  }
+       |}""".stripMargin
 
   val commandTests: List[TestCase] = List(
     TestCase("assignmentTest", assignmentTest,
@@ -644,25 +671,70 @@ object InterpreterUnitTest {
         |       [true ==> Store: (C1 -> 1, R1 -> 500, S1 -> 100, x -> 10)]
         |       [reset R1 ==> Store: (C1 -> 1, R1 -> 500, S1 -> 100, x -> 10)]
         |""".stripMargin),
+    TestCase("EarlyReturnTest", earlyReturnTest,
+      """JumpState
+        |Store: (i -> 0, x -> 10)
+        |Trace: [Store: (x -> 10)]
+        |       [0 ==> Store: (x -> 10)]
+        |       [int i = 0; ==> Store: (i -> 0, x -> 10)]
+        |       [i ==> Store: (i -> 0, x -> 10)]
+        |       [0 ==> Store: (i -> 0, x -> 10)]
+        |       [(i == 0) ==> Store: (i -> 0, x -> 10)]
+        |       [i ==> Store: (i -> 0, x -> 10)]
+        |       [return i; ==> Store: (i -> 0, x -> 10)]""".stripMargin),
+    TestCase("LoopEarlyReturnTest", loopEarlyReturnTest,
+      """JumpState
+        |Store: (i -> 2, x -> 10)
+        |Trace: [Store: (x -> 10)]
+        |       [0 ==> Store: (x -> 10)]
+        |       [int i = 0; ==> Store: (i -> 0, x -> 10)]
+        |       [i ==> Store: (i -> 0, x -> 10)]
+        |       [10 ==> Store: (i -> 0, x -> 10)]
+        |       [(i < 10) ==> Store: (i -> 0, x -> 10)]
+        |       [i ==> Store: (i -> 0, x -> 10)]
+        |       [2 ==> Store: (i -> 0, x -> 10)]
+        |       [(i == 2) ==> Store: (i -> 0, x -> 10)]
+        |       [i ==> Store: (i -> 0, x -> 10)]
+        |       [1 ==> Store: (i -> 0, x -> 10)]
+        |       [(i + 1) ==> Store: (i -> 0, x -> 10)]
+        |       [i = i + 1; ==> Store: (i -> 1, x -> 10)]
+        |       [i ==> Store: (i -> 1, x -> 10)]
+        |       [10 ==> Store: (i -> 1, x -> 10)]
+        |       [(i < 10) ==> Store: (i -> 1, x -> 10)]
+        |       [i ==> Store: (i -> 1, x -> 10)]
+        |       [2 ==> Store: (i -> 1, x -> 10)]
+        |       [(i == 2) ==> Store: (i -> 1, x -> 10)]
+        |       [i ==> Store: (i -> 1, x -> 10)]
+        |       [1 ==> Store: (i -> 1, x -> 10)]
+        |       [(i + 1) ==> Store: (i -> 1, x -> 10)]
+        |       [i = i + 1; ==> Store: (i -> 2, x -> 10)]
+        |       [i ==> Store: (i -> 2, x -> 10)]
+        |       [10 ==> Store: (i -> 2, x -> 10)]
+        |       [(i < 10) ==> Store: (i -> 2, x -> 10)]
+        |       [i ==> Store: (i -> 2, x -> 10)]
+        |       [2 ==> Store: (i -> 2, x -> 10)]
+        |       [(i == 2) ==> Store: (i -> 2, x -> 10)]
+        |       [i ==> Store: (i -> 2, x -> 10)]
+        |       [return i; ==> Store: (i -> 2, x -> 10)]""".stripMargin),
   )
 
   private val useTraceTest =
     s"""class Test {
-      |  void ${TargetProgram.MAIN_FUNCTION}() {
-      |    use(1, 100);
-      |    use(2, 10);
-      |    use(1, 200);
-      |    reset(1);
-      |    reset(2);
-      |    use(2, 11);
-      |    reset(2);
-      |    use(2, 12);
-      |    use(1, 500);
-      |  }
-      |
-      |  void use(int x, int cost) {}
-      |  void reset(int x) {}
-      |}""".stripMargin
+       |  void ${TargetProgram.MAIN_FUNCTION}() {
+       |    use(1, 100);
+       |    use(2, 10);
+       |    use(1, 200);
+       |    reset(1);
+       |    reset(2);
+       |    use(2, 11);
+       |    reset(2);
+       |    use(2, 12);
+       |    use(1, 500);
+       |  }
+       |
+       |  void use(int x, int cost) {}
+       |  void reset(int x) {}
+       |}""".stripMargin
 
   val useTraceTests: List[TestCase] = List(
     TestCase("useTraceTest", useTraceTest,
