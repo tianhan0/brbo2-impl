@@ -710,7 +710,7 @@ case class Use( // When None, this command represents updating the original reso
     if (groupId.isEmpty) {
       // When a use command is not assigned with a group (i.e., the command is not decomposed),
       // print the original assignment commands over `R`.
-      println(s"If we are printing a decomposed use, then we have failed to decompose `${printInternal(indent = 0, CStyle)}`")
+      // println(s"If we are printing a decomposed use, then we have failed to decompose `${printInternal(indent = 0, CStyle)}`")
       return this.assignmentCommand.print(indent, style = PrintStyle.BrboJavaStyle)
     }
     val resourceVariable: Identifier = GhostVariableUtils.generateVariable(groupId, Resource, legacy = true)
