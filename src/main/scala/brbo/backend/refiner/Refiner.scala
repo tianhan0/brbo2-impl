@@ -35,7 +35,7 @@ class Refiner(arguments: Arguments) {
         val assertion = {
           val allGroupIds: Set[Int] = // Get all group IDs and then all ghost variables
             originalProgram.mainFunction.groupIds ++ refinement.groupIds.values.flatten
-          val sum = GhostVariableUtils.approximatedResourceUsage(allGroupIds, legacy = false, cheat = false)
+          val sum = GhostVariableUtils.approximatedResourceUsage(allGroupIds, legacy = false)
           logger.traceOrError(s"Approximated resource usage: `${sum.print(indent = 0, style = CStyle)}`")
           boundAssertion.replaceResourceVariable(sum)
         }
