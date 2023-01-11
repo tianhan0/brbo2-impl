@@ -1,18 +1,13 @@
 abstract class SplitWorker2 {
-  void execute(int str, int separatorChars, int max, boolean preserveAllTokens, int choices) 
+  void execute(int str, int separatorChars, int max, boolean preserveAllTokens, int choice) 
   {
-    int BOOLEAN_SEPARATOR = 502;
+    int BOOLEAN_SEPARATOR = 102;
     int C0 = -1;
-    int C1 = -1;
     int D0 = 0;
     int D0p = 0;
-    int D1 = 0;
-    int D1p = 0;
-    int temporaryChoices = 0;
-    int lastIndexOfChoices = 0;
-    lessPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < ((8 * str) + 8)) || (((0 + (D0p * C0)) + (D1p * C1)) == ((8 * str) + 8)));
-    mostPreciseBound((((0 + (D0p * C0)) + (D1p * C1)) < str) || (((0 + (D0p * C0)) + (D1p * C1)) == str));
-    if (((((str < 0) || (str == 0)) || ((max < 0) || (max == 0))) || (separatorChars < 0)) || (choices < str))
+    lessPreciseBound(((0 + (D0p * C0)) < ((8 * str) + 8)) || ((0 + (D0p * C0)) == ((8 * str) + 8)));
+    mostPreciseBound(((0 + (D0p * C0)) < str) || ((0 + (D0p * C0)) == str));
+    if (((((str < 0) || (str == 0)) || ((max < 0) || (max == 0))) || (separatorChars < 0)) || !((!((choice < 0)) && (choice < str))))
     {
       return;
     }
@@ -29,17 +24,11 @@ abstract class SplitWorker2 {
     int start = 0;
     boolean match = false;
     boolean lastMatch = false;
-    int choice = 0;
     if (separatorChars == 0)
     {
       while (i < str)
       {
-        {
-          temporaryChoices = ndInt2(lastIndexOfChoices, choices);
-          choice = temporaryChoices - lastIndexOfChoices;
-          lastIndexOfChoices = temporaryChoices;
-        }
-        if (!((choice < 502)) && !((choice == 502)))
+        if (choice < i)
         {
           if (match || preserveAllTokens)
           {
@@ -82,12 +71,7 @@ abstract class SplitWorker2 {
       {
         while (i < str)
         {
-          {
-            temporaryChoices = ndInt2(lastIndexOfChoices, choices);
-            choice = temporaryChoices - lastIndexOfChoices;
-            lastIndexOfChoices = temporaryChoices;
-          }
-          if (!((choice < 502)) && !((choice == 502)))
+          if (choice < i)
           {
             if (match || preserveAllTokens)
             {
@@ -128,12 +112,7 @@ abstract class SplitWorker2 {
       {
         while (i < str)
         {
-          {
-            temporaryChoices = ndInt2(lastIndexOfChoices, choices);
-            choice = temporaryChoices - lastIndexOfChoices;
-            lastIndexOfChoices = temporaryChoices;
-          }
-          if (!((choice < 502)) && !((choice == 502)))
+          if (choice < i)
           {
             if (match || preserveAllTokens)
             {
@@ -149,14 +128,7 @@ abstract class SplitWorker2 {
               }
               sizePlus1 = sizePlus1 + 1;
               list = list + (i - start);
-              if ((i < 0) || (i == 0))
-              {
-                D1 = D1 + (i - start);
-              }
-              else
-              {
-                D0 = D0 + (i - start);
-              }
+              D0 = D0 + (i - start);
               match = false;
             }
             else
@@ -181,7 +153,7 @@ abstract class SplitWorker2 {
     if (match || (preserveAllTokens && lastMatch))
     {
       list = list + (i - start);
-      R = R + (i - start);
+      D0 = D0 + (i - start);
     }
     else
     {

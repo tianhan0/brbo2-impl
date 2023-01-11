@@ -4,9 +4,9 @@ import brbo.benchmarks.Common;
 
 abstract public class SplitByWholeSeparatorWorker extends Common {
   void execute(int[] str,
-               int[] isSeparator,
+               int isSeparator,
                int max) {
-    if (arrayLength(str) <= 1 || max <= 0 || arrayLength(isSeparator) < arrayLength(str)) {
+    if (arrayLength(str) <= 1 || max <= 0 || !(isSeparator >= 0 && isSeparator < arrayLength(str))) {
       return;
     }
     int R = 0;
@@ -22,8 +22,7 @@ abstract public class SplitByWholeSeparatorWorker extends Common {
         i++;
         continue;
       }
-      isSeparatorChunk = arrayRead(isSeparator, i);
-      if (isSeparatorChunk > BOOLEAN_SEPARATOR) {
+      if (isSeparatorChunk < i) {
         // This chunk is a separator
         numberOfStrings++;
       } else {

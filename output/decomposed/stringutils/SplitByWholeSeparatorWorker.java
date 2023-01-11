@@ -1,17 +1,15 @@
 abstract class SplitByWholeSeparatorWorker {
   void execute(int str, int isSeparator, int max) 
   {
-    int BOOLEAN_SEPARATOR = 502;
+    int BOOLEAN_SEPARATOR = 102;
     int C0 = -1;
     int D0 = 0;
     int D0p = 0;
     int temporaryStr = 0;
     int lastIndexOfStr = 0;
-    int temporaryIsSeparator = 0;
-    int lastIndexOfIsSeparator = 0;
     lessPreciseBound(((0 + (D0p * C0)) < ((8 * str) + 8)) || ((0 + (D0p * C0)) == ((8 * str) + 8)));
     mostPreciseBound(((0 + (D0p * C0)) < str) || ((0 + (D0p * C0)) == str));
-    if ((((str < 1) || (str == 1)) || ((max < 0) || (max == 0))) || (isSeparator < str))
+    if ((((str < 1) || (str == 1)) || ((max < 0) || (max == 0))) || !((!((isSeparator < 0)) && (isSeparator < str))))
     {
       return;
     }
@@ -43,12 +41,7 @@ abstract class SplitByWholeSeparatorWorker {
       {
         ;
       }
-      {
-        temporaryIsSeparator = ndInt2(lastIndexOfIsSeparator, isSeparator);
-        isSeparatorChunk = temporaryIsSeparator - lastIndexOfIsSeparator;
-        lastIndexOfIsSeparator = temporaryIsSeparator;
-      }
-      if (!((isSeparatorChunk < 502)) && !((isSeparatorChunk == 502)))
+      if (isSeparatorChunk < i)
       {
         numberOfStrings = numberOfStrings + 1;
       }
