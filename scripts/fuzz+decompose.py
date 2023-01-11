@@ -85,6 +85,14 @@ def verification_command(decomposed_file, icra, deps):
     ]
 
 
+def increment_count(dictionary, key):
+    dictionary.update({key: dictionary.get(key, 0) + 1})
+
+
+def pretty_print(dictionary):
+    return json.dumps(dictionary, indent=2)
+
+
 if __name__ == "__main__":
     """
     Usage: ~/brbo2-impl$ python3 scripts/fuzz+decompose.py \
@@ -167,6 +175,11 @@ if __name__ == "__main__":
 
     java_files = sorted(java_files, key=lambda path: str(path), reverse=False)
     time_measurements = {}
+    total_time = 0
+    count_verified = {}
+    count_not_verified = {}
+    count_unknown = {}
+    verification_results = {}
     for java_file in java_files:
         logging.info(f"Process file `{java_file}`")
 
@@ -178,8 +191,9 @@ if __name__ == "__main__":
             dry=args.dry,
         )
 
+        inner_most_package_name = java_file.parent.parts[-1]
         decomposed_file_path = (
-            brbo2_root / "output" / "decomposed" / java_file.parent.parts[-1]
+            brbo2_root / "output" / "decomposed" / inner_most_package_name
         )
         decomposed_file = decomposed_file_path / java_file.name
         logging.info(f"Remove the expected decomposition `{str(decomposed_file)}`")
@@ -196,7 +210,7 @@ if __name__ == "__main__":
             dry=args.dry,
         )
 
-        _, verification_time = run_command(
+        brbo_output, verification_time = run_command(
             command=verification_command(
                 decomposed_file=decomposed_file, icra=args.icra, deps=args.deps
             ),
@@ -204,7 +218,26 @@ if __name__ == "__main__":
             dry=args.dry,
         )
 
+        if "verified? Yes" in brbo_output:
+            increment_count(count_verified, inner_most_package_name)
+            verification_results.update({str(java_file): "verified"})
+        elif "verified? No" in brbo_output:
+            increment_count(count_not_verified, inner_most_package_name)
+            verification_results.update({str(java_file): "not verified"})
+        else:
+            increment_count(count_unknown, inner_most_package_name)
+            verification_results.update({str(java_file): "unknown"})
+
         time_measurements.update(
             {str(java_file): (fuzzing_time, decomposition_time, verification_time)}
         )
-    logging.info(f"Time measurements:\n{json.dumps(time_measurements, indent=2)}")
+
+        total_time = total_time + fuzzing_time + decomposition_time + verification_time
+
+    logging.info(f"Execution time measurements:\n{pretty_print(time_measurements)}")
+    logging.info(f"Total time elapsed: {total_time} seconds")
+
+    logging.info(f"Verification results:\n{pretty_print(verification_results)}")
+    logging.info(f"Number of verified programs: {pretty_print(count_verified)}")
+    logging.info(f"Number of not verified programs: {pretty_print(count_not_verified)}")
+    logging.info(f"Number of unknown programs: {pretty_print(count_unknown)}")
