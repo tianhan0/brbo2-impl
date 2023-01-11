@@ -6,6 +6,7 @@ import os
 import time
 import logging
 import sys
+import json
 from pathlib import Path
 
 
@@ -20,18 +21,20 @@ logging.basicConfig(
 )
 
 
-def run_command(command, cwd=os.getcwd(), dry=False, printOutput=True) -> str:
-    start_time = time.time()
+# Return stdout and stderr, and the execution time
+def run_command(command, cwd=os.getcwd(), dry=False, printOutput=True):
     logging.info(f"Under `{getpass.getuser()}@{cwd}`: Execute `{' '.join(command)}`")
     if dry:
-        return
+        return "", 0
+    start_time = time.time()
     result = subprocess.run(
         command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=cwd
     )
-    logging.info(f"Done. Execution time: {time.time() - start_time} seconds")
+    execution_time = time.time() - start_time
+    logging.info(f"Done. Execution time: {execution_time} seconds")
     if printOutput:
         logging.info(f"Output: {result.stdout}")
-    return result.stdout.strip()
+    return result.stdout.strip(), execution_time
 
 
 def qfuzz_command(timeout, input, qfuzz, deps):
@@ -145,11 +148,6 @@ if __name__ == "__main__":
     )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
-
-    current_time = run_command(
-        command=["date", '+"%Y-%m-%d %H-%M-%S"'], printOutput=False
-    )
-    logging.info(f"Current time\t{current_time}")
     for key, value in vars(args).items():
         logging.info(f"{key}\t{value}")
 
@@ -168,18 +166,21 @@ if __name__ == "__main__":
     brbo_root = Path(args.brbo).expanduser()
 
     java_files = sorted(java_files, key=lambda path: str(path), reverse=False)
+    time_measurements = {}
     for java_file in java_files:
         logging.info(f"Process file `{java_file}`")
 
         run_qfuzz = qfuzz_command(
             timeout=args.timeout, input=java_file, qfuzz=args.qfuzz, deps=args.deps
         )
-        run_command(command=run_qfuzz, cwd=brbo2_root, dry=args.dry)
+        _, fuzzing_time = run_command(command=run_qfuzz, cwd=brbo2_root, dry=args.dry)
 
         run_decomposition = decomposition_command(
             threads=args.threads, input=java_file, samples=args.samples, deps=args.deps
         )
-        run_command(command=run_decomposition, cwd=brbo2_root, dry=args.dry)
+        _, decomposition_time = run_command(
+            command=run_decomposition, cwd=brbo2_root, dry=args.dry
+        )
 
         decomposed_file_path = (
             brbo2_root / "output" / "decomposed" / java_file.parent.parts[-1]
@@ -198,4 +199,10 @@ if __name__ == "__main__":
         run_verification = verification_command(
             decomposed_file=decomposed_file, icra=args.icra, deps=args.deps
         )
-        run_command(command=run_verification, cwd=brbo_root, dry=args.dry)
+        _, verification_time = run_command(
+            command=run_verification, cwd=brbo_root, dry=args.dry
+        )
+        time_measurements.update(
+            {str(java_file): (fuzzing_time, decomposition_time, verification_time)}
+        )
+    logging.info(f"Time measurements:\n{json.dumps(time_measurements, indent=2)}")
