@@ -118,3 +118,9 @@ root@16144970debc:/home/sas-artifact-41/brbo-impl# ./scripts/run_with_deps_artif
   --icra-timeout 60 \
   --directory src/main/java/brbo/benchmarks/containers/stac/TemplateEngine3.java
 ```
+
+## Transform into Brbo-compatible Programs
+
+```shell
+./scripts/run_deps.sh brbo --directory /Users/tianhanlu/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/ReplaceChars.java 
+```

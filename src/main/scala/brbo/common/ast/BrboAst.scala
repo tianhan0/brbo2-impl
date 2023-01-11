@@ -5,7 +5,7 @@ import brbo.common.GhostVariableTyp._
 import brbo.common.PredefinedVariables.variables
 import brbo.common.ast.BrboAstUtils.PrependOperation
 import brbo.common.ast.PrintStyle._
-import brbo.common.{BrboType, GhostVariableUtils, PreDefinedFunctions, SameAs}
+import brbo.common.{GhostVariableTyp, _}
 
 import java.util.UUID
 
@@ -150,7 +150,15 @@ case class BrboFunction(identifier: String,
     ).asInstanceOf[Statement]
   }
 
-  private lazy val legacyGhostVariablesSum = GhostVariableUtils.approximatedResourceUsage(groupIds, legacy = true)
+  private lazy val legacyGhostVariablesSum = {
+    if (groupIds.nonEmpty) {
+      // TODO: What if the given group IDs do not cover all use commands?
+      GhostVariableUtils.approximatedResourceUsage(groupIds, legacy = true)
+    } else {
+      // This is for printing the program into a brbo-compatible form
+      GhostVariableUtils.generateVariable(groupId = None, GhostVariableTyp.Resource)
+    }
+  }
 
   lazy val nonGhostVariables: List[Identifier] = {
     val variables = BrboAstUtils.collectCommands(body).flatMap({

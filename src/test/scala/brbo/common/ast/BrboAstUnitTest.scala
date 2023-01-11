@@ -302,6 +302,7 @@ object BrboAstUnitTest {
   private val printToBrboJavaTest1 =
     s"""abstract class Test {
        |  void ${TargetProgram.MAIN_FUNCTION}(int x, int[] array) {
+       |    // The use and reset commands automatically "declare" groups
        |    use(1, 10, x > 10);
        |    reset(2, x < 10);
        |    use(3, 100);
@@ -330,6 +331,19 @@ object BrboAstUnitTest {
        |  public abstract int ndInt();
        |  public abstract int ndInt2(int lower, int upper);
        |  public abstract boolean ndBool();
+       |  public abstract void mostPreciseBound(boolean assertion);
+       |  public abstract void lessPreciseBound(boolean assertion);
+       |}""".stripMargin
+
+  private val printToBrboJavaTest2 =
+    s"""abstract class Test {
+       |  void ${TargetProgram.MAIN_FUNCTION}() {
+       |    int R = 0;
+       |    R = R + 1011;
+       |    // When there is no group, we print the bound assertions as is
+       |    mostPreciseBound(R > 10);
+       |    lessPreciseBound(R > 10);
+       |  }
        |  public abstract void mostPreciseBound(boolean assertion);
        |  public abstract void lessPreciseBound(boolean assertion);
        |}""".stripMargin
@@ -403,6 +417,26 @@ object BrboAstUnitTest {
          |  public abstract void mostPreciseBound(boolean assertion);
          |  public abstract void lessPreciseBound(boolean assertion);
          |}
-         |""".stripMargin)
+         |""".stripMargin),
+    TestCase("printToBrboJavaTest2", printToBrboJavaTest2,
+      """abstract class Test {
+        |  void execute()
+        |  {
+        |    int BOOLEAN_SEPARATOR = 102;
+        |    lessPreciseBound(!((R < 10)) && !((R == 10)));
+        |    mostPreciseBound(!((R < 10)) && !((R == 10)));
+        |    int R = 0;
+        |    R = R + 1011;
+        |    // mostPreciseBound(R > 10)
+        |    // lessPreciseBound(R > 10)
+        |  }
+        |  // Declare these methods such that these generated code can be parsed
+        |  public abstract int ndInt();
+        |  public abstract int ndInt2(int lower, int upper);
+        |  public abstract boolean ndBool();
+        |  public abstract void assume(boolean expression);
+        |  public abstract void mostPreciseBound(boolean assertion);
+        |  public abstract void lessPreciseBound(boolean assertion);
+        |}""".stripMargin),
   )
 }

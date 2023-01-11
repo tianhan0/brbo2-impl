@@ -74,6 +74,7 @@ object BrboMain {
     val subcommand = {
       if (args.head == Subcommand.Fuzz.toString) Subcommand.Fuzz
       else if (args.head == Subcommand.Decompose.toString) Subcommand.Decompose
+      else if (args.head == Subcommand.TransformToBrbo.toString) Subcommand.TransformToBrbo
       else throw new Exception
     }
     CommonArguments.parseArguments(args.tail, subcommand)
@@ -128,6 +129,20 @@ object BrboMain {
                 logger.info(s"Failed to fuzz program ${sourceFile.getAbsolutePath}")
                 logger.error(s"Reason: ${e.toString}")
             }
+          case _: TransformToBrboArguments =>
+            try {
+              val targetProgram = BasicProcessor.getTargetProgram(className, sourceFileContents)
+              val outputPath = transformedProgramPath(originalProgramPath = sourceFilePath)
+              logger.info(s"Transform into an acceptable form to brbo. Write into `$outputPath`")
+              writeToFile(
+                path = outputPath,
+                content = targetProgram.program.print(indent = 0, style = BrboJavaStyle)
+              )
+            } catch {
+              case e: Exception =>
+                logger.error(s"Failed to print to an acceptable form to brbo: ${sourceFile.getAbsolutePath}")
+                e.printStackTrace()
+            }
           case _ => throw new Exception
         }
     })
@@ -153,12 +168,12 @@ object BrboMain {
     val decomposedProgram = driver.decompose()
     writeAndCompareDecomposedProgram(
       decomposedProgram = decomposedProgram.print(indent = 0, style = BrboJavaStyle),
-      outputPath = decomposedProgramPath(originalProgramPath = sourceFilePath),
+      outputPath = transformedProgramPath(originalProgramPath = sourceFilePath),
       logger = logger
     )
   }
 
-  private def decomposedProgramPath(originalProgramPath: String): Path = {
+  private def transformedProgramPath(originalProgramPath: String): Path = {
     val parent = FilenameUtils.getBaseName(Paths.get(originalProgramPath).getParent.toAbsolutePath.toString)
     Paths.get(OUTPUT_DIRECTORY, "decomposed", parent, s"${FilenameUtils.getBaseName(originalProgramPath)}.java")
   }

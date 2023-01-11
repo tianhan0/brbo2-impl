@@ -40,6 +40,7 @@ object CommonArguments {
       subcommand match {
         case Subcommand.Decompose => new DecompositionArguments
         case Subcommand.Fuzz => new FuzzingArguments
+        case Subcommand.TransformToBrbo => new TransformToBrboArguments
         case _ => throw new Exception
       }
     }
