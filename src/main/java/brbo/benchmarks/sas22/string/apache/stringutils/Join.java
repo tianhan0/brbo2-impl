@@ -18,7 +18,7 @@ abstract public class Join extends Common {
     chunk = arrayRead(array, i);
     R = R + chunk;
     i++;
-    for (; i < endIndex; i++) {
+    for (; i < endIndex && i < arrayLength(array); i++) {
       R = R + 1;
       chunk = arrayRead(array, i);
       R = R + chunk;
