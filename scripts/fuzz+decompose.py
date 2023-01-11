@@ -170,38 +170,40 @@ if __name__ == "__main__":
     for java_file in java_files:
         logging.info(f"Process file `{java_file}`")
 
-        run_qfuzz = qfuzz_command(
-            timeout=args.timeout, input=java_file, qfuzz=args.qfuzz, deps=args.deps
-        )
-        _, fuzzing_time = run_command(command=run_qfuzz, cwd=brbo2_root, dry=args.dry)
-
-        run_decomposition = decomposition_command(
-            threads=args.threads, input=java_file, samples=args.samples, deps=args.deps
-        )
-        _, decomposition_time = run_command(
-            command=run_decomposition, cwd=brbo2_root, dry=args.dry
+        _, fuzzing_time = run_command(
+            command=qfuzz_command(
+                timeout=args.timeout, input=java_file, qfuzz=args.qfuzz, deps=args.deps
+            ),
+            cwd=brbo2_root,
+            dry=args.dry,
         )
 
         decomposed_file_path = (
             brbo2_root / "output" / "decomposed" / java_file.parent.parts[-1]
         )
         decomposed_file = decomposed_file_path / java_file.name
-        actual_decomposed_file = decomposed_file_path / f"{java_file.name}.actual"
-        if actual_decomposed_file.exists():
-            logging.info("Overwrite the existing decomposition")
-            run_command(
-                ["mv", str(actual_decomposed_file), str(decomposed_file)],
-                cwd=brbo2_root,
-                dry=args.dry,
-            )
-        else:
-            logging.info("Generated the expected decomposition")
-        run_verification = verification_command(
-            decomposed_file=decomposed_file, icra=args.icra, deps=args.deps
+        logging.info(f"Remove the expected decomposition `{str(decomposed_file)}`")
+        run_command(command=["rm", str(decomposed_file)], cwd=brbo2_root, dry=args.dry)
+
+        _, decomposition_time = run_command(
+            command=decomposition_command(
+                threads=args.threads,
+                input=java_file,
+                samples=args.samples,
+                deps=args.deps,
+            ),
+            cwd=brbo2_root,
+            dry=args.dry,
         )
+
         _, verification_time = run_command(
-            command=run_verification, cwd=brbo_root, dry=args.dry
+            command=verification_command(
+                decomposed_file=decomposed_file, icra=args.icra, deps=args.deps
+            ),
+            cwd=brbo_root,
+            dry=args.dry,
         )
+
         time_measurements.update(
             {str(java_file): (fuzzing_time, decomposition_time, verification_time)}
         )
