@@ -183,7 +183,7 @@ object ControlFlowGraphUnitTest {
     val i = Identifier("i", INT)
     val variableDeclaration = VariableDeclaration(i, Number(0))
     val loop = Loop(LessThan(i, Number(10)), Block(List(Assignment(i, Addition(i, Number(1))), Break())))
-    val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set())
+    val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set(), useResource = false)
     BrboProgram("test01", packageName = None, main, PreDefinedFunctions.functionCRepresentations, Nil)
   }
   private val test01Expected =
@@ -263,7 +263,7 @@ object ControlFlowGraphUnitTest {
     val i = Identifier("i", INT)
     val variableDeclaration = VariableDeclaration(i, Number(0))
     val loop = Loop(LessThan(i, Number(10)), Block(List(Continue(), Assignment(i, Addition(i, Number(1))))))
-    val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set())
+    val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set(), useResource = false)
     BrboProgram("test02", packageName = None, main, Nil)
   }
   private val test02Expected =
@@ -289,7 +289,7 @@ object ControlFlowGraphUnitTest {
   private val test03 = {
     val i = Identifier("i", INT)
     val variableDeclaration = VariableDeclaration(i, FunctionCallExpr("ndInt2", List(Number(0), Number(1)), INT))
-    val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration)), Set())
+    val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration)), Set(), useResource = false)
     BrboProgram("test03", packageName = None, main, Nil)
   }
   private val test03Expected =
@@ -309,7 +309,7 @@ object ControlFlowGraphUnitTest {
       ITE(condition, Then, Else)
     }
     val assignment = Assignment(i, Number(3))
-    val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, ite, assignment)), Set())
+    val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, ite, assignment)), Set(), useResource = false)
     BrboProgram("test04", packageName = None, main, Nil)
   }
   private val test04Expected =
@@ -345,7 +345,7 @@ object ControlFlowGraphUnitTest {
       val assignment = Assignment(test05VariableI, Number(12))
       Loop(LessThan(test05VariableI, Number(5)), Block(List(loop, assignment)))
     }
-    val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set())
+    val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, loop)), Set(), useResource = false)
     BrboProgram("test05", packageName = None, main, Nil)
   }
   private val test05Expected =
@@ -391,7 +391,7 @@ object ControlFlowGraphUnitTest {
     val variableDeclaration = VariableDeclaration(i, Number(0))
     val reset: Reset = Reset(1, lessThanOrEqualTo(i, Number(0)))
     val use: Use = Use(Some(1), i, greaterThan(i, Number(5)))
-    val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, reset, use)), Set())
+    val main = BrboFunction("main", VOID, Nil, Block(List(variableDeclaration, reset, use)), Set(), useResource = false)
     BrboProgram("test06", packageName = None, main, Nil, Nil)
   }
   private val test06Expected =

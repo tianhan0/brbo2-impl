@@ -1,10 +1,9 @@
 package brbo.frontend
 
 import brbo.common.GhostVariableUtils.isGhostVariable
-import brbo.common.PredefinedVariables.variables
 import brbo.common.ast.BrboExprUtils.{greaterThan, greaterThanOrEqualTo, lessThanOrEqualTo, notEqual}
 import brbo.common.ast._
-import brbo.common.{GhostVariableTyp, GhostVariableUtils, MyLogger, PreDefinedFunctions, PredefinedVariables}
+import brbo.common._
 import brbo.frontend.JavaTreeUtils.isCommand
 import brbo.frontend.TargetProgram.toBrboFunction
 import com.sun.source.tree.Tree.Kind
@@ -71,18 +70,27 @@ object TargetProgram {
       case Left(command) => Block(List(command))
       case Right(statement) => statement
     }
-    val function = BrboFunction(targetMethod.methodName, targetMethod.returnType,
-      targetMethod.inputVariables.map({ case (_, identifier) => identifier }), body, translate.getResourceVariables)
+    val function = BrboFunction(
+      identifier = targetMethod.methodName,
+      returnType = targetMethod.returnType,
+      parameters = targetMethod.inputVariables.map({ case (_, identifier) => identifier }),
+      body = body,
+      groupIds = translate.getResourceVariables,
+      useResource = translate.getUseResource
+    )
     (function, translate.getBoundAssertions)
   }
 
   private class Translate(variables: Map[String, Identifier], allMethods: Set[TargetMethod]) {
     private var boundAssertions: List[BoundAssertion] = Nil
     private var resourceVariables: Set[Int] = Set()
+    private var useResource = false
 
     def getBoundAssertions: List[BoundAssertion] = boundAssertions
 
     def getResourceVariables: Set[Int] = resourceVariables
+
+    def getUseResource: Boolean = useResource
 
     def toAST(statementTree: StatementTree): BrboAst = {
       toASTInternal(statementTree) match {
@@ -119,7 +127,14 @@ object TargetProgram {
               variables.get(tree.getName.toString) match {
                 case Some(identifier) =>
                   toAST(tree.getInitializer) match {
-                    case Left(brboExpr) => Left(VariableDeclaration(identifier, brboExpr))
+                    case Left(brboExpr) =>
+                      val declaration = VariableDeclaration(identifier, brboExpr)
+                      if (GhostVariableUtils.isGhostVariable(identifier.name, GhostVariableTyp.Resource)) {
+                        useResource = true
+                        Left(Comment(declaration.printToIR()))
+                      } else {
+                        Left(declaration)
+                      }
                     case Right(_) => throw new Exception
                   }
                 case None => throw new Exception

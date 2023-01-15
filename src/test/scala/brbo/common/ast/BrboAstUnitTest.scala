@@ -294,6 +294,7 @@ object BrboAstUnitTest {
       s"""void ${TargetProgram.MAIN_FUNCTION}(int x)
          |{
          |  int R = 0;
+         |  // int R = 0;
          |  R = R + 22;
          |}
          |""".stripMargin),
@@ -392,7 +393,7 @@ object BrboAstUnitTest {
          |    D4p = D4;
          |    D4 = 0;
          |    C4 = C4 + 1;
-         |    int R = 0;
+         |    // int R = 0;
          |    R = R + 1011;
          |    int a1 = arrayRead(array, 0);
          |    int a2 = array;
@@ -423,9 +424,10 @@ object BrboAstUnitTest {
         |  void execute()
         |  {
         |    int BOOLEAN_SEPARATOR = 102;
+        |    int R = 0;
         |    lessPreciseBound(!((R < 10)) && !((R == 10)));
         |    mostPreciseBound(!((R < 10)) && !((R == 10)));
-        |    int R = 0;
+        |    // int R = 0;
         |    R = R + 1011;
         |    // mostPreciseBound(R > 10)
         |    // lessPreciseBound(R > 10)

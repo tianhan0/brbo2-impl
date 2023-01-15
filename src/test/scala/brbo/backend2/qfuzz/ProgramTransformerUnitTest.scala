@@ -57,7 +57,7 @@ object ProgramTransformerUnitTest {
          |    {
          |      ;
          |    }
-         |    int R = 0;
+         |    // int R = 0;
          |    int i = 0;
          |    while (i < n)
          |    {

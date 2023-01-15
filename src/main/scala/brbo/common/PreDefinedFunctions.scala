@@ -70,7 +70,7 @@ object PreDefinedFunctions {
         }
         Block(List(ite, Return(None)))
       }
-      BrboFunction(name, VOID, List(cond), body, Set())
+      BrboFunction(name, VOID, List(cond), body, Set(), useResource = false)
     }
 
     def returnType: BrboType.T = cRepresentation.returnType
@@ -88,7 +88,7 @@ object PreDefinedFunctions {
         }
         Block(List(ite))
       }
-      BrboFunction(name, VOID, List(cond), body, Set())
+      BrboFunction(name, VOID, List(cond), body, Set(), useResource = false)
     }
 
     def returnType: BrboType.T = cRepresentation.returnType
@@ -100,7 +100,7 @@ object PreDefinedFunctions {
         val returnCommand = Return(Some(FunctionCallExpr("__VERIFIER_nondet_int", Nil, INT)))
         Block(List(returnCommand))
       }
-      BrboFunction(name, INT, Nil, body, Set())
+      BrboFunction(name, INT, Nil, body, Set(), useResource = false)
     }
 
     def returnType: BrboType.T = cRepresentation.returnType
@@ -117,7 +117,7 @@ object PreDefinedFunctions {
         val returnCommand = Return(Some(x))
         Block(List(variableDeclaration, assume, returnCommand))
       }
-      BrboFunction(name, INT, List(lower, upper), body, Set())
+      BrboFunction(name, INT, List(lower, upper), body, Set(), useResource = false)
     }
 
     def returnType: BrboType.T = cRepresentation.returnType
@@ -132,7 +132,7 @@ object PreDefinedFunctions {
         val assume = callAssume(And(lessThanOrEqualTo(lower, x), lessThanOrEqualTo(x, upper)))
         Block(List(assume))
       }
-      BrboFunction(name, VOID, List(lower, x, upper), body, Set())
+      BrboFunction(name, VOID, List(lower, x, upper), body, Set(), useResource = false)
     }
 
     def returnType: BrboType.T = cRepresentation.returnType
@@ -146,7 +146,7 @@ object PreDefinedFunctions {
         val ite = ITE(greaterThan(x, Number(0)), Return(Some(Bool(b = true))), Return(Some(Bool(b = false))))
         Block(List(variableDeclaration, ite))
       }
-      BrboFunction(name, BOOL, Nil, body, Set())
+      BrboFunction(name, BOOL, Nil, body, Set(), useResource = false)
     }
 
     def returnType: BrboType.T = cRepresentation.returnType
