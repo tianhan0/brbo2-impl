@@ -13,21 +13,20 @@ abstract public class Lexx extends Common {
     lessPreciseBound(R <= MAX * format + MAX);
     int inLiteral = 0;
     for (int i = 0; i < format; i++) {
-      if (inLiteral > 0 && i >= 2) {
+      if (inLiteral > 0) {
         buffer++;
         R = R + 1;
         i++;
         continue;
       }
       // if (ndBool2(i)) {
-        if (inLiteral > 0) {
-          inLiteral = 0;
-        }
-        else {
-          R = R + (-buffer);
-          buffer = 0;
-          inLiteral = 1;
-        }
+      if (inLiteral > 0) {
+        inLiteral = 0;
+      } else {
+        R = R + (-buffer);
+        buffer = 0;
+        inLiteral = 1;
+      }
       // }
     }
   }
