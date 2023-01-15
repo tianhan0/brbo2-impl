@@ -11,7 +11,7 @@ abstract public class AppendQuotedString extends Common {
     int R = 0;
     mostPreciseBound(R <= pattern);
     lessPreciseBound(R <= MAX * pattern + MAX);
-    int pos = ndInt2(0, pattern);
+    int pos = ndInt2(0, pattern - 1);
     int start = pos;
     int lastHold = start;
     int choice = 0;
