@@ -3,8 +3,8 @@ package brbo.benchmarks.sas22.string.apache.stringutils;
 import brbo.benchmarks.Common;
 
 abstract public class SubstringsBetween extends Common {
-  void execute(int str, int open, int close) {
-    if (str <= 0 || open <= 0 || close <= 0) {
+  void execute(int str) {
+    if (str <= 0) {
       return;
     }
     int R = 0;
@@ -12,6 +12,8 @@ abstract public class SubstringsBetween extends Common {
     lessPreciseBound(R <= MAX * str + MAX);
     int list = 0;
     int pos = 0;
+    int open = 1;
+    int close = ndInt2(0, str - 1);
     while (pos < str - close) {
       int start = ndInt2(pos, str);
       if (start == str) {
