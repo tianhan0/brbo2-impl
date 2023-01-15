@@ -29,7 +29,7 @@ class SerializationTest extends AnyFlatSpec {
       val reset4 = Reset(1)
       val use4 = Use(Some(1), Subtraction(n, k))
       BrboFunction("main", VOID, List(Identifier("n", BrboType.INT)),
-        Block(List(declaration2, reset2, use2, updateK1, reset3, use3, updateK2, reset4, use4)), Set(1))
+        Block(List(declaration2, reset2, use2, updateK1, reset3, use3, updateK2, reset4, use4)), Set(1), useResource = false)
     }
     val program: BrboProgram = BrboProgram("Test program", packageName = None, function)
     val cfgNode = {

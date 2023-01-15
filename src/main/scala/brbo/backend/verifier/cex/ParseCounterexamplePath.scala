@@ -110,7 +110,7 @@ class ParseCounterexamplePath(debugMode: Boolean) {
     if (debugMode) cfg.printPDF()
 
     val subStateWhenMatchSucceed = {
-      val functionWhenMatchSucceed = BrboFunction("!!!", VOID, Nil, Block(List(Skip())), Set())
+      val functionWhenMatchSucceed = BrboFunction("!!!", VOID, Nil, Block(List(Skip())), Set(), useResource = true)
       val nodeWhenMatchSucceed = CFGNode(Skip())
       SubState(nodeWhenMatchSucceed, processFunctionCalls = true, functionWhenMatchSucceed)
     }

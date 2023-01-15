@@ -139,7 +139,7 @@ class DecompositionDriver(arguments: DecompositionArguments,
         })
       }
       val main = instrumentedProgram.mainFunction
-      BrboFunction(main.identifier, main.returnType, main.parameters, newBody.asInstanceOf[Statement], ghostVariableIDs.toSet)
+      BrboFunction(main.identifier, main.returnType, main.parameters, newBody.asInstanceOf[Statement], ghostVariableIDs.toSet, useResource = main.useResource)
     }
     instrumentedProgram.replaceMainFunction(newMain)
   }

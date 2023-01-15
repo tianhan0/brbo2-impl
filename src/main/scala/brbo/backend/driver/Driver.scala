@@ -277,7 +277,7 @@ class Driver(arguments: Arguments, originalProgram: BrboProgram) {
     })
     val newMainFunction = {
       val f = program.mainFunction
-      BrboFunction(f.identifier, f.returnType, f.parameters, newBody.asInstanceOf[Statement], newGroupIds)
+      BrboFunction(f.identifier, f.returnType, f.parameters, newBody.asInstanceOf[Statement], newGroupIds, useResource = f.useResource)
     }
     program.replaceMainFunction(newMainFunction)
   }

@@ -31,7 +31,7 @@ object SymbolicExecutionUnitTest {
   val b: Identifier = Identifier("b", INT)
   val e: Identifier = Identifier("e", INT)
 
-  val mainFunction: BrboFunction = BrboFunction("main", VOID, List(n, a, b), Block(Nil), Set(2))
+  val mainFunction: BrboFunction = BrboFunction("main", VOID, List(n, a, b), Block(Nil), Set(2), useResource = false)
   val assumeFunction: BrboFunction = PreDefinedFunctions.Assume.cRepresentation
   val ndBoolFunction: BrboFunction = PreDefinedFunctions.NdBool.cRepresentation
   val ndIntFunction: BrboFunction = PreDefinedFunctions.NdInt.cRepresentation

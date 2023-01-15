@@ -118,15 +118,16 @@ case class BrboProgram(className: String,
 
 /**
  *
- * @param identifier Function name
- * @param returnType Return type
- * @param parameters Function parameters
- * @param body       Function body without initializing ghost variables
- * @param groupIds   IDs of amortizations groups that *may* be used in this function,
- *                   so that their ghost variables will be initialized.
- *                   This set is empty iff. no amortization (i.e., selectively, worst-case, or fully-amortized reasoning)
- *                   has been applied to the function.
- * @param uuid       Unique ID
+ * @param identifier  Function name
+ * @param returnType  Return type
+ * @param parameters  Function parameters
+ * @param body        Function body without initializing ghost variables
+ * @param groupIds    IDs of amortizations groups that *may* be used in this function,
+ *                    so that their ghost variables will be initialized.
+ *                    This set is empty iff. no amortization (i.e., selectively, worst-case, or fully-amortized reasoning)
+ *                    has been applied to the function.
+ * @param useResource Whether this program accumulates resources into variable R.
+ * @param uuid        Unique ID
  */
 @SerialVersionUID(2L)
 case class BrboFunction(identifier: String,
@@ -134,21 +135,21 @@ case class BrboFunction(identifier: String,
                         parameters: List[Identifier],
                         body: Statement,
                         groupIds: Set[Int],
+                        useResource: Boolean,
                         uuid: UUID = UUID.randomUUID())
   extends Print with SameAs with Serializable {
   val approximatedResourceUsage: BrboExpr = GhostVariableUtils.approximatedResourceUsage(groupIds, legacy = false)
 
+  private val ghostVariableNonLegacyDeclarations: List[Command] = ghostVariableDeclarations(legacy = false)
+  private val ghostVariableLegacyDeclarations: List[Command] = ghostVariableDeclarations(legacy = true)
+
   // Declare and initialize ghost variables in the function
-  val bodyWithGhostInitialization: Statement = {
-    val ghostVariableNonLegacyDeclarations: List[Command] = groupIds.flatMap({
-      groupId => GhostVariableUtils.declareVariables(groupId, legacy = false)
-    }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
+  val bodyWithGhostInitialization: Statement =
     BrboAstUtils.insert(
       ast = body,
       toInsert = ghostVariableNonLegacyDeclarations,
       operation = PrependOperation
     ).asInstanceOf[Statement]
-  }
 
   private lazy val legacyGhostVariablesSum = {
     if (groupIds.nonEmpty) {
@@ -229,9 +230,23 @@ case class BrboFunction(identifier: String,
       }
   })
 
-  private val ghostVariableLegacyDeclarations: List[Command] = groupIds.flatMap({
-    groupId => GhostVariableUtils.declareVariables(groupId, legacy = true)
-  }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
+  private def ghostVariableDeclarations(legacy: Boolean): List[Command] = {
+    if (groupIds.nonEmpty) {
+      groupIds.flatMap({
+        groupId => GhostVariableUtils.declareVariables(groupId, legacy)
+      }).toList.sortWith({ case (c1, c2) => c1.printToIR() < c2.printToIR() })
+    } else {
+      val (resource: Identifier, _, _) = GhostVariableUtils.generateVariables(groupId = None, legacy = false)
+      /**
+       * Declare the original resource variable, unless there is no resource usage.
+       * If the decomposition is incomplete (i.e., there exists a use command that is not decomposed),
+       * then we should see an compilation error, because we intentionally do not declare the original
+       * resource variable when there exists a decomposition.
+       */
+      val declaration = VariableDeclaration(resource, Number(0))
+      if (useResource) List(declaration) else Nil
+    }
+  }
 
   private def boundAssertionExpressions(boundAssertions: List[BoundAssertion]): List[BrboExpr] = {
     boundAssertions.map({
@@ -248,19 +263,19 @@ case class BrboFunction(identifier: String,
     })
   }
 
-  def replaceBodyWithoutGhostInitialization(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody, groupIds)
+  def replaceBodyWithoutGhostInitialization(newBody: Statement): BrboFunction = BrboFunction(identifier, returnType, parameters, newBody, groupIds, useResource)
 
-  def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, body, newGroupIds)
+  def replaceGroupIds(newGroupIds: Set[Int]): BrboFunction = BrboFunction(identifier, returnType, parameters, body, newGroupIds, useResource)
 
   def sameAs(other: Any): Boolean = {
     other match {
-      case BrboFunction(otherIdentifier, otherReturnType, otherParameters, otherBodyNoInitialization, otherGroupIds, _) =>
+      case BrboFunction(otherIdentifier, otherReturnType, otherParameters, otherBodyNoInitialization, otherGroupIds, otherUseResource, _) =>
         val sameParameters = {
           if (otherParameters.length != parameters.length) false
           else otherParameters.zip(parameters).forall({ case (i1, i2) => i1.sameAs(i2) })
         }
         otherIdentifier == identifier && otherReturnType == returnType && sameParameters &&
-          otherBodyNoInitialization.sameAs(body) && otherGroupIds == groupIds
+          otherBodyNoInitialization.sameAs(body) && otherUseResource == useResource && otherGroupIds == groupIds
       case _ => false
     }
   }

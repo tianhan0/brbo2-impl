@@ -45,7 +45,8 @@ object ProgramTransformer {
       returnType = BrboType.INT, // Return the number of uses in a run
       parameters = mainFunction.parameters :+ indexVariable,
       body = newBody3.asInstanceOf[Statement],
-      groupIds = mainFunction.groupIds
+      groupIds = mainFunction.groupIds,
+      useResource = mainFunction.useResource
     )
     BrboProgram(
       className = program.className,
@@ -75,7 +76,8 @@ object ProgramTransformer {
       returnType = BrboType.VOID,
       parameters = List(n),
       body = Block(List(declaration, loop)),
-      groupIds = Set()
+      groupIds = Set(),
+      useResource = false
     )
   }
 }

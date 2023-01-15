@@ -65,13 +65,13 @@ object UAutomizerVerifierUnitTest {
     val assertionFalse = PreDefinedFunctions.callAssert(lessThanOrEqualTo(R, a))
 
     val test01 = {
-      val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionTrue)), Set())
+      val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionTrue)), Set(), useResource = false)
       BrboProgram("test01", packageName = None, function, PreDefinedFunctions.functionCRepresentations, Nil)
     }
     val test01Expected = """VerifierResult(UNKNOWN_RESULT,Set())"""
 
     val test02 = {
-      val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionFalse)), Set())
+      val function = BrboFunction("main", VOID, List(n, a, b), Block(List(statement1, statement2, statement3, statement5, statement6, assertionFalse)), Set(), useResource = false)
       BrboProgram("test02", packageName = None, function, PreDefinedFunctions.functionCRepresentations, Nil)
     }
     val test02Expected =
@@ -113,7 +113,7 @@ object UAutomizerVerifierUnitTest {
       val use1 = Use(Some(2), Number(1), greaterThan(n, Number(1)))
       val use2 = Use(Some(2), Number(2))
       val assertion = PreDefinedFunctions.callAssert(lessThanOrEqualTo(R2, Number(1)))
-      val function = BrboFunction("main", VOID, List(n), Block(List(reset1, use1, reset2, use2, assertion)), Set[Int](2))
+      val function = BrboFunction("main", VOID, List(n), Block(List(reset1, use1, reset2, use2, assertion)), Set[Int](2), useResource = false)
       BrboProgram("test03", packageName = None, function, PreDefinedFunctions.functionCRepresentations, Nil)
     }
     val test03Expected =
