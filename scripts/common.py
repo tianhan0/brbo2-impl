@@ -170,7 +170,7 @@ def get_java_files(path: str):
     if input_path.is_file():
         java_files.append(input_path.absolute())
     elif input_path.is_dir():
-        for java_file in input_path.rglob('*.java'):
+        for java_file in input_path.rglob("*.java"):
             java_files.append(Path(java_file).absolute())
     else:
         logging.error(f"{input_path} is neither a file nor a directory")
