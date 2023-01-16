@@ -2,7 +2,7 @@
 
 ## Run from End to End
 
-### On Ubuntu Server or Mac
+**On Ubuntu Server or Mac.**: Run
 
 ```shell
 ~/brbo2-impl$ python3 scripts/brbo2.py \
@@ -10,14 +10,12 @@
       --qfuzz $HOME/Documents/workspace/qfuzz/ \
       --brbo2 $HOME/Documents/workspace/brbo2-impl/ \
       --brbo $HOME/Documents/workspace/brbo-impl/ \
-      > $HOME/Documents/workspace/log.txt 2>&1 &
+      > ./output/logs/log14.txt 2>&1 &
 ```
 
-## Generate Interesting Inputs via QFuzz
+### Generate Interesting Inputs via QFuzz
 
-### In WSL
-
-Run:
+**In WSL.** Run:
 ```shell
 ~/brbo2-impl$ ./scripts/run.sh fuzz \
   -t 180 \
@@ -36,9 +34,7 @@ Test and Debug:
   && grep -B 4 -RnIi "observations:" output/fuzz/kelinci_output.txt
 ```
 
-### In Docker (on Mac M2) 
-
-Run:
+**In Docker (on Mac M2).** Run:
 ```shell
 docker run \
   --platform linux/amd64 \ 
@@ -75,9 +71,9 @@ Compile ICRA:
 eval $(opam config env)
 ```
 
-## (Selectively) Decompose Programs
+### (Selectively) Decompose Programs
 
-Run on Mac (M2):
+**On Mac (M2).** Run:
 ```shell
 [~/Documents/workspace/brbo2-impl] ./scripts/run_deps.sh decompose \
   --threads 6 \
@@ -89,16 +85,16 @@ Run on Mac (M2):
   --input
 ```
 
-Run in WSL:
+**In WSL.** Run:
 ```shell
 ~/brbo-impl$ ./scripts/run_without_deps.sh \
   --directory output/decomposed/stringutils/GetDigits.java \
   --amortize transparent
 ```
 
-## Verify (Decomposed) Programs:
+### Verify (Decomposed) Programs:
 
-Run on the Ubuntu server:
+**On the Ubuntu server.** Run:
 ```shell
 [~/Documents/workspace/brbo-impl] $ ./scripts/run_deps.sh \
   --directory /root/Documents/workspace/brbo2-impl/output/decomposed/stringutils/Replace.java \
@@ -124,3 +120,21 @@ root@16144970debc:/home/sas-artifact-41/brbo-impl# ./scripts/run_with_deps_artif
 ```shell
 ./scripts/run_deps.sh brbo --directory /Users/tianhanlu/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/ReplaceChars.java 
 ```
+
+## Run Baseline
+
+**On the Ubuntu server.** Run:
+```shell
+~/brbo2-impl$ { python3 scripts/brbo.py \
+  --input src/main/java/brbo/benchmarks/sas22/ \
+  --brbo $HOME/Documents/workspace/brbo-impl/ \
+  --timeout 60 \
+  --mode worst && \
+  python3 scripts/brbo.py \
+  --input src/main/java/brbo/benchmarks/sas22/ \
+  --brbo $HOME/Documents/workspace/brbo-impl/ \
+  --timeout 60 \
+  --mode fully; } \
+  > ./output/logs/baseline/log01.txt 2>&1 &
+```
+Thanks to https://stackoverflow.com/questions/44192376/redirect-outputs-of-multiple-commands-to-a-file.

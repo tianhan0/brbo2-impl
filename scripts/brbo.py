@@ -14,7 +14,8 @@ if __name__ == "__main__":
     Usage: ~/brbo2-impl$ python3 scripts/brbo.py \
       --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java \
       --brbo $HOME/Documents/workspace/brbo-impl/ \
-      --timeout 60
+      --timeout 60 \
+      --mode worst
     """
     parser = argparse.ArgumentParser(
         description="Run the brbo pipeline: Translate with brbo2 -> Decompose -> Verify"
