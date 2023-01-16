@@ -41,6 +41,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dry", action="store_true", help="Print the commands without executing them."
     )
+    parser.add_argument(
+        "--mode",
+        choices=["worst", "fully"],
+        required=True,
+        help="The amortization mode.",
+    )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
     print_args(args)
@@ -60,13 +66,19 @@ if __name__ == "__main__":
             command=common.translate_command(file=java_file, deps=True), dry=args.dry
         )
 
+        if args.mode == "worst":
+            mode = "no"
+        elif args.mode == "fully":
+            mode = "full"
+        else:
+            raise AssertionError(f"Unexpected mode {args.mode}")
         brbo_output, verification_time = run_command(
             command=common.verification_command(
                 file=decomposed_file,
                 icra=args.icra,
                 deps=True,
                 timeout=args.timeout,
-                mode="selective",
+                mode=mode,
             ),
             cwd=brbo_root,
             dry=args.dry,
