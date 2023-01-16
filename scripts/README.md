@@ -5,7 +5,7 @@
 ### On Ubuntu Server or Mac
 
 ```shell
-~/brbo2-impl$ python3 scripts/fuzz+decompose.py \
+~/brbo2-impl$ python3 scripts/brbo2.py \
       --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java \
       --qfuzz $HOME/Documents/workspace/qfuzz/ \
       --brbo2 $HOME/Documents/workspace/brbo2-impl/ \
