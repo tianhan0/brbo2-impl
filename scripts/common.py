@@ -5,7 +5,6 @@ import getpass
 import time
 import subprocess
 import os
-import glob
 from pathlib import Path
 
 logging.basicConfig(
