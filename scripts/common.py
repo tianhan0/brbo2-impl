@@ -156,6 +156,12 @@ class TimeMeasurement:
         )
         logging.info(f"Number of unknown programs: {pretty_print(self.count_unknown)}")
 
+        json = {
+            "time_measurements": self.per_file_execution_time,
+            "verification_results": self.verification_results,
+        }
+        logging.info(f"Data to be processed: {pretty_print(json)}")
+
 
 def print_args(args):
     logging.info("Arguments:")
@@ -163,19 +169,19 @@ def print_args(args):
         logging.info(f"{key}\t{value}")
 
 
-def get_java_files(path: str):
-    java_files = []
+def get_files(path: str, prefix="", suffix=""):
+    files = []
     input_path = Path(path)
     if input_path.is_file():
-        java_files.append(input_path.absolute())
+        files.append(input_path.absolute())
     elif input_path.is_dir():
-        for java_file in input_path.rglob("*.java"):
-            java_files.append(Path(java_file).absolute())
+        for java_file in input_path.rglob(f"{prefix}*.{suffix}"):
+            files.append(Path(java_file).absolute())
     else:
         logging.error(f"{input_path} is neither a file nor a directory")
         sys.exit(-1)
-    java_files = sorted(java_files, key=lambda path: str(path), reverse=False)
-    return java_files
+    files = sorted(files, key=lambda path: str(path), reverse=False)
+    return files
 
 
 def get_decomposed_file(java_file: Path, brbo2_root: Path = Path(os.getcwd())) -> Path:

@@ -4,7 +4,7 @@ import common
 from common import (
     run_command,
     print_args,
-    get_java_files,
+    get_files,
     get_decomposed_file,
 )
 from pathlib import Path
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print_args(args)
 
-    java_files = get_java_files(args.input)
+    java_files = get_files(args.input, suffix="java")
     brbo_root = Path(args.brbo).expanduser()
     time_measurements = common.TimeMeasurement()
     for java_file in java_files:

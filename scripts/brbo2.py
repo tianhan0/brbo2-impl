@@ -2,7 +2,7 @@ import argparse
 import logging
 from pathlib import Path
 import common
-from common import run_command, print_args, get_java_files, get_decomposed_file
+from common import run_command, print_args, get_files, get_decomposed_file
 
 
 if __name__ == "__main__":
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print_args(args)
 
-    java_files = get_java_files(args.input)
+    java_files = get_files(args.input, suffix="java")
     time_measurements = common.TimeMeasurement()
     brbo_root = Path(args.brbo).expanduser()
     for java_file in java_files:
