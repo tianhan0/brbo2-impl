@@ -15,7 +15,8 @@ if __name__ == "__main__":
       --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java \
       --brbo $HOME/Documents/workspace/brbo-impl/ \
       --timeout 60 \
-      --mode worst
+      --mode worst \
+      --log brbo.json
     """
     parser = argparse.ArgumentParser(
         description="Run the brbo pipeline: Translate with brbo2 -> Decompose -> Verify"
@@ -47,6 +48,12 @@ if __name__ == "__main__":
         choices=["worst", "fully"],
         required=True,
         help="The amortization mode.",
+    )
+    parser.add_argument(
+        "--log",
+        type=str,
+        required=True,
+        help="The file to write the measurements to.",
     )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
@@ -91,3 +98,4 @@ if __name__ == "__main__":
         )
 
     time_measurements.print()
+    time_measurements.write(log_file=args.log)

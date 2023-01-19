@@ -156,11 +156,14 @@ class TimeMeasurement:
         )
         logging.info(f"Number of unknown programs: {pretty_print(self.count_unknown)}")
 
-        json = {
+    def write(self, log_file):
+        output_contents = {
             "time_measurements": self.per_file_execution_time,
             "verification_results": self.verification_results,
         }
-        logging.info(f"Data to be processed: {pretty_print(json)}")
+        with open(log_file, "w") as output_file:
+            logging.info(f"Write into {log_file}")
+            output_file.write(json.dumps(output_contents, indent=2))
 
 
 def print_args(args):

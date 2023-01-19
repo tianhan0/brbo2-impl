@@ -10,8 +10,8 @@ if __name__ == "__main__":
     Usage: ~/brbo2-impl$ python3 scripts/brbo2.py \
       --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java \
       --qfuzz $HOME/Documents/workspace/qfuzz/ \
-      --brbo2 $HOME/Documents/workspace/brbo2-impl/ \
-      --brbo $HOME/Documents/workspace/brbo-impl/
+      --brbo $HOME/Documents/workspace/brbo-impl/ \
+      --log brbo2.json
     """
     parser = argparse.ArgumentParser(
         description="Run the brbo2 pipeline: Fuzz -> Decompose -> Verify."
@@ -40,9 +40,6 @@ if __name__ == "__main__":
         help="The number of samples when randomly generating inputs for decomposing a program.",
     )
     parser.add_argument(
-        "--brbo2", type=str, default="~/brbo2-impl", help="The directory of brbo2-impl."
-    )
-    parser.add_argument(
         "--brbo", type=str, default="~/brbo-impl", help="The directory of brbo-impl."
     )
     parser.add_argument(
@@ -65,6 +62,12 @@ if __name__ == "__main__":
         action="store_true",
         default=True,
         help="Whether to run the script that assumes needing the jar dependencies.",
+    )
+    parser.add_argument(
+        "--log",
+        type=str,
+        required=True,
+        help="The file to write the measurements to.",
     )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
@@ -118,3 +121,4 @@ if __name__ == "__main__":
         )
 
     time_measurements.print()
+    time_measurements.write(log_file=args.log)
