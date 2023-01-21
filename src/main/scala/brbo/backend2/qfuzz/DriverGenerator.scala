@@ -8,13 +8,13 @@ import brbo.common.string.StringFormatUtils
 import brbo.frontend.TargetProgram
 
 object DriverGenerator {
-  val ARRAY_SIZE = 5
+  val ARRAY_SIZE = 7
   /**
    * A too large number may result in executing the target program for too long. For example, an array input may
    * contain a large number that controls the loop iterations.
    * A too small number may result in a higher likelihood that the generated inputs do not very much.
    */
-  val MAX_INTEGER = 200
+  val MAX_INTEGER = 20
   val MIN_INTEGER = 4
   val HALF_MAX_VALUE: Int = java.lang.Short.MAX_VALUE / 2
   val MIN_LOOP_ITERATIONS = 2
