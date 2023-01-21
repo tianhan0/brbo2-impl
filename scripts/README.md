@@ -8,9 +8,9 @@
 ~/brbo2-impl$ python3 scripts/brbo2.py \
       --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java \
       --qfuzz $HOME/Documents/workspace/qfuzz/ \
-      --brbo2 $HOME/Documents/workspace/brbo2-impl/ \
       --brbo $HOME/Documents/workspace/brbo-impl/ \
-      > ./output/logs/log14.txt 2>&1 &
+      --log output/logs/log16.json \
+      > output/logs/log16.txt 2>&1 &
 ```
 
 ### Generate Interesting Inputs via QFuzz
