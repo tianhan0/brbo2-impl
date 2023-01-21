@@ -30,7 +30,9 @@ object JavacUtils {
       val fileObject = new JavaSourceFromString(compilationUnitName, sourceCode)
       // javac.compile(createJavaList(fileObject), createJavaList(compilationUnitName), createJavaList(processor), createJavaList())
       import com.sun.tools.javac.util.List
-      javac.compile(List.of(fileObject), List.of(compilationUnitName), List.of(processor))
+      javac.compile(List.of(fileObject), List.of(compilationUnitName), createJavaList(processor))
+      // TODO: The following is needed by IntelliJ's Java compiler
+      // javac.compile(List.of(fileObject), List.of(compilationUnitName), createJavaList(processor), createJavaList())
 
       /*val javac2 = ToolProvider.getSystemJavaCompiler
       val diagnostics: DiagnosticCollector[JavaFileObject] = new DiagnosticCollector[JavaFileObject]
