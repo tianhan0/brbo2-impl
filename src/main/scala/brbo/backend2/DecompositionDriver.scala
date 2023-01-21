@@ -35,14 +35,13 @@ class DecompositionDriver(arguments: DecompositionArguments,
 
   def decompose(): BrboProgram = {
     logger.info(s"Step 1: Generate traces")
-    logger.info(s"Step 1.1: User-provided inputs")
     val userProvidedTraces: List[Trace] = {
       if (arguments.getUseProvidedInputs && userProvidedInputFile.isDefined)
         generateTraces(userProvidedInputFile.get)
       else
         Nil
     }
-    logger.info(s"Step 1.2: Fuzzer generated inputs")
+    logger.info(s"Step 1.1: User-provided inputs (size ${userProvidedTraces.size})")
     val fuzzerGeneratedTraces: List[Trace] = {
       Fuzzer.fuzz(
         brboProgram = instrumentedProgram,
@@ -52,13 +51,14 @@ class DecompositionDriver(arguments: DecompositionArguments,
         threads = arguments.getThreads
       )
     }
-    logger.info(s"Step 1.3: QFuzz generated inputs")
+    logger.info(s"Step 1.2: Fuzzer generated inputs (size ${fuzzerGeneratedTraces.size})")
     val qfuzzGeneratedTraces: List[Trace] = {
       if (Files.exists(Paths.get(qfuzzInputFile)))
         generateTraces(qfuzzInputFile)
       else
         Nil
     }
+    logger.info(s"Step 1.3: QFuzz generated inputs (size ${qfuzzGeneratedTraces.size})")
 
     logger.info(s"Step 2: Select representative traces")
     val representatives = TracePartition.selectRepresentatives(
