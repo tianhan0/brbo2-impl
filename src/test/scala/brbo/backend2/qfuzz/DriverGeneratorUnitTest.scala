@@ -1,5 +1,6 @@
 package brbo.backend2.qfuzz
 
+import brbo.backend2.qfuzz.DriverGenerator.GeneratorParameters
 import brbo.backend2.qfuzz.DriverGeneratorUnitTest.test01
 import brbo.common.BrboType
 import brbo.common.ast.Identifier
@@ -18,7 +19,8 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
     )
     val (declarations, initializations, prints) = DriverGenerator.declarationsAndInitializations(
       parameters = parameters,
-      parametersInLoopConditions = List(Identifier("e", BrboType.INT))
+      parametersInLoopConditions = List(Identifier("e", BrboType.INT)),
+      generatorParameters = GeneratorParameters(arraySize = 5, minInteger = 4, maxInteger = 200, minLoopIterations = 2, maxLoopIterations = 3)
     )
     val result = (declarations ::: initializations ::: prints).mkString("\n")
     StringCompare.ignoreWhitespaces(result,
@@ -47,7 +49,10 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
 
   "Generating a QFuzz driver" should "be correct" in {
     val targetProgram = BasicProcessor.getTargetProgram("Test", test01)
-    val result = DriverGenerator.run(targetProgram.program)
+    val result = DriverGenerator.run(
+      program = targetProgram.program,
+      generatorParameters = GeneratorParameters(arraySize = 5, minInteger = 4, maxInteger = 200, minLoopIterations = 2, maxLoopIterations = 3),
+    )
     StringCompare.ignoreWhitespaces(result,
       """package brbo.fuzz.drivers;
         |

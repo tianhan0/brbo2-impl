@@ -1,6 +1,7 @@
 package brbo
 
 import brbo.backend2.DecompositionDriver
+import brbo.backend2.qfuzz.DriverGenerator.GeneratorParameters
 import brbo.backend2.qfuzz.Executor
 import brbo.common.MyLogger
 import brbo.common.ast.PrintStyle.BrboJavaStyle
@@ -149,7 +150,7 @@ object BrboMain {
   }
 
   def fuzzing(targetProgram: TargetProgram, sourceFilePath: String, arguments: FuzzingArguments): Unit = {
-    Executor.run(targetProgram.program, sourceFilePath, arguments)
+    Executor.run(targetProgram.program, sourceFilePath, arguments, generatorParameters = GeneratorParameters.default)
   }
 
   def decompose(targetProgram: TargetProgram,

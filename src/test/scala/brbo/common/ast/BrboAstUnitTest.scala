@@ -354,7 +354,6 @@ object BrboAstUnitTest {
       s"""abstract class Test {
          |  void ${TargetProgram.MAIN_FUNCTION}(int x, int array)
          |  {
-         |    int BOOLEAN_SEPARATOR = 102;
          |    int C1 = -1;
          |    int C2 = -1;
          |    int C3 = -1;
@@ -423,7 +422,6 @@ object BrboAstUnitTest {
       """abstract class Test {
         |  void execute()
         |  {
-        |    int BOOLEAN_SEPARATOR = 102;
         |    int R = 0;
         |    lessPreciseBound(!((R < 10)) && !((R == 10)));
         |    mostPreciseBound(!((R < 10)) && !((R == 10)));

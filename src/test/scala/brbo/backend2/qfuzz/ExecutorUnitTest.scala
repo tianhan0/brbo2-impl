@@ -1,5 +1,6 @@
 package brbo.backend2.qfuzz
 
+import brbo.backend2.qfuzz.DriverGenerator.GeneratorParameters
 import brbo.common.BrboType
 import brbo.common.ast.Identifier
 import brbo.common.string.StringCompare
@@ -25,7 +26,8 @@ class ExecutorUnitTest extends AnyFlatSpec {
     val result = Executor.toInputValues(
       parameters = parameters,
       inputArray = inputArray,
-      parametersInLoopConditions = List(Identifier("c", BrboType.INT))
+      parametersInLoopConditions = List(Identifier("c", BrboType.INT)),
+      generatorParameters = GeneratorParameters(arraySize = 5, minInteger = 4, maxInteger = 200, minLoopIterations = 2, maxLoopIterations = 3)
     ).get
     StringCompare.ignoreWhitespaces(result.map(v => v.printToIR()).mkString("\n"),
       """1

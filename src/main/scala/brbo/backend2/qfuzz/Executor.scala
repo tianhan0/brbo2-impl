@@ -2,7 +2,7 @@ package brbo.backend2.qfuzz
 
 import brbo.BrboMain
 import brbo.backend2.InputParser
-import brbo.backend2.qfuzz.DriverGenerator.parametersInLoopConditionals
+import brbo.backend2.qfuzz.DriverGenerator.{GeneratorParameters, parametersInLoopConditionals}
 import brbo.common.ast._
 import brbo.common.commandline.FuzzingArguments
 import brbo.common.{BrboType, MyLogger}
@@ -19,7 +19,7 @@ import scala.concurrent.{Await, Future}
 object Executor {
   private val DRIVERS_PATH = s"${System.getProperty("user.dir")}/src/main/java/brbo/fuzz/drivers"
 
-  def run(program: BrboProgram, sourceFilePath: String, arguments: FuzzingArguments): Unit = {
+  def run(program: BrboProgram, sourceFilePath: String, arguments: FuzzingArguments, generatorParameters: GeneratorParameters): Unit = {
     val logger = MyLogger.createLogger(Executor.getClass, debugMode = arguments.getDebugMode)
 
     val QFUZZ_PATH = arguments.getQFuzzPath
@@ -38,7 +38,10 @@ object Executor {
     val INPUT_SEED_PATH = arguments.getInputPath
 
     logger.info(s"Step 1: Prepare a QFuzz driver")
-    val driverFileContents = DriverGenerator.run(program)
+    val driverFileContents = DriverGenerator.run(
+      program = program,
+      generatorParameters = generatorParameters
+    )
     val driverFilePath = {
       Files.createDirectories(Paths.get(DRIVERS_PATH))
       val driverClassName = DriverGenerator.driverClassName(program.className)
@@ -103,7 +106,7 @@ object Executor {
         val absolutePath = inputFile
         logger.info(s"Read shorts that are between [${DriverGenerator.MIN_INTEGER}, ${DriverGenerator.MAX_INTEGER}] from $absolutePath")
         val shorts = parseBytesToShorts(absolutePath)
-        val inputs = wrapShorts(shorts)
+        val inputs = wrapShorts(shorts = shorts, max = generatorParameters.maxInteger, min = generatorParameters.minInteger)
         logger.info(s"Inputs: $inputs")
         inputs
     })
@@ -113,7 +116,8 @@ object Executor {
         toInputValues(
           inputArray = inputs,
           parameters = program.mainFunction.parameters,
-          parametersInLoopConditions = parametersInLoopConditionals(program.mainFunction))
+          parametersInLoopConditions = parametersInLoopConditionals(program.mainFunction),
+          generatorParameters = generatorParameters)
     }).toList
     if (arguments.getDryRun) {
       logger.info(s"Step 6: Dry run. Not write interesting inputs into Json files")
@@ -189,7 +193,8 @@ object Executor {
 
   def toInputValues(inputArray: List[Int],
                     parameters: List[Identifier],
-                    parametersInLoopConditions: List[Identifier]): Option[List[BrboValue]] = {
+                    parametersInLoopConditions: List[Identifier],
+                    generatorParameters: GeneratorParameters): Option[List[BrboValue]] = {
     try {
       val (_, inputValues) = parameters.foldLeft(0, Nil: List[BrboValue])({
         case ((indexSoFar, inputValues), parameter) =>
@@ -200,16 +205,16 @@ object Executor {
               val actualNumber =
                 if (parametersInLoopConditions.exists(p => p.sameAs(parameter))) {
                   // Keep in sync with the generated drivers
-                  number % (DriverGenerator.MAX_LOOP_ITERATIONS - DriverGenerator.MIN_LOOP_ITERATIONS) + DriverGenerator.MIN_LOOP_ITERATIONS
+                  number % (generatorParameters.maxLoopIterations - generatorParameters.minLoopIterations) + generatorParameters.minLoopIterations
                 }
                 else number
               (indexSoFar + 1, Number(actualNumber) :: inputValues)
             case BrboType.BOOL =>
               (indexSoFar + 1, Bool(inputArray(indexSoFar) > DriverGenerator.HALF_MAX_VALUE) :: inputValues)
             case BrboType.ARRAY(BrboType.INT) =>
-              val arrayValue: List[Int] = inputArray.slice(indexSoFar, indexSoFar + DriverGenerator.ARRAY_SIZE)
+              val arrayValue: List[Int] = inputArray.slice(indexSoFar, indexSoFar + generatorParameters.arraySize)
               val inputValue = BrboArray(values = arrayValue.map(v => Number(v)), innerType = BrboType.INT)
-              (indexSoFar + DriverGenerator.ARRAY_SIZE, inputValue :: inputValues)
+              (indexSoFar + generatorParameters.arraySize, inputValue :: inputValues)
             case _ => throw new Exception(s"Not support a parameter of type ${parameter.typ}")
           }
       })
@@ -241,9 +246,7 @@ object Executor {
     }).toList
   }
 
-  private def wrapShorts(shorts: List[java.lang.Short],
-                         max: Int = DriverGenerator.MAX_INTEGER,
-                         min: Int = DriverGenerator.MIN_INTEGER): List[Int] = {
+  private def wrapShorts(shorts: List[java.lang.Short], max: Int, min: Int): List[Int] = {
     shorts.map({
       short =>
         var result: Int = if (short >= 0) short.toInt else -short

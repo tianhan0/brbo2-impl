@@ -21,10 +21,23 @@ object DriverGenerator {
   val MAX_LOOP_ITERATIONS = 3
   private val MAX_NUMBER_OF_USES_TO_TRACK = 1000
 
-  def run(program: BrboProgram): String = {
+  case class GeneratorParameters(arraySize: Int, minInteger: Int, maxInteger: Int, minLoopIterations: Int, maxLoopIterations: Int)
+
+  object GeneratorParameters {
+    val default: GeneratorParameters = GeneratorParameters(
+      arraySize = ARRAY_SIZE,
+      minInteger = MIN_INTEGER,
+      maxInteger = MAX_INTEGER,
+      minLoopIterations = MIN_LOOP_ITERATIONS,
+      maxLoopIterations = MAX_LOOP_ITERATIONS
+    )
+  }
+
+  def run(program: BrboProgram, generatorParameters: GeneratorParameters): String = {
     val (declarations, initializations, prints) = declarationsAndInitializations(
       parameters = program.mainFunction.parameters,
       parametersInLoopConditions = parametersInLoopConditionals(program.mainFunction),
+      generatorParameters = generatorParameters
     )
     val transformedProgram = ProgramTransformer.transform(program)
     s"""package $DRIVER_PACKAGE_NAME;
@@ -43,11 +56,11 @@ object DriverGenerator {
        |import java.util.List;
        |
        |public class ${driverClassName(program.className)} {
-       |  public final static int ARRAY_SIZE = $ARRAY_SIZE;
-       |  private final static short MAX_INTEGER = $MAX_INTEGER;
-       |  private final static short MIN_INTEGER = $MIN_INTEGER;
-       |  private final static short MAX_LOOP_ITERATIONS = $MAX_LOOP_ITERATIONS;
-       |  private final static short MIN_LOOP_ITERATIONS = $MIN_LOOP_ITERATIONS;
+       |  public final static int ARRAY_SIZE = ${generatorParameters.arraySize};
+       |  private final static short MAX_INTEGER = ${generatorParameters.maxInteger};
+       |  private final static short MIN_INTEGER = ${generatorParameters.minInteger};
+       |  private final static short MAX_LOOP_ITERATIONS = ${generatorParameters.maxLoopIterations};
+       |  private final static short MIN_LOOP_ITERATIONS = ${generatorParameters.minLoopIterations};
        |  private final static int MAX_NUMBER_OF_USES_TO_TRACK = $MAX_NUMBER_OF_USES_TO_TRACK;
        |
        |  /* Minimum distance between clusters. */
@@ -140,7 +153,8 @@ object DriverGenerator {
     lines.map(line => StringFormatUtils.prependIndentsPerLine(line, indent))
 
   def declarationsAndInitializations(parameters: List[Identifier],
-                                     parametersInLoopConditions: List[Identifier]): (List[String], List[String], List[String]) = {
+                                     parametersInLoopConditions: List[Identifier],
+                                     generatorParameters: GeneratorParameters): (List[String], List[String], List[String]) = {
     val (_, declarations, initializations, prints) = parameters.foldLeft((0, Nil: List[String], Nil: List[String], Nil: List[String]))({
       case ((indexSoFar, declarations, initializations, prints), parameter) =>
         parameter.typ match {
@@ -166,7 +180,7 @@ object DriverGenerator {
                  |  ${parameter.name}[i] = values.get($indexSoFar + i);
                  |}""".stripMargin
             val print = s"""System.out.println("${parameter.name}: " + Arrays.toString(${parameter.name}));"""
-            (indexSoFar + ARRAY_SIZE,
+            (indexSoFar + generatorParameters.arraySize,
               declaration :: declarations,
               initialization :: initializations,
               print :: prints)
