@@ -8,7 +8,7 @@ class FuzzerUnitTest extends AnyFlatSpec {
   "Enumerating values of a given type" should "be correct" in {
     val samples = 10
     val fuzzer = new Fuzzer(maxInteger = 30, minInteger = 0, maxArrayLength = 5, minArrayLength = 2)
-    val booleans = fuzzer.randomValues(BrboType.BOOL, samples, seed = Fuzzer.SEED).map(v => v.printToIR())
+    val booleans = fuzzer.randomValues(BrboType.BOOL, samples, seed = Fuzzer.SEED, deterministic = true).map(v => v.printToIR())
     val booleansExpected =
       """false
         |false
@@ -22,7 +22,7 @@ class FuzzerUnitTest extends AnyFlatSpec {
         |true""".stripMargin
     StringCompare.ignoreWhitespaces(booleans, booleansExpected, "Enumerating booleans failed")
 
-    val integers = fuzzer.randomValues(BrboType.INT, samples, seed = Fuzzer.SEED).map(v => v.printToIR())
+    val integers = fuzzer.randomValues(BrboType.INT, samples, seed = Fuzzer.SEED, deterministic = true).map(v => v.printToIR())
     StringCompare.ignoreWhitespaces(integers,
       """1
         |12
@@ -35,12 +35,12 @@ class FuzzerUnitTest extends AnyFlatSpec {
         |4
         |8""".stripMargin, "Enumerating integers failed")
 
-    val integersSeed1 = fuzzer.randomValues(BrboType.INT, samples, seed = 1).map(v => v.printToIR())
-    val integersSeed2 = fuzzer.randomValues(BrboType.INT, samples, seed = 2).map(v => v.printToIR())
+    val integersSeed1 = fuzzer.randomValues(BrboType.INT, samples, seed = 1, deterministic = true).map(v => v.printToIR())
+    val integersSeed2 = fuzzer.randomValues(BrboType.INT, samples, seed = 2, deterministic = true).map(v => v.printToIR())
     StringCompare.ignoreWhitespaces((integersSeed1 == integersSeed2).toString, "false",
       message = s"$integersSeed1 should differ from $integersSeed2")
 
-    val arrays = fuzzer.randomValues(BrboType.ARRAY(BrboType.INT), samples, seed = Fuzzer.SEED).map(v => v.printToIR())
+    val arrays = fuzzer.randomValues(BrboType.ARRAY(BrboType.INT), samples, seed = Fuzzer.SEED, deterministic = true).map(v => v.printToIR())
     StringCompare.ignoreWhitespaces(arrays,
       """[0,12,8]
         |[10,6]
