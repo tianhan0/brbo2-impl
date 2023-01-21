@@ -7,11 +7,19 @@ from common import run_command, print_args, get_files, get_decomposed_file
 
 if __name__ == "__main__":
     """
-    Usage: ~/brbo2-impl$ python3 scripts/brbo2.py \
+    Usage (Qfuzz): ~/brbo2-impl$ python3 scripts/brbo2.py \
       --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java \
       --qfuzz $HOME/Documents/workspace/qfuzz/ \
       --brbo $HOME/Documents/workspace/brbo-impl/ \
-      --log brbo2.json
+      --log brbo2.json \
+      --mode qfuzz
+    Usage (Naive fuzzer): ~/brbo2-impl$ python3 scripts/brbo2.py \
+      --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java \
+      --qfuzz $HOME/Documents/workspace/qfuzz/ \
+      --brbo $HOME/Documents/workspace/brbo-impl/ \
+      --log brbo2.json \
+      --mode naive \
+      --samples 5
     """
     parser = argparse.ArgumentParser(
         description="Run the brbo2 pipeline: Fuzz -> Decompose -> Verify."
@@ -69,6 +77,11 @@ if __name__ == "__main__":
         required=True,
         help="The file to write the measurements to.",
     )
+    parser.add_argument(
+        "--mode",
+        choices=["qfuzz", "naive"],
+        help="Whether to run QFuzz or the naive fuzzer.",
+    )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
     print_args(args)
@@ -79,12 +92,17 @@ if __name__ == "__main__":
     for java_file in java_files:
         logging.info(f"Process file `{java_file}`")
 
-        _, fuzzing_time = run_command(
-            command=common.qfuzz_command(
-                timeout=args.timeout, input=java_file, qfuzz=args.qfuzz, deps=args.deps
-            ),
-            dry=args.dry,
-        )
+        if args.mode == "qfuzz":
+            _, fuzzing_time = run_command(
+                command=common.qfuzz_command(
+                    timeout=args.timeout, input=java_file, qfuzz=args.qfuzz, deps=args.deps
+                ),
+                dry=args.dry,
+            )
+        elif args.mode == "naive":
+            fuzzing_time = 0
+        else:
+            raise AssertionError(f"Unknown mode {args.mode}")
 
         decomposed_file = get_decomposed_file(java_file=java_file)
         logging.info(f"Remove the expected decomposition `{str(decomposed_file)}`")
