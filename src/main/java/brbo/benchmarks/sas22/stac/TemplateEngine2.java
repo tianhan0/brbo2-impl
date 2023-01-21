@@ -31,7 +31,6 @@ public abstract class TemplateEngine2 extends Common {
       j++;
       while (j + 1 < arrayLength(text)) {
         tag = arrayRead(text, j);
-        R = R + tag;
         chunk = arrayRead(text, j + 1);
         R = R + chunk;
         j += 2;
