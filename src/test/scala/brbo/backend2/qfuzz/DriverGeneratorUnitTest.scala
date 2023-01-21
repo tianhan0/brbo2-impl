@@ -20,7 +20,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
     val (declarations, initializations, prints) = DriverGenerator.declarationsAndInitializations(
       parameters = parameters,
       parametersInLoopConditions = List(Identifier("e", BrboType.INT)),
-      generatorParameters = GeneratorParameters(arraySize = 5, minInteger = 4, maxInteger = 200, minLoopIterations = 2, maxLoopIterations = 3)
+      generatorParameters = GeneratorParameters(arraySize = 5, minInteger = 4, maxInteger = 200, minLoopIterations = 2, maxLoopIterations = 3, loopIterationMultiplier = 1)
     )
     val result = (declarations ::: initializations ::: prints).mkString("\n")
     StringCompare.ignoreWhitespaces(result,
@@ -51,7 +51,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
     val targetProgram = BasicProcessor.getTargetProgram("Test", test01)
     val result = DriverGenerator.run(
       program = targetProgram.program,
-      generatorParameters = GeneratorParameters(arraySize = 5, minInteger = 4, maxInteger = 200, minLoopIterations = 2, maxLoopIterations = 3),
+      generatorParameters = GeneratorParameters(arraySize = 5, minInteger = 4, maxInteger = 200, minLoopIterations = 2, maxLoopIterations = 3, loopIterationMultiplier = 1),
     )
     StringCompare.ignoreWhitespaces(result,
       """package brbo.fuzz.drivers;

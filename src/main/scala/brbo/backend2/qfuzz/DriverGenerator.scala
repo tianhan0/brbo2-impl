@@ -19,9 +19,15 @@ object DriverGenerator {
   val HALF_MAX_VALUE: Int = java.lang.Short.MAX_VALUE / 2
   val MIN_LOOP_ITERATIONS = 2
   val MAX_LOOP_ITERATIONS = 3
+  val LOOP_ITERATION_MULTIPLIER = 10
   private val MAX_NUMBER_OF_USES_TO_TRACK = 1000
 
-  case class GeneratorParameters(arraySize: Int, minInteger: Int, maxInteger: Int, minLoopIterations: Int, maxLoopIterations: Int)
+  case class GeneratorParameters(arraySize: Int,
+                                 minInteger: Int,
+                                 maxInteger: Int,
+                                 minLoopIterations: Int,
+                                 maxLoopIterations: Int,
+                                 loopIterationMultiplier: Int)
 
   object GeneratorParameters {
     val default: GeneratorParameters = GeneratorParameters(
@@ -29,7 +35,8 @@ object DriverGenerator {
       minInteger = MIN_INTEGER,
       maxInteger = MAX_INTEGER,
       minLoopIterations = MIN_LOOP_ITERATIONS,
-      maxLoopIterations = MAX_LOOP_ITERATIONS
+      maxLoopIterations = MAX_LOOP_ITERATIONS,
+      loopIterationMultiplier = LOOP_ITERATION_MULTIPLIER,
     )
   }
 
@@ -39,7 +46,10 @@ object DriverGenerator {
       parametersInLoopConditions = parametersInLoopConditionals(program.mainFunction),
       generatorParameters = generatorParameters
     )
-    val transformedProgram = ProgramTransformer.transform(program)
+    val transformedProgram = ProgramTransformer.transform(
+      program = program,
+      loopIterationMultiplier = generatorParameters.loopIterationMultiplier
+    )
     s"""package $DRIVER_PACKAGE_NAME;
        |
        |import edu.cmu.sv.kelinci.Kelinci;

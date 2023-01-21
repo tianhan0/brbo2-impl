@@ -1,6 +1,7 @@
 package brbo.backend2.qfuzz
 
 import brbo.TestCase
+import brbo.backend2.qfuzz.ProgramTransformerUnitTest.loopIterationMultiplier
 import brbo.common.ast.PrintStyle.QFuzzJavaStyle
 import brbo.common.string.StringCompare
 import brbo.frontend.{BasicProcessor, TargetProgram}
@@ -11,13 +12,14 @@ class ProgramTransformerUnitTest extends AnyFlatSpec {
     ProgramTransformerUnitTest.transformationTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
-        val transformedProgram = ProgramTransformer.transform(targetProgram.program)
+        val transformedProgram = ProgramTransformer.transform(targetProgram.program, loopIterationMultiplier = loopIterationMultiplier)
         StringCompare.ignoreWhitespaces(transformedProgram.print(indent = 0, style = QFuzzJavaStyle), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
 }
 
 object ProgramTransformerUnitTest {
+  private val loopIterationMultiplier = 1
   private val test01 =
     s"""class Test {
        |  void ${TargetProgram.MAIN_FUNCTION}(int n) {
@@ -146,7 +148,7 @@ object ProgramTransformerUnitTest {
          |  void use(int n)
          |  {
          |    int i = 0;
-         |    while (i < (n * ${ProgramTransformer.LOOP_ITERATION_MULTIPLIER}))
+         |    while (i < (n * ${loopIterationMultiplier}))
          |    {
          |      i = i + 1;
          |    }

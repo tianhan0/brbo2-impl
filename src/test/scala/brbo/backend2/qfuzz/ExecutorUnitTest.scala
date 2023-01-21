@@ -27,7 +27,7 @@ class ExecutorUnitTest extends AnyFlatSpec {
       parameters = parameters,
       inputArray = inputArray,
       parametersInLoopConditions = List(Identifier("c", BrboType.INT)),
-      generatorParameters = GeneratorParameters(arraySize = 5, minInteger = 4, maxInteger = 200, minLoopIterations = 2, maxLoopIterations = 3)
+      generatorParameters = GeneratorParameters(arraySize = 5, minInteger = 4, maxInteger = 200, minLoopIterations = 2, maxLoopIterations = 3, loopIterationMultiplier = 1)
     ).get
     StringCompare.ignoreWhitespaces(result.map(v => v.printToIR()).mkString("\n"),
       """1
