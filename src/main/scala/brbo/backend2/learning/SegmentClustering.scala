@@ -60,6 +60,7 @@ class SegmentClustering(sumWeight: Int,
           segment => segment.indices.toSet.intersect(excludeIndices).isEmpty
         })
         logger.info(s"Visit $clusterId-th cluster (segment length: $segmentLength)")
+        cluster.zipWithIndex.foreach({ case (segment, index) => logger.info(s"Segment $index: ${segment.printAsSet}") })
         if (cluster.size > 1) {
           logger.info(s"Choose non-overlapping segments from $clusterId-th cluster")
           val nonOverlappingGroups: List[Group] = findNonOverlappingSegments(cluster)
@@ -201,7 +202,11 @@ class SegmentClustering(sumWeight: Int,
           else newGroups
       })
     logger.info(s"Found ${possibleGroups.size} possible groups (or non-overlapping sets of segments)")
-    possibleGroups
+    possibleGroups.foreach({
+      group => logger.info(s"Group: ${group.segments.map(segment => segment.printAsSet).mkString("; ")}")
+    })
+    logger.info(s"Remove groups with a single segment, since a single segment does not constitute a pattern")
+    possibleGroups.filter(group => group.segments.size > 1)
   }
 
   def generateTrainingData(trace: Trace, segments: List[Segment]): List[List[Int]] = {
