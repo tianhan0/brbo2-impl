@@ -14,7 +14,7 @@ object DriverGenerator {
    * contain a large number that controls the loop iterations.
    * A too small number may result in a higher likelihood that the generated inputs do not very much.
    */
-  val MAX_INTEGER = 20
+  val MAX_INTEGER = 200
   val MIN_INTEGER = 4
   val HALF_MAX_VALUE: Int = java.lang.Short.MAX_VALUE / 2
   val MIN_LOOP_ITERATIONS = 2
