@@ -35,13 +35,6 @@ if __name__ == "__main__":
         "--input", type=str, required=True, help="The file or the directory to analyze."
     )
     parser.add_argument(
-        "--threads",
-        type=int,
-        required=False,
-        default=4,
-        help="The number of threads when decomposing a program.",
-    )
-    parser.add_argument(
         "--samples",
         type=int,
         default=0,  # Disable generating traces from the dumb fuzzer, to avoid complicating the experiment setup
@@ -66,12 +59,6 @@ if __name__ == "__main__":
         "--dry", action="store_true", help="Print the commands without executing them."
     )
     parser.add_argument(
-        "--deps",
-        action="store_true",
-        default=True,
-        help="Whether to run the script that assumes needing the jar dependencies.",
-    )
-    parser.add_argument(
         "--log",
         type=str,
         required=True,
@@ -82,9 +69,25 @@ if __name__ == "__main__":
         choices=["qfuzz", "naive"],
         help="Whether to run the modified QFuzz or the naive QFuzz.",
     )
+    parser.add_argument(
+        "--version",
+        type=str,
+        default="master",
+        help="Build and run the brbo2 jar file (with `sbt package`) with the specified git commit hash.",
+    )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
     print_args(args)
+
+    if args.version == "master":
+        commit_hash, _ = run_command(
+            command=["git", "log", '--format="%H"', "-n", "1"], printOutput=False
+        )
+    else:
+        commit_hash = args.version
+    run_command(command=["git", "checkout", commit_hash], printOutput=False)
+    logging.info(f"Build a new version of brbo2: {commit_hash}")
+    run_command(command=["sbt", "package"])
 
     java_files = get_files(args.input, suffix="java")
     time_measurements = common.TimeMeasurement()
@@ -97,7 +100,7 @@ if __name__ == "__main__":
                 timeout=args.timeout,
                 input=java_file,
                 qfuzz=args.qfuzz,
-                deps=args.deps,
+                deps=True,
                 mode=args.mode,
             ),
             dry=args.dry,
@@ -109,10 +112,10 @@ if __name__ == "__main__":
 
         _, decomposition_time = run_command(
             command=common.decomposition_command(
-                threads=args.threads,
+                threads=4,
                 input=java_file,
                 samples=args.samples,
-                deps=args.deps,
+                deps=True,
             ),
             dry=args.dry,
         )
@@ -121,7 +124,7 @@ if __name__ == "__main__":
             command=common.verification_command(
                 file=decomposed_file,
                 icra=args.icra,
-                deps=args.deps,
+                deps=True,
                 timeout=60,
                 mode="transparent",
             ),
