@@ -102,6 +102,7 @@ object Executor {
     logger.info(s"QFuzz output:\n$pathCostFileContents")
     val rankedInputFiles = rankedInputFileNames(pathCostFileContents)
     logger.info(s"Ranked input files:\n${rankedInputFiles.mkString("\n")}")
+    logger.warn(s"Must ensure the input seed provide sufficient amounts of data to be parsed as inputs")
 
     logger.info(s"Step 5: Parse the QFuzz-generated inputs")
     val listOfInputs: Iterable[List[Int]] = rankedInputFiles.map({
@@ -153,11 +154,11 @@ object Executor {
       .toList.sortWith({ case (list1, list2) => toString(list1) < toString(list2) })
   }
 
-  private def rankedInputFileNames(pathCostFileContents: String): Array[String] = {
+  private def rankedInputFileNames(pathCostFileContents: String): List[String] = {
     val lines = pathCostFileContents.split("\n").filter({
       line => line != "Time(sec); File; #Partitions; MinDelta; AvgPartitionValues"
     })
-    lines.map({
+    val allInputs = lines.map({
       line =>
         var score = 0
         // Inputs that create new partitions w.r.t. the total runtime "cost"
@@ -175,9 +176,10 @@ object Executor {
       case ((_, score1), (_, score2)) => score1 > score2
     }).map({
       case (fileName, _) => fileName
-    }).filter({
-      fileName => !fileName.contains("orig:") // Ignore the input seed (in case the seed does not provide sufficient inputs)
     })
+    val generatedInputs = allInputs.filter(fileName => !fileName.contains("orig:")).toList
+    val inputSeed = allInputs.filter(fileName => fileName.contains("orig:"))
+    generatedInputs ::: inputSeed.toList
   }
 
   private def readExistingInputs(inputFilePath: String): List[List[BrboValue]] = {
