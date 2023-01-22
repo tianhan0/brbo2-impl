@@ -101,6 +101,8 @@ object Executor {
     val pathCostFileContents = BrboMain.readFromFile(s"$FUZZ_OUT_DIRECTORY/afl/path_costs.csv")
     logger.info(s"QFuzz output:\n$pathCostFileContents")
     val rankedInputFiles = rankedInputFileNames(pathCostFileContents)
+    if (rankedInputFiles.size == 1)
+      logger.warn(s"No interesting inputs. Using the input seed.")
     logger.info(s"Ranked input files:\n${rankedInputFiles.mkString("\n")}")
     logger.warn(s"Must ensure the input seed provide sufficient amounts of data to be parsed as inputs")
 
