@@ -22,7 +22,7 @@ class ProgramTransformerUnitTest extends AnyFlatSpec {
   }
 
   "Transforming a program for naive QFuzz" should "be correct" in {
-    ProgramTransformerUnitTest.transformationTests.foreach({
+    ProgramTransformerUnitTest.naiveTransformationTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
         val transformedProgram = ProgramTransformer.transform(
