@@ -1,7 +1,7 @@
 package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
-import brbo.backend2.interpreter.Interpreter.Trace
+import brbo.backend2.interpreter.Interpreter.{Trace, Transition}
 import brbo.backend2.learning.Classifier._
 import brbo.backend2.learning.ResetPlaceHolderFinder.MissingResetPlaceHolder
 import brbo.backend2.learning.ScriptRunner._
@@ -50,8 +50,9 @@ class SegmentClustering(sumWeight: Int,
       && segmentLength <= remainingIndices.size
       && segmentLength <= MAX_SEGMENT_LENGTH) {
       logger.info("-" * 80)
-      logger.info(s"Cluster segments with length $segmentLength")
-      val candidateSegments: List[Segment] = generateAndFilterSegments(trace, segmentLength, excludeIndices)
+      logger.info(s"Step 3.1.1: Cluster segments with length $segmentLength")
+      val candidateSegments: List[Segment] = generateSegments(trace, segmentLength, excludeIndices)
+      // val candidateSegments: List[Segment] = generateAndFilterDissimilarSegments(trace, segmentLength, excludeIndices)
       val clusters: List[List[Segment]] = clusterSimilarSegments(trace, candidateSegments)
       var clusterId = 0
       while (clusterId < clusters.size) {
@@ -59,10 +60,10 @@ class SegmentClustering(sumWeight: Int,
         val cluster = clusters(clusterId).filter({
           segment => segment.indices.toSet.intersect(excludeIndices).isEmpty
         })
-        logger.info(s"Visit $clusterId-th cluster (segment length: $segmentLength)")
+        logger.info(s"Step 3.1.2: Visit $clusterId-th cluster (segment length: $segmentLength)")
         cluster.zipWithIndex.foreach({ case (segment, index) => logger.info(s"Segment $index: ${segment.printAsSet}") })
         if (cluster.size > 1) {
-          logger.info(s"Choose non-overlapping segments from $clusterId-th cluster")
+          logger.info(s"Step 3.1.3: Choose non-overlapping segments from $clusterId-th cluster")
           val nonOverlappingGroups: List[Group] = findNonOverlappingSegments(cluster)
           // Assume the selected traces ensure the selected groups are correct.
           // However, we still need to choose a generalization of the group, by choosing the reset locations.
@@ -74,12 +75,14 @@ class SegmentClustering(sumWeight: Int,
             features = features,
             sampleKTraces = None
           )*/
-          chooseGroup(nonOverlappingGroups) match {
+          logger.info(s"Step 3.1.4: Filter groups")
+          val filteredGroups = filterGroups(nonOverlappingGroups, trace)
+          chooseGroup(filteredGroups) match {
             case Some(chosenGroup) =>
               decomposition.addGroup(chosenGroup)
               // Remove indices that have been grouped
               val chosenIndices = chosenGroup.indices
-              logger.info(s"Chosen group: ${printSegments(chosenGroup.segments)} " +
+              logger.info(s"Step 3.1.5: Chosen group: ${printSegments(chosenGroup.segments)} " +
                 s"on trace:\n${printDecomposition(trace, Map(PrintGroup -> chosenGroup))}")
               excludeIndices = excludeIndices ++ chosenIndices
               remainingIndices = remainingIndices -- chosenIndices
@@ -113,10 +116,89 @@ class SegmentClustering(sumWeight: Int,
       .toList
   }
 
+  /*
+  Remove clusters where every segment consists of reading from a "subset" of the input array indices.
+   For example, consider reading from array [2,3,4] twice. Then, we do not want to consider {2, 2} or {2+3, 2+3} or
+   {2+4, 2+4} or {3+4, 3+4} as a group. We want to consider {2+3+4, 2+3+4} as a group, because 2+3+4 is more "similar"
+   to the input array [2,3,4].
+   */
+  private def filterGroups(groups: List[Group], trace: Trace): List[Group] = {
+    groups.filter({
+      group =>
+        try {
+          val groupString = s"group ${printSegments(group.segments)}"
+          val concreteIndices: List[Set[Int]] = group.segments.map(segment => getArrayConcreteIndices(segment, trace))
+          logger.info(s"Concrete array indices $concreteIndices inside group groupString")
+          if (concreteIndices.toSet.size == 1) {
+            if (concreteIndices.head.size >= MAX_SEGMENT_LENGTH) {
+              logger.info(s"Kept $groupString")
+              true
+            } else {
+              logger.info(s"Removed $groupString")
+              false
+            }
+          } else throw new Skip
+        } catch {
+          case _: Skip => true
+        }
+    })
+  }
+
+  /*
+  Detect syntactic code pattern:
+    x = arrayRead(?, i)
+    use R x
+  Then, return the concrete value of i, during the array read
+   */
+  private def getArrayConcreteIndices(segment: Segment, trace: Trace): Set[Int] = {
+    segment.indices.map({
+      index =>
+        val previousCommandIndex = trace.nodes.slice(0, index).lastIndexWhere({
+          traceNode =>
+            traceNode.lastTransition match {
+              case Some(Transition(_: BrboExpr, _)) => false
+              case Some(Transition(_: Command, _)) => true
+              case _ => false
+            }
+        })
+        // logger.info(s"currentCommand ${trace.nodes(index).lastTransition.get.command.asInstanceOf[Command].printToIR()}")
+        // logger.info(s"previousCommandIndex: $previousCommandIndex")
+        if (previousCommandIndex >= 0) {
+          // logger.info(s"${trace.nodes(previousCommandIndex).lastTransition.get.command.asInstanceOf[Command].printToIR()}")
+          (trace.nodes(previousCommandIndex).lastTransition, trace.nodes(index).lastTransition) match {
+            case (
+              Some(Transition(Assignment(Identifier(costExpression, _, _), ArrayRead(Identifier(arrayName, BrboType.ARRAY(BrboType.INT), _), Identifier(arrayIndex, BrboType.INT, _), _), _), _)),
+              Some(Transition(Use(_, Identifier(costExpression2, _, _), _, _), _))
+              ) =>
+              if (costExpression == costExpression2) {
+                val lastStore = trace.nodes(previousCommandIndex).store
+                (lastStore.get(arrayIndex), lastStore.get(arrayName)) match {
+                  case (Number(arrayIndexValue, _), BrboArray(_, BrboType.INT, _)) => arrayIndexValue
+                  case _ => {
+                    // logger.info("2")
+                    throw new Skip
+                  }
+                }
+              } else {
+                // logger.info("3")
+                throw new Skip
+              }
+            case _ =>
+              // logger.info("4")
+              throw new Skip
+          }
+        } else {
+          throw new Skip
+        }
+    }).toSet
+  }
+
+  class Skip extends Exception
+
   // Remove a segment if there exists a longer and subsuming segment whose similarity is better
   // The goal is to prioritize segments that are more similar to some input, such that the relation
   // between a segment's cost and an input can be expressed with simpler invariants
-  def generateAndFilterSegments(trace: Trace, segmentLength: Int, excludeIndices: Set[Int]): List[Segment] = {
+  def generateAndFilterDissimilarSegments(trace: Trace, segmentLength: Int, excludeIndices: Set[Int]): List[Segment] = {
     val segments = generateSegments(trace, segmentLength, excludeIndices)
     val longerSegments: Seq[Segment] = Range.inclusive(segmentLength, MAX_SEGMENT_LENGTH).flatMap({
       segmentLength => generateSegments(trace, segmentLength, excludeIndices)
@@ -201,12 +283,13 @@ class SegmentClustering(sumWeight: Int,
           if (createNewGroup) Group(List(segment)) :: newGroups
           else newGroups
       })
-    logger.info(s"Found ${possibleGroups.size} possible groups (or non-overlapping sets of segments)")
-    possibleGroups.foreach({
-      group => logger.info(s"Group: ${group.segments.map(segment => segment.printAsSet).mkString("; ")}")
-    })
+    logger.info(s"Initially found ${possibleGroups.size} possible groups (or non-overlapping sets of segments)")
     logger.info(s"Remove groups with a single segment, since a single segment does not constitute a pattern")
-    possibleGroups.filter(group => group.segments.size > 1)
+    val result = possibleGroups.filter(group => group.segments.size > 1)
+    result.zipWithIndex.foreach({
+      case (group, index) => logger.info(s"Group $index: ${printSegments(group.segments)}")
+    })
+    result
   }
 
   def generateTrainingData(trace: Trace, segments: List[Segment]): List[List[Int]] = {
@@ -616,7 +699,7 @@ object SegmentClustering {
   }
 
   def printSegments(segments: Iterable[Segment]): String = {
-    segments.map(segment => segment.printAsSet).toList.sorted.mkString(", ")
+    segments.map(segment => segment.printAsSet).toList.sorted.mkString("; ")
   }
 
   class TraceDecomposition(trace: Trace) {
