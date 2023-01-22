@@ -12,6 +12,7 @@ import play.api.libs.json.{JsArray, Json}
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import java.nio.{BufferUnderflowException, ByteBuffer}
+import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -84,8 +85,9 @@ object Executor {
         // Ensure kelinci server starts first
         // Remember to use https://github.com/litho17/qfuzz/commit/5dbe56efc6a9d9f77c320f1a8f801f6c4d6400e3
         BrboMain.executeCommandWithLogger(command = "sleep 3", logger)
+        val timeout = Duration(length = arguments.getAflTimeoutInSeconds, unit = TimeUnit.SECONDS).toMillis
         BrboMain.executeCommandWithLogger(
-          command = s"""$AFL_PATH -i $INPUT_SEED_PATH -o $FUZZ_OUT_DIRECTORY -c quantify -K 100 -S afl -t 999999999 $INTERFACE_C_PATH -K 100 @@""",
+          command = s"""$AFL_PATH -i $INPUT_SEED_PATH -o $FUZZ_OUT_DIRECTORY -c quantify -K 100 -S afl -t $timeout $INTERFACE_C_PATH -K 100 @@""",
           logger,
           environment = Map(
             "AFL_SKIP_CPUFREQ" -> "1",
