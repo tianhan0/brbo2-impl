@@ -52,6 +52,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
     val result = DriverGenerator.run(
       program = targetProgram.program,
       generatorParameters = GeneratorParameters(arraySize = 5, minInteger = 4, maxInteger = 200, minLoopIterations = 2, maxLoopIterations = 3, loopIterationMultiplier = 1),
+      mode = DriverGenerator.Modified
     )
     StringCompare.ignoreWhitespaces(result,
       """package brbo.fuzz.drivers;

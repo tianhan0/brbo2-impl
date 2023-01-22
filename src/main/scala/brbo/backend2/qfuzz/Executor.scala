@@ -37,10 +37,11 @@ object Executor {
 
     val INPUT_SEED_PATH = arguments.getInputPath
 
-    logger.info(s"Step 1: Prepare a QFuzz driver")
+    logger.info(s"Step 1: Prepare a QFuzz driver. Naive mode? ${arguments.getNaive}")
     val driverFileContents = DriverGenerator.run(
       program = program,
-      generatorParameters = generatorParameters
+      generatorParameters = generatorParameters,
+      mode = if (arguments.getNaive) DriverGenerator.Naive else DriverGenerator.Modified
     )
     val driverFilePath = {
       Files.createDirectories(Paths.get(DRIVERS_PATH))

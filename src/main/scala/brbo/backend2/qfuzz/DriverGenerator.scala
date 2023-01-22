@@ -40,7 +40,13 @@ object DriverGenerator {
     )
   }
 
-  def run(program: BrboProgram, generatorParameters: GeneratorParameters): String = {
+  abstract class Mode
+
+  object Modified extends Mode
+
+  object Naive extends Mode
+
+  def run(program: BrboProgram, generatorParameters: GeneratorParameters, mode: Mode): String = {
     val (declarations, initializations, prints) = declarationsAndInitializations(
       parameters = program.mainFunction.parameters,
       parametersInLoopConditions = parametersInLoopConditionals(program.mainFunction),
@@ -50,6 +56,13 @@ object DriverGenerator {
       program = program,
       loopIterationMultiplier = generatorParameters.loopIterationMultiplier
     )
+    val resetActualObservations = s"${
+      mode match {
+        case Modified => ""
+        case Naive => "actualObservations = new long[useCount];"
+        case _ => throw new Exception
+      }
+    }"
     s"""package $DRIVER_PACKAGE_NAME;
        |
        |import edu.cmu.sv.kelinci.Kelinci;
@@ -142,6 +155,7 @@ object DriverGenerator {
        |    System.arraycopy(observations, 0, actualObservations, 0, actualObservations.length);
        |    System.out.println("observations: " + Arrays.toString(actualObservations));
        |
+       |    $resetActualObservations
        |    PartitionSet clusters = PartitionSet.createFromObservations(epsilon, actualObservations, clusterAlgorithm);
        |    // Give feedback to fuzzer: Number of clusters, min distance between clusters
        |    Kelinci.setObserverdClusters(clusters.getClusterAverageValues(), clusters.getMinimumDeltaValue());

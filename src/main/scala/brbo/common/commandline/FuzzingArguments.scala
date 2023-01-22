@@ -25,6 +25,10 @@ class FuzzingArguments extends CommonArguments {
     usage = "Dry run: Do not write the QFuzz generated inputs into Json files.")
   protected var dryRun: Boolean = false
 
+  @Option(name = "--naive", required = false,
+    usage = "Whether to run the naive QFuzz or the modified.")
+  protected var naive: Boolean = false
+
   def getAflTimeoutInSeconds: Int = aflTimeoutInSeconds
 
   def getQFuzzPath: String = qfuzzPath
@@ -34,6 +38,8 @@ class FuzzingArguments extends CommonArguments {
   def getInputPath: String = inputPath
 
   def getDryRun: Boolean = dryRun
+
+  def getNaive: Boolean = naive
 
   override def toString: String = {
     val strings = List[String]()
