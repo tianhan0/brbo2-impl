@@ -173,7 +173,10 @@ object Executor {
         val fileName = line.split(";")(1).trim
         (fileName, score)
     }).sortWith({
-      case ((_, score1), (_, score2)) => score1 > score2
+      case ((fileName1, score1), (fileName2, score2)) =>
+        // Higher score means more desirability
+        // Larger file name means the input is newer. Newer inputs seem more likely to vary
+        score1 > score2 || fileName1 > fileName2
     }).map({
       case (fileName, _) => fileName
     })
