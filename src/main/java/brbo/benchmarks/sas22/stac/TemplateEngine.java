@@ -19,9 +19,10 @@ public abstract class TemplateEngine extends Common {
     i++;
     while (i + 1 < arrayLength(text)) {
       tag = arrayRead(text, i);
-      chunk = arrayRead(text, i + 1);
+      i++;
+      chunk = arrayRead(text, i);
       R = R + chunk;
-      i += 2;
+      i++;
     }
   }
 }
