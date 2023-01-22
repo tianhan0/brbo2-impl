@@ -80,7 +80,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--mode",
         choices=["qfuzz", "naive"],
-        help="Whether to run QFuzz or the naive fuzzer.",
+        help="Whether to run the modified QFuzz or the naive QFuzz.",
     )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
@@ -92,17 +92,16 @@ if __name__ == "__main__":
     for java_file in java_files:
         logging.info(f"Process file `{java_file}`")
 
-        if args.mode == "qfuzz":
-            _, fuzzing_time = run_command(
-                command=common.qfuzz_command(
-                    timeout=args.timeout, input=java_file, qfuzz=args.qfuzz, deps=args.deps
-                ),
-                dry=args.dry,
-            )
-        elif args.mode == "naive":
-            fuzzing_time = 0
-        else:
-            raise AssertionError(f"Unknown mode {args.mode}")
+        _, fuzzing_time = run_command(
+            command=common.qfuzz_command(
+                timeout=args.timeout,
+                input=java_file,
+                qfuzz=args.qfuzz,
+                deps=args.deps,
+                mode=args.mode,
+            ),
+            dry=args.dry,
+        )
 
         decomposed_file = get_decomposed_file(java_file=java_file)
         logging.info(f"Remove the expected decomposition `{str(decomposed_file)}`")

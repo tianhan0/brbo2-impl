@@ -34,8 +34,8 @@ def run_command(command, cwd=os.getcwd(), dry=False, printOutput=True):
     return result.stdout.strip(), execution_time
 
 
-def qfuzz_command(timeout, input, qfuzz, deps):
-    return [
+def qfuzz_command(timeout, input, qfuzz, deps, mode):
+    command = [
         WITH_DEPENDENCY_SCRIPT if deps else NO_DEPENDENCY_SCRIPT,
         "fuzz",
         "--timeout",
@@ -48,6 +48,9 @@ def qfuzz_command(timeout, input, qfuzz, deps):
         "--qfuzz",
         str(qfuzz),
     ]
+    if mode == "naive":
+        command.append("--naive")
+    return command
 
 
 def decomposition_command(threads, samples, input, deps):
