@@ -8,6 +8,6 @@ object PredefinedVariables {
   val variables: Map[String, Int] = Map(
     "MAX" -> MAX,
     "LARGE_INT" -> LARGE_INT,
-    // "BOOLEAN_SEPARATOR" -> (DriverGenerator.MAX_INTEGER + DriverGenerator.MIN_INTEGER) / 2,
+    "BOOLEAN_SEPARATOR" -> (DriverGenerator.MAX_INTEGER + DriverGenerator.MIN_INTEGER) / 2,
   )
 }
