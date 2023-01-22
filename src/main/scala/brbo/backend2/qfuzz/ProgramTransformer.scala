@@ -14,7 +14,7 @@ object ProgramTransformer {
   private val returnUseCountVariable = Return(expression = Some(useCountVariable))
   private val specialVariables = List(indexVariable, useCountVariable)
 
-  def transform(program: BrboProgram, loopIterationMultiplier: Int): BrboProgram = {
+  def transform(program: BrboProgram, loopIterationMultiplier: Int, mode: DriverGenerator.Mode): BrboProgram = {
     val mainFunction = program.mainFunction
     val mainFunctionBody = mainFunction.body
     val useDefVariables = BrboAstUtils.collectUseDefVariables(mainFunction.bodyWithGhostInitialization)
@@ -27,11 +27,17 @@ object ProgramTransformer {
         .filter(command => command.isInstanceOf[Use] || command.isInstanceOf[Return])
         .map({
           case use: Use =>
-            val newUse = generateCallUse(use)
-            val incrementUseCountVariable = Assignment(useCountVariable, Addition(useCountVariable, Number(1)))
-            val decrementIndexVariable = Assignment(indexVariable, Subtraction(indexVariable, Number(1)))
-            val returnIfZero = ITE(Equal(indexVariable, Number(0)), returnUseCountVariable, Skip())
-            (use.asInstanceOf[Command], Block(List(newUse, incrementUseCountVariable, decrementIndexVariable, returnIfZero)))
+            mode match {
+              case DriverGenerator.Modified =>
+                val newUse = generateCallUse(use)
+                val incrementUseCountVariable = Assignment(useCountVariable, Addition(useCountVariable, Number(1)))
+                val decrementIndexVariable = Assignment(indexVariable, Subtraction(indexVariable, Number(1)))
+                val returnIfZero = ITE(Equal(indexVariable, Number(0)), returnUseCountVariable, Skip())
+                (use.asInstanceOf[Command], Block(List(newUse, incrementUseCountVariable, decrementIndexVariable, returnIfZero)))
+              case DriverGenerator.Naive =>
+                (use.asInstanceOf[Command], Comment(use.printToIR()))
+              case _ => throw new Exception
+            }
           case _return: Return =>
             (_return.asInstanceOf[Command], returnUseCountVariable)
         }).toMap

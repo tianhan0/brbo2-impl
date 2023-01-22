@@ -54,12 +54,13 @@ object DriverGenerator {
     )
     val transformedProgram = ProgramTransformer.transform(
       program = program,
-      loopIterationMultiplier = generatorParameters.loopIterationMultiplier
+      loopIterationMultiplier = generatorParameters.loopIterationMultiplier,
+      mode = mode,
     )
     val resetActualObservations = s"${
       mode match {
         case Modified => ""
-        case Naive => "actualObservations = new long[useCount];"
+        case Naive => "actualObservations = new long[0];"
         case _ => throw new Exception
       }
     }"

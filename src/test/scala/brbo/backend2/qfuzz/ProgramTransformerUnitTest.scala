@@ -8,11 +8,28 @@ import brbo.frontend.{BasicProcessor, TargetProgram}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ProgramTransformerUnitTest extends AnyFlatSpec {
-  "Transforming a program for QFuzz" should "be correct" in {
+  "Transforming a program for modified QFuzz" should "be correct" in {
     ProgramTransformerUnitTest.transformationTests.foreach({
       testCase =>
         val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
-        val transformedProgram = ProgramTransformer.transform(targetProgram.program, loopIterationMultiplier = loopIterationMultiplier)
+        val transformedProgram = ProgramTransformer.transform(
+          targetProgram.program,
+          loopIterationMultiplier = loopIterationMultiplier,
+          mode = DriverGenerator.Modified
+        )
+        StringCompare.ignoreWhitespaces(transformedProgram.print(indent = 0, style = QFuzzJavaStyle), testCase.expectedOutput, s"${testCase.name} failed")
+    })
+  }
+
+  "Transforming a program for naive QFuzz" should "be correct" in {
+    ProgramTransformerUnitTest.transformationTests.foreach({
+      testCase =>
+        val targetProgram = BasicProcessor.getTargetProgram("Test", testCase.input.asInstanceOf[String])
+        val transformedProgram = ProgramTransformer.transform(
+          targetProgram.program,
+          loopIterationMultiplier = loopIterationMultiplier,
+          mode = DriverGenerator.Naive
+        )
         StringCompare.ignoreWhitespaces(transformedProgram.print(indent = 0, style = QFuzzJavaStyle), testCase.expectedOutput, s"${testCase.name} failed")
     })
   }
@@ -154,5 +171,64 @@ object ProgramTransformerUnitTest {
          |    }
          |  }
          |}""".stripMargin),
+  )
+
+  private val naiveTransformationTests = List(
+    TestCase("test 01", test01,
+      """class Test {
+        |  int execute(int n, int INDEX_VARIABLE)
+        |  {
+        |    int USE_COUNT = 0;
+        |    if (n < 5)
+        |    {
+        |      return USE_COUNT;
+        |    }
+        |    else
+        |    {
+        |      ;
+        |    }
+        |    // int R = 0;
+        |    int i = 0;
+        |    while (i < n)
+        |    {
+        |      // use R 5
+        |      i = i + 1;
+        |    }
+        |    return USE_COUNT;
+        |  }
+        |  int arrayRead(int[] array, int index) { return array[index]; }
+        |  int arrayLength(int[] array) { return array.length; }
+        |  int arraySum(int[] array) {
+        |    int sum = 0;
+        |    for (int element : array) {
+        |      sum += element;
+        |    }
+        |    return sum;
+        |  }
+        |  void mostPreciseBound(boolean assertion) {}
+        |  void lessPreciseBound(boolean assertion) {}
+        |  boolean ndBool2(int... values) {
+        |    int sum = 0;
+        |    for (int value : values) {
+        |      sum += value;
+        |    }
+        |    // mod 2 results in a higher chance of producing an alternative value, when compared with mod 3
+        |    return sum % 2 == 0;
+        |  }
+        |  int ndInt2(int lower, int upper) {
+        |    if (upper < lower)
+        |      System.exit(-1);
+        |    return upper > lower ? lower + 1 : upper;
+        |  }
+        |  void use(int n)
+        |  {
+        |    int i = 0;
+        |    while (i < (n * 1))
+        |    {
+        |      i = i + 1;
+        |    }
+        |  }
+        |}
+        |""".stripMargin),
   )
 }
