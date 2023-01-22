@@ -109,8 +109,7 @@ class DecompositionDriver(arguments: DecompositionArguments,
       trace = trace,
       groups = groups,
       controlFlowGraph = ControlFlowGraph.toControlFlowGraph(instrumentedProgram),
-      // Even if failing to insert resets, still output the decomposition, because the decomposition may still be verifiable
-      throwIfNoResetPlaceHolder = false
+      throwIfNoResetPlaceHolder = arguments.getThrowIfNoResetPlaceHolder
     )
     logger.info(s"Step 3.3: Generate tables for training classifiers")
     val tables = Classifier.generateTables(
