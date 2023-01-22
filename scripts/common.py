@@ -68,6 +68,7 @@ def decomposition_command(threads, samples, input, deps):
         str(samples),
         "--directory",
         str(input),
+        "--must-reset",
     ]
 
 
