@@ -8,7 +8,7 @@ import brbo.common.string.StringFormatUtils
 import brbo.frontend.TargetProgram
 
 object DriverGenerator {
-  val ARRAY_SIZE = 7
+  val ARRAY_SIZE = 5
   /**
    * A too large number may result in executing the target program for too long. For example, an array input may
    * contain a large number that controls the loop iterations.
