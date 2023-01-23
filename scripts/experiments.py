@@ -2,7 +2,7 @@ import argparse
 import logging
 import os
 from pathlib import Path
-from common import run_command, print_args
+from common import run_command, print_args, configure_logging
 from datetime import datetime
 
 
@@ -81,12 +81,14 @@ if __name__ == "__main__":
     )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
-    print_args(args)
 
     icra_timeout_in_seconds = 60
     log_directory = Path(os.getcwd()) / "logs"
     qfuzz_log_directory = log_directory / "qfuzz"
-    current_date_time = datetime.now().strftime("%Y%m%d-%H_%M_%S")
+    current_date_time = datetime.now().strftime("%Y%m%d_%H-%M-%S")
+
+    configure_logging(filename=log_directory / f"experiment_{current_date_time}.txt")
+    print_args(args)
 
     for i in range(args.repeat):
         logging.info(f"Begin {i} run")
@@ -110,7 +112,7 @@ if __name__ == "__main__":
                 dry=args.dry,
                 timeout=icra_timeout_in_seconds,
                 mode="worst",
-                log_file="a.json",
+                log_file="a.txt",
             )
             fully_amortized = brbo_command(
                 input=args.input,
@@ -119,7 +121,7 @@ if __name__ == "__main__":
                 dry=args.dry,
                 timeout=icra_timeout_in_seconds,
                 mode="fully",
-                log_file="a.json",
+                log_file="a.txt",
             )
         elif args.experiment == "qfuzz" or args.experiment == "all":
             timeout = 180
@@ -134,7 +136,7 @@ if __name__ == "__main__":
                 icra=args.icra,
                 dry=args.dry,
                 timeout=timeout,
-                log_file=current_log_directory / f"naive_{run_id}.json",
+                log_file=current_log_directory / f"naive_{run_id}.txt",
                 mode="naive",
             )
             run_command(command=naive_qfuzz, dry=args.dry)
@@ -146,7 +148,7 @@ if __name__ == "__main__":
                 icra=args.icra,
                 dry=args.dry,
                 timeout=timeout,
-                log_file=current_log_directory / f"qfuzz_{run_id}.json",
+                log_file=current_log_directory / f"qfuzz_{run_id}.txt",
                 mode="qfuzz",
             )
             run_command(command=modified_qfuzz, dry=args.dry)

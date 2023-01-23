@@ -6,6 +6,7 @@ from common import (
     print_args,
     get_files,
     get_decomposed_file,
+    configure_logging,
 )
 from pathlib import Path
 
@@ -57,6 +58,9 @@ if __name__ == "__main__":
     )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
+    if Path(args.log).suffix != "txt":
+        raise AssertionError(f"Must specify a *.txt file name for --log.")
+    configure_logging(filename=args.log)
     print_args(args)
 
     java_files = get_files(args.input, suffix="java")
@@ -98,4 +102,4 @@ if __name__ == "__main__":
         )
 
     time_measurements.print()
-    time_measurements.write(log_file=args.log)
+    time_measurements.write(log_file=Path(args.log).with_suffix(".json"))

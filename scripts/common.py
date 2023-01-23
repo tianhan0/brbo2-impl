@@ -7,15 +7,27 @@ import subprocess
 import os
 from pathlib import Path
 
-logging.basicConfig(
-    stream=sys.stdout,
-    encoding="utf-8",
-    level=logging.DEBUG,
-    format="%(asctime)s %(levelname)-8s %(message)s",
-)
-
 NO_DEPENDENCY_SCRIPT = "./scripts/run.sh"
 WITH_DEPENDENCY_SCRIPT = "./scripts/run_deps.sh"
+
+
+def configure_logging(filename):
+    if filename:
+        Path(filename).unlink(missing_ok=True)
+        Path(filename).parent.mkdir(parents=True, exist_ok=True)
+        logging.basicConfig(
+            filename=filename,
+            encoding="utf-8",
+            level=logging.DEBUG,
+            format="%(asctime)s %(levelname)-8s %(message)s",
+        )
+    else:
+        logging.basicConfig(
+            stream=sys.stdout,
+            encoding="utf-8",
+            level=logging.DEBUG,
+            format="%(asctime)s %(levelname)-8s %(message)s",
+        )
 
 
 # Return stdout and stderr, and the execution time

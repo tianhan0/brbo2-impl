@@ -2,7 +2,13 @@ import argparse
 import logging
 from pathlib import Path
 import common
-from common import run_command, print_args, get_files, get_decomposed_file
+from common import (
+    run_command,
+    print_args,
+    get_files,
+    get_decomposed_file,
+    configure_logging,
+)
 
 
 if __name__ == "__main__":
@@ -11,13 +17,13 @@ if __name__ == "__main__":
       --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java \
       --qfuzz $HOME/Documents/workspace/qfuzz/ \
       --brbo $HOME/Documents/workspace/brbo-impl/ \
-      --log brbo2.json \
+      --log a.txt \
       --mode qfuzz
     Usage (Naive fuzzer): ~/brbo2-impl$ python3 scripts/brbo2.py \
       --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java \
       --qfuzz $HOME/Documents/workspace/qfuzz/ \
       --brbo $HOME/Documents/workspace/brbo-impl/ \
-      --log brbo2.json \
+      --log a.txt \
       --mode naive \
       --samples 5
     """
@@ -77,17 +83,26 @@ if __name__ == "__main__":
     )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
+    if Path(args.log).suffix != ".txt":
+        raise AssertionError(
+            f"Must specify a *.txt file name for --log: {Path(args.log).suffix}"
+        )
+    configure_logging(filename=args.log)
     print_args(args)
 
     if args.version == "master":
         commit_hash, _ = run_command(
-            command=["git", "log", '--format="%H"', "-n", "1"], printOutput=False
+            command=["git", "log", '--format="%H"', "-n", "1"],
+            printOutput=False,
+            dry=args.dry,
         )
     else:
         commit_hash = args.version
-    run_command(command=["git", "checkout", commit_hash], printOutput=False)
+    run_command(
+        command=["git", "checkout", commit_hash], printOutput=False, dry=args.dry
+    )
     logging.info(f"Build a new version of brbo2: {commit_hash}")
-    run_command(command=["sbt", "package"])
+    run_command(command=["sbt", "package"], dry=args.dry)
 
     java_files = get_files(args.input, suffix="java")
     time_measurements = common.TimeMeasurement()
@@ -141,4 +156,4 @@ if __name__ == "__main__":
         )
 
     time_measurements.print()
-    time_measurements.write(log_file=args.log)
+    time_measurements.write(log_file=Path(args.log).with_suffix(".json"))
