@@ -138,3 +138,15 @@ root@16144970debc:/home/sas-artifact-41/brbo-impl# ./scripts/run_with_deps_artif
   > ./output/logs/baseline/log01.txt 2>&1 &
 ```
 Thanks to https://stackoverflow.com/questions/44192376/redirect-outputs-of-multiple-commands-to-a-file.
+
+# Run Experiments
+
+```shell
+~/brbo2-impl$ python3 scripts/experiments.py \
+  --input src/main/java/brbo/benchmarks/sas22/ \
+  --qfuzz $HOME/Documents/workspace/qfuzz/ \
+  --brbo $HOME/Documents/workspace/brbo-impl/ \
+  --experiment qfuzz \
+  --repeat 5 \
+  > ./output/logs/qfuzz/01.txt 2>&1 &
+```
