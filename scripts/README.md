@@ -147,6 +147,14 @@ Thanks to https://stackoverflow.com/questions/44192376/redirect-outputs-of-multi
   --qfuzz $HOME/Documents/workspace/qfuzz/ \
   --brbo $HOME/Documents/workspace/brbo-impl/ \
   --experiment qfuzz \
-  --repeat 5 \
-  > ./output/logs/qfuzz/01.txt 2>&1 &
+  --repeat 5
+```
+
+```shell
+~/brbo2-impl$ python3 scripts/experiments.py \
+  --input src/main/java/brbo/benchmarks/sas22/ \
+  --qfuzz $HOME/Documents/workspace/qfuzz/ \
+  --brbo $HOME/Documents/workspace/brbo-impl/ \
+  --experiment timeout \
+  --repeat 2
 ```

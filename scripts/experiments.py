@@ -85,13 +85,15 @@ if __name__ == "__main__":
     icra_timeout_in_seconds = 60
     log_directory = Path(os.getcwd()) / "logs"
     qfuzz_log_directory = log_directory / "qfuzz"
+    timeout_log_directory = log_directory / "timeout"
     current_date_time = datetime.now().strftime("%Y%m%d_%H-%M-%S")
 
-    configure_logging(filename=log_directory / f"experiment_{current_date_time}.txt")
+    configure_logging(filename=log_directory / f"experiment_{args.experiment}_{current_date_time}.txt")
     print_args(args)
 
     for i in range(args.repeat):
-        logging.info(f"Begin {i} run")
+        run_id = "{:03d}".format(i)
+        logging.info(f"Begin {run_id} run")
         if args.experiment == "verifiability" or args.experiment == "all":
             selective_amortization = brbo2_command(
                 input=args.input,
@@ -127,7 +129,6 @@ if __name__ == "__main__":
             timeout = 180
             current_log_directory = qfuzz_log_directory / current_date_time
             current_log_directory.mkdir(parents=True, exist_ok=True)
-            run_id = "{:03d}".format(i)
 
             naive_qfuzz = brbo2_command(
                 input=args.input,
@@ -153,13 +154,19 @@ if __name__ == "__main__":
             )
             run_command(command=modified_qfuzz, dry=args.dry)
         elif args.experiment == "timeout" or args.experiment == "all":
-            timeout_30 = brbo2_command(
-                input=args.input,
-                qfuzz=args.qfuzz,
-                brbo=args.brbo,
-                icra=args.icra,
-                dry=args.dry,
-                timeout=30,
-                log_file="a.json",
-                mode="qfuzz",
-            )
+            current_log_directory = timeout_log_directory / current_date_time
+            current_log_directory.mkdir(parents=True, exist_ok=True)
+
+            timeouts = [60, 120, 180]
+            for timeout in timeouts:
+                command = brbo2_command(
+                    input=args.input,
+                    qfuzz=args.qfuzz,
+                    brbo=args.brbo,
+                    icra=args.icra,
+                    dry=args.dry,
+                    timeout=timeout,
+                    log_file=current_log_directory / f"timeout{timeout}_{run_id}.txt",
+                    mode="qfuzz",
+                )
+                run_command(command=command, dry=args.dry)
