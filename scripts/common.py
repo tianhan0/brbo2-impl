@@ -5,6 +5,7 @@ import getpass
 import time
 import subprocess
 import os
+import resource
 from pathlib import Path
 
 NO_DEPENDENCY_SCRIPT = "./scripts/run.sh"
@@ -30,6 +31,16 @@ def configure_logging(filename=None):
         )
 
 
+def _limit_memory():
+    MAX_MEMORY = 6 * 1024 * 1024 * 1024  # 6 GB
+    # The tuple below is of the form (soft limit, hard limit). Limit only
+    # the soft part so that the limit can be increased later (setting also
+    # the hard limit would prevent that).
+    # When the limit cannot be changed, setrlimit() raises ValueError.
+    resource.setrlimit(resource.RLIMIT_AS, (MAX_MEMORY, MAX_MEMORY))
+    resource.setrlimit(resource.RLIMIT_DATA, (MAX_MEMORY, MAX_MEMORY))
+
+
 # Return stdout and stderr, and the execution time
 def run_command(command, cwd=os.getcwd(), dry=False, printOutput=True):
     logging.info(f"Under `{getpass.getuser()}@{cwd}`: Execute `{' '.join(command)}`")
@@ -37,7 +48,12 @@ def run_command(command, cwd=os.getcwd(), dry=False, printOutput=True):
         return "", 0
     start_time = time.time()
     result = subprocess.run(
-        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=cwd
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        cwd=cwd,
+        preexec_fn=_limit_memory,
     )
     execution_time = time.time() - start_time
     logging.info(f"Done. Execution time: {execution_time} seconds")
