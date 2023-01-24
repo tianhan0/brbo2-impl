@@ -83,11 +83,22 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     icra_timeout_in_seconds = 60
-    log_directory = Path(os.getcwd()) / "logs"
-    qfuzz_log_directory = log_directory / "qfuzz"
-    timeout_log_directory = log_directory / "timeout"
+    log_root_directory = Path(os.getcwd()) / "logs"
+    qfuzz_log_directory = log_root_directory / "qfuzz"
+    timeout_log_directory = log_root_directory / "timeout"
+    verifiability_log_directory = log_root_directory / "verifiability"
     current_date_time = datetime.now().strftime("%Y%m%d_%H-%M-%S")
 
+    if args.experiment == "verifiability":
+        log_directory = verifiability_log_directory
+    elif args.experiment == "qfuzz":
+        log_directory = qfuzz_log_directory
+    elif args.experiment == "timeout":
+        log_directory = verifiability_log_directory
+    elif args.experiment == "all":
+        log_directory = log_root_directory
+    else:
+        raise AssertionError(f"Unknown experiment: {args.experiment}")
     configure_logging(
         filename=log_directory / f"experiment_{args.experiment}_{current_date_time}.txt"
     )
@@ -97,6 +108,8 @@ if __name__ == "__main__":
         run_id = "{:03d}".format(i)
         logging.info(f"Begin {run_id} run")
         if args.experiment == "verifiability" or args.experiment == "all":
+            current_log_directory = verifiability_log_directory / current_date_time
+
             selective_amortization = brbo2_command(
                 input=args.input,
                 qfuzz=args.qfuzz,
