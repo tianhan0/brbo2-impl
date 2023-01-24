@@ -105,7 +105,7 @@ if __name__ == "__main__":
     print_args(args)
 
     for i in range(args.repeat):
-        run_id = "{:03d}".format(i)
+        run_id = "{:02d}".format(i)
         logging.info(f"Begin {run_id} run")
         if args.experiment == "verifiability" or args.experiment == "all":
             current_log_directory = verifiability_log_directory / current_date_time
