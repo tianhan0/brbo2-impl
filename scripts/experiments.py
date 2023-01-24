@@ -27,6 +27,7 @@ def brbo_command(input, brbo, icra, dry, timeout, mode, log_file):
       --timeout {timeout} \
       --mode {mode} \
       --log {log_file} \
+      --version issta23 \
       {"--dry" if dry else ""}"""
     return brbo_command.split()
 
@@ -104,11 +105,13 @@ if __name__ == "__main__":
     )
     print_args(args)
 
+    qfuzz_timeout_in_seconds = 120
     for i in range(args.repeat):
         run_id = "{:02d}".format(i)
         logging.info(f"Begin {run_id} run")
         if args.experiment == "verifiability" or args.experiment == "all":
             current_log_directory = verifiability_log_directory / current_date_time
+            current_log_directory.mkdir(parents=True, exist_ok=True)
 
             selective_amortization = brbo2_command(
                 input=args.input,
@@ -116,8 +119,8 @@ if __name__ == "__main__":
                 brbo=args.brbo,
                 icra=args.icra,
                 dry=args.dry,
-                timeout=60,
-                log_file="a.json",
+                timeout=qfuzz_timeout_in_seconds,
+                log_file=current_log_directory / f"select_{run_id}.txt",
                 mode="qfuzz",
             )
             run_command(command=selective_amortization, dry=args.dry)
@@ -129,8 +132,10 @@ if __name__ == "__main__":
                 dry=args.dry,
                 timeout=icra_timeout_in_seconds,
                 mode="worst",
-                log_file="a.txt",
+                log_file=current_log_directory / f"worst_{run_id}.txt",
             )
+            run_command(command=worst_case, dry=args.dry, cwd=args.brbo)
+
             fully_amortized = brbo_command(
                 input=args.input,
                 brbo=args.brbo,
@@ -138,10 +143,10 @@ if __name__ == "__main__":
                 dry=args.dry,
                 timeout=icra_timeout_in_seconds,
                 mode="fully",
-                log_file="a.txt",
+                log_file=current_log_directory / f"fully_{run_id}.txt",
             )
+            run_command(command=fully_amortized, dry=args.dry, cwd=args.brbo)
         elif args.experiment == "qfuzz" or args.experiment == "all":
-            timeout = 180
             current_log_directory = qfuzz_log_directory / current_date_time
             current_log_directory.mkdir(parents=True, exist_ok=True)
 
@@ -151,7 +156,7 @@ if __name__ == "__main__":
                 brbo=args.brbo,
                 icra=args.icra,
                 dry=args.dry,
-                timeout=timeout,
+                timeout=qfuzz_timeout_in_seconds,
                 log_file=current_log_directory / f"naive_{run_id}.txt",
                 mode="naive",
             )
@@ -163,7 +168,7 @@ if __name__ == "__main__":
                 brbo=args.brbo,
                 icra=args.icra,
                 dry=args.dry,
-                timeout=timeout,
+                timeout=qfuzz_timeout_in_seconds,
                 log_file=current_log_directory / f"qfuzz_{run_id}.txt",
                 mode="qfuzz",
             )
@@ -172,16 +177,17 @@ if __name__ == "__main__":
             current_log_directory = timeout_log_directory / current_date_time
             current_log_directory.mkdir(parents=True, exist_ok=True)
 
-            timeouts = [60, 120, 180]
-            for timeout in timeouts:
+            timeouts = [10, 30, 60, 90]
+            for qfuzz_timeout_in_seconds in timeouts:
                 command = brbo2_command(
                     input=args.input,
                     qfuzz=args.qfuzz,
                     brbo=args.brbo,
                     icra=args.icra,
                     dry=args.dry,
-                    timeout=timeout,
-                    log_file=current_log_directory / f"timeout{timeout}_{run_id}.txt",
+                    timeout=qfuzz_timeout_in_seconds,
+                    log_file=current_log_directory
+                    / f"timeout{qfuzz_timeout_in_seconds}_{run_id}.txt",
                     mode="qfuzz",
                 )
                 run_command(command=command, dry=args.dry)
