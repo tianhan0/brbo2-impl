@@ -173,9 +173,14 @@ class TimeMeasurement:
         logging.info(f"Number of unknown programs: {pretty_print(self.count_unknown)}")
 
     def write(self, log_file):
+        short_names = {
+            file_name: str(Path(file_name).stem)
+            for file_name in self.per_file_execution_time.keys()
+        }
         output_contents = {
             "time_measurements": self.per_file_execution_time,
             "verification_results": self.verification_results,
+            "short_names": short_names,
         }
         with open(log_file, "w") as output_file:
             logging.info(f"Write into {log_file}")
