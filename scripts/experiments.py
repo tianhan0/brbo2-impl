@@ -95,11 +95,13 @@ if __name__ == "__main__":
     elif args.experiment == "qfuzz":
         log_directory = qfuzz_log_directory
     elif args.experiment == "timeout":
-        log_directory = verifiability_log_directory
+        log_directory = timeout_log_directory
     elif args.experiment == "all":
         log_directory = log_root_directory
     else:
         raise AssertionError(f"Unknown experiment: {args.experiment}")
+    log_directory = log_directory / current_date_time
+    log_directory.mkdir(parents=True, exist_ok=True)
     configure_logging(
         filename=log_directory / f"experiment_{args.experiment}_{current_date_time}.txt"
     )
@@ -110,9 +112,6 @@ if __name__ == "__main__":
         run_id = "{:02d}".format(i)
         logging.info(f"Begin {run_id} run")
         if args.experiment == "verifiability" or args.experiment == "all":
-            current_log_directory = verifiability_log_directory / current_date_time
-            current_log_directory.mkdir(parents=True, exist_ok=True)
-
             selective_amortization = brbo2_command(
                 input=args.input,
                 qfuzz=args.qfuzz,
@@ -120,7 +119,7 @@ if __name__ == "__main__":
                 icra=args.icra,
                 dry=args.dry,
                 timeout=qfuzz_timeout_in_seconds,
-                log_file=current_log_directory / f"select_{run_id}.txt",
+                log_file=log_directory / f"select_{run_id}.txt",
                 mode="qfuzz",
             )
             run_command(command=selective_amortization, dry=args.dry)
@@ -132,7 +131,7 @@ if __name__ == "__main__":
                 dry=args.dry,
                 timeout=icra_timeout_in_seconds,
                 mode="worst",
-                log_file=current_log_directory / f"worst_{run_id}.txt",
+                log_file=log_directory / f"worst_{run_id}.txt",
             )
             run_command(command=worst_case, dry=args.dry, cwd=args.brbo)
 
@@ -143,13 +142,10 @@ if __name__ == "__main__":
                 dry=args.dry,
                 timeout=icra_timeout_in_seconds,
                 mode="fully",
-                log_file=current_log_directory / f"fully_{run_id}.txt",
+                log_file=log_directory / f"fully_{run_id}.txt",
             )
             run_command(command=fully_amortized, dry=args.dry, cwd=args.brbo)
         elif args.experiment == "qfuzz" or args.experiment == "all":
-            current_log_directory = qfuzz_log_directory / current_date_time
-            current_log_directory.mkdir(parents=True, exist_ok=True)
-
             naive_qfuzz = brbo2_command(
                 input=args.input,
                 qfuzz=args.qfuzz,
@@ -157,7 +153,7 @@ if __name__ == "__main__":
                 icra=args.icra,
                 dry=args.dry,
                 timeout=qfuzz_timeout_in_seconds,
-                log_file=current_log_directory / f"naive_{run_id}.txt",
+                log_file=log_directory / f"naive_{run_id}.txt",
                 mode="naive",
             )
             run_command(command=naive_qfuzz, dry=args.dry)
@@ -169,14 +165,11 @@ if __name__ == "__main__":
                 icra=args.icra,
                 dry=args.dry,
                 timeout=qfuzz_timeout_in_seconds,
-                log_file=current_log_directory / f"qfuzz_{run_id}.txt",
+                log_file=log_directory / f"qfuzz_{run_id}.txt",
                 mode="qfuzz",
             )
             run_command(command=modified_qfuzz, dry=args.dry)
         elif args.experiment == "timeout" or args.experiment == "all":
-            current_log_directory = timeout_log_directory / current_date_time
-            current_log_directory.mkdir(parents=True, exist_ok=True)
-
             timeouts = [10, 30, 60, 90]
             for qfuzz_timeout_in_seconds in timeouts:
                 command = brbo2_command(
@@ -186,7 +179,7 @@ if __name__ == "__main__":
                     icra=args.icra,
                     dry=args.dry,
                     timeout=qfuzz_timeout_in_seconds,
-                    log_file=current_log_directory
+                    log_file=log_directory
                     / f"timeout{qfuzz_timeout_in_seconds}_{run_id}.txt",
                     mode="qfuzz",
                 )
