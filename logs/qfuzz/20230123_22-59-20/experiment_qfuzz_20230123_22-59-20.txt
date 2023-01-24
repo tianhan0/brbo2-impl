@@ -1,0 +1,13 @@
+2023-01-23 22:59:20,766 INFO     Arguments:
+2023-01-23 22:59:20,766 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-01-23 22:59:20,766 INFO     experiment	qfuzz
+2023-01-23 22:59:20,766 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-01-23 22:59:20,766 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-01-23 22:59:20,766 INFO     icra	/root/Documents/workspace/icra/icra
+2023-01-23 22:59:20,766 INFO     dry	False
+2023-01-23 22:59:20,766 INFO     repeat	3
+2023-01-23 22:59:20,767 INFO     Begin 00 run
+2023-01-23 22:59:20,767 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 120 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230123_22-59-20/naive_00.txt --mode naive`
+2023-01-24 00:37:57,754 INFO     Done. Execution time: 5916.987011194229 seconds
+2023-01-24 00:37:57,754 INFO     Output: 
+2023-01-24 00:37:57,754 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 120 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230123_22-59-20/qfuzz_00.txt --mode qfuzz`
