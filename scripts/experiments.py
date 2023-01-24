@@ -88,7 +88,9 @@ if __name__ == "__main__":
     timeout_log_directory = log_directory / "timeout"
     current_date_time = datetime.now().strftime("%Y%m%d_%H-%M-%S")
 
-    configure_logging(filename=log_directory / f"experiment_{args.experiment}_{current_date_time}.txt")
+    configure_logging(
+        filename=log_directory / f"experiment_{args.experiment}_{current_date_time}.txt"
+    )
     print_args(args)
 
     for i in range(args.repeat):
