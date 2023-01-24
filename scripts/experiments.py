@@ -107,7 +107,7 @@ if __name__ == "__main__":
     )
     print_args(args)
 
-    qfuzz_timeout_in_seconds = 120
+    qfuzz_timeout_in_seconds = 60
     for i in range(args.repeat):
         run_id = "{:02d}".format(i)
         logging.info(f"Begin {run_id} run")
