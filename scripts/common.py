@@ -215,3 +215,19 @@ def get_decomposed_file(java_file: Path, brbo2_root: Path = Path(os.getcwd())) -
     )
     decomposed_file = decomposed_file_path / java_file.name
     return decomposed_file
+
+
+def sbt_package(git_version, dry, cwd=os.getcwd()):
+    if git_version == "master":
+        commit_hash, _ = run_command(
+            command=["git", "log", '--format="%H"', "-n", "1"],
+            printOutput=False,
+            dry=dry,
+        )
+    else:
+        commit_hash = git_version
+    run_command(
+        command=["git", "checkout", commit_hash], cwd=cwd, printOutput=False, dry=dry
+    )
+    logging.info(f"Build a new version: {commit_hash}")
+    run_command(command=["sbt", "package"], cwd=cwd, dry=dry)

@@ -7,6 +7,7 @@ from common import (
     get_files,
     get_decomposed_file,
     configure_logging,
+    sbt_package,
 )
 from pathlib import Path
 
@@ -56,12 +57,20 @@ if __name__ == "__main__":
         required=True,
         help="The file to write the measurements to.",
     )
+    parser.add_argument(
+        "--version",
+        type=str,
+        default="master",
+        help="Build and run the brbo jar file (with `sbt package`) with the specified git commit hash.",
+    )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
     if Path(args.log).suffix != "txt":
         raise AssertionError(f"Must specify a *.txt file name for --log.")
     configure_logging(filename=args.log)
     print_args(args)
+
+    sbt_package(git_version=args.version, dry=args.dry, cwd=Path(args.brbo))
 
     java_files = get_files(args.input, suffix="java")
     brbo_root = Path(args.brbo).expanduser()

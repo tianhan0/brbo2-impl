@@ -8,6 +8,7 @@ from common import (
     get_files,
     get_decomposed_file,
     configure_logging,
+    sbt_package,
 )
 
 
@@ -90,19 +91,7 @@ if __name__ == "__main__":
     configure_logging(filename=args.log)
     print_args(args)
 
-    if args.version == "master":
-        commit_hash, _ = run_command(
-            command=["git", "log", '--format="%H"', "-n", "1"],
-            printOutput=False,
-            dry=args.dry,
-        )
-    else:
-        commit_hash = args.version
-    run_command(
-        command=["git", "checkout", commit_hash], printOutput=False, dry=args.dry
-    )
-    logging.info(f"Build a new version of brbo2: {commit_hash}")
-    run_command(command=["sbt", "package"], dry=args.dry)
+    sbt_package(git_version=args.version, dry=args.dry)
 
     java_files = get_files(args.input, suffix="java")
     time_measurements = common.TimeMeasurement()
