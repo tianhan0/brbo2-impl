@@ -11,7 +11,7 @@ NO_DEPENDENCY_SCRIPT = "./scripts/run.sh"
 WITH_DEPENDENCY_SCRIPT = "./scripts/run_deps.sh"
 
 
-def configure_logging(filename):
+def configure_logging(filename=None):
     if filename:
         Path(filename).unlink(missing_ok=True)
         Path(filename).parent.mkdir(parents=True, exist_ok=True)
