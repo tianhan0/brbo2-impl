@@ -1,0 +1,19 @@
+2023-01-24 14:41:28,241 INFO     Arguments:
+2023-01-24 14:41:28,241 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-01-24 14:41:28,241 INFO     experiment	timeout
+2023-01-24 14:41:28,241 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-01-24 14:41:28,241 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-01-24 14:41:28,241 INFO     icra	/root/Documents/workspace/icra/icra
+2023-01-24 14:41:28,241 INFO     dry	False
+2023-01-24 14:41:28,241 INFO     repeat	3
+2023-01-24 14:41:28,241 INFO     Begin 00 run
+2023-01-24 14:41:28,242 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 10 --log /root/Documents/workspace/brbo2-impl/logs/timeout/20230124_14-41-28/timeout10_00.txt --mode qfuzz`
+2023-01-24 15:09:16,936 INFO     Done. Execution time: 1668.6944885253906 seconds
+2023-01-24 15:09:16,937 INFO     Output: 
+2023-01-24 15:09:16,937 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 30 --log /root/Documents/workspace/brbo2-impl/logs/timeout/20230124_14-41-28/timeout30_00.txt --mode qfuzz`
+2023-01-24 15:52:34,447 INFO     Done. Execution time: 2597.5096142292023 seconds
+2023-01-24 15:52:34,447 INFO     Output: 
+2023-01-24 15:52:34,447 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/timeout/20230124_14-41-28/timeout60_00.txt --mode qfuzz`
+2023-01-24 16:50:03,615 INFO     Done. Execution time: 3449.168140411377 seconds
+2023-01-24 16:50:03,616 INFO     Output: 
+2023-01-24 16:50:03,616 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 90 --log /root/Documents/workspace/brbo2-impl/logs/timeout/20230124_14-41-28/timeout90_00.txt --mode qfuzz`
