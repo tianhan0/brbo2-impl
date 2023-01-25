@@ -82,6 +82,7 @@ object Executor {
       }
       case "afl" => Future {
         logger.info(s"Step 4: Run AFL. Output directory: $FUZZ_OUT_DIRECTORY. Timeout: $AFL_TIMEOUT_IN_SECONDS sec.")
+        logger.info(s"Step 4: Input seed: ${BrboMain.readFromFile(INPUT_SEED_PATH)}")
         // Ensure kelinci server starts first
         // Remember to use https://github.com/litho17/qfuzz/commit/5dbe56efc6a9d9f77c320f1a8f801f6c4d6400e3
         BrboMain.executeCommandWithLogger(command = "sleep 3", logger)
