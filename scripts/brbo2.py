@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
         decomposed_file = get_decomposed_file(java_file=java_file)
         logging.info(f"Remove the expected decomposition `{str(decomposed_file)}`")
-        run_command(command=["rm", str(decomposed_file)], dry=args.dry)
+        decomposed_file.unlink(missing_ok=True)
 
         _, decomposition_time = run_command(
             command=common.decomposition_command(
