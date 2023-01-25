@@ -6,6 +6,7 @@ import time
 import subprocess
 import os
 import resource
+import re
 from pathlib import Path
 
 NO_DEPENDENCY_SCRIPT = "./scripts/run.sh"
@@ -234,7 +235,9 @@ def get_decomposed_file(java_file: Path, brbo2_root: Path = Path(os.getcwd())) -
 
 
 def sbt_package(git_version, dry, cwd=os.getcwd()):
-    if git_version == "master":
+    pattern = re.compile('\d+')
+    if pattern.match(git_version) is None:
+        # This is probably a branch name, since it is not a sequence of numbers
         commit_hash, _ = run_command(
             command=["git", "log", '--format="%H"', "-n", "1"],
             printOutput=False,

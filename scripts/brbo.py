@@ -60,12 +60,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--version",
         type=str,
-        default="master",
+        default="issta23",
         help="Build and run the brbo jar file (with `sbt package`) with the specified git commit hash.",
     )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
-    if Path(args.log).suffix != "txt":
+    if Path(args.log).suffix != ".txt":
         raise AssertionError(f"Must specify a *.txt file name for --log.")
     configure_logging(filename=args.log)
     print_args(args)
