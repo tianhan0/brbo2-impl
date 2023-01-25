@@ -63,7 +63,7 @@ def run_command(command, cwd=os.getcwd(), dry=False, printOutput=True):
     return result.stdout.strip(), execution_time
 
 
-def qfuzz_command(timeout, input, qfuzz, deps, mode):
+def qfuzz_command(timeout, input, qfuzz, deps, mode, seed):
     command = [
         WITH_DEPENDENCY_SCRIPT if deps else NO_DEPENDENCY_SCRIPT,
         "fuzz",
@@ -79,6 +79,8 @@ def qfuzz_command(timeout, input, qfuzz, deps, mode):
     ]
     if mode == "naive":
         command.append("--naive")
+    if seed:
+        command.extend(["--input", str(seed)])
     return command
 
 
@@ -235,7 +237,7 @@ def get_decomposed_file(java_file: Path, brbo2_root: Path = Path(os.getcwd())) -
 
 
 def sbt_package(git_version, dry, cwd=os.getcwd()):
-    pattern = re.compile('\d+')
+    pattern = re.compile("\d+")
     if pattern.match(git_version) is None:
         # This is probably a branch name, since it is not a sequence of numbers
         commit_hash, _ = run_command(

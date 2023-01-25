@@ -82,6 +82,12 @@ if __name__ == "__main__":
         default="master",
         help="Build and run the brbo2 jar file (with `sbt package`) with the specified git commit hash.",
     )
+    parser.add_argument(
+        "--seed",
+        type=str,
+        default=None,
+        help="The file that contains the seed for QFuzz.",
+    )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
     if Path(args.log).suffix != ".txt":
@@ -106,6 +112,7 @@ if __name__ == "__main__":
                 qfuzz=args.qfuzz,
                 deps=True,
                 mode=args.mode,
+                seed=args.seed,
             ),
             dry=args.dry,
         )
