@@ -170,7 +170,7 @@ if __name__ == "__main__":
             )
             run_command(command=modified_qfuzz, dry=args.dry)
         elif args.experiment == "timeout" or args.experiment == "all":
-            timeouts = [10, 30, 60, 90]
+            timeouts = [3, 10, 30, 60, 90]
             for qfuzz_timeout_in_seconds in timeouts:
                 command = brbo2_command(
                     input=args.input,
