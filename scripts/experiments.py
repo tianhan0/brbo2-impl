@@ -112,6 +112,28 @@ if __name__ == "__main__":
         run_id = "{:02d}".format(i)
         logging.info(f"Begin {run_id} run")
         if args.experiment == "verifiability" or args.experiment == "all":
+            worst_case = brbo_command(
+                input=args.input,
+                brbo=args.brbo,
+                icra=args.icra,
+                dry=args.dry,
+                timeout=icra_timeout_in_seconds,
+                mode="worst",
+                log_file=log_directory / f"worst_{run_id}.txt",
+            )
+            run_command(command=worst_case, dry=args.dry)
+
+            fully_amortized = brbo_command(
+                input=args.input,
+                brbo=args.brbo,
+                icra=args.icra,
+                dry=args.dry,
+                timeout=icra_timeout_in_seconds,
+                mode="fully",
+                log_file=log_directory / f"fully_{run_id}.txt",
+            )
+            run_command(command=fully_amortized, dry=args.dry)
+
             selective_amortization = brbo2_command(
                 input=args.input,
                 qfuzz=args.qfuzz,
@@ -123,28 +145,6 @@ if __name__ == "__main__":
                 mode="qfuzz",
             )
             run_command(command=selective_amortization, dry=args.dry)
-
-            worst_case = brbo_command(
-                input=args.input,
-                brbo=args.brbo,
-                icra=args.icra,
-                dry=args.dry,
-                timeout=icra_timeout_in_seconds,
-                mode="worst",
-                log_file=log_directory / f"worst_{run_id}.txt",
-            )
-            run_command(command=worst_case, dry=args.dry, cwd=args.brbo)
-
-            fully_amortized = brbo_command(
-                input=args.input,
-                brbo=args.brbo,
-                icra=args.icra,
-                dry=args.dry,
-                timeout=icra_timeout_in_seconds,
-                mode="fully",
-                log_file=log_directory / f"fully_{run_id}.txt",
-            )
-            run_command(command=fully_amortized, dry=args.dry, cwd=args.brbo)
         elif args.experiment == "qfuzz" or args.experiment == "all":
             naive_qfuzz = brbo2_command(
                 input=args.input,
