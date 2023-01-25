@@ -7,7 +7,9 @@ from common import run_command, print_args, configure_logging
 from datetime import datetime
 
 
-def brbo2_command(input, qfuzz, brbo, icra, dry, timeout, log_file, mode, seed):
+def brbo2_command(
+    input, qfuzz, brbo, icra, dry, timeout, log_file, mode, seed_directory
+):
     brbo2_command = f"""python3 scripts/brbo2.py \
       --input {input} \
       --qfuzz {qfuzz} \
@@ -16,7 +18,7 @@ def brbo2_command(input, qfuzz, brbo, icra, dry, timeout, log_file, mode, seed):
       --timeout {timeout} \
       --log {log_file} \
       --mode {mode} \
-      {f"--seed {seed}" if seed else ""} \
+      {f"--seed {seed_directory}" if seed_directory else ""} \
       {"--dry" if dry else ""}"""
     return brbo2_command.split()
 
@@ -115,11 +117,12 @@ if __name__ == "__main__":
     print_args(args)
 
     qfuzz_timeout_in_seconds = 60
-
+    seed_directory = log_directory / "seeds"
+    seed_directory.mkdir(parents=True, exist_ok=True)
     for i in range(args.repeat):
         run_id = "{:02d}".format(i)
         logging.info(f"Begin {run_id} run")
-        seed_file = log_directory / f"qfuzz-seed_{run_id}.txt"
+        seed_file = seed_directory / f"seed_{run_id}.txt"
         with open(seed_file, "wb") as binary_file:
             byte_array = list(numpy.random.randint(256, size=50))
             logging.info(f"Input seed: {byte_array}")
@@ -159,7 +162,7 @@ if __name__ == "__main__":
                 timeout=qfuzz_timeout_in_seconds,
                 log_file=log_directory / f"select_{run_id}.txt",
                 mode="qfuzz",
-                seed=seed_file,
+                seed_directory=seed_directory,
             )
             run_command(command=selective_amortization, dry=args.dry)
         elif args.experiment == "qfuzz" or args.experiment == "all":
@@ -172,7 +175,7 @@ if __name__ == "__main__":
                 timeout=qfuzz_timeout_in_seconds,
                 log_file=log_directory / f"naive_{run_id}.txt",
                 mode="naive",
-                seed=seed_file,
+                seed_directory=seed_directory,
             )
             run_command(command=naive_qfuzz, dry=args.dry)
 
@@ -185,7 +188,7 @@ if __name__ == "__main__":
                 timeout=qfuzz_timeout_in_seconds,
                 log_file=log_directory / f"qfuzz_{run_id}.txt",
                 mode="qfuzz",
-                seed=seed_file,
+                seed_directory=seed_directory,
             )
             run_command(command=modified_qfuzz, dry=args.dry)
         elif args.experiment == "timeout" or args.experiment == "all":
@@ -201,6 +204,6 @@ if __name__ == "__main__":
                     log_file=log_directory
                     / f"timeout{qfuzz_timeout_in_seconds}_{run_id}.txt",
                     mode="qfuzz",
-                    seed=seed_file,
+                    seed_directory=seed_directory,
                 )
                 run_command(command=command, dry=args.dry)
