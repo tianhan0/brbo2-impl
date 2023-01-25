@@ -115,17 +115,18 @@ if __name__ == "__main__":
     print_args(args)
 
     qfuzz_timeout_in_seconds = 60
-    seed_file = log_directory / "input_seed.txt"
-    with open(seed_file, "wb") as binary_file:
-        byte_array = list(numpy.random.randint(256, size=50))
-        logging.info(f"Input seed: {byte_array}")
-        immutable_bytes = bytes(bytearray(byte_array))
-        logging.info(f"Write into seed file {binary_file}")
-        binary_file.write(immutable_bytes)
 
     for i in range(args.repeat):
         run_id = "{:02d}".format(i)
         logging.info(f"Begin {run_id} run")
+        seed_file = log_directory / f"qfuzz-seed_{run_id}.txt"
+        with open(seed_file, "wb") as binary_file:
+            byte_array = list(numpy.random.randint(256, size=50))
+            logging.info(f"Input seed: {byte_array}")
+            immutable_bytes = bytes(bytearray(byte_array))
+            logging.info(f"Write into seed file {seed_file}")
+            binary_file.write(immutable_bytes)
+
         if args.experiment == "verifiability" or args.experiment == "all":
             worst_case = brbo_command(
                 input=args.input,
