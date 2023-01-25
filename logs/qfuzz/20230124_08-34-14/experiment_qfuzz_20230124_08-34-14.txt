@@ -1,0 +1,17 @@
+2023-01-24 08:34:14,173 INFO     Arguments:
+2023-01-24 08:34:14,173 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-01-24 08:34:14,173 INFO     experiment	qfuzz
+2023-01-24 08:34:14,173 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-01-24 08:34:14,173 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-01-24 08:34:14,173 INFO     icra	/root/Documents/workspace/icra/icra
+2023-01-24 08:34:14,173 INFO     dry	False
+2023-01-24 08:34:14,173 INFO     repeat	3
+2023-01-24 08:34:14,173 INFO     Begin 00 run
+2023-01-24 08:34:14,173 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230124_08-34-14/naive_00.txt --mode naive`
+2023-01-24 09:41:42,785 INFO     Done. Execution time: 4048.6115069389343 seconds
+2023-01-24 09:41:42,785 INFO     Output: 
+2023-01-24 09:41:42,785 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230124_08-34-14/qfuzz_00.txt --mode qfuzz`
+2023-01-24 10:38:44,280 INFO     Done. Execution time: 3421.495309829712 seconds
+2023-01-24 10:38:44,281 INFO     Output: 
+2023-01-24 10:38:44,281 INFO     Begin 01 run
+2023-01-24 10:38:44,281 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230124_08-34-14/naive_01.txt --mode naive`
