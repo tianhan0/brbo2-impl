@@ -36,7 +36,7 @@ object Executor {
     val BINARY_PATH = s"$OUTPUT_DIRECTORY/bin"
     val INSTRUMENTED_BINARY_PATH = s"$OUTPUT_DIRECTORY/bin-instr"
 
-    val INPUT_SEED_PATH = arguments.getInputPath
+    val INPUT_SEED_DIRECTORY = arguments.getInputDirectory
 
     logger.info(s"Step 1: Prepare a QFuzz driver. Naive mode? ${arguments.getNaive}")
     val driverFileContents = DriverGenerator.run(
@@ -87,7 +87,7 @@ object Executor {
         BrboMain.executeCommandWithLogger(command = "sleep 3", logger)
         val timeout = Duration(length = arguments.getAflTimeoutInSeconds, unit = TimeUnit.SECONDS).toMillis
         BrboMain.executeCommandWithLogger(
-          command = s"""$AFL_PATH -i $INPUT_SEED_PATH -o $FUZZ_OUT_DIRECTORY -c quantify -K 100 -S afl -t $timeout $INTERFACE_C_PATH -K 100 @@""",
+          command = s"""$AFL_PATH -i $INPUT_SEED_DIRECTORY -o $FUZZ_OUT_DIRECTORY -c quantify -K 100 -S afl -t $timeout $INTERFACE_C_PATH -K 100 @@""",
           logger,
           environment = Map(
             "AFL_SKIP_CPUFREQ" -> "1",

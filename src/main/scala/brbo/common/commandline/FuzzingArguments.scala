@@ -19,7 +19,7 @@ class FuzzingArguments extends CommonArguments {
 
   @Option(name = "--input", aliases = Array("-i"), required = false,
     usage = "The directory that stores the initial inputs for QFuzz.")
-  protected var inputPath: String = s"${System.getProperty("user.dir")}/src/main/java/brbo/fuzz/inputs"
+  protected var inputDirectory: String = s"${System.getProperty("user.dir")}/src/main/java/brbo/fuzz/inputs"
 
   @Option(name = "--dry", required = false,
     usage = "Dry run: Do not write the QFuzz generated inputs into Json files.")
@@ -35,7 +35,7 @@ class FuzzingArguments extends CommonArguments {
 
   def getOutputPath: String = outputPath
 
-  def getInputPath: String = inputPath
+  def getInputDirectory: String = inputDirectory
 
   def getDryRun: Boolean = dryRun
 
