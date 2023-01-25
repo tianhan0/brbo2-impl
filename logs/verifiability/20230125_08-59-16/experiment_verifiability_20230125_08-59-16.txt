@@ -1,0 +1,16 @@
+2023-01-25 08:59:16,073 INFO     Arguments:
+2023-01-25 08:59:16,073 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-01-25 08:59:16,073 INFO     experiment	verifiability
+2023-01-25 08:59:16,073 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-01-25 08:59:16,073 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-01-25 08:59:16,073 INFO     icra	/root/Documents/workspace/icra/icra
+2023-01-25 08:59:16,073 INFO     dry	False
+2023-01-25 08:59:16,073 INFO     repeat	2
+2023-01-25 08:59:16,073 INFO     Begin 00 run
+2023-01-25 08:59:16,073 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --mode worst --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230125_08-59-16/worst_00.txt --version issta23`
+2023-01-25 09:35:07,805 INFO     Done. Execution time: 2151.731094121933 seconds
+2023-01-25 09:35:07,805 INFO     Output: 
+2023-01-25 09:35:07,805 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --mode fully --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230125_08-59-16/fully_00.txt --version issta23`
+2023-01-25 09:54:34,743 INFO     Done. Execution time: 1166.9381031990051 seconds
+2023-01-25 09:54:34,744 INFO     Output: 
+2023-01-25 09:54:34,744 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230125_08-59-16/select_00.txt --mode qfuzz`
