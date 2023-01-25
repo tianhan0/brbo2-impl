@@ -129,6 +129,7 @@ object BrboMain {
               case e: Exception =>
                 logger.info(s"Failed to fuzz program ${sourceFile.getAbsolutePath}")
                 logger.error(s"Reason: ${e.toString}")
+                e.printStackTrace()
             }
           case _: TransformToBrboArguments =>
             try {
