@@ -200,6 +200,10 @@ class TimeMeasurement:
             "time_measurements": self.per_file_execution_time,
             "verification_results": self.verification_results,
             "short_names": short_names,
+            "verified_programs": self.count_verified,
+            "not_programs": self.count_not_verified,
+            "unknown_programs": self.count_unknown,
+            "total_time": self.total_time,
         }
         with open(log_file, "w") as output_file:
             logging.info(f"Write into {log_file}")
