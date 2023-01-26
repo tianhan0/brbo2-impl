@@ -23,7 +23,7 @@ def brbo2_command(
     return brbo2_command.split()
 
 
-def get_log_directory(date_time):
+def prepare_log_directory(date_time):
     log_root_directory = Path(os.getcwd()) / "logs"
     qfuzz_log_directory = log_root_directory / "qfuzz"
     timeout_log_directory = log_root_directory / "timeout"
@@ -110,7 +110,7 @@ if __name__ == "__main__":
 
     icra_timeout_in_seconds = 60
     current_date_time = datetime.now().strftime("%Y%m%d_%H-%M-%S")
-    log_directory = get_log_directory(date_time=current_date_time)
+    log_directory = prepare_log_directory(date_time=current_date_time)
     configure_logging(
         filename=log_directory / f"experiment_{args.experiment}_{current_date_time}.txt"
     )
