@@ -147,6 +147,9 @@ class TimeMeasurement:
         self.count_not_verified = {}
         self.count_unknown = {}
         self.verification_results = {}
+        self.total_verified = 0
+        self.total_not_verified = 0
+        self.total_unknown = 0
 
     def update(
         self,
@@ -160,12 +163,15 @@ class TimeMeasurement:
         if "verified? Yes" in brbo_output:
             _increment_count(self.count_verified, inner_most_package_name)
             self.verification_results.update({str(java_file): "verified"})
+            self.total_verified = self.total_verified + 1
         elif "verified? No" in brbo_output:
             _increment_count(self.count_not_verified, inner_most_package_name)
             self.verification_results.update({str(java_file): "not verified"})
+            self.total_not_verified = self.total_not_verified + 1
         else:
             _increment_count(self.count_unknown, inner_most_package_name)
             self.verification_results.update({str(java_file): "unknown"})
+            self.total_unknown = self.total_unknown + 1
 
         self.per_file_execution_time.update(
             {str(java_file): (fuzzing_time, decomposition_time, verification_time)}
@@ -204,6 +210,9 @@ class TimeMeasurement:
             "not_programs": self.count_not_verified,
             "unknown_programs": self.count_unknown,
             "total_time": self.total_time,
+            "total_verified": self.total_verified,
+            "total_not_verified": self.total_not_verified,
+            "total_unknown": self.total_unknown,
         }
         with open(log_file, "w") as output_file:
             logging.info(f"Write into {log_file}")
