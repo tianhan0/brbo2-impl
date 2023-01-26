@@ -1,0 +1,267 @@
+{
+  "time_measurements": {
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java": [
+      5.707346677780151,
+      5.274435520172119,
+      19.314088821411133
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java": [
+      5.73181676864624,
+      9.389846563339233,
+      81.53233814239502
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine3.java": [
+      5.643677711486816,
+      11.154940605163574,
+      282.954550743103
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngineSimplified.java": [
+      5.975420713424683,
+      7.747578382492065,
+      7.75969123840332
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendAllTo.java": [
+      5.852081298828125,
+      5.555027008056641,
+      16.210012912750244
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendDetail.java": [
+      9.80765414237976,
+      5.278167963027954,
+      8.63464069366455
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendDisplayNames.java": [
+      6.00911808013916,
+      39.364216804504395,
+      10.611682891845703
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendFullDigits.java": [
+      1.8256630897521973,
+      1.8861734867095947,
+      0.9957606792449951
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendQuotedString.java": [
+      5.84813117980957,
+      4.255429983139038,
+      18.10168147087097
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendRecursiveTypes.java": [
+      10.061306238174438,
+      3.8037099838256836,
+      2.1921498775482178
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/DbgPrint.java": [
+      6.0571606159210205,
+      5.493295192718506,
+      7.757068872451782
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/DiffResultToString.java": [
+      5.772843360900879,
+      5.3365068435668945,
+      7.860843181610107
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/DurationFormat.java": [
+      5.940175533294678,
+      5.541178941726685,
+      30.761000394821167
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/GetCanonicalName.java": [
+      5.861725807189941,
+      5.162096977233887,
+      8.926053285598755
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/GetFormattedExceptionMessage.java": [
+      9.354188203811646,
+      11.842806100845337,
+      12.180853605270386
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/GetShortClassName.java": [
+      5.619588851928711,
+      6.851977586746216,
+      6.931808233261108
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Lexx.java": [
+      5.678436517715454,
+      5.3791725635528564,
+      7.614327430725098
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Literal.java": [
+      5.8170740604400635,
+      4.167706251144409,
+      6.493141174316406
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/LongToHex.java": [
+      6.198829650878906,
+      5.730179786682129,
+      7.893256902694702
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Modify.java": [
+      9.509275197982788,
+      5.704263925552368,
+      7.451069355010986
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/ParseToken.java": [
+      6.1413116455078125,
+      3.162731170654297,
+      2.21313738822937
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/SimpleQuote.java": [
+      5.880087375640869,
+      8.318750143051147,
+      11.786193370819092
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Spacer.java": [
+      6.354565620422363,
+      5.76113224029541,
+      9.335400581359863
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Squeeze.java": [
+      6.351260662078857,
+      4.969356536865234,
+      8.029547214508057
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/GetDigits.java": [
+      6.767380475997925,
+      6.6545515060424805,
+      41.39798331260681
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/Join.java": [
+      6.206863164901733,
+      3.0772762298583984,
+      2.29154109954834
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/Join2.java": [
+      6.1548912525177,
+      9.713719129562378,
+      166.97043657302856
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/JoinWith.java": [
+      5.962204456329346,
+      8.805107355117798,
+      50.26186203956604
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/Replace.java": [
+      5.955907821655273,
+      6.387470960617065,
+      85.46537566184998
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/ReplaceChars.java": [
+      5.904317617416382,
+      5.458612680435181,
+      20.82538414001465
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/SplitByWholeSeparatorWorker.java": [
+      5.841765880584717,
+      2.9321272373199463,
+      2.1176154613494873
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/SplitWorker.java": [
+      5.979191064834595,
+      2.897111654281616,
+      2.0430023670196533
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/SplitWorker2.java": [
+      6.325324773788452,
+      2.9638655185699463,
+      2.501380681991577
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/SubstringsBetween.java": [
+      9.607855796813965,
+      4.377813100814819,
+      2.140186309814453
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/guava/LenientFormat.java": [
+      6.133598804473877,
+      6.606754541397095,
+      1.7409636974334717
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/guava/PadEnd.java": [
+      5.759213209152222,
+      4.3591954708099365,
+      1.7117314338684082
+    ],
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/guava/PadStart.java": [
+      5.8615899085998535,
+      2.7521183490753174,
+      2.134427547454834
+    ]
+  },
+  "verification_results": {
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java": "not verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine3.java": "not verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngineSimplified.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendAllTo.java": "not verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendDetail.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendDisplayNames.java": "not verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendFullDigits.java": "unknown",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendQuotedString.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendRecursiveTypes.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/DbgPrint.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/DiffResultToString.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/DurationFormat.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/GetCanonicalName.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/GetFormattedExceptionMessage.java": "not verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/GetShortClassName.java": "not verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Lexx.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Literal.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/LongToHex.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Modify.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/ParseToken.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/SimpleQuote.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Spacer.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Squeeze.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/GetDigits.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/Join.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/Join2.java": "not verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/JoinWith.java": "not verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/Replace.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/ReplaceChars.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/SplitByWholeSeparatorWorker.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/SplitWorker.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/SplitWorker2.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/SubstringsBetween.java": "verified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/guava/LenientFormat.java": "unknown",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/guava/PadEnd.java": "unknown",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/guava/PadStart.java": "verified"
+  },
+  "short_names": {
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java": "TemplateEngine",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java": "TemplateEngine2",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine3.java": "TemplateEngine3",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngineSimplified.java": "TemplateEngineSimplified",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendAllTo.java": "AppendAllTo",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendDetail.java": "AppendDetail",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendDisplayNames.java": "AppendDisplayNames",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendFullDigits.java": "AppendFullDigits",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendQuotedString.java": "AppendQuotedString",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/AppendRecursiveTypes.java": "AppendRecursiveTypes",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/DbgPrint.java": "DbgPrint",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/DiffResultToString.java": "DiffResultToString",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/DurationFormat.java": "DurationFormat",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/GetCanonicalName.java": "GetCanonicalName",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/GetFormattedExceptionMessage.java": "GetFormattedExceptionMessage",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/GetShortClassName.java": "GetShortClassName",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Lexx.java": "Lexx",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Literal.java": "Literal",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/LongToHex.java": "LongToHex",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Modify.java": "Modify",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/ParseToken.java": "ParseToken",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/SimpleQuote.java": "SimpleQuote",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Spacer.java": "Spacer",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/lang3/Squeeze.java": "Squeeze",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/GetDigits.java": "GetDigits",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/Join.java": "Join",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/Join2.java": "Join2",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/JoinWith.java": "JoinWith",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/Replace.java": "Replace",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/ReplaceChars.java": "ReplaceChars",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/SplitByWholeSeparatorWorker.java": "SplitByWholeSeparatorWorker",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/SplitWorker.java": "SplitWorker",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/SplitWorker2.java": "SplitWorker2",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/apache/stringutils/SubstringsBetween.java": "SubstringsBetween",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/guava/LenientFormat.java": "LenientFormat",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/guava/PadEnd.java": "PadEnd",
+    "/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/string/guava/PadStart.java": "PadStart"
+  }
+}
