@@ -12,17 +12,9 @@ public abstract class TemplateEngine extends Common {
     lessPreciseBound(R <= MAX * arraySum(text) + MAX);
 
     int chunk = 0;
-    int tag = 0;
-    int i = 0;
-    chunk = arrayRead(text, i);
-    R = R + chunk;
-    i++;
-    while (i + 1 < arrayLength(text)) {
-      tag = arrayRead(text, i);
-      i++;
+    for (int i = 0; i < arrayLength(text); i++) {
       chunk = arrayRead(text, i);
       R = R + chunk;
-      i++;
     }
   }
 }

@@ -27,24 +27,13 @@ public abstract class TemplateEngine3 extends Common {
         MAX
     );
 
-    int i = 0;
-    int j = 0;
     int chunk = 0;
-    int tag = 0;
-    while (i < ts) {
-      j = 0;
-      chunk = arrayRead(text, j);
-      R = R + chunk;
-      j++;
-      while (j + 1 < arrayLength(text)) {
-        tag = arrayRead(text, j);
-        j++;
+    for (int i = 0; i < ts; i++) {
+      for (int j = 0; j < arrayLength(text); j++) {
         chunk = arrayRead(text, j);
         R = R + chunk;
         R = R + rep;
-        j++;
       }
-      i++;
       R = R + sep;
     }
   }
