@@ -1,0 +1,15 @@
+2023-01-27 12:11:59,238 INFO     Arguments:
+2023-01-27 12:11:59,238 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-01-27 12:11:59,238 INFO     experiment	qfuzz
+2023-01-27 12:11:59,238 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-01-27 12:11:59,238 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-01-27 12:11:59,238 INFO     icra	/root/Documents/workspace/icra/icra
+2023-01-27 12:11:59,239 INFO     dry	False
+2023-01-27 12:11:59,239 INFO     repeat	2
+2023-01-27 12:11:59,239 INFO     Begin 00 run
+2023-01-27 12:11:59,239 INFO     Input seed: [63, 238, 167, 242, 136, 76, 11, 78, 45, 115, 229, 35, 53, 176, 81, 219, 254, 94, 84, 237, 242, 127, 33, 40, 51, 205, 4, 115, 97, 181, 195, 54, 236, 194, 25, 2, 212, 13, 171, 65, 127, 80, 167, 138, 235, 241, 184, 123, 157, 200]
+2023-01-27 12:11:59,239 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_12-11-59/seeds/seed_00.txt
+2023-01-27 12:11:59,239 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_12-11-59/naive_00.txt --mode naive --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_12-11-59/seeds`
+2023-01-27 13:06:33,115 INFO     Done. Execution time: 3273.875960111618 seconds
+2023-01-27 13:06:33,116 INFO     Output: 
+2023-01-27 13:06:33,116 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_12-11-59/qfuzz_00.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_12-11-59/seeds`
