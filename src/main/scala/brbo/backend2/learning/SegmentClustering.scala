@@ -6,6 +6,7 @@ import brbo.backend2.learning.Classifier._
 import brbo.backend2.learning.ResetPlaceHolderFinder.MissingResetPlaceHolder
 import brbo.backend2.learning.ScriptRunner._
 import brbo.backend2.learning.SegmentClustering._
+import brbo.backend2.qfuzz.DriverGenerator
 import brbo.common.ast._
 import brbo.common.cfg.ControlFlowGraph
 import brbo.common.{BrboType, MyLogger}
@@ -31,7 +32,7 @@ class SegmentClustering(sumWeight: Int,
                         val algorithm: Algorithm,
                         threads: Int) {
   private val logger = MyLogger.createLogger(classOf[SegmentClustering], debugMode)
-  private val MAX_SEGMENT_LENGTH = 4 // No less than the input array sizes. Otherwise, cannot find proper amortizations.
+  private val MAX_SEGMENT_LENGTH = DriverGenerator.ARRAY_SIZE // No less than the input array sizes. Otherwise, cannot find proper amortizations.
   private val TOO_MANY_NUMBER_OF_COSTS = 100
   private val executionContextExecutor = {
     val executorService = Executors.newFixedThreadPool(threads)
