@@ -124,7 +124,9 @@ if __name__ == "__main__":
         logging.info(f"Begin {run_id} run")
         seed_file = seed_directory / f"seed_{run_id}.txt"
         with open(seed_file, "wb") as binary_file:
-            byte_array = list(numpy.random.randint(256, size=50))
+            # byte_array = list(numpy.random.randint(256, size=50))
+            range = list(numpy.random.randint(256, size=1))[0]
+            byte_array = list(numpy.random.randint(low=range, high=range+1, size=50))
             logging.info(f"Input seed: {byte_array}")
             immutable_bytes = bytes(bytearray(byte_array))
             logging.info(f"Write into seed file {seed_file}")
