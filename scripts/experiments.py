@@ -203,16 +203,16 @@ if __name__ == "__main__":
             # 60: The standard configuration.
             # 120: If longer fuzzing results in better inputs.
             timeouts = [30, 60, 120]
-            for qfuzz_timeout_in_seconds in timeouts:
+            for timeout in timeouts:
                 command = brbo2_command(
                     input=args.input,
                     qfuzz=args.qfuzz,
                     brbo=args.brbo,
                     icra=args.icra,
                     dry=args.dry,
-                    timeout=qfuzz_timeout_in_seconds,
+                    timeout=timeout,
                     log_file=log_directory
-                    / f"timeout{qfuzz_timeout_in_seconds}_{run_id}.txt",
+                    / f"timeout{timeout}_{run_id}.txt",
                     mode="qfuzz",
                     seed_directory=seed_directory,
                 )
