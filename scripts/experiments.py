@@ -199,7 +199,10 @@ if __name__ == "__main__":
             )
             run_command(command=modified_qfuzz, dry=args.dry)
         elif args.experiment == "timeout" or args.experiment == "all":
-            timeouts = [3, 10, 30, 60, 90]
+            # 30: If shorter fuzzing results in worse inputs.
+            # 60: The standard configuration.
+            # 120: If longer fuzzing results in better inputs.
+            timeouts = [30, 60, 120]
             for qfuzz_timeout_in_seconds in timeouts:
                 command = brbo2_command(
                     input=args.input,
