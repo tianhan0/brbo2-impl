@@ -1,0 +1,15 @@
+2023-01-27 23:16:05,911 INFO     Arguments:
+2023-01-27 23:16:05,911 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-01-27 23:16:05,911 INFO     experiment	qfuzz
+2023-01-27 23:16:05,911 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-01-27 23:16:05,911 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-01-27 23:16:05,911 INFO     icra	/root/Documents/workspace/icra/icra
+2023-01-27 23:16:05,912 INFO     dry	False
+2023-01-27 23:16:05,912 INFO     repeat	2
+2023-01-27 23:16:05,912 INFO     Begin 00 run
+2023-01-27 23:16:05,912 INFO     Input seed: [80, 155, 199, 79, 115, 54, 100, 216, 174, 84, 46, 66, 102, 10, 236, 167, 252, 121, 176, 1, 198, 50, 206, 0, 32, 163, 148, 167, 140, 128, 69, 178, 204, 240, 139, 154, 37, 209, 53, 230, 244, 22, 190, 182, 10, 164, 25, 211, 45, 158]
+2023-01-27 23:16:05,912 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_23-16-05/seeds/seed_00.txt
+2023-01-27 23:16:05,912 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_23-16-05/naive_00.txt --mode naive --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_23-16-05/seeds`
+2023-01-28 00:21:22,364 INFO     Done. Execution time: 3916.4514627456665 seconds
+2023-01-28 00:21:22,364 INFO     Output: 
+2023-01-28 00:21:22,365 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_23-16-05/qfuzz_00.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_23-16-05/seeds`
