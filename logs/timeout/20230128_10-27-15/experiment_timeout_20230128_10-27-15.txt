@@ -1,0 +1,15 @@
+2023-01-28 10:27:15,272 INFO     Arguments:
+2023-01-28 10:27:15,272 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-01-28 10:27:15,272 INFO     experiment	timeout
+2023-01-28 10:27:15,272 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-01-28 10:27:15,272 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-01-28 10:27:15,272 INFO     icra	/root/Documents/workspace/icra/icra
+2023-01-28 10:27:15,272 INFO     dry	False
+2023-01-28 10:27:15,272 INFO     repeat	2
+2023-01-28 10:27:15,272 INFO     Begin 00 run
+2023-01-28 10:27:15,272 INFO     Input seed: [186, 56, 132, 98, 101, 77, 188, 185, 188, 16, 13, 33, 73, 179, 182, 60, 171, 214, 34, 132, 182, 242, 141, 235, 210, 27, 111, 117, 187, 223, 175, 159, 67, 76, 171, 33, 67, 54, 198, 215, 159, 46, 247, 72, 175, 114, 125, 167, 4, 188]
+2023-01-28 10:27:15,272 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/seeds/seed_00.txt
+2023-01-28 10:27:15,272 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 30 --log /root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/timeout30_00.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/seeds`
+2023-01-28 11:19:23,356 INFO     Done. Execution time: 3128.0838470458984 seconds
+2023-01-28 11:19:23,357 INFO     Output: 
+2023-01-28 11:19:23,357 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/timeout60_00.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/seeds`

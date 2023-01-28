@@ -1,0 +1,1023 @@
+2023-01-28 11:19:23,422 INFO     Arguments:
+2023-01-28 11:19:23,422 INFO     timeout	60
+2023-01-28 11:19:23,422 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-01-28 11:19:23,422 INFO     samples	0
+2023-01-28 11:19:23,422 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-01-28 11:19:23,422 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-01-28 11:19:23,422 INFO     icra	/root/Documents/workspace/icra/icra
+2023-01-28 11:19:23,422 INFO     dry	False
+2023-01-28 11:19:23,422 INFO     log	/root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/timeout60_00.txt
+2023-01-28 11:19:23,422 INFO     mode	qfuzz
+2023-01-28 11:19:23,422 INFO     version	master
+2023-01-28 11:19:23,422 INFO     seed	/root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/seeds
+2023-01-28 11:19:23,422 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `git log --format="%H" -n 1`
+2023-01-28 11:19:23,427 INFO     Done. Execution time: 0.004310131072998047 seconds
+2023-01-28 11:19:23,427 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `git checkout "a3079adaf7652540db3258dbd5403546f0d348b4"`
+2023-01-28 11:19:23,432 INFO     Done. Execution time: 0.004723072052001953 seconds
+2023-01-28 11:19:23,432 INFO     Build a new version: "a3079adaf7652540db3258dbd5403546f0d348b4"
+2023-01-28 11:19:23,433 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `sbt package`
+2023-01-28 11:19:32,066 INFO     Done. Execution time: 8.633763790130615 seconds
+2023-01-28 11:19:32,067 INFO     Output: [info] welcome to sbt 1.7.3 (Amazon.com Inc. Java 1.8.0_352)
+[info] loading project definition from /root/Documents/workspace/brbo2-impl/project/project/project
+[info] loading project definition from /root/Documents/workspace/brbo2-impl/project/project
+[info] loading settings for project brbo2-impl-build from plugins.sbt ...
+[info] loading project definition from /root/Documents/workspace/brbo2-impl/project
+[info] loading settings for project brbo2-impl from build.sbt ...
+[info] set current project to brbo2-impl (in build file:/root/Documents/workspace/brbo2-impl/)
+[success] Total time: 2 s, completed Jan 28, 2023 11:19:31 AM
+
+2023-01-28 11:19:32,070 INFO     Process file `/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java`
+2023-01-28 11:19:32,070 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `./scripts/run_deps.sh fuzz --timeout 60 --directory /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java --qfuzz /root/Documents/workspace/qfuzz/ --input /root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/seeds`
+2023-01-28 11:20:37,807 INFO     Done. Execution time: 65.73624515533447 seconds
+2023-01-28 11:20:37,807 INFO     Output: + java -Dlog4j.configurationFile=src/resources/log4j2.properties -cp '.:lib/deps/*:./target/scala-2.12/brbo2-impl_2.12-0.1.jar:/root/.sdkman/candidates/java/current/lib/tools.jar:/usr/lib/jvm/java-8-openjdk-amd64/lib/tools.jar' brbo.BrboMain fuzz --timeout 60 --directory /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java --qfuzz /root/Documents/workspace/qfuzz/ --input /root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/seeds
+INFO  brbo.BrboMain$ - brbo2 has started.
+WARN  brbo.BrboMain$ - We assume each class contains exactly one method named `execute`
+INFO  brbo.BrboMain$ - Read from source file `/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java`
+INFO  brbo.BrboMain$ - Group programs based on the inner most package names
+INFO  brbo.BrboMain$ - Run brbo2 on files in package `stac`
+INFO  brbo.BrboMain$ - Run brbo2 on programs in batches. Batch size: 100
+INFO  brbo.BrboMain$ - Run batch 0: 000-099
+INFO  brbo.BrboMain$ - 
+
+
+Process input file 0. Progress: 0.00%
+INFO  brbo.BrboMain$ - Process file /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java
+INFO  brbo.BrboMain$ - Class name: `brbo.benchmarks.sas22.stac.TemplateEngine`
+INFO  brbo.backend2.qfuzz.Executor$ - Step 1: Prepare a QFuzz driver. Naive mode? false
+INFO  brbo.backend2.qfuzz.Executor$ - Step 1: Written into `/root/Documents/workspace/brbo2-impl/src/main/java/brbo/fuzz/drivers/TemplateEngineQFuzzDriver.java`
+INFO  brbo.backend2.qfuzz.Executor$ - Step 2: Compile and instrument the QFuzz driver
+INFO  brbo.backend2.qfuzz.Executor$ - Step 2.1: Compile the QFuzz driver
+INFO  brbo.backend2.qfuzz.Executor$ - Execute `javac -cp .:/root/Documents/workspace/qfuzz//tool/instrumentor/build/libs/kelinci.jar /root/Documents/workspace/brbo2-impl/src/main/java/brbo/fuzz/drivers/TemplateEngineQFuzzDriver.java -d /tmp/qfuzz3372508533143331566/bin`
+INFO  brbo.backend2.qfuzz.Executor$ - Output:
+
+
+INFO  brbo.backend2.qfuzz.Executor$ - Step 2.2: Instrument the QFuzz driver
+INFO  brbo.backend2.qfuzz.Executor$ - Execute `java -cp .:/root/Documents/workspace/qfuzz//tool/instrumentor/build/libs/kelinci.jar edu.cmu.sv.kelinci.instrumentor.Instrumentor -mode LABELS -i /tmp/qfuzz3372508533143331566/bin -o /tmp/qfuzz3372508533143331566/bin-instr -skipmain`
+INFO  brbo.backend2.qfuzz.Executor$ - Output:
+Loading dir: /tmp/qfuzz3372508533143331566/bin
+Found file /tmp/qfuzz3372508533143331566/bin/brbo/fuzz/drivers/TemplateEngineQFuzzDriver.class
+Found file /tmp/qfuzz3372508533143331566/bin/brbo/fuzz/drivers/TemplateEngine.class
+Instrumenting class: brbo/fuzz/drivers/TemplateEngineQFuzzDriver.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/brbo/fuzz/drivers/TemplateEngineQFuzzDriver.class
+Instrumenting class: brbo/fuzz/drivers/TemplateEngine.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/brbo/fuzz/drivers/TemplateEngine.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/Kelinci.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/Kelinci$1.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/Kelinci$2.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/Kelinci$3.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/Kelinci$ApplicationCall.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/Kelinci$FuzzRequest.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/Kelinci$NullOutputStream.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/Mem.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/quantification/PartitionSet.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/quantification/Partition.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/quantification/Pair.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/quantification/KDynamic.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/quantification/Greedy.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/quantification/PartitionAlgorithm.class
+File written: /tmp/qfuzz3372508533143331566/bin-instr/edu/cmu/sv/kelinci/quantification/PartitionAlgorithmByIndex.class
+
+
+INFO  brbo.backend2.qfuzz.Executor$ - Step 3: Run Kelinci server. Timeout: 63 sec.
+INFO  brbo.backend2.qfuzz.Executor$ - Execute `java -cp .:/root/Documents/workspace/qfuzz//tool/instrumentor/build/libs/kelinci.jar:/tmp/qfuzz3372508533143331566/bin-instr edu.cmu.sv.kelinci.Kelinci -K 100 brbo.fuzz.drivers.TemplateEngineQFuzzDriver @@`
+INFO  brbo.backend2.qfuzz.Executor$ - Step 4: Run AFL. Output directory: /tmp/qfuzz3372508533143331566/fuzzer-out. Timeout: 60 sec.
+INFO  brbo.backend2.qfuzz.Executor$ - Execute `sleep 3`
+INFO  brbo.backend2.qfuzz.Executor$ - Output:
+
+
+INFO  brbo.backend2.qfuzz.Executor$ - Execute `/root/Documents/workspace/qfuzz//tool/afl-2.51b-qfuzz/afl-fuzz -i /root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/seeds -o /tmp/qfuzz3372508533143331566/fuzzer-out -c quantify -K 100 -S afl -t 60000 /root/Documents/workspace/qfuzz//tool/fuzzerside/interface -K 100 @@`
+INFO  brbo.backend2.qfuzz.Executor$ - Output:
+[0;36mafl-fuzz [1;97m2.51b[0m by <lcamtuf@google.com>
+[1;92m[+] [0m[SC-Quantify] Quantification of Side-Channels[0m
+[1;92m[+] [0mLooks like we're not running on a tty, so I'll be a bit less verbose.[0m
+[1;92m[+] [0mYou have 4 CPU cores and 1 runnable tasks (utilization: 25%).[0m
+[1;92m[+] [0mTry parallel jobs - see docs/parallel_fuzzing.txt.[0m
+[1;94m[*] [0mChecking CPU core loadout...[0m
+[1;92m[+] [0mFound a free CPU core, binding to #0.[0m
+[1;94m[*] [0mChecking core_pattern...[0m
+
+[1;91m[-] [0mHmm, your system is configured to send core dump notifications to an
+    external utility. This will cause issues: there will be an extended delay
+    between stumbling upon a crash and having this information relayed to the
+    fuzzer via the standard waitpid() API.
+
+    To avoid having crashes misinterpreted as timeouts, please log in as root
+    and temporarily modify /proc/sys/kernel/core_pattern, like so:
+
+    echo core >/proc/sys/kernel/core_pattern
+[1;94m[*] [0mSetting up output directories...[0m
+[1;94m[*] [0mScanning '/root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/seeds'...[0m
+[1;92m[+] [0mNo auto-generated dictionary tokens to reuse.[0m
+[1;94m[*] [0mCreating hard links for all input files...[0m
+[1;94m[*] [0mValidating target binary...[0m
+[1;94m[*] [0mAttempting dry run with 'id:000000,orig:seed_00.txt'...[0m
+[1;94m[*] [0mSpinning up the fork server...[0m
+[1;92m[+] [0mAll right - fork server is up.[0m
+[1;90m    len = 50, map size = 30, exec speed = 126371 us
+[0m[1;92m[+] [0mAll test cases processed.[0m
+
+[1;93m[!] [1;97mWARNING: [0m[1;91mThe target binary is pretty slow! See docs/perf_tips.txt.[0m
+[1;92m[+] [0mHere are some useful stats:
+
+[1;90m    Test case count : [0m1 favored, 0 variable, 1 total
+[1;90m       Bitmap range : [0m30 to 30 bits (average: 30.00 bits)
+[1;90m        Exec timing : [0m126k to 126k us (average: 126k us)
+[0m
+[1;92m[+] [0mAll set and ready to roll![0m
+[1;94m[*] [0mEntering queue cycle 1.[0m
+[1;94m[*] [0mFuzzing test case #0 (1 total, 0 uniq crashes found)...[0m
+
+
+INFO  brbo.backend2.qfuzz.Executor$ - QFuzz output:
+Time(sec); File; #Partitions; MinDelta; AvgPartitionValues
+1; /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000000,orig:seed_00.txt; 4; 40.00; [135.00,175.00,215.00,264.00]
+2; /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000001,src:000000,op:havoc,rep:2,+partition,+delta; 5; 20.00; [95.00,115.00,135.00,175.00,264.00]
+4; /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000002,src:000000,op:havoc,rep:16; 5; 9.00; [15.00,115.00,135.00,195.00,204.00]
+5; /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000003,src:000000,op:havoc,rep:8; 5; 9.00; [15.00,135.00,155.00,164.00,215.00]
+9; /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000004,src:000000,op:havoc,rep:4,+delta; 5; 40.00; [95.00,135.00,175.00,215.00,264.00]
+33; /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000005,src:000000,op:havoc,rep:64; 5; 20.00; [95.00,115.00,135.00,155.00,264.00]
+37; /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000006,src:000000,op:havoc,rep:2; 5; 20.00; [95.00,135.00,155.00,175.00,264.00]
+
+INFO  brbo.backend2.qfuzz.Executor$ - Ranked input files:
+/tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000006,src:000000,op:havoc,rep:2
+/tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000005,src:000000,op:havoc,rep:64
+/tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000004,src:000000,op:havoc,rep:4,+delta
+/tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000003,src:000000,op:havoc,rep:8
+/tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000002,src:000000,op:havoc,rep:16
+/tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000001,src:000000,op:havoc,rep:2,+partition,+delta
+/tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000000,orig:seed_00.txt
+WARN  brbo.backend2.qfuzz.Executor$ - Must ensure the input seed provide sufficient amounts of data to be parsed as inputs
+INFO  brbo.backend2.qfuzz.Executor$ - Step 5: Parse the QFuzz-generated inputs
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000006,src:000000,op:havoc,rep:2
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(12, 6, 8, 7, 4, 4, 7, 5, 10)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000005,src:000000,op:havoc,rep:64
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(12, 5, 6, 7, 4, 5, 4, 9, 5, 4, 9, 12, 7, 10, 4, 6, 10, 5, 10, 5, 9, 6, 4, 11, 12, 5, 5, 9, 10, 12, 9, 10, 4, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 7, 7, 8, 12, 4, 9, 12, 12, 4, 8, 12, 10, 4, 12, 4)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000004,src:000000,op:havoc,rep:4,+delta
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(12, 6, 4, 10, 8, 8, 11, 12, 4, 9, 12, 8, 9, 5)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000003,src:000000,op:havoc,rep:8
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(7, 6, 10)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000002,src:000000,op:havoc,rep:16
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(9, 5, 6, 9)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000001,src:000000,op:havoc,rep:2,+partition,+delta
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(12, 6, 4, 5, 8, 8, 7, 6, 4, 11, 4, 4, 4, 5, 12, 7, 6, 5, 11, 12, 4, 4, 7, 5, 10)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz3372508533143331566/fuzzer-out/afl/queue/id:000000,orig:seed_00.txt
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(12, 6, 8, 10, 8, 8, 7, 6, 4, 11, 4, 4, 8, 7, 12, 7, 6, 5, 11, 12, 4, 4, 7, 5, 10)
+INFO  brbo.backend2.qfuzz.Executor$ - Step 6: Write interesting inputs (with descending interestingness) into file /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine_fuzzing.json
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [12,6,8,7,4]
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [12,5,6,7,4]
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [12,6,4,10,8]
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [7,6,10]
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [9,5,6,9]
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [12,6,4,5,8]
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [12,6,8,10,8]
+INFO  brbo.backend2.qfuzz.Executor$ - Step 7: Clean up the generated files when running QFuzz
+
+real	1m5.728s
+user	0m22.321s
+sys	0m1.552s
+
+2023-01-28 11:20:37,807 INFO     Remove the expected decomposition `/root/Documents/workspace/brbo2-impl/output/decomposed/stac/TemplateEngine.java`
+2023-01-28 11:20:37,807 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `./scripts/run_deps.sh decompose --threads 4 --debug --algorithm optics --parameter 0.1 --samples 0 --directory /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java`
+2023-01-28 11:20:46,386 INFO     Done. Execution time: 8.578060626983643 seconds
+2023-01-28 11:20:46,386 INFO     Output: + java -Dlog4j.configurationFile=src/resources/log4j2.properties -cp '.:lib/deps/*:./target/scala-2.12/brbo2-impl_2.12-0.1.jar:/root/.sdkman/candidates/java/current/lib/tools.jar:/usr/lib/jvm/java-8-openjdk-amd64/lib/tools.jar' brbo.BrboMain decompose --threads 4 --debug --algorithm optics --parameter 0.1 --samples 0 --directory /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java
+INFO  brbo.BrboMain$ - brbo2 has started.
+WARN  brbo.BrboMain$ - We assume each class contains exactly one method named `execute`
+INFO  brbo.BrboMain$ - Read from source file `/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java`
+INFO  brbo.BrboMain$ - Group programs based on the inner most package names
+INFO  brbo.BrboMain$ - Run brbo2 on files in package `stac`
+INFO  brbo.BrboMain$ - Run brbo2 on programs in batches. Batch size: 100
+INFO  brbo.BrboMain$ - Run batch 0: 000-099
+INFO  brbo.BrboMain$ - 
+
+
+Process input file 0. Progress: 0.00%
+INFO  brbo.BrboMain$ - Process file /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java
+INFO  brbo.BrboMain$ - Class name: `brbo.benchmarks.sas22.stac.TemplateEngine`
+INFO  brbo.BrboMain$ - Parsing...
+INFO  brbo.backend2.DecompositionDriver - Step 0: Insert reset place holders
+INFO  brbo.backend2.DecompositionDriver - Step 0: Find classifier features {i}
+INFO  brbo.backend2.DecompositionDriver - Step 1: Generate traces
+INFO  brbo.backend2.DecompositionDriver - Step 1.1: User-provided inputs (size 0)
+INFO  brbo.backend2.Fuzzer$ - [Fuzzing TemplateEngine] Generated `0` inputs
+INFO  brbo.backend2.DecompositionDriver - Step 1.2: Fuzzer generated inputs (size 0)
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([12,6,8,7,4])
+INFO  brbo.backend2.interpreter.Interpreter$ - Progress: 0 / 7 (0.00%)
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([12,5,6,7,4])
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([12,6,4,10,8])
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([7,6,10])
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([9,5,6,9])
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([12,6,4,5,8])
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([12,6,8,10,8])
+INFO  brbo.backend2.DecompositionDriver - Step 1.3: QFuzz generated inputs (size 7)
+INFO  brbo.backend2.DecompositionDriver - Step 2: Select representative traces
+INFO  brbo.backend2.learning.TracePartition$ - Step 2: Assume all traces are similar
+INFO  brbo.backend2.learning.TracePartition$ - Step 2: Select representatives from qfuzz generated traces
+INFO  brbo.backend2.learning.TracePartition$ - Choose traces within range Vector(0) from 7 traces
+INFO  brbo.backend2.DecompositionDriver - Step 3: Decompose 1 selected traces
+INFO  brbo.backend2.DecompositionDriver - Step 3.1: Decompose 0-th representative trace
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+INFO  brbo.backend2.DecompositionDriver - Step 3.1: Trace (length 90):
+                                                                                                 
+ Index  |              Commands               |  Costs  |  R   |  chunk  |  i  |      text      |
+-------------------------------------------------------------------------------------------------
+     2  |                         int R = 0;  |         |   0  |         |     |  [12,6,8,7,4]  |
+    10  |                      // int R = 0;  |         |   0  |         |     |  [12,6,8,7,4]  |
+    11  |  // mostPreciseBound(R <= array...  |         |   0  |         |     |  [12,6,8,7,4]  |
+    12  |  // lessPreciseBound(R <= MAX *...  |         |   0  |         |     |  [12,6,8,7,4]  |
+    14  |                     int chunk = 0;  |         |   0  |      0  |     |  [12,6,8,7,4]  |
+    16  |                         int i = 0;  |         |   0  |      0  |  0  |  [12,6,8,7,4]  |
+    22  |        chunk = arrayRead(text, i);  |         |   0  |     12  |  0  |  [12,6,8,7,4]  |
+    25  |                     R = R + chunk;  |     12  |  12  |     12  |  0  |  [12,6,8,7,4]  |
+    29  |                         i = i + 1;  |         |  12  |     12  |  1  |  [12,6,8,7,4]  |
+    30  |              resetPlaceHolder_1();  |         |  12  |     12  |  1  |  [12,6,8,7,4]  |
+    36  |        chunk = arrayRead(text, i);  |         |  12  |      6  |  1  |  [12,6,8,7,4]  |
+    39  |                     R = R + chunk;  |      6  |  18  |      6  |  1  |  [12,6,8,7,4]  |
+    43  |                         i = i + 1;  |         |  18  |      6  |  2  |  [12,6,8,7,4]  |
+    44  |              resetPlaceHolder_1();  |         |  18  |      6  |  2  |  [12,6,8,7,4]  |
+    50  |        chunk = arrayRead(text, i);  |         |  18  |      8  |  2  |  [12,6,8,7,4]  |
+    53  |                     R = R + chunk;  |      8  |  26  |      8  |  2  |  [12,6,8,7,4]  |
+    57  |                         i = i + 1;  |         |  26  |      8  |  3  |  [12,6,8,7,4]  |
+    58  |              resetPlaceHolder_1();  |         |  26  |      8  |  3  |  [12,6,8,7,4]  |
+    64  |        chunk = arrayRead(text, i);  |         |  26  |      7  |  3  |  [12,6,8,7,4]  |
+    67  |                     R = R + chunk;  |      7  |  33  |      7  |  3  |  [12,6,8,7,4]  |
+    71  |                         i = i + 1;  |         |  33  |      7  |  4  |  [12,6,8,7,4]  |
+    72  |              resetPlaceHolder_1();  |         |  33  |      7  |  4  |  [12,6,8,7,4]  |
+    78  |        chunk = arrayRead(text, i);  |         |  33  |      4  |  4  |  [12,6,8,7,4]  |
+    81  |                     R = R + chunk;  |      4  |  37  |      4  |  4  |  [12,6,8,7,4]  |
+    85  |                         i = i + 1;  |         |  37  |      4  |  5  |  [12,6,8,7,4]  |
+    86  |              resetPlaceHolder_1();  |         |  37  |      4  |  5  |  [12,6,8,7,4]  |
+INFO  brbo.backend2.learning.SegmentClustering - --------------------------------------------------------------------------------
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.1: Cluster segments with length 1
+ERROR brbo.backend2.learning.SegmentClustering - Choose segments with sizes of 1 among 5 trace node indices: [25, 53, 81, 39, 67]
+INFO  brbo.backend2.learning.SegmentClustering - Clustered similar segments: Found 0 segment clusters
+INFO  brbo.backend2.learning.SegmentClustering - --------------------------------------------------------------------------------
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.1: Cluster segments with length 2
+ERROR brbo.backend2.learning.SegmentClustering - Choose segments with sizes of 2 among 5 trace node indices: [25, 53, 81, 39, 67]
+INFO  brbo.backend2.learning.SegmentClustering - Clustered similar segments: Found 0 segment clusters
+INFO  brbo.backend2.learning.SegmentClustering - --------------------------------------------------------------------------------
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.1: Cluster segments with length 3
+ERROR brbo.backend2.learning.SegmentClustering - Choose segments with sizes of 3 among 5 trace node indices: [25, 53, 81, 39, 67]
+INFO  brbo.backend2.learning.SegmentClustering - Clustered similar segments: Found 0 segment clusters
+INFO  brbo.backend2.learning.SegmentClustering - --------------------------------------------------------------------------------
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.1: Cluster segments with length 4
+ERROR brbo.backend2.learning.SegmentClustering - Choose segments with sizes of 4 among 5 trace node indices: [25, 53, 81, 39, 67]
+INFO  brbo.backend2.learning.SegmentClustering - Clustered similar segments: Found 0 segment clusters
+INFO  brbo.backend2.learning.SegmentClustering - --------------------------------------------------------------------------------
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.1: Cluster segments with length 5
+ERROR brbo.backend2.learning.SegmentClustering - Choose segments with sizes of 5 among 5 trace node indices: [25, 53, 81, 39, 67]
+FATAL brbo.backend2.learning.SegmentClustering - Failed to find similar segments
+INFO  brbo.backend2.DecompositionDriver - Step 3.1: Selected decomposition:
+GroupID(0): {25,39,53,67,81}
+                                                                          
+ Index  |        Commands         |  Costs  |  SegmentIDs in GroupID(0)  |
+--------------------------------------------------------------------------
+    25  |         R = R + chunk;  |     12  |                         0  |
+    30  |  resetPlaceHolder_1();  |         |                            |
+    39  |         R = R + chunk;  |      6  |                         0  |
+    44  |  resetPlaceHolder_1();  |         |                            |
+    53  |         R = R + chunk;  |      8  |                         0  |
+    58  |  resetPlaceHolder_1();  |         |                            |
+    67  |         R = R + chunk;  |      7  |                         0  |
+    72  |  resetPlaceHolder_1();  |         |                            |
+    81  |         R = R + chunk;  |      4  |                         0  |
+    86  |  resetPlaceHolder_1();  |         |                            |
+INFO  brbo.backend2.DecompositionDriver - Step 3.2: (TODO) Select reset locations for the groups
+INFO  brbo.common.ast.ResetPlaceHolder$ - Reset place holder candidates:
+GroupID(0): resetPlaceHolder_1();
+INFO  brbo.common.ast.ResetPlaceHolder$ - Reset place holder locations:
+GroupID(0): Set()
+INFO  brbo.backend2.DecompositionDriver - Step 3.3: Generate tables for training classifiers
+INFO  brbo.backend2.DecompositionDriver - Step 3.4: Generate classifiers on the tables
+INFO  brbo.backend2.DecompositionDriver - Step 3.5: Generate program transformations
+INFO  brbo.backend2.DecompositionDriver - See below for a mapping from existing ASTs to new ASTs
+resetPlaceHolder_1(); -> // reset R0
+use R chunk -> R0 = R0 + chunk;
+INFO  brbo.BrboMain$ - Write into file /root/Documents/workspace/brbo2-impl/output/decomposed/stac/TemplateEngine.java
+INFO  brbo.BrboMain$ - Finished decomposing /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine.java
+
+real	0m8.570s
+user	0m13.288s
+sys	0m3.555s
+
+2023-01-28 11:20:46,386 INFO     Under `root@/root/Documents/workspace/brbo-impl`: Execute `./scripts/run_deps.sh --directory /root/Documents/workspace/brbo2-impl/output/decomposed/stac/TemplateEngine.java --amortize transparent --icra-path /root/Documents/workspace/icra/icra --icra-timeout 60`
+2023-01-28 11:20:54,129 INFO     Done. Execution time: 7.742372512817383 seconds
+2023-01-28 11:20:54,129 INFO     Output: + java -Dlog4j.configurationFile=src/resources/log4j2.properties -cp '.:./target/scala-2.12/brbo-impl_2.12-0.1.jar:/usr/lib/jvm/jdk1.8.0_291/lib/tools.jar:/root/.sdkman/candidates/java/current/lib/tools.jar:lib/deps/*' brbo.BrboMain --directory /root/Documents/workspace/brbo2-impl/output/decomposed/stac/TemplateEngine.java --amortize transparent --icra-path /root/Documents/workspace/icra/icra --icra-timeout 60
+INFO  brbo.BrboMain - Brbo has started.
+INFO  brbo.BrboMain - Command line argument - Infer resource usage upper bounds for each method in each file `*.java` under directory `/root/Documents/workspace/brbo2-impl/output/decomposed/stac/TemplateEngine.java`
+INFO  brbo.BrboMain - Command line argument - Amortization mode: `TRANSPARENT_AMORTIZE`
+INFO  brbo.BrboMain - Command line argument - Debug mode? `false`
+INFO  brbo.BrboMain - Command line argument - Skip sanity check? `false`
+INFO  brbo.BrboMain - Command line argument - Print counter examples if cannot verify the bound? `false`
+INFO  brbo.BrboMain - Command line argument - Print inputs to ICRA? `false`
+INFO  brbo.BrboMain - Command line argument - ICRA's time out: `60` seconds
+INFO  brbo.BrboMain - Command line argument - Print CFG? `false`
+INFO  brbo.BrboMain - Command line argument - No bound check? `false`
+INFO  brbo.BrboMain - Command line argument - Check less precise bounds? `false`
+INFO  brbo.BrboMain - Command line argument - Generate `0` synthetic programs
+INFO  brbo.BrboMain - Command line argument - Icra path is `/root/Documents/workspace/icra/icra`
+WARN  brbo.BrboMain - We assume each class contains exactly one method
+INFO  brbo.BrboMain - Read from source file `/root/Documents/workspace/brbo2-impl/output/decomposed/stac/TemplateEngine.java`
+INFO  brbo.BrboMain - Group programs based on the inner most package names
+INFO  brbo.BrboMain - Run Brbo on files in package `stac`
+INFO  brbo.BrboMain - Run Brbo on programs in batches. Batch size: `100`
+INFO  brbo.BrboMain - Run `0`-th batch`: 000-099
+INFO  brbo.BrboMain - Verify `0`-th input file. Progress: 0.00%
+INFO  brbo.BrboMain - Phase 1: Decompose
+INFO  brbo.BrboMain - Decompose file `/root/Documents/workspace/brbo2-impl/output/decomposed/stac/TemplateEngine.java`
+INFO  brbo.BrboMain - Class name: `.root.Documents.workspace.brbo2-impl.output.decomposed.stac.TemplateEngine`
+INFO  brbo.BrboMain - Parsing...
+INFO  brbo.boundinference.CounterAxiomGenerator - Attach unique counters to AST nodes
+INFO  brbo.verification.decomposition.Decomposition - Decomposing... Mode: `TRANSPARENT_AMORTIZE`
+INFO  brbo.verification.decomposition.Decomposition - Inserting resets and updates to ghost variables... Mode: `TRANSPARENT_AMORTIZE`
+ERROR brbo.verification.decomposition.Decomposition - Map(Group(Some(int D0 = 0),List()) -> DeltaCounterPair(D0,C0))
+New body:
+  {
+
+    int BOOLEAN_SEPARATOR = 8;
+    int C0 = -1;
+    int D0 = 0;
+    int D0p = 0;
+    int temporaryText = 0;
+    int lastIndexOfText = 0;
+    lessPreciseBound(((0 + (D0 + (D0p * (C0 - 1)))) < ((8 * text) + 8)) || ((0 + (D0 + (D0p * (C0 - 1)))) == ((8 * text) + 8)));
+    mostPreciseBound(((0 + (D0 + (D0p * (C0 - 1)))) < text) || ((0 + (D0 + (D0p * (C0 - 1)))) == text));
+    if ((text < 1) || (text == 1))
+    {
+      return;
+    }
+    else
+    {
+      ;
+    }
+    int chunk = 0;
+    int i = 0;
+    while (i < text)
+    {
+      {
+        temporaryText = ndInt2(lastIndexOfText, text);
+        chunk = temporaryText - lastIndexOfText;
+        lastIndexOfText = temporaryText;
+      }
+      D0 = D0 + chunk;
+      i = i + 1;
+    }
+  }
+INFO  brbo.verification.decomposition.DecompositionResult - Decomposition result (Mode: `TRANSPARENT_AMORTIZE`):
+
+abstract class TemplateEngine  {
+  void execute(int text)
+  {
+
+    int BOOLEAN_SEPARATOR = 8;
+    int C0 = -1;
+    int D0 = 0;
+    int D0p = 0;
+    int temporaryText = 0;
+    int lastIndexOfText = 0;
+    lessPreciseBound(((0 + (D0 + (D0p * (C0 - 1)))) < ((8 * text) + 8)) || ((0 + (D0 + (D0p * (C0 - 1)))) == ((8 * text) + 8)));
+    mostPreciseBound(((0 + (D0 + (D0p * (C0 - 1)))) < text) || ((0 + (D0 + (D0p * (C0 - 1)))) == text));
+    if ((text < 1) || (text == 1))
+    {
+      return;
+    }
+    else
+    {
+      ;
+    }
+    int chunk = 0;
+    int i = 0;
+    while (i < text)
+    {
+      {
+        temporaryText = ndInt2(lastIndexOfText, text);
+        chunk = temporaryText - lastIndexOfText;
+        lastIndexOfText = temporaryText;
+      }
+      D0 = D0 + chunk;
+      i = i + 1;
+    }
+  }
+  // Declare these methods such that these generated code can be parsed
+  // Keep in sync with brbo2
+  public abstract int ndInt();
+  public abstract int ndInt2(int lower, int upper);
+  public abstract boolean ndBool();
+  public abstract void assume(boolean expression);
+  public abstract void mostPreciseBound(boolean assertion);
+  public abstract void lessPreciseBound(boolean assertion);
+}
+INFO  brbo.BrboMain - Phase 2: Bound check
+INFO  brbo.BrboMain - 
+INFO  brbo.BrboMain - 
+INFO  brbo.BrboMain - Check bound for `0`-th decomposition result
+INFO  brbo.verification.BoundChecking - Extract the most precise bound
+INFO  brbo.BrboMain - Extracted bound expression is `(let ((a!1 (< (+ 0 D0 (* D0p (- C0 1))) text))
+      (a!2 (= (+ 0 D0 (* D0p (- C0 1))) text)))
+  (or a!1 a!2))`
+INFO  brbo.verification.BoundChecking - Check bound (Mode: `TRANSPARENT_AMORTIZE`)
+INFO  brbo.verification.BoundChecking - Verify bound `(let ((a!1 (< (+ 0 D0 (* D0p (- C0 1))) text))
+      (a!2 (= (+ 0 D0 (* D0p (- C0 1))) text)))
+  (or a!1 a!2))` in method `execute` of class `.root.Documents.workspace.brbo2-impl.output.decomposed.stac.TemplateEngine`
+INFO  brbo.verification.BoundChecking - Resource variables: Map()
+INFO  brbo.boundinference.CounterAxiomGenerator - Attach unique counters to AST nodes
+INFO  brbo.common.BoundInference - Max coefficient: `8`
+INFO  brbo.verification.BoundChecking - Infer invariant for the peak value of delta variable `D0`. Max degree: `1`
+INFO  brbo.verification.BoundChecking - Infer invariant for the accumulation of delta variable `D0` (per visit to its subprogram). Max degree: `1`
+INFO  brbo.verification.BoundChecking - Infer invariants for AST counter `C0` with ICRA. Max degree: `3`
+ERROR brbo.common.BoundInference - Infer bound `(<= D0p 0)` for variable `D0p`
+ERROR brbo.common.BoundInference - Infer bound `(<= D0 (+ 0 (* 1 1 text)))` for variable `D0`
+ERROR brbo.common.BoundInference - Infer bound `(<= C0 0)` for variable `C0`
+INFO  brbo.verification.BoundChecking - Inductive invariant:
+(let ((a!1 (* (ite (>= (- C0 1) 0) (- C0 1) 0) D0p)))
+  (<= 0 (+ D0 a!1)))
+INFO  brbo.verification.BoundChecking - Not provide counter axioms
+INFO  brbo.verification.BoundChecking - Assert the delta prime variables are non-negative
+INFO  brbo.verification.BoundChecking - Sanity check - Invariants about resource variables should SAT
+INFO  brbo.verification.BoundChecking - Sanity check - Invariants about delta variables should SAT
+INFO  brbo.verification.BoundChecking - Sanity check - Invariants about counter variables should SAT
+INFO  brbo.verification.BoundChecking - Sanity check - Invariants about resource and delta variables should SAT
+INFO  brbo.verification.BoundChecking - Sanity check - Invariants about resource and counter variables should SAT
+INFO  brbo.verification.BoundChecking - Sanity check - Invariants about delta and counter variables should SAT
+INFO  brbo.verification.BoundChecking - Sanity check - Invariants about resource, delta, and counter variables should SAT
+INFO  brbo.verification.BoundChecking - Sanity check - The bound expression should SAT
+INFO  brbo.verification.BoundChecking - Sanity check finished
+INFO  brbo.verification.BoundChecking - Assert all int-typed input variables are positive
+INFO  brbo.verification.BoundChecking - Discharge bound check query to Z3
+INFO  brbo.verification.BoundChecking - Is bound `(let ((a!1 (< (+ 0 D0 (* D0p (- C0 1))) text))
+      (a!2 (= (+ 0 D0 (* D0p (- C0 1))) text)))
+  (or a!1 a!2))` verified? Yes! (Mode: `TRANSPARENT_AMORTIZE`; Class `.root.Documents.workspace.brbo2-impl.output.decomposed.stac.TemplateEngine`)
+INFO  brbo.BrboMain - Time consumption: `5.9` seconds
+INFO  brbo.BrboMain - Write results to files. Aggregate results only under mode `ALL_AMORTIZE`
+INFO  brbo.BrboMain - Write results to file `/root/Documents/workspace/brbo-impl/output/0128-1120-transparentAmortize-60s-mostPrecise/stac-raw-0128-1120-transparentAmortize-60s-mostPrecise-000-099.csv`
+
+real	0m7.734s
+user	0m17.014s
+sys	0m2.365s
+
+2023-01-28 11:20:54,129 INFO     Process file `/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java`
+2023-01-28 11:20:54,129 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `./scripts/run_deps.sh fuzz --timeout 60 --directory /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java --qfuzz /root/Documents/workspace/qfuzz/ --input /root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/seeds`
+2023-01-28 11:22:00,053 INFO     Done. Execution time: 65.9232439994812 seconds
+2023-01-28 11:22:00,053 INFO     Output: + java -Dlog4j.configurationFile=src/resources/log4j2.properties -cp '.:lib/deps/*:./target/scala-2.12/brbo2-impl_2.12-0.1.jar:/root/.sdkman/candidates/java/current/lib/tools.jar:/usr/lib/jvm/java-8-openjdk-amd64/lib/tools.jar' brbo.BrboMain fuzz --timeout 60 --directory /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java --qfuzz /root/Documents/workspace/qfuzz/ --input /root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/seeds
+INFO  brbo.BrboMain$ - brbo2 has started.
+WARN  brbo.BrboMain$ - We assume each class contains exactly one method named `execute`
+INFO  brbo.BrboMain$ - Read from source file `/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java`
+INFO  brbo.BrboMain$ - Group programs based on the inner most package names
+INFO  brbo.BrboMain$ - Run brbo2 on files in package `stac`
+INFO  brbo.BrboMain$ - Run brbo2 on programs in batches. Batch size: 100
+INFO  brbo.BrboMain$ - Run batch 0: 000-099
+INFO  brbo.BrboMain$ - 
+
+
+Process input file 0. Progress: 0.00%
+INFO  brbo.BrboMain$ - Process file /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java
+INFO  brbo.BrboMain$ - Class name: `brbo.benchmarks.sas22.stac.TemplateEngine2`
+INFO  brbo.backend2.qfuzz.Executor$ - Step 1: Prepare a QFuzz driver. Naive mode? false
+INFO  brbo.backend2.qfuzz.Executor$ - Step 1: Written into `/root/Documents/workspace/brbo2-impl/src/main/java/brbo/fuzz/drivers/TemplateEngine2QFuzzDriver.java`
+INFO  brbo.backend2.qfuzz.Executor$ - Step 2: Compile and instrument the QFuzz driver
+INFO  brbo.backend2.qfuzz.Executor$ - Step 2.1: Compile the QFuzz driver
+INFO  brbo.backend2.qfuzz.Executor$ - Execute `javac -cp .:/root/Documents/workspace/qfuzz//tool/instrumentor/build/libs/kelinci.jar /root/Documents/workspace/brbo2-impl/src/main/java/brbo/fuzz/drivers/TemplateEngine2QFuzzDriver.java -d /tmp/qfuzz227910558709767644/bin`
+INFO  brbo.backend2.qfuzz.Executor$ - Output:
+
+
+INFO  brbo.backend2.qfuzz.Executor$ - Step 2.2: Instrument the QFuzz driver
+INFO  brbo.backend2.qfuzz.Executor$ - Execute `java -cp .:/root/Documents/workspace/qfuzz//tool/instrumentor/build/libs/kelinci.jar edu.cmu.sv.kelinci.instrumentor.Instrumentor -mode LABELS -i /tmp/qfuzz227910558709767644/bin -o /tmp/qfuzz227910558709767644/bin-instr -skipmain`
+INFO  brbo.backend2.qfuzz.Executor$ - Output:
+Loading dir: /tmp/qfuzz227910558709767644/bin
+Found file /tmp/qfuzz227910558709767644/bin/brbo/fuzz/drivers/TemplateEngine2.class
+Found file /tmp/qfuzz227910558709767644/bin/brbo/fuzz/drivers/TemplateEngine2QFuzzDriver.class
+Instrumenting class: brbo/fuzz/drivers/TemplateEngine2QFuzzDriver.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/brbo/fuzz/drivers/TemplateEngine2QFuzzDriver.class
+Instrumenting class: brbo/fuzz/drivers/TemplateEngine2.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/brbo/fuzz/drivers/TemplateEngine2.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/Kelinci.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/Kelinci$1.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/Kelinci$2.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/Kelinci$3.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/Kelinci$ApplicationCall.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/Kelinci$FuzzRequest.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/Kelinci$NullOutputStream.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/Mem.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/quantification/PartitionSet.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/quantification/Partition.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/quantification/Pair.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/quantification/KDynamic.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/quantification/Greedy.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/quantification/PartitionAlgorithm.class
+File written: /tmp/qfuzz227910558709767644/bin-instr/edu/cmu/sv/kelinci/quantification/PartitionAlgorithmByIndex.class
+
+
+INFO  brbo.backend2.qfuzz.Executor$ - Step 3: Run Kelinci server. Timeout: 63 sec.
+INFO  brbo.backend2.qfuzz.Executor$ - Execute `java -cp .:/root/Documents/workspace/qfuzz//tool/instrumentor/build/libs/kelinci.jar:/tmp/qfuzz227910558709767644/bin-instr edu.cmu.sv.kelinci.Kelinci -K 100 brbo.fuzz.drivers.TemplateEngine2QFuzzDriver @@`
+INFO  brbo.backend2.qfuzz.Executor$ - Step 4: Run AFL. Output directory: /tmp/qfuzz227910558709767644/fuzzer-out. Timeout: 60 sec.
+INFO  brbo.backend2.qfuzz.Executor$ - Execute `sleep 3`
+INFO  brbo.backend2.qfuzz.Executor$ - Output:
+
+
+INFO  brbo.backend2.qfuzz.Executor$ - Execute `/root/Documents/workspace/qfuzz//tool/afl-2.51b-qfuzz/afl-fuzz -i /root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/seeds -o /tmp/qfuzz227910558709767644/fuzzer-out -c quantify -K 100 -S afl -t 60000 /root/Documents/workspace/qfuzz//tool/fuzzerside/interface -K 100 @@`
+INFO  brbo.backend2.qfuzz.Executor$ - Output:
+[0;36mafl-fuzz [1;97m2.51b[0m by <lcamtuf@google.com>
+[1;92m[+] [0m[SC-Quantify] Quantification of Side-Channels[0m
+[1;92m[+] [0mLooks like we're not running on a tty, so I'll be a bit less verbose.[0m
+[1;92m[+] [0mYou have 4 CPU cores and 1 runnable tasks (utilization: 25%).[0m
+[1;92m[+] [0mTry parallel jobs - see docs/parallel_fuzzing.txt.[0m
+[1;94m[*] [0mChecking CPU core loadout...[0m
+[1;92m[+] [0mFound a free CPU core, binding to #0.[0m
+[1;94m[*] [0mChecking core_pattern...[0m
+
+[1;91m[-] [0mHmm, your system is configured to send core dump notifications to an
+    external utility. This will cause issues: there will be an extended delay
+    between stumbling upon a crash and having this information relayed to the
+    fuzzer via the standard waitpid() API.
+
+    To avoid having crashes misinterpreted as timeouts, please log in as root
+    and temporarily modify /proc/sys/kernel/core_pattern, like so:
+
+    echo core >/proc/sys/kernel/core_pattern
+[1;94m[*] [0mSetting up output directories...[0m
+[1;94m[*] [0mScanning '/root/Documents/workspace/brbo2-impl/logs/timeout/20230128_10-27-15/seeds'...[0m
+[1;92m[+] [0mNo auto-generated dictionary tokens to reuse.[0m
+[1;94m[*] [0mCreating hard links for all input files...[0m
+[1;94m[*] [0mValidating target binary...[0m
+[1;94m[*] [0mAttempting dry run with 'id:000000,orig:seed_00.txt'...[0m
+[1;94m[*] [0mSpinning up the fork server...[0m
+[1;92m[+] [0mAll right - fork server is up.[0m
+[1;90m    len = 50, map size = 42, exec speed = 128768 us
+[0m[1;92m[+] [0mAll test cases processed.[0m
+
+[1;93m[!] [1;97mWARNING: [0m[1;91mThe target binary is pretty slow! See docs/perf_tips.txt.[0m
+[1;92m[+] [0mHere are some useful stats:
+
+[1;90m    Test case count : [0m1 favored, 0 variable, 1 total
+[1;90m       Bitmap range : [0m42 to 42 bits (average: 42.00 bits)
+[1;90m        Exec timing : [0m128k to 128k us (average: 128k us)
+[0m
+[1;92m[+] [0mAll set and ready to roll![0m
+[1;94m[*] [0mEntering queue cycle 1.[0m
+[1;94m[*] [0mFuzzing test case #0 (1 total, 0 uniq crashes found)...[0m
+
+
+INFO  brbo.backend2.qfuzz.Executor$ - QFuzz output:
+Time(sec); File; #Partitions; MinDelta; AvgPartitionValues
+1; /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000000,orig:seed_00.txt; 6; 8.00; [135.00,152.00,175.00,215.00,258.00,266.00]
+2; /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000001,src:000000,op:havoc,rep:4,+partition,+delta; 7; 3.00; [135.00,152.00,175.00,215.00,255.00,258.00,266.00]
+3; /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000002,src:000000,op:havoc,rep:8; 6; 6.00; [95.00,195.00,235.00,252.00,258.00,266.00]
+4; /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000003,src:000000,op:havoc,rep:8; 7; 3.00; [135.00,152.00,175.00,195.00,255.00,258.00,266.00]
+7; /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000004,src:000000,op:havoc,rep:8; 6; 8.00; [95.00,152.00,175.00,195.00,238.00,246.00]
+8; /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000005,src:000000,op:havoc,rep:16,+delta; 7; 6.00; [95.00,115.00,195.00,212.00,218.00,226.00,255.00]
+14; /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000006,src:000000,op:havoc,rep:32,+delta; 7; 8.00; [115.00,135.00,158.00,166.00,195.00,232.00,255.00]
+40; /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000007,src:000000,op:havoc,rep:4; 7; 8.00; [115.00,135.00,152.00,175.00,215.00,258.00,266.00]
+
+INFO  brbo.backend2.qfuzz.Executor$ - Ranked input files:
+/tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000007,src:000000,op:havoc,rep:4
+/tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000006,src:000000,op:havoc,rep:32,+delta
+/tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000005,src:000000,op:havoc,rep:16,+delta
+/tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000004,src:000000,op:havoc,rep:8
+/tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000003,src:000000,op:havoc,rep:8
+/tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000002,src:000000,op:havoc,rep:8
+/tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000001,src:000000,op:havoc,rep:4,+partition,+delta
+/tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000000,orig:seed_00.txt
+WARN  brbo.backend2.qfuzz.Executor$ - Must ensure the input seed provide sufficient amounts of data to be parsed as inputs
+INFO  brbo.backend2.qfuzz.Executor$ - Step 5: Parse the QFuzz-generated inputs
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000007,src:000000,op:havoc,rep:4
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(12, 6, 5, 10, 8, 9, 7, 6, 4, 11, 4, 4, 8, 5)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000006,src:000000,op:havoc,rep:32,+delta
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(7, 12, 9, 5, 6, 11, 11, 5, 7, 4, 7, 7, 6, 5, 6, 7, 9, 7, 12, 11, 11, 7, 7, 5, 9, 11, 11, 11, 7, 7, 9, 10, 11, 5, 7, 12, 11, 9, 5, 12, 8, 12)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000005,src:000000,op:havoc,rep:16,+delta
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(10, 12, 9, 4, 5, 11, 10, 11, 11, 11, 4, 9, 12, 11, 4, 8, 5, 4, 4, 10, 6, 12, 7, 5, 4, 8, 12, 4, 11, 7, 5, 10)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000004,src:000000,op:havoc,rep:8
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(11, 4, 9, 8, 8, 12, 7, 6, 5, 9, 12, 8, 12, 7, 6, 5, 9, 12, 8, 9, 5, 5, 10)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000003,src:000000,op:havoc,rep:8
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(12, 6, 8, 12, 9, 4, 7, 6, 7, 5, 11, 8, 8, 7, 12, 4, 5, 11, 4, 4, 12, 6, 4)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000002,src:000000,op:havoc,rep:8
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(12, 11, 4, 9, 4, 9, 12, 8, 4, 8)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000001,src:000000,op:havoc,rep:4,+partition,+delta
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(12, 6, 12, 10, 8, 8, 7, 6, 4, 11, 4, 4, 8, 7, 12, 7, 6, 5, 11, 12, 5, 8, 7, 7, 10)
+INFO  brbo.backend2.qfuzz.Executor$ - Read shorts that are between [4, 12] from /tmp/qfuzz227910558709767644/fuzzer-out/afl/queue/id:000000,orig:seed_00.txt
+INFO  brbo.backend2.qfuzz.Executor$ - Inputs: List(12, 6, 8, 10, 8, 8, 7, 6, 4, 11, 4, 4, 8, 7, 12, 7, 6, 5, 11, 12, 4, 4, 7, 5, 10)
+INFO  brbo.backend2.qfuzz.Executor$ - Step 6: Write interesting inputs (with descending interestingness) into file /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2_fuzzing.json
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [12,6,5,10,8], 2, 7
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [7,12,9,5,6], 2, 11
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [10,12,9,4,5], 2, 10
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [11,4,9,8,8], 2, 7
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [12,6,8,12,9], 2, 7
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [12,11,4,9,4], 2, 12
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [12,6,12,10,8], 2, 7
+INFO  brbo.backend2.qfuzz.Executor$ - Interesting input: [12,6,8,10,8], 2, 7
+INFO  brbo.backend2.qfuzz.Executor$ - Step 7: Clean up the generated files when running QFuzz
+
+real	1m5.915s
+user	0m24.022s
+sys	0m1.637s
+
+2023-01-28 11:22:00,053 INFO     Remove the expected decomposition `/root/Documents/workspace/brbo2-impl/output/decomposed/stac/TemplateEngine2.java`
+2023-01-28 11:22:00,053 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `./scripts/run_deps.sh decompose --threads 4 --debug --algorithm optics --parameter 0.1 --samples 0 --directory /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java`
+2023-01-28 11:22:09,471 INFO     Done. Execution time: 9.417954444885254 seconds
+2023-01-28 11:22:09,472 INFO     Output: + java -Dlog4j.configurationFile=src/resources/log4j2.properties -cp '.:lib/deps/*:./target/scala-2.12/brbo2-impl_2.12-0.1.jar:/root/.sdkman/candidates/java/current/lib/tools.jar:/usr/lib/jvm/java-8-openjdk-amd64/lib/tools.jar' brbo.BrboMain decompose --threads 4 --debug --algorithm optics --parameter 0.1 --samples 0 --directory /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java
+INFO  brbo.BrboMain$ - brbo2 has started.
+WARN  brbo.BrboMain$ - We assume each class contains exactly one method named `execute`
+INFO  brbo.BrboMain$ - Read from source file `/root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java`
+INFO  brbo.BrboMain$ - Group programs based on the inner most package names
+INFO  brbo.BrboMain$ - Run brbo2 on files in package `stac`
+INFO  brbo.BrboMain$ - Run brbo2 on programs in batches. Batch size: 100
+INFO  brbo.BrboMain$ - Run batch 0: 000-099
+INFO  brbo.BrboMain$ - 
+
+
+Process input file 0. Progress: 0.00%
+INFO  brbo.BrboMain$ - Process file /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java
+INFO  brbo.BrboMain$ - Class name: `brbo.benchmarks.sas22.stac.TemplateEngine2`
+INFO  brbo.BrboMain$ - Parsing...
+INFO  brbo.backend2.DecompositionDriver - Step 0: Insert reset place holders
+INFO  brbo.backend2.DecompositionDriver - Step 0: Find classifier features {i, j, templateds}
+INFO  brbo.backend2.DecompositionDriver - Step 1: Generate traces
+INFO  brbo.backend2.DecompositionDriver - Step 1.1: User-provided inputs (size 0)
+INFO  brbo.backend2.Fuzzer$ - [Fuzzing TemplateEngine2] Generated `0` inputs
+INFO  brbo.backend2.DecompositionDriver - Step 1.2: Fuzzer generated inputs (size 0)
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([7,12,9,5,6], 2, 11)
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([12,6,5,10,8], 2, 7)
+INFO  brbo.backend2.interpreter.Interpreter$ - Progress: 0 / 8 (0.00%)
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([10,12,9,4,5], 2, 10)
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([11,4,9,8,8], 2, 7)
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([12,6,8,12,9], 2, 7)
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([12,11,4,9,4], 2, 12)
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([12,6,12,10,8], 2, 7)
+INFO  brbo.backend2.interpreter.Interpreter$ - Generate a trace with inputs: List([12,6,8,10,8], 2, 7)
+INFO  brbo.backend2.DecompositionDriver - Step 1.3: QFuzz generated inputs (size 8)
+INFO  brbo.backend2.DecompositionDriver - Step 2: Select representative traces
+INFO  brbo.backend2.learning.TracePartition$ - Step 2: Assume all traces are similar
+INFO  brbo.backend2.learning.TracePartition$ - Step 2: Select representatives from qfuzz generated traces
+INFO  brbo.backend2.learning.TracePartition$ - Choose traces within range Vector(0) from 8 traces
+INFO  brbo.backend2.DecompositionDriver - Step 3: Decompose 1 selected traces
+INFO  brbo.backend2.DecompositionDriver - Step 3.1: Decompose 0-th representative trace
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+INFO  brbo.backend2.DecompositionDriver - Step 3.1: Trace (length 208):
+                                                                                                                                     
+ Index  |              Commands               |  Costs  |  R   |  chunk  |  i  |  j  |  separator  |  templateds  |      text       |
+-------------------------------------------------------------------------------------------------------------------------------------
+     2  |                         int R = 0;  |         |   0  |         |     |     |          7  |           2  |  [12,6,5,10,8]  |
+    26  |                      // int R = 0;  |         |   0  |         |     |     |          7  |           2  |  [12,6,5,10,8]  |
+    27  |  // mostPreciseBound(R <= array...  |         |   0  |         |     |     |          7  |           2  |  [12,6,5,10,8]  |
+    28  |  // lessPreciseBound(R <= MAX *...  |         |   0  |         |     |     |          7  |           2  |  [12,6,5,10,8]  |
+    30  |                     int chunk = 0;  |         |   0  |      0  |     |     |          7  |           2  |  [12,6,5,10,8]  |
+    32  |                         int i = 0;  |         |   0  |      0  |  0  |     |          7  |           2  |  [12,6,5,10,8]  |
+    37  |                         int j = 0;  |         |   0  |      0  |  0  |  0  |          7  |           2  |  [12,6,5,10,8]  |
+    43  |        chunk = arrayRead(text, j);  |         |   0  |     12  |  0  |  0  |          7  |           2  |  [12,6,5,10,8]  |
+    46  |                     R = R + chunk;  |     12  |  12  |     12  |  0  |  0  |          7  |           2  |  [12,6,5,10,8]  |
+    50  |                         j = j + 1;  |         |  12  |     12  |  0  |  1  |          7  |           2  |  [12,6,5,10,8]  |
+    51  |              resetPlaceHolder_2();  |         |  12  |     12  |  0  |  1  |          7  |           2  |  [12,6,5,10,8]  |
+    57  |        chunk = arrayRead(text, j);  |         |  12  |      6  |  0  |  1  |          7  |           2  |  [12,6,5,10,8]  |
+    60  |                     R = R + chunk;  |      6  |  18  |      6  |  0  |  1  |          7  |           2  |  [12,6,5,10,8]  |
+    64  |                         j = j + 1;  |         |  18  |      6  |  0  |  2  |          7  |           2  |  [12,6,5,10,8]  |
+    65  |              resetPlaceHolder_2();  |         |  18  |      6  |  0  |  2  |          7  |           2  |  [12,6,5,10,8]  |
+    71  |        chunk = arrayRead(text, j);  |         |  18  |      5  |  0  |  2  |          7  |           2  |  [12,6,5,10,8]  |
+    74  |                     R = R + chunk;  |      5  |  23  |      5  |  0  |  2  |          7  |           2  |  [12,6,5,10,8]  |
+    78  |                         j = j + 1;  |         |  23  |      5  |  0  |  3  |          7  |           2  |  [12,6,5,10,8]  |
+    79  |              resetPlaceHolder_2();  |         |  23  |      5  |  0  |  3  |          7  |           2  |  [12,6,5,10,8]  |
+    85  |        chunk = arrayRead(text, j);  |         |  23  |     10  |  0  |  3  |          7  |           2  |  [12,6,5,10,8]  |
+    88  |                     R = R + chunk;  |     10  |  33  |     10  |  0  |  3  |          7  |           2  |  [12,6,5,10,8]  |
+    92  |                         j = j + 1;  |         |  33  |     10  |  0  |  4  |          7  |           2  |  [12,6,5,10,8]  |
+    93  |              resetPlaceHolder_2();  |         |  33  |     10  |  0  |  4  |          7  |           2  |  [12,6,5,10,8]  |
+    99  |        chunk = arrayRead(text, j);  |         |  33  |      8  |  0  |  4  |          7  |           2  |  [12,6,5,10,8]  |
+   102  |                     R = R + chunk;  |      8  |  41  |      8  |  0  |  4  |          7  |           2  |  [12,6,5,10,8]  |
+   106  |                         j = j + 1;  |         |  41  |      8  |  0  |  5  |          7  |           2  |  [12,6,5,10,8]  |
+   107  |              resetPlaceHolder_2();  |         |  41  |      8  |  0  |  5  |          7  |           2  |  [12,6,5,10,8]  |
+   113  |                 R = R + separator;  |      7  |  48  |      8  |  0  |  5  |          7  |           2  |  [12,6,5,10,8]  |
+   117  |                         i = i + 1;  |         |  48  |      8  |  1  |  5  |          7  |           2  |  [12,6,5,10,8]  |
+   118  |              resetPlaceHolder_1();  |         |  48  |      8  |  1  |  5  |          7  |           2  |  [12,6,5,10,8]  |
+   123  |                         int j = 0;  |         |  48  |      8  |  1  |  0  |          7  |           2  |  [12,6,5,10,8]  |
+   129  |        chunk = arrayRead(text, j);  |         |  48  |     12  |  1  |  0  |          7  |           2  |  [12,6,5,10,8]  |
+   132  |                     R = R + chunk;  |     12  |  60  |     12  |  1  |  0  |          7  |           2  |  [12,6,5,10,8]  |
+   136  |                         j = j + 1;  |         |  60  |     12  |  1  |  1  |          7  |           2  |  [12,6,5,10,8]  |
+   137  |              resetPlaceHolder_2();  |         |  60  |     12  |  1  |  1  |          7  |           2  |  [12,6,5,10,8]  |
+   143  |        chunk = arrayRead(text, j);  |         |  60  |      6  |  1  |  1  |          7  |           2  |  [12,6,5,10,8]  |
+   146  |                     R = R + chunk;  |      6  |  66  |      6  |  1  |  1  |          7  |           2  |  [12,6,5,10,8]  |
+   150  |                         j = j + 1;  |         |  66  |      6  |  1  |  2  |          7  |           2  |  [12,6,5,10,8]  |
+   151  |              resetPlaceHolder_2();  |         |  66  |      6  |  1  |  2  |          7  |           2  |  [12,6,5,10,8]  |
+   157  |        chunk = arrayRead(text, j);  |         |  66  |      5  |  1  |  2  |          7  |           2  |  [12,6,5,10,8]  |
+   160  |                     R = R + chunk;  |      5  |  71  |      5  |  1  |  2  |          7  |           2  |  [12,6,5,10,8]  |
+   164  |                         j = j + 1;  |         |  71  |      5  |  1  |  3  |          7  |           2  |  [12,6,5,10,8]  |
+   165  |              resetPlaceHolder_2();  |         |  71  |      5  |  1  |  3  |          7  |           2  |  [12,6,5,10,8]  |
+   171  |        chunk = arrayRead(text, j);  |         |  71  |     10  |  1  |  3  |          7  |           2  |  [12,6,5,10,8]  |
+   174  |                     R = R + chunk;  |     10  |  81  |     10  |  1  |  3  |          7  |           2  |  [12,6,5,10,8]  |
+   178  |                         j = j + 1;  |         |  81  |     10  |  1  |  4  |          7  |           2  |  [12,6,5,10,8]  |
+   179  |              resetPlaceHolder_2();  |         |  81  |     10  |  1  |  4  |          7  |           2  |  [12,6,5,10,8]  |
+   185  |        chunk = arrayRead(text, j);  |         |  81  |      8  |  1  |  4  |          7  |           2  |  [12,6,5,10,8]  |
+   188  |                     R = R + chunk;  |      8  |  89  |      8  |  1  |  4  |          7  |           2  |  [12,6,5,10,8]  |
+   192  |                         j = j + 1;  |         |  89  |      8  |  1  |  5  |          7  |           2  |  [12,6,5,10,8]  |
+   193  |              resetPlaceHolder_2();  |         |  89  |      8  |  1  |  5  |          7  |           2  |  [12,6,5,10,8]  |
+   199  |                 R = R + separator;  |      7  |  96  |      8  |  1  |  5  |          7  |           2  |  [12,6,5,10,8]  |
+   203  |                         i = i + 1;  |         |  96  |      8  |  2  |  5  |          7  |           2  |  [12,6,5,10,8]  |
+   204  |              resetPlaceHolder_1();  |         |  96  |      8  |  2  |  5  |          7  |           2  |  [12,6,5,10,8]  |
+INFO  brbo.backend2.learning.SegmentClustering - --------------------------------------------------------------------------------
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.1: Cluster segments with length 1
+ERROR brbo.backend2.learning.SegmentClustering - Choose segments with sizes of 1 among 12 trace node indices: [88, 174, 46, 132, 74, 60, 102, 160, 188, 113, 199, 146]
+INFO  brbo.backend2.learning.SegmentClustering - Clustered similar segments: Found 6 segment clusters
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 0-th cluster (segment length: 1)
+INFO  brbo.backend2.learning.SegmentClustering - Segment 0: {102}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 1: {188}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.3: Choose non-overlapping segments from 0-th cluster
+INFO  brbo.backend2.learning.SegmentClustering - Initially found 1 possible groups (or non-overlapping sets of segments)
+INFO  brbo.backend2.learning.SegmentClustering - Remove groups with a single segment, since a single segment does not constitute a pattern
+INFO  brbo.backend2.learning.SegmentClustering - Group 0: {102}; {188}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.4: Filter groups
+INFO  brbo.backend2.learning.SegmentClustering - Concrete array indices List(Set(4), Set(4)) inside group groupString
+INFO  brbo.backend2.learning.SegmentClustering - Removed group {102}; {188}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 1-th cluster (segment length: 1)
+INFO  brbo.backend2.learning.SegmentClustering - Segment 0: {113}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 1: {199}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.3: Choose non-overlapping segments from 1-th cluster
+INFO  brbo.backend2.learning.SegmentClustering - Initially found 1 possible groups (or non-overlapping sets of segments)
+INFO  brbo.backend2.learning.SegmentClustering - Remove groups with a single segment, since a single segment does not constitute a pattern
+INFO  brbo.backend2.learning.SegmentClustering - Group 0: {113}; {199}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.4: Filter groups
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.5: Chosen group: {113}; {199} on trace:
+                                                                          
+ Index  |        Commands         |  Costs  |  SegmentIDs in PrintGroup  |
+--------------------------------------------------------------------------
+    46  |         R = R + chunk;  |     12  |                            |
+    51  |  resetPlaceHolder_2();  |         |                            |
+    60  |         R = R + chunk;  |      6  |                            |
+    65  |  resetPlaceHolder_2();  |         |                            |
+    74  |         R = R + chunk;  |      5  |                            |
+    79  |  resetPlaceHolder_2();  |         |                            |
+    88  |         R = R + chunk;  |     10  |                            |
+    93  |  resetPlaceHolder_2();  |         |                            |
+   102  |         R = R + chunk;  |      8  |                            |
+   107  |  resetPlaceHolder_2();  |         |                            |
+   113  |     R = R + separator;  |      7  |                         0  |
+   118  |  resetPlaceHolder_1();  |         |                            |
+   132  |         R = R + chunk;  |     12  |                            |
+   137  |  resetPlaceHolder_2();  |         |                            |
+   146  |         R = R + chunk;  |      6  |                            |
+   151  |  resetPlaceHolder_2();  |         |                            |
+   160  |         R = R + chunk;  |      5  |                            |
+   165  |  resetPlaceHolder_2();  |         |                            |
+   174  |         R = R + chunk;  |     10  |                            |
+   179  |  resetPlaceHolder_2();  |         |                            |
+   188  |         R = R + chunk;  |      8  |                            |
+   193  |  resetPlaceHolder_2();  |         |                            |
+   199  |     R = R + separator;  |      7  |                         1  |
+   204  |  resetPlaceHolder_1();  |         |                            |
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 2-th cluster (segment length: 1)
+INFO  brbo.backend2.learning.SegmentClustering - Segment 0: {132}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 1: {46}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.3: Choose non-overlapping segments from 2-th cluster
+INFO  brbo.backend2.learning.SegmentClustering - Initially found 1 possible groups (or non-overlapping sets of segments)
+INFO  brbo.backend2.learning.SegmentClustering - Remove groups with a single segment, since a single segment does not constitute a pattern
+INFO  brbo.backend2.learning.SegmentClustering - Group 0: {132}; {46}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.4: Filter groups
+INFO  brbo.backend2.learning.SegmentClustering - Concrete array indices List(Set(0), Set(0)) inside group groupString
+INFO  brbo.backend2.learning.SegmentClustering - Removed group {132}; {46}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 3-th cluster (segment length: 1)
+INFO  brbo.backend2.learning.SegmentClustering - Segment 0: {146}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 1: {60}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.3: Choose non-overlapping segments from 3-th cluster
+INFO  brbo.backend2.learning.SegmentClustering - Initially found 1 possible groups (or non-overlapping sets of segments)
+INFO  brbo.backend2.learning.SegmentClustering - Remove groups with a single segment, since a single segment does not constitute a pattern
+INFO  brbo.backend2.learning.SegmentClustering - Group 0: {146}; {60}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.4: Filter groups
+INFO  brbo.backend2.learning.SegmentClustering - Concrete array indices List(Set(1), Set(1)) inside group groupString
+INFO  brbo.backend2.learning.SegmentClustering - Removed group {146}; {60}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 4-th cluster (segment length: 1)
+INFO  brbo.backend2.learning.SegmentClustering - Segment 0: {160}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 1: {74}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.3: Choose non-overlapping segments from 4-th cluster
+INFO  brbo.backend2.learning.SegmentClustering - Initially found 1 possible groups (or non-overlapping sets of segments)
+INFO  brbo.backend2.learning.SegmentClustering - Remove groups with a single segment, since a single segment does not constitute a pattern
+INFO  brbo.backend2.learning.SegmentClustering - Group 0: {160}; {74}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.4: Filter groups
+INFO  brbo.backend2.learning.SegmentClustering - Concrete array indices List(Set(2), Set(2)) inside group groupString
+INFO  brbo.backend2.learning.SegmentClustering - Removed group {160}; {74}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 5-th cluster (segment length: 1)
+INFO  brbo.backend2.learning.SegmentClustering - Segment 0: {174}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 1: {88}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.3: Choose non-overlapping segments from 5-th cluster
+INFO  brbo.backend2.learning.SegmentClustering - Initially found 1 possible groups (or non-overlapping sets of segments)
+INFO  brbo.backend2.learning.SegmentClustering - Remove groups with a single segment, since a single segment does not constitute a pattern
+INFO  brbo.backend2.learning.SegmentClustering - Group 0: {174}; {88}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.4: Filter groups
+INFO  brbo.backend2.learning.SegmentClustering - Concrete array indices List(Set(3), Set(3)) inside group groupString
+INFO  brbo.backend2.learning.SegmentClustering - Removed group {174}; {88}
+INFO  brbo.backend2.learning.SegmentClustering - --------------------------------------------------------------------------------
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.1: Cluster segments with length 2
+ERROR brbo.backend2.learning.SegmentClustering - Choose segments with sizes of 2 among 10 trace node indices: [88, 174, 46, 132, 74, 60, 102, 160, 188, 146]
+INFO  brbo.backend2.learning.SegmentClustering - Clustered similar segments: Found 9 segment clusters
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 0-th cluster (segment length: 2)
+INFO  brbo.backend2.learning.SegmentClustering - Segment 0: {102,132}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 1: {132,188}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 2: {46,102}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 3: {46,188}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 4: {88,174}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.3: Choose non-overlapping segments from 0-th cluster
+INFO  brbo.backend2.learning.SegmentClustering - Initially found 4 possible groups (or non-overlapping sets of segments)
+INFO  brbo.backend2.learning.SegmentClustering - Remove groups with a single segment, since a single segment does not constitute a pattern
+INFO  brbo.backend2.learning.SegmentClustering - Group 0: {132,188}; {46,102}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.4: Filter groups
+INFO  brbo.backend2.learning.SegmentClustering - Concrete array indices List(Set(0, 4), Set(0, 4)) inside group groupString
+INFO  brbo.backend2.learning.SegmentClustering - Removed group {132,188}; {46,102}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 1-th cluster (segment length: 2)
+INFO  brbo.backend2.learning.SegmentClustering - Segment 0: {102,146}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 1: {146,188}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 2: {60,102}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 3: {60,188}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.3: Choose non-overlapping segments from 1-th cluster
+INFO  brbo.backend2.learning.SegmentClustering - Initially found 3 possible groups (or non-overlapping sets of segments)
+INFO  brbo.backend2.learning.SegmentClustering - Remove groups with a single segment, since a single segment does not constitute a pattern
+INFO  brbo.backend2.learning.SegmentClustering - Group 0: {146,188}; {60,102}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.4: Filter groups
+INFO  brbo.backend2.learning.SegmentClustering - Concrete array indices List(Set(1, 4), Set(1, 4)) inside group groupString
+INFO  brbo.backend2.learning.SegmentClustering - Removed group {146,188}; {60,102}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 2-th cluster (segment length: 2)
+INFO  brbo.backend2.learning.SegmentClustering - Segment 0: {102,160}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 1: {160,188}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 2: {74,102}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 3: {74,188}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.3: Choose non-overlapping segments from 2-th cluster
+INFO  brbo.backend2.learning.SegmentClustering - Initially found 3 possible groups (or non-overlapping sets of segments)
+INFO  brbo.backend2.learning.SegmentClustering - Remove groups with a single segment, since a single segment does not constitute a pattern
+INFO  brbo.backend2.learning.SegmentClustering - Group 0: {160,188}; {74,102}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.4: Filter groups
+INFO  brbo.backend2.learning.SegmentClustering - Concrete array indices List(Set(2, 4), Set(2, 4)) inside group groupString
+INFO  brbo.backend2.learning.SegmentClustering - Removed group {160,188}; {74,102}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 3-th cluster (segment length: 2)
+INFO  brbo.backend2.learning.SegmentClustering - Segment 0: {102,174}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 1: {132,146}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 2: {174,188}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 3: {46,146}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 4: {46,60}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 5: {60,132}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 6: {88,102}
+INFO  brbo.backend2.learning.SegmentClustering - Segment 7: {88,188}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.3: Choose non-overlapping segments from 3-th cluster
+INFO  brbo.backend2.learning.SegmentClustering - Initially found 5 possible groups (or non-overlapping sets of segments)
+INFO  brbo.backend2.learning.SegmentClustering - Remove groups with a single segment, since a single segment does not constitute a pattern
+INFO  brbo.backend2.learning.SegmentClustering - Group 0: {174,188}; {60,132}
+INFO  brbo.backend2.learning.SegmentClustering - Group 1: {132,146}; {174,188}; {46,60}; {88,102}
+INFO  brbo.backend2.learning.SegmentClustering - Group 2: {174,188}; {46,146}
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.4: Filter groups
+INFO  brbo.backend2.learning.SegmentClustering - Concrete array indices List(Set(1, 0), Set(3, 4)) inside group groupString
+INFO  brbo.backend2.learning.SegmentClustering - Concrete array indices List(Set(0, 1), Set(3, 4), Set(0, 1), Set(3, 4)) inside group groupString
+INFO  brbo.backend2.learning.SegmentClustering - Concrete array indices List(Set(0, 1), Set(3, 4)) inside group groupString
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.5: Chosen group: {132,146}; {174,188}; {46,60}; {88,102} on trace:
+                                                                          
+ Index  |        Commands         |  Costs  |  SegmentIDs in PrintGroup  |
+--------------------------------------------------------------------------
+    46  |         R = R + chunk;  |     12  |                         0  |
+    51  |  resetPlaceHolder_2();  |         |                            |
+    60  |         R = R + chunk;  |      6  |                         0  |
+    65  |  resetPlaceHolder_2();  |         |                            |
+    74  |         R = R + chunk;  |      5  |                            |
+    79  |  resetPlaceHolder_2();  |         |                            |
+    88  |         R = R + chunk;  |     10  |                         1  |
+    93  |  resetPlaceHolder_2();  |         |                            |
+   102  |         R = R + chunk;  |      8  |                         1  |
+   107  |  resetPlaceHolder_2();  |         |                            |
+   113  |     R = R + separator;  |      7  |                            |
+   118  |  resetPlaceHolder_1();  |         |                            |
+   132  |         R = R + chunk;  |     12  |                         2  |
+   137  |  resetPlaceHolder_2();  |         |                            |
+   146  |         R = R + chunk;  |      6  |                         2  |
+   151  |  resetPlaceHolder_2();  |         |                            |
+   160  |         R = R + chunk;  |      5  |                            |
+   165  |  resetPlaceHolder_2();  |         |                            |
+   174  |         R = R + chunk;  |     10  |                         3  |
+   179  |  resetPlaceHolder_2();  |         |                            |
+   188  |         R = R + chunk;  |      8  |                         3  |
+   193  |  resetPlaceHolder_2();  |         |                            |
+   199  |     R = R + separator;  |      7  |                            |
+   204  |  resetPlaceHolder_1();  |         |                            |
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 4-th cluster (segment length: 2)
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 5-th cluster (segment length: 2)
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 6-th cluster (segment length: 2)
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 7-th cluster (segment length: 2)
+INFO  brbo.backend2.learning.SegmentClustering - Step 3.1.2: Visit 8-th cluster (segment length: 2)
+INFO  brbo.backend2.DecompositionDriver - Step 3.1: Selected decomposition:
+GroupID(0): {113}; {199}
+GroupID(1): {132,146}; {174,188}; {46,60}; {88,102}
+GroupID(2): {74,160}
+                                                                                                                                    
+ Index  |        Commands         |  Costs  |  SegmentIDs in GroupID(0)  |  SegmentIDs in GroupID(1)  |  SegmentIDs in GroupID(2)  |
+------------------------------------------------------------------------------------------------------------------------------------
+    46  |         R = R + chunk;  |     12  |                            |                         0  |                            |
+    51  |  resetPlaceHolder_2();  |         |                            |                            |                            |
+    60  |         R = R + chunk;  |      6  |                            |                         0  |                            |
+    65  |  resetPlaceHolder_2();  |         |                            |                            |                            |
+    74  |         R = R + chunk;  |      5  |                            |                            |                         0  |
+    79  |  resetPlaceHolder_2();  |         |                            |                            |                            |
+    88  |         R = R + chunk;  |     10  |                            |                         1  |                            |
+    93  |  resetPlaceHolder_2();  |         |                            |                            |                            |
+   102  |         R = R + chunk;  |      8  |                            |                         1  |                            |
+   107  |  resetPlaceHolder_2();  |         |                            |                            |                            |
+   113  |     R = R + separator;  |      7  |                         0  |                            |                            |
+   118  |  resetPlaceHolder_1();  |         |                            |                            |                            |
+   132  |         R = R + chunk;  |     12  |                            |                         2  |                            |
+   137  |  resetPlaceHolder_2();  |         |                            |                            |                            |
+   146  |         R = R + chunk;  |      6  |                            |                         2  |                            |
+   151  |  resetPlaceHolder_2();  |         |                            |                            |                            |
+   160  |         R = R + chunk;  |      5  |                            |                            |                         0  |
+   165  |  resetPlaceHolder_2();  |         |                            |                            |                            |
+   174  |         R = R + chunk;  |     10  |                            |                         3  |                            |
+   179  |  resetPlaceHolder_2();  |         |                            |                            |                            |
+   188  |         R = R + chunk;  |      8  |                            |                         3  |                            |
+   193  |  resetPlaceHolder_2();  |         |                            |                            |                            |
+   199  |     R = R + separator;  |      7  |                         1  |                            |                            |
+   204  |  resetPlaceHolder_1();  |         |                            |                            |                            |
+INFO  brbo.backend2.DecompositionDriver - Step 3.2: (TODO) Select reset locations for the groups
+INFO  brbo.common.ast.ResetPlaceHolder$ - Reset place holder candidates:
+GroupID(0): resetPlaceHolder_1();
+GroupID(1): resetPlaceHolder_2();
+GroupID(2): resetPlaceHolder_2();
+INFO  brbo.common.ast.ResetPlaceHolder$ - Reset place holder locations:
+GroupID(0): Set(118)
+GroupID(1): Set(65, 107, 151)
+GroupID(2): Set()
+INFO  brbo.backend2.DecompositionDriver - Step 3.3: Generate tables for training classifiers
+INFO  brbo.backend2.DecompositionDriver - Step 3.4: Generate classifiers on the tables
+INFO  brbo.backend2.DecompositionDriver - Step 3.5: Generate program transformations
+INFO  brbo.backend2.DecompositionDriver - See below for a mapping from existing ASTs to new ASTs
+use R separator -> R0 = R0 + separator;
+resetPlaceHolder_1(); -> {
+  // reset R2
+  // reset R1
+  if (S0 < R0)
+  {
+    S0 = R0;
+  }
+  else
+  {
+    ;
+  }
+  R0 = 0;
+  C0 = C0 + 1;
+}
+resetPlaceHolder_2(); -> {
+  // reset R2
+  if ((j < 4) || (j == 4))
+  {
+    if ((j < 2) || (j == 2))
+    {
+      if ((j < 1) || (j == 1))
+      {
+        // reset R1
+      }
+      else
+      {
+        if (S1 < R1)
+        {
+          S1 = R1;
+        }
+        else
+        {
+          ;
+        }
+        R1 = 0;
+        C1 = C1 + 1;
+      }
+    }
+    else
+    {
+      // reset R1
+    }
+  }
+  else
+  {
+    if (S1 < R1)
+    {
+      S1 = R1;
+    }
+    else
+    {
+      ;
+    }
+    R1 = 0;
+    C1 = C1 + 1;
+  }
+  // reset R0
+}
+use R chunk -> if ((j < 1) || (j == 1))
+{
+  R1 = R1 + chunk;
+}
+else
+{
+  if ((j < 2) || (j == 2))
+  {
+    R2 = R2 + chunk;
+  }
+  else
+  {
+    R1 = R1 + chunk;
+  }
+}
+INFO  brbo.BrboMain$ - Write into file /root/Documents/workspace/brbo2-impl/output/decomposed/stac/TemplateEngine2.java
+INFO  brbo.BrboMain$ - Finished decomposing /root/Documents/workspace/brbo2-impl/src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java
+
+real	0m9.410s
+user	0m18.365s
+sys	0m3.996s
+
+2023-01-28 11:22:09,472 INFO     Under `root@/root/Documents/workspace/brbo-impl`: Execute `./scripts/run_deps.sh --directory /root/Documents/workspace/brbo2-impl/output/decomposed/stac/TemplateEngine2.java --amortize transparent --icra-path /root/Documents/workspace/icra/icra --icra-timeout 60`
