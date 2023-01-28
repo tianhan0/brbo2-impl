@@ -1,0 +1,21 @@
+2023-01-27 17:04:36,859 INFO     Arguments:
+2023-01-27 17:04:36,859 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-01-27 17:04:36,859 INFO     experiment	qfuzz
+2023-01-27 17:04:36,860 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-01-27 17:04:36,860 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-01-27 17:04:36,860 INFO     icra	/root/Documents/workspace/icra/icra
+2023-01-27 17:04:36,860 INFO     dry	False
+2023-01-27 17:04:36,860 INFO     repeat	2
+2023-01-27 17:04:36,860 INFO     Begin 00 run
+2023-01-27 17:04:36,860 INFO     Input seed: [179, 73, 226, 55, 197, 7, 81, 139, 73, 49, 19, 52, 187, 200, 253, 171, 121, 131, 189, 135, 136, 83, 236, 133, 48, 72, 106, 180, 164, 118, 64, 104, 21, 150, 138, 255, 234, 122, 128, 170, 208, 233, 227, 17, 117, 2, 229, 230, 47, 62]
+2023-01-27 17:04:36,860 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_17-04-36/seeds/seed_00.txt
+2023-01-27 17:04:36,860 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_17-04-36/naive_00.txt --mode naive --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_17-04-36/seeds`
+2023-01-27 18:10:49,857 INFO     Done. Execution time: 3972.9969713687897 seconds
+2023-01-27 18:10:49,858 INFO     Output: 
+2023-01-27 18:10:49,858 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_17-04-36/qfuzz_00.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_17-04-36/seeds`
+2023-01-27 19:09:11,497 INFO     Done. Execution time: 3501.6384840011597 seconds
+2023-01-27 19:09:11,497 INFO     Output: 
+2023-01-27 19:09:11,497 INFO     Begin 01 run
+2023-01-27 19:09:11,498 INFO     Input seed: [90, 103, 19, 3, 8, 163, 224, 30, 242, 48, 31, 243, 44, 167, 41, 18, 50, 136, 90, 59, 195, 215, 165, 0, 117, 109, 99, 5, 18, 202, 52, 57, 63, 215, 184, 130, 245, 218, 46, 65, 85, 215, 241, 23, 26, 231, 132, 158, 49, 121]
+2023-01-27 19:09:11,498 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_17-04-36/seeds/seed_01.txt
+2023-01-27 19:09:11,498 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_17-04-36/naive_01.txt --mode naive --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230127_17-04-36/seeds`
