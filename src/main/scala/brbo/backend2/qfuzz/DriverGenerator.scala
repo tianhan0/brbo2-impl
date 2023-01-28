@@ -9,7 +9,7 @@ import brbo.frontend.TargetProgram
 
 object DriverGenerator {
   // Longer array sizes are more likely to cause collisions between array elements.
-  val ARRAY_SIZE = 6
+  val ARRAY_SIZE = 5
   /**
    * A too large number may result in executing the target program for too long. For example, an array input may
    * contain a large number that controls the loop iterations.
