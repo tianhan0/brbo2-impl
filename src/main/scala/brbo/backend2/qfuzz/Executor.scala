@@ -213,7 +213,7 @@ object Executor {
     val formatter = DateTimeFormatter.ofPattern("uuuuMMdd_HHmmss")
     val now = LocalDateTime.now
     val directory = inputFileDirectory(sourceFilePath)
-    s"$directory${inputFilePrefix(sourceFilePath)}_${formatter.format(now)}.json"
+    s"$directory/${inputFilePrefix(sourceFilePath)}_${formatter.format(now)}.json"
   }
 
   private def inputFileDirectory(sourceFilePath: String): String = {
@@ -223,7 +223,7 @@ object Executor {
   }
 
   private def inputFilePrefix(sourceFilePath: String): String =
-    s"${FilenameUtils.getBaseName(sourceFilePath)}_qfuzz"
+    s"${FilenameUtils.getBaseName(sourceFilePath)}"
 
   def toInputValues(inputArray: List[Int],
                     parameters: List[Identifier],
