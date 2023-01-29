@@ -394,14 +394,14 @@ class SegmentClustering(sumWeight: Int,
                     controlFlowGraph = ControlFlowGraph.toControlFlowGraph(interpreter.brboProgram),
                     throwIfNoResetPlaceHolder = true
                   )
-                  val tables = Classifier.generateTables(
+                  val traceTables = Classifier.generateTables(
                     testTrace,
                     Classifier.evaluateFromInterpreter(interpreter),
                     groupsMap,
                     features = features,
                     resetPlaceHolderIndices = resetPlaceHolderIndices,
                   )
-                  val programTables = tables.toProgramTables
+                  val programTables = Classifier.toProgramTables(traceTables.tables, traceTables.features)
                   logger.infoOrError(s"Generated training data")
                   // logger.traceOrError(s"${programTables.print()}")
                   val classifierResults = programTables.generateClassifiers(debugMode)

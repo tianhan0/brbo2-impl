@@ -177,7 +177,7 @@ object Classifier {
    * @param command The command at this trace location
    * @param index   The index of the command in the trace where this location is created
    */
-  case class TraceLocation(command: Command, index: Int) extends Location {
+  case class TraceLocation(command: Command, index: Int, trace: Trace) extends Location {
     def print(): String = s"TraceLocation: ${command.printToIR()} (index=$index)"
   }
 
@@ -188,53 +188,53 @@ object Classifier {
   type BrboTables = Map[GroupID, BrboTable]
 
   // A mapping from a location in a trace to a table for the previous store -- the store right before the location
-  class TraceTables(tables: Map[TraceLocation, BrboTables], features: List[BrboExpr]) {
+  class TraceTables(val tables: Map[TraceLocation, BrboTables], val features: List[BrboExpr]) {
     def print(): String = printTables(tables.asInstanceOf[Map[Location, BrboTables]], features)
+  }
 
-    def toProgramTables: ProgramTables = {
-      val map = tables.groupBy({ case (location, _) => location.command }).map({
-        case (command, map: Map[TraceLocation, BrboTables]) =>
-          val location = ProgramLocation(command)
-          var summaryTables: Map[GroupID, BrboTable] = Map()
+  def toProgramTables(tables: Map[TraceLocation, BrboTables], features: List[BrboExpr]): ProgramTables = {
+    val map = tables.groupBy({ case (location, _) => location.command }).map({
+      case (command, map: Map[TraceLocation, BrboTables]) =>
+        val location = ProgramLocation(command)
+        var summaryTables: Map[GroupID, BrboTable] = Map()
 
-          def update(groupID: GroupID, table: BrboTable): Unit = {
-            if (table.sameFeaturesDifferentLabels()) {
-              throw TableGenerationError(s"Inserting a table containing rows that " +
-                s"have the same features but different labels\n${table.print()}")
-            }
-            summaryTables.get(groupID) match {
-              case Some(summaryTable) =>
-                val existingTable = summaryTable.copy()
-                summaryTable.append(table)
-                if (summaryTable.sameFeaturesDifferentLabels()) {
-                  throw TableGenerationError(s"Appending `${table.tableName}` for ${groupID.print()} " +
-                    s"at `${location.print()}` but now we have rows that have the same features but different labels\n" +
-                    s"Existing table:\n${existingTable.print()}\n" +
-                    s"Appending table:\n${table.print()}")
-                }
-              case None =>
-                val summaryTable = table.copy()
-                summaryTables = summaryTables + (groupID -> summaryTable)
-            }
+        def update(groupID: GroupID, table: BrboTable): Unit = {
+          if (table.sameFeaturesDifferentLabels()) {
+            throw TableGenerationError(s"Inserting a table containing rows that " +
+              s"have the same features but different labels\n${table.print()}")
           }
+          summaryTables.get(groupID) match {
+            case Some(summaryTable) =>
+              val existingTable = summaryTable.copy()
+              summaryTable.append(table)
+              if (summaryTable.sameFeaturesDifferentLabels()) {
+                throw TableGenerationError(s"Appending `${table.tableName}` for ${groupID.print()} " +
+                  s"at `${location.print()}` but now we have rows that have the same features but different labels\n" +
+                  s"Existing table:\n${existingTable.print()}\n" +
+                  s"Appending table:\n${table.print()}")
+              }
+            case None =>
+              val summaryTable = table.copy()
+              summaryTables = summaryTables + (groupID -> summaryTable)
+          }
+        }
 
-          map.values.foreach({
-            tables =>
-              tables.foreach({
-                case (groupID: GroupID, table: BrboTable) =>
-                  table match {
-                    case table: ResetTable => update(groupID, table)
-                    case table: UseTable =>
-                      // Merge all use tables into a single table
-                      update(AllGroups, table)
-                    case _ => throw new Exception
-                  }
-              })
-          })
-          (location, summaryTables)
-      })
-      new ProgramTables(map, features)
-    }
+        map.values.foreach({
+          tables =>
+            tables.foreach({
+              case (groupID: GroupID, table: BrboTable) =>
+                table match {
+                  case table: ResetTable => update(groupID, table)
+                  case table: UseTable =>
+                    // Merge all use tables into a single table
+                    update(AllGroups, table)
+                  case _ => throw new Exception
+                }
+            })
+        })
+        (location, summaryTables)
+    })
+    new ProgramTables(map, features)
   }
 
   private def printTables(tables: Map[Location, BrboTables], features: List[BrboExpr]): String = {
@@ -405,7 +405,7 @@ object Classifier {
                   case None => NoneGroup
                 }
                 // Find the table and add the row data
-                val traceLocation = TraceLocation(use, index)
+                val traceLocation = TraceLocation(use, index, trace)
                 val useTable: UseTable = traceTableMap.get(traceLocation) match {
                   case Some(tables) =>
                     tables.get(groupID) match {
@@ -435,7 +435,7 @@ object Classifier {
                 val evaluatedFeatures: List[BrboValue] =
                   features.map(feature => evaluate(feature, lastStore))
                 // Find the table and add the row data
-                val traceLocation = TraceLocation(resetPlaceHolder, index)
+                val traceLocation = TraceLocation(resetPlaceHolder, index, trace)
                 groupIDs.foreach({
                   groupID =>
                     val addRow = lastUseIndices(groupID) match {
