@@ -209,6 +209,7 @@ object Executor {
             jsonFile.getAbsolutePath
         })
         .toList
+        .sorted
     jsonFiles.last
   }
 
