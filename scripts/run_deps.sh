@@ -19,4 +19,4 @@ tools_jar_docker="/usr/lib/jvm/java-8-openjdk-amd64/lib/tools.jar"
 classpath=".:$lib_jars:$brbo_jar:$tools_jar_wsl:$tools_jar_docker"
 
 set -x
-timeout --kill-after 3s 5m java -Dlog4j.configurationFile="src/resources/log4j2.properties" -cp $classpath brbo.BrboMain "${@:1}"
+timeout --preserve-status --kill-after 3s 5m java -Dlog4j.configurationFile="src/resources/log4j2.properties" -cp $classpath brbo.BrboMain "${@:1}"
