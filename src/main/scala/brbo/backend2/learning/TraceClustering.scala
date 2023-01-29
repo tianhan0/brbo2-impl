@@ -22,7 +22,7 @@ object TraceClustering {
 
     logger.info(s"${STEP_NAME}Compute a distance matrix")
     val distanceMatrix: List[List[Int]] =
-      TraceClustering.distanceMatrix(representativeCostTraces.toList, SUBSTITUTION_PENALTY)
+      TraceClustering.distanceMatrix(representativeCostTraces.toList, EditDistance(SUBSTITUTION_PENALTY))
 
     logger.info(s"${STEP_NAME}Cluster traces")
     val traceClusteringAlgorithm: Algorithm = Optics(Some(10), metric = Precomputed)
@@ -60,7 +60,7 @@ object TraceClustering {
 
   def groupZeroDistanceTraces(traces: List[CostTrace]): Map[CostTrace, Set[CostTrace]] = {
     val disjointSet = new DisjointSet[CostTrace](
-      (left, right) => distance(left, right, substitutionPenalty = 1) == 0,
+      (left, right) => editDistance(left, right, substitutionPenalty = 1) == 0,
       betterRepresentative
     )
     traces.foreach(t => disjointSet.add(t))
@@ -86,16 +86,36 @@ object TraceClustering {
     traces.find(t => t.costTrace == selectedCostTrace).get
   }
 
-  def distanceMatrix(traces: List[CostTrace], substitutionPenalty: Int): List[List[Int]] = {
+  abstract class SimilarityMetric
+
+  case class EditDistance(substitutionPenalty: Int) extends SimilarityMetric
+
+  object BagOfWords extends SimilarityMetric
+
+  def distanceMatrix(traces: List[CostTrace], similarityMetric: SimilarityMetric): List[List[Int]] = {
     traces.map({
       left =>
         traces.map({
-          right => distance(left, right, substitutionPenalty)
+          right =>
+            similarityMetric match {
+              case BagOfWords => bagOfWordsDistance(left, right)
+              case EditDistance(substitutionPenalty) => editDistance(left, right, substitutionPenalty)
+              case _ => throw new Exception
+            }
         })
     })
   }
 
-  private def distance(left: CostTrace, right: CostTrace, substitutionPenalty: Int): Int = {
+  private def bagOfWordsDistance(left: CostTrace, right: CostTrace): Int = {
+    val leftCostTrace: Set[String] = costTraceToSet(left)
+    val rightCostTrace: Set[String] = costTraceToSet(right)
+    val intersection = leftCostTrace.intersect(rightCostTrace)
+    val union = leftCostTrace.union(rightCostTrace)
+    val scale = 100
+    (intersection.size.toDouble / union.size.toDouble * scale).toInt
+  }
+
+  private def editDistance(left: CostTrace, right: CostTrace, substitutionPenalty: Int): Int = {
     val (diff1, diff2) = distanceInternal(left, right)
     Math.min(diff1.size, diff2.size) * substitutionPenalty
   }
