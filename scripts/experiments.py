@@ -28,6 +28,7 @@ def prepare_log_directory(date_time):
     qfuzz_log_directory = log_root_directory / "qfuzz"
     timeout_log_directory = log_root_directory / "timeout"
     verifiability_log_directory = log_root_directory / "verifiability"
+    test_log_directory = log_root_directory / "test"
 
     if args.experiment == "verifiability":
         log_directory = verifiability_log_directory
@@ -37,6 +38,8 @@ def prepare_log_directory(date_time):
         log_directory = timeout_log_directory
     elif args.experiment == "all":
         log_directory = log_root_directory
+    elif args.experiment == "test":
+        log_directory = test_log_directory
     else:
         raise AssertionError(f"Unknown experiment: {args.experiment}")
     log_directory = log_directory / date_time
