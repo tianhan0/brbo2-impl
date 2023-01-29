@@ -645,6 +645,13 @@ object Interpreter {
       s"$prefix$string"
     }
 
+    def printInputs(): String = {
+      val body = inputs.map({
+        case (identifier, value) => s"${identifier.name}: ${value.printToIR()}"
+      }).mkString("\n")
+      s"Trace inputs:\n$body"
+    }
+
     lazy val variables: List[(String, BrboType.T)] = {
       val variables: Map[String, BrboType.T] = nodes.map(node => node.store.getVariables).foldLeft(Map(): Map[String, BrboType.T])({
         case (soFar, map) => soFar ++ map

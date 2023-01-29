@@ -9,53 +9,52 @@ object TraceClustering {
   private val logger = MyLogger.createLogger(TraceClustering.getClass, debugMode = false)
   private val SUBSTITUTION_PENALTY = 100
 
-  def run(traces: List[Interpreter.Trace], debugMode: Boolean): Iterable[Trace] = {
-    val STEP_NAME = "Step 2: "
-    logger.info(s"${STEP_NAME}Cluster similar traces: ${traces.length} traces")
+  def run(traces: List[Interpreter.Trace], debugMode: Boolean, stepId: Int): List[List[Trace]] = {
+    logger.info(s"Step $stepId: Cluster similar traces: ${traces.length} traces")
     val costTraces: List[CostTrace] = traces.map(t => t.costTrace)
 
-    logger.info(s"${STEP_NAME}Group traces with zero distance")
-    val groupedCostTraces: Map[CostTrace, Set[CostTrace]] = TraceClustering.groupZeroDistanceTraces(costTraces)
-    logger.info(s"${STEP_NAME}Found ${groupedCostTraces.size} groups of traces")
-    val representativeCostTraces = groupedCostTraces.keys
-    representativeCostTraces.foreach(t => logger.traceOrError(s"\n${t.print()}"))
+    // logger.info(s"${STEP_NAME}Group traces with zero distance")
+    // val groupedCostTraces: Map[CostTrace, Set[CostTrace]] = TraceClustering.groupZeroDistanceTraces(costTraces)
+    // logger.info(s"${STEP_NAME}Found ${groupedCostTraces.size} groups of traces")
+    // val representativeCostTraces = groupedCostTraces.keys
+    // representativeCostTraces.foreach(t => logger.traceOrError(s"\n${t.print()}"))
 
-    logger.info(s"${STEP_NAME}Compute a distance matrix")
-    val distanceMatrix: List[List[Int]] =
-      TraceClustering.distanceMatrix(representativeCostTraces.toList, EditDistance(SUBSTITUTION_PENALTY))
+    logger.info(s"Step $stepId.1: Compute a distance matrix")
+    val distanceMatrix: List[List[Int]] = TraceClustering.distanceMatrix(costTraces, BagOfWords)
 
-    logger.info(s"${STEP_NAME}Cluster traces")
-    val traceClusteringAlgorithm: Algorithm = Optics(Some(10), metric = Precomputed)
+    logger.info(s"Step $stepId.2: Cluster traces")
+    val traceClusteringAlgorithm: Algorithm = Optics(Some(BagOfWords.scale / 3), metric = Precomputed)
     val clusterLabels: List[Int] = Clustering.cluster(distanceMatrix, traceClusteringAlgorithm, debugMode) match {
       case Some(labels) => labels
       case None =>
         logger.info(s"Put all traces into the same cluster")
-        List.fill(representativeCostTraces.size)(0)
+        List.fill(costTraces.size)(0)
     }
 
     val labelMap: Map[Int, List[((CostTrace, Trace), Int)]] =
       costTraces.zip(traces).zip(clusterLabels).groupBy({ case (_, label) => label })
-    val outlierTraces = {
-      traceClusteringAlgorithm match {
-        case _: Optics =>
-          labelMap.get(-1) match {
-            case Some(outliers) =>
-              logger.info(s"${STEP_NAME}Found ${outliers.size} outlier traces")
-              outliers.map({ case ((_, trace), _) => trace })
-            case None => Nil
-          }
-        case _ => Nil
-      }
+    val outliers = traceClusteringAlgorithm match {
+      case _: Optics =>
+        labelMap.get(-1) match {
+          case Some(outliers) => outliers.map({ case ((_, trace), _) => trace })
+          case None => Nil
+        }
+      case _ => Nil
     }
-    val clusters: Iterable[List[((CostTrace, Trace), Int)]] = (labelMap - (-1)).values
-    logger.info(s"${STEP_NAME}Found ${clusters.size} trace clusters")
+    if (outliers.nonEmpty) {
+      logger.info(s"Step $stepId.3: Found ${outliers.size} outlier traces")
+      outliers.zipWithIndex.foreach({ case (trace, index) => logger.info(s"Outlier trace $index inputs:\n${trace.printInputs()}") })
+    }
 
-    logger.info(s"${STEP_NAME}Select representative traces from every cluster")
-    clusters.map({
-      list =>
-        val traces = list.map({ case ((_, trace), _) => trace })
-        TraceClustering.selectRepresentativeTrace(traces)
-    }).toList ::: outlierTraces
+    val clusters: Iterable[List[((CostTrace, Trace), Int)]] = (labelMap - (-1)).values
+    logger.info(s"Step $stepId.4: Found ${clusters.size} trace clusters")
+    clusters.zipWithIndex
+      .map({
+        case (list, index) =>
+          logger.info(s"Trace cluster $index")
+          list.map({ case ((_, trace), _) => logger.info(s"Trace inputs:\n${trace.printInputs()}"); trace })
+      })
+      .toList
   }
 
   def groupZeroDistanceTraces(traces: List[CostTrace]): Map[CostTrace, Set[CostTrace]] = {
@@ -90,7 +89,9 @@ object TraceClustering {
 
   case class EditDistance(substitutionPenalty: Int) extends SimilarityMetric
 
-  object BagOfWords extends SimilarityMetric
+  object BagOfWords extends SimilarityMetric {
+    val scale = 100
+  }
 
   def distanceMatrix(traces: List[CostTrace], similarityMetric: SimilarityMetric): List[List[Int]] = {
     traces.map({
@@ -111,8 +112,7 @@ object TraceClustering {
     val rightCostTrace: Set[String] = costTraceToSet(right)
     val intersection = leftCostTrace.intersect(rightCostTrace)
     val union = leftCostTrace.union(rightCostTrace)
-    val scale = 100
-    (intersection.size.toDouble / union.size.toDouble * scale).toInt
+    (intersection.size.toDouble / union.size.toDouble * BagOfWords.scale).toInt
   }
 
   private def editDistance(left: CostTrace, right: CostTrace, substitutionPenalty: Int): Int = {
