@@ -203,7 +203,11 @@ object Executor {
     val directory = inputFileDirectory(sourceFilePath)
     val jsonFiles =
       FileUtils.listFiles(new File(directory), Array("json"), true).asScala
-        .map({ jsonFile => jsonFile.getName })
+        .map({
+          jsonFile =>
+            println(s"input file: ${jsonFile.getAbsolutePath}")
+            jsonFile.getName
+        })
         .toList
     jsonFiles.last
   }
@@ -216,7 +220,8 @@ object Executor {
   }
 
   private def inputFileDirectory(sourceFilePath: String): String = {
-    val directory = Paths.get(s"${FilenameUtils.getFullPath(sourceFilePath)}/qfuzz/")
+    val basename = FilenameUtils.getBaseName(sourceFilePath)
+    val directory = Paths.get(s"${FilenameUtils.getFullPath(sourceFilePath)}/$basename/qfuzz/")
     directory.toFile.mkdirs()
     directory.toString
   }
