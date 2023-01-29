@@ -209,7 +209,7 @@ object Executor {
             jsonFile.getAbsolutePath
         })
         .toList
-    jsonFiles.head
+    jsonFiles.last
   }
 
   private def freshInputFilePath(sourceFilePath: String): String = {
