@@ -201,7 +201,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val interpreter = SegmentClusteringUnitTest.toInterpreter(loopPhase)
     val trace = SegmentClusteringUnitTest.getTrace(interpreter, List(Number(4)))
     val groups = ClassifierUnitTest.generateGroups(trace, numberOfGroups = 2)
-    val tables = Classifier.generateTables(
+    val traceTables = Classifier.generateTables(
       trace,
       Classifier.evaluateFromInterpreter(interpreter),
       groups,
@@ -213,7 +213,8 @@ class ClassifierUnitTest extends AnyFlatSpec {
         throwIfNoResetPlaceHolder = false
       )
     )
-    val classifierResults = tables.toProgramTables.generateClassifiers(debugMode = false)
+    val programTables = Classifier.toProgramTables(traceTables.tables, traceTables.features)
+    val classifierResults = programTables.generateClassifiers(debugMode = false)
     val invalidBound = Number(2000)
     val resultFalse = Classifier.applyClassifiers(
       Some(invalidBound),
@@ -264,7 +265,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
     val interpreter = SegmentClusteringUnitTest.toInterpreter(loopPhase)
     val trace = SegmentClusteringUnitTest.getTrace(interpreter, List(Number(4)))
     val groups = ClassifierUnitTest.generateGroups(trace, numberOfGroups = 2)
-    val tables = Classifier.generateTables(
+    val traceTables = Classifier.generateTables(
       trace,
       Classifier.evaluateFromInterpreter(interpreter),
       groups,
@@ -276,7 +277,8 @@ class ClassifierUnitTest extends AnyFlatSpec {
         throwIfNoResetPlaceHolder = false
       )
     )
-    val classifierResults = tables.toProgramTables.generateClassifiers(debugMode = false)
+    val programTables = Classifier.toProgramTables(traceTables.tables, traceTables.features)
+    val classifierResults = programTables.generateClassifiers(debugMode = false)
     val transformation = classifierResults.toTransformation.map({
       case (command, ast) =>
         s"Transform ${command.printToIR()} into:\n${ast.print(indent = 0, style = CStyle)}"
