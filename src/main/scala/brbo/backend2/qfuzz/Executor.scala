@@ -202,7 +202,7 @@ object Executor {
     assert(FilenameUtils.getExtension(sourceFilePath) == "java")
     val directory = inputFileDirectory(sourceFilePath)
     val jsonFiles =
-      FileUtils.listFiles(new File(directory), Array(".json"), true).asScala
+      FileUtils.listFiles(new File(directory), Array("json"), true).asScala
         .filter({ jsonFile => jsonFile.getName.startsWith(inputFilePrefix(sourceFilePath)) })
         .map({ jsonFile => jsonFile.getName })
         .toList
