@@ -42,7 +42,8 @@ class SegmentClustering(sumWeight: Int,
   def decompose(trace: Trace,
                 similarTraces: Iterable[Trace],
                 interpreter: Interpreter,
-                features: List[Identifier]): TraceDecomposition = {
+                features: List[Identifier],
+                stepId: Double): TraceDecomposition = {
     val decomposition = new TraceDecomposition(trace)
     var segmentLength = 1
     var excludeIndices: Set[Int] = Set()
@@ -51,7 +52,7 @@ class SegmentClustering(sumWeight: Int,
       && segmentLength <= remainingIndices.size
       && segmentLength <= MAX_SEGMENT_LENGTH) {
       logger.info("-" * 80)
-      logger.info(s"Step 3.1.1: Cluster segments with length $segmentLength")
+      logger.info(s"Step $stepId.1: Cluster segments with length $segmentLength")
       val candidateSegments: List[Segment] = generateSegments(trace, segmentLength, excludeIndices)
       // val candidateSegments: List[Segment] = generateAndFilterDissimilarSegments(trace, segmentLength, excludeIndices)
       val clusters: List[List[Segment]] = clusterSimilarSegments(trace, candidateSegments)
@@ -61,10 +62,10 @@ class SegmentClustering(sumWeight: Int,
         val cluster = clusters(clusterId).filter({
           segment => segment.indices.toSet.intersect(excludeIndices).isEmpty
         })
-        logger.info(s"Step 3.1.2: Visit $clusterId-th cluster (segment length: $segmentLength)")
+        logger.info(s"Step $stepId.2: Visit $clusterId-th cluster (segment length: $segmentLength)")
         cluster.zipWithIndex.foreach({ case (segment, index) => logger.info(s"Segment $index: ${segment.printAsSet}") })
         if (cluster.size > 1) {
-          logger.info(s"Step 3.1.3: Choose non-overlapping segments from $clusterId-th cluster")
+          logger.info(s"Step $stepId.3: Choose non-overlapping segments from $clusterId-th cluster")
           val nonOverlappingGroups: List[Group] = findNonOverlappingSegments(cluster)
           // Assume the selected traces ensure the selected groups are correct.
           // However, we still need to choose a generalization of the group, by choosing the reset locations.
@@ -76,14 +77,14 @@ class SegmentClustering(sumWeight: Int,
             features = features,
             sampleKTraces = None
           )*/
-          logger.info(s"Step 3.1.4: Filter groups")
+          logger.info(s"Step $stepId.4: Filter groups")
           val filteredGroups = filterGroups(nonOverlappingGroups, trace)
           chooseGroup(filteredGroups) match {
             case Some(chosenGroup) =>
               decomposition.addGroup(chosenGroup)
               // Remove indices that have been grouped
               val chosenIndices = chosenGroup.indices
-              logger.info(s"Step 3.1.5: Chosen group: ${printSegments(chosenGroup.segments)} " +
+              logger.info(s"Step $stepId.5: Chosen group: ${printSegments(chosenGroup.segments)} " +
                 s"on trace:\n${printDecomposition(trace, Map(PrintGroup -> chosenGroup))}")
               excludeIndices = excludeIndices ++ chosenIndices
               remainingIndices = remainingIndices -- chosenIndices
