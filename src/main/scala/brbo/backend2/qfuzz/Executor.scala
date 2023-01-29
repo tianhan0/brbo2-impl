@@ -201,6 +201,7 @@ object Executor {
   def getInputFilePath(sourceFilePath: String): String = {
     assert(FilenameUtils.getExtension(sourceFilePath) == "java")
     val directory = inputFileDirectory(sourceFilePath)
+    FileUtils.listFiles(new File(directory), Array("json"), true).asScala.foreach(f => println(s"file ${f.getAbsolutePath}"))
     val jsonFiles =
       FileUtils.listFiles(new File(directory), Array("json"), true).asScala
         .filter({ jsonFile => jsonFile.getName.startsWith(inputFilePrefix(sourceFilePath)) })
