@@ -12,7 +12,10 @@ import play.api.libs.json.{JsArray, Json}
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import java.nio.{BufferUnderflowException, ByteBuffer}
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -116,7 +119,7 @@ object Executor {
         logger.info(s"Inputs: $inputs")
         inputs
     })
-    val inputFilePath: String = getInputFilePath(sourceFilePath)
+    val inputFilePath: String = freshInputFilePath(sourceFilePath)
     val listOfInputValues = listOfInputs.flatMap({
       inputs =>
         toInputValues(
@@ -197,9 +200,23 @@ object Executor {
 
   def getInputFilePath(sourceFilePath: String): String = {
     assert(FilenameUtils.getExtension(sourceFilePath) == "java")
-    val fileName = s"${FilenameUtils.getBaseName(sourceFilePath)}_fuzzing.json"
-    s"${FilenameUtils.getFullPath(sourceFilePath)}$fileName"
+    val parentDirectory = Paths.get(sourceFilePath).getParent
+    val jsonFiles =
+      FileUtils.listFiles(parentDirectory.toFile, Array(".json"), true).asScala
+        .filter({ jsonFile => jsonFile.getName.startsWith(qfuzzGeneratedInputFilePrefix(sourceFilePath)) })
+        .map({ jsonFile => jsonFile.getName })
+        .toList
+    jsonFiles.last
   }
+
+  private def freshInputFilePath(sourceFilePath: String): String = {
+    val formatter = DateTimeFormatter.ofPattern("uuuuMMdd_HHmmss")
+    val now = LocalDateTime.now
+    s"${qfuzzGeneratedInputFilePrefix(sourceFilePath)}_${formatter.format(now)}.json"
+  }
+
+  private def qfuzzGeneratedInputFilePrefix(sourceFilePath: String): String =
+    s"${FilenameUtils.getBaseName(sourceFilePath)}_qfuzz"
 
   def toInputValues(inputArray: List[Int],
                     parameters: List[Identifier],
