@@ -53,6 +53,7 @@ class DecompositionDriver(arguments: DecompositionArguments,
     }
     logger.info(s"Step 1.2: Fuzzer generated inputs (size ${fuzzerGeneratedTraces.size})")
     val qfuzzGeneratedTraces: List[Trace] = {
+      logger.info(s"Step 1.2: Attempt to read from $qfuzzInputFile")
       if (Files.exists(Paths.get(qfuzzInputFile)))
         generateTraces(qfuzzInputFile)
       else
