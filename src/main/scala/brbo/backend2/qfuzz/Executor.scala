@@ -221,7 +221,7 @@ object Executor {
   }
 
   private def inputFileDirectory(sourceFilePath: String): String = {
-    val basename = FilenameUtils.getBaseName(sourceFilePath)
+    val basename = FilenameUtils.getBaseName(sourceFilePath).toLowerCase
     val directory = Paths.get(s"${FilenameUtils.getFullPath(sourceFilePath)}/$basename/qfuzz/")
     directory.toFile.mkdirs()
     directory.toString
