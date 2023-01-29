@@ -84,7 +84,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--experiment",
-        choices=["verifiability", "qfuzz", "timeout", "all"],
+        choices=["verifiability", "qfuzz", "timeout", "all", "test"],
         required=True,
         help="Which experiment to run.",
     )
@@ -216,3 +216,17 @@ if __name__ == "__main__":
                     seed_directory=seed_directory,
                 )
                 run_command(command=command, dry=args.dry)
+        elif args.experiment == "test":
+            timeout = 5
+            command = brbo2_command(
+                input=args.input,
+                qfuzz=args.qfuzz,
+                brbo=args.brbo,
+                icra=args.icra,
+                dry=args.dry,
+                timeout=timeout,
+                log_file=log_directory / f"timeout{timeout}_{run_id}.txt",
+                mode="qfuzz",
+                seed_directory=seed_directory,
+            )
+            run_command(command=command, dry=args.dry)
