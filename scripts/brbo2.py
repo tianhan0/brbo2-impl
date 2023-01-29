@@ -115,6 +115,7 @@ if __name__ == "__main__":
                 seed=args.seed,
             ),
             dry=args.dry,
+            timeout=f"{int(args.timeout)+3}s",
         )
 
         decomposed_file = get_decomposed_file(java_file=java_file)

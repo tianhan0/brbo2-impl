@@ -43,13 +43,24 @@ def _limit_memory():
 
 
 # Return stdout and stderr, and the execution time
-def run_command(command, cwd=os.getcwd(), dry=False, printOutput=True):
+def run_command(command, cwd=os.getcwd(), dry=False, printOutput=True, timeout=None):
     logging.info(f"Under `{getpass.getuser()}@{cwd}`: Execute `{' '.join(command)}`")
     if dry:
         return "", 0
+    if timeout:
+        actual_command = [
+            "timeout",
+            "--preserve-status",
+            "--kill-after",
+            "3s",
+            str(timeout),
+        ]
+        actual_command.extend(command)
+    else:
+        actual_command = command
     start_time = time.time()
     result = subprocess.run(
-        command,
+        actual_command,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
