@@ -200,10 +200,10 @@ object Executor {
 
   def getInputFilePath(sourceFilePath: String): String = {
     assert(FilenameUtils.getExtension(sourceFilePath) == "java")
-    val parentDirectory = Paths.get(sourceFilePath).getParent
+    val directory = inputFileDirectory(sourceFilePath)
     val jsonFiles =
-      FileUtils.listFiles(parentDirectory.toFile, Array(".json"), true).asScala
-        .filter({ jsonFile => jsonFile.getName.startsWith(qfuzzGeneratedInputFilePrefix(sourceFilePath)) })
+      FileUtils.listFiles(new File(directory), Array(".json"), true).asScala
+        .filter({ jsonFile => jsonFile.getName.startsWith(inputFilePrefix(sourceFilePath)) })
         .map({ jsonFile => jsonFile.getName })
         .toList
     jsonFiles.last
@@ -212,10 +212,17 @@ object Executor {
   private def freshInputFilePath(sourceFilePath: String): String = {
     val formatter = DateTimeFormatter.ofPattern("uuuuMMdd_HHmmss")
     val now = LocalDateTime.now
-    s"${qfuzzGeneratedInputFilePrefix(sourceFilePath)}_${formatter.format(now)}.json"
+    val directory = inputFileDirectory(sourceFilePath)
+    s"$directory${inputFilePrefix(sourceFilePath)}_${formatter.format(now)}.json"
   }
 
-  private def qfuzzGeneratedInputFilePrefix(sourceFilePath: String): String =
+  private def inputFileDirectory(sourceFilePath: String): String = {
+    val directory = Paths.get(s"${FilenameUtils.getFullPath(sourceFilePath)}/qfuzz/")
+    directory.toFile.mkdirs()
+    directory.toString
+  }
+
+  private def inputFilePrefix(sourceFilePath: String): String =
     s"${FilenameUtils.getBaseName(sourceFilePath)}_qfuzz"
 
   def toInputValues(inputArray: List[Int],
