@@ -211,8 +211,7 @@ if __name__ == "__main__":
                     icra=args.icra,
                     dry=args.dry,
                     timeout=timeout,
-                    log_file=log_directory
-                    / f"timeout{timeout}_{run_id}.txt",
+                    log_file=log_directory / f"timeout{timeout}_{run_id}.txt",
                     mode="qfuzz",
                     seed_directory=seed_directory,
                 )
