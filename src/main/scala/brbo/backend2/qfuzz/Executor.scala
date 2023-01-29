@@ -205,8 +205,8 @@ object Executor {
       FileUtils.listFiles(new File(directory), Array("json"), true).asScala
         .map({
           jsonFile =>
-            println(s"input file: ${jsonFile.getAbsolutePath}")
-            jsonFile.getName
+            println(s"Input file: ${jsonFile.getAbsolutePath}")
+            jsonFile.getAbsolutePath
         })
         .toList
     jsonFiles.last
