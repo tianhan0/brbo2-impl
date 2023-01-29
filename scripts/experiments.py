@@ -202,7 +202,7 @@ if __name__ == "__main__":
             # 30: If shorter fuzzing results in worse inputs.
             # 60: The standard configuration.
             # 120: If longer fuzzing results in better inputs.
-            timeouts = [180, 120, 30]
+            timeouts = [300, 240, 180]
             for timeout in timeouts:
                 command = brbo2_command(
                     input=args.input,
