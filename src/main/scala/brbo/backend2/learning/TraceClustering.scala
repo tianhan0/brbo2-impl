@@ -2,7 +2,7 @@ package brbo.backend2.learning
 
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.{CostTrace, Trace}
-import brbo.backend2.learning.ScriptRunner.{Algorithm, Optics, Precomputed}
+import brbo.backend2.learning.ScriptRunner.{Algorithm, KMeans, Optics}
 import brbo.common.{DisjointSet, MyLogger}
 
 object TraceClustering {
@@ -23,8 +23,8 @@ object TraceClustering {
     val distanceMatrix: List[List[Int]] = TraceClustering.distanceMatrix(costTraces, BagOfWords)
 
     logger.info(s"Step $stepId.2: Cluster traces")
-    val traceClusteringAlgorithm: Algorithm = Optics(Some(BagOfWords.scale / 3), metric = Precomputed)
-    val clusterLabels: List[Int] = Clustering.cluster(distanceMatrix, traceClusteringAlgorithm, debugMode) match {
+    val algorithm: Algorithm = KMeans(clusters = Some(2)) // Optics(Some(BagOfWords.scale / 2), metric = Precomputed)
+    val clusterLabels: List[Int] = Clustering.cluster(distanceMatrix, algorithm, debugMode) match {
       case Some(labels) => labels
       case None =>
         logger.info(s"Put all traces into the same cluster")
@@ -33,7 +33,7 @@ object TraceClustering {
 
     val labelMap: Map[Int, List[((CostTrace, Trace), Int)]] =
       costTraces.zip(traces).zip(clusterLabels).groupBy({ case (_, label) => label })
-    val outliers = traceClusteringAlgorithm match {
+    val outliers = algorithm match {
       case _: Optics =>
         labelMap.get(-1) match {
           case Some(outliers) => outliers.map({ case ((_, trace), _) => trace })
