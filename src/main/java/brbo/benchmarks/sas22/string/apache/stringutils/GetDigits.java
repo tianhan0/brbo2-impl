@@ -8,8 +8,8 @@ abstract public class GetDigits extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= str);
-    lessPreciseBound(R <= MAX * str);
+    mostPreciseBound(R <= str || R <= arraySum(choices));
+    lessPreciseBound(R <= MAX * str || R <= MAX * arraySum(choices));
     int strDigits = 0;
     int choice = 0;
     for (int i = 0; i < str; i++) {
