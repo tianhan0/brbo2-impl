@@ -4,19 +4,14 @@ import brbo.common.BrboType
 import brbo.common.BrboType.QFuzzPrintType
 import brbo.common.ast.PrintStyle.QFuzzJavaStyle
 import brbo.common.ast.{BrboAstUtils, BrboFunction, BrboProgram, Identifier}
+import brbo.common.commandline.FuzzingArguments
 import brbo.common.string.StringFormatUtils
 import brbo.frontend.TargetProgram
 
 object DriverGenerator {
   // Longer array sizes are more likely to cause collisions between array elements.
   val ARRAY_SIZE = 5
-  /**
-   * A too large number may result in executing the target program for too long. For example, an array input may
-   * contain a large number that controls the loop iterations.
-   * A too small number may result in a higher likelihood that the generated inputs do not very much.
-   */
-  val MAX_INTEGER = 12
-  val MIN_INTEGER = 4
+  val BOOLEAN_SEPARATOR = 10 // TODO: This should be the average between the min and the max
   val HALF_MAX_VALUE: Int = java.lang.Short.MAX_VALUE / 2
   val MIN_LOOP_ITERATIONS = 2
   val MAX_LOOP_ITERATIONS = 3
@@ -31,14 +26,15 @@ object DriverGenerator {
                                  loopIterationMultiplier: Int)
 
   object GeneratorParameters {
-    val default: GeneratorParameters = GeneratorParameters(
-      arraySize = ARRAY_SIZE,
-      minInteger = MIN_INTEGER,
-      maxInteger = MAX_INTEGER,
-      minLoopIterations = MIN_LOOP_ITERATIONS,
-      maxLoopIterations = MAX_LOOP_ITERATIONS,
-      loopIterationMultiplier = LOOP_ITERATION_MULTIPLIER,
-    )
+    def default(fuzzingArguments: FuzzingArguments): GeneratorParameters =
+      GeneratorParameters(
+        arraySize = ARRAY_SIZE,
+        minInteger = fuzzingArguments.getMinInteger,
+        maxInteger = fuzzingArguments.getMaxInteger,
+        minLoopIterations = MIN_LOOP_ITERATIONS,
+        maxLoopIterations = MAX_LOOP_ITERATIONS,
+        loopIterationMultiplier = LOOP_ITERATION_MULTIPLIER,
+      )
   }
 
   abstract class Mode

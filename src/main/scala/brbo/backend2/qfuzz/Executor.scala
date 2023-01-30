@@ -113,7 +113,7 @@ object Executor {
     val listOfInputs: Iterable[List[Int]] = rankedInputFiles.map({
       inputFile =>
         val absolutePath = inputFile
-        logger.info(s"Read shorts that are between [${DriverGenerator.MIN_INTEGER}, ${DriverGenerator.MAX_INTEGER}] from $absolutePath")
+        logger.info(s"Read shorts that are between [${arguments.getMinInteger}, ${arguments.getMaxInteger}] from $absolutePath")
         val shorts = parseBytesToShorts(absolutePath)
         val inputs = wrapShorts(shorts = shorts, max = generatorParameters.maxInteger, min = generatorParameters.minInteger)
         logger.info(s"Inputs: $inputs")

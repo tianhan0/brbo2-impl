@@ -29,6 +29,19 @@ class FuzzingArguments extends CommonArguments {
     usage = "Whether to run the naive QFuzz or the modified.")
   protected var naive: Boolean = false
 
+  /**
+   * A too large number may result in executing the target program for too long. For example, an array input may
+   * contain a large number that controls the loop iterations.
+   * A too small number may result in a higher likelihood that the generated inputs do not very much.
+   */
+  @Option(name = "--max-int", required = false,
+    usage = "The max integer for QFuzz to find inputs from.")
+  private var maxInteger: Int = 12
+
+  @Option(name = "--min-int", required = false,
+    usage = "The min integer for QFuzz to find inputs from.")
+  private var minInteger: Int = 4
+
   def getAflTimeoutInSeconds: Int = aflTimeoutInSeconds
 
   def getQFuzzPath: String = qfuzzPath
@@ -40,6 +53,10 @@ class FuzzingArguments extends CommonArguments {
   def getDryRun: Boolean = dryRun
 
   def getNaive: Boolean = naive
+
+  def getMaxInteger: Int = maxInteger
+
+  def getMinInteger: Int = minInteger
 
   override def toString: String = {
     val strings = List[String]()

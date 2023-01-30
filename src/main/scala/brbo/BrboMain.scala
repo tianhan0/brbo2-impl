@@ -151,7 +151,7 @@ object BrboMain {
   }
 
   def fuzzing(targetProgram: TargetProgram, sourceFilePath: String, arguments: FuzzingArguments): Unit = {
-    Executor.run(targetProgram.program, sourceFilePath, arguments, generatorParameters = GeneratorParameters.default)
+    Executor.run(targetProgram.program, sourceFilePath, arguments, generatorParameters = GeneratorParameters.default(arguments))
   }
 
   def decompose(targetProgram: TargetProgram,

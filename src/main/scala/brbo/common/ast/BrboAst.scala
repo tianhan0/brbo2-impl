@@ -1,8 +1,8 @@
 package brbo.common.ast
 
+import brbo.backend2.qfuzz.DriverGenerator
 import brbo.common.BrboType._
 import brbo.common.GhostVariableTyp._
-import brbo.common.PredefinedVariables.variables
 import brbo.common.ast.BrboAstUtils.PrependOperation
 import brbo.common.ast.PrintStyle._
 import brbo.common.{GhostVariableTyp, _}
@@ -186,7 +186,11 @@ case class BrboFunction(identifier: String,
     s"$indentString${BrboType.PrintType.print(returnType, CPrintType)} $identifier($parametersString)\n${bodyWithGhostInitialization.print(indent + DEFAULT_INDENT, style = CStyle)}"
   }
 
-  private def printToBrboJava(indent: Int): String = printToBrboJavaWithBoundAssertions(indent, boundAssertions = Nil)
+  private def printToBrboJava(indent: Int): String =
+    printToBrboJavaWithBoundAssertions(
+      indent = indent,
+      boundAssertions = Nil,
+    )
 
   private def printToQFuzzJava(indent: Int): String = {
     val parametersString = parameters.map(pair => s"${pair.typeNamePair(QFuzzPrintType)}").mkString(", ")
@@ -220,15 +224,14 @@ case class BrboFunction(identifier: String,
     arrayGhostVariables.map({ arrayGhostVariable => VariableDeclaration(arrayGhostVariable, Number(0)) })
   }
 
-  private val predefinedVariableDeclarations: List[Command] = variables.keys.toList.sorted.flatMap({
-    name =>
-      if (name == "BOOLEAN_SEPARATOR")
-        Some(VariableDeclaration(Identifier(name, BrboType.INT), Number(variables(name))))
-      else {
-        // To avoid a major change in brbo (that avoids declaring these variables twice), do not declare them here
-        None
-      }
-  })
+  private val predefinedVariableDeclarations: List[Command] = {
+    // To avoid a major change in brbo (that avoids declaring these variables twice), do not declare other pre-defined variables here
+    val declaration = VariableDeclaration(
+      Identifier("BOOLEAN_SEPARATOR", BrboType.INT),
+      Number(DriverGenerator.BOOLEAN_SEPARATOR),
+    )
+    List(declaration)
+  }
 
   private def ghostVariableDeclarations(legacy: Boolean): List[Command] = {
     if (groupIds.nonEmpty) {

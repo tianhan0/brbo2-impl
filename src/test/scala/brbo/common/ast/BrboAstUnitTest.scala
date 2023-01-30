@@ -1,6 +1,7 @@
 package brbo.common.ast
 
 import brbo.TestCase
+import brbo.backend2.qfuzz.DriverGenerator
 import brbo.common.BrboType
 import brbo.common.BrboType.INT
 import brbo.common.ast.PrintStyle.{BrboJavaStyle, CStyle}
@@ -354,7 +355,7 @@ object BrboAstUnitTest {
       s"""abstract class Test {
          |  void ${TargetProgram.MAIN_FUNCTION}(int x, int array)
          |  {
-         |    int BOOLEAN_SEPARATOR = 8;
+         |    int BOOLEAN_SEPARATOR = ${DriverGenerator.BOOLEAN_SEPARATOR};
          |    int C1 = -1;
          |    int C2 = -1;
          |    int C3 = -1;
@@ -420,10 +421,10 @@ object BrboAstUnitTest {
          |}
          |""".stripMargin),
     TestCase("printToBrboJavaTest2", printToBrboJavaTest2,
-      """abstract class Test {
+      s"""abstract class Test {
         |  void execute()
         |  {
-        |    int BOOLEAN_SEPARATOR = 8;
+        |    int BOOLEAN_SEPARATOR = ${DriverGenerator.BOOLEAN_SEPARATOR};
         |    int R = 0;
         |    lessPreciseBound(!((R < 10)) && !((R == 10)));
         |    mostPreciseBound(!((R < 10)) && !((R == 10)));

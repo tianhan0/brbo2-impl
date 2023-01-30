@@ -58,8 +58,8 @@ object Fuzzer {
   val DEFAULT_SAMPLES = 0
   private val MIN_ARRAY_LENGTH = DriverGenerator.ARRAY_SIZE
   private val MAX_ARRAY_LENGTH = DriverGenerator.ARRAY_SIZE
-  private val MAX_INTEGER = DriverGenerator.MAX_INTEGER // No need to be a huge number. Just need to let the costs vary.
-  private val MIN_INTEGER = DriverGenerator.MIN_INTEGER
+  private val MAX_INTEGER = 50 // TODO: Use the user-provided values
+  private val MIN_INTEGER = 4 // TODO: Use the user-provided values
   val SEED: Int = 6182
   private val fuzzer = new Fuzzer(
     maxInteger = MAX_INTEGER,
