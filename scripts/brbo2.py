@@ -9,6 +9,7 @@ from common import (
     get_decomposed_file,
     configure_logging,
     sbt_package,
+    interpret_brbo_output,
 )
 
 
@@ -112,7 +113,7 @@ if __name__ == "__main__":
     sbt_package(git_version=args.version, dry=args.dry)
 
     java_files = get_files(args.input, suffix="java")
-    time_measurements = common.TimeMeasurement()
+    measurements = common.TimeMeasurement()
     brbo_root = Path(args.brbo).expanduser()
     for java_file in java_files:
         logging.info(f"Process file `{java_file}`")
@@ -158,13 +159,13 @@ if __name__ == "__main__":
             dry=args.dry,
         )
 
-        time_measurements.update(
-            brbo_output=brbo_output,
+        measurements.update(
+            verification_result=interpret_brbo_output(brbo_output),
             java_file=java_file,
             fuzzing_time=fuzzing_time,
             decomposition_time=decomposition_time,
             verification_time=verification_time,
         )
 
-    time_measurements.print()
-    time_measurements.write(log_file=Path(args.log).with_suffix(".json"))
+    measurements.print()
+    measurements.write(log_file=Path(args.log).with_suffix(".json"))

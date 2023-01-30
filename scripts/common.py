@@ -7,6 +7,7 @@ import subprocess
 import os
 import resource
 import re
+from enum import Enum
 from pathlib import Path
 
 NO_DEPENDENCY_SCRIPT = "./scripts/run.sh"
@@ -154,6 +155,21 @@ def _increment_count(dictionary, key):
     dictionary.update({key: dictionary.get(key, 0) + 1})
 
 
+class VerificationResult(Enum):
+    VERIFIED = 0
+    NOT_VERIFIED = 1
+    UNKNOWN = 2
+
+
+def interpret_brbo_output(brbo_output):
+    if "verified? Yes" in brbo_output:
+        return VerificationResult.VERIFIED
+    elif "verified? No" in brbo_output:
+        return VerificationResult.NOT_VERIFIED
+    else:
+        return VerificationResult.UNKNOWN
+
+
 class TimeMeasurement:
     def __init__(self):
         self.per_file_execution_time = {}
@@ -168,22 +184,22 @@ class TimeMeasurement:
 
     def update(
         self,
-        brbo_output,
+        verification_result,
         java_file,
         fuzzing_time=0,
         decomposition_time=0,
         verification_time=0,
     ):
         inner_most_package_name = get_inner_most_package_name(java_file)
-        if "verified? Yes" in brbo_output:
+        if verification_result == VerificationResult.VERIFIED:
             _increment_count(self.count_verified, inner_most_package_name)
             self.verification_results.update({str(java_file): "verified"})
             self.total_verified = self.total_verified + 1
-        elif "verified? No" in brbo_output:
+        elif verification_result == VerificationResult.NOT_VERIFIED:
             _increment_count(self.count_not_verified, inner_most_package_name)
             self.verification_results.update({str(java_file): "not verified"})
             self.total_not_verified = self.total_not_verified + 1
-        else:
+        elif verification_result == VerificationResult.UNKNOWN:
             _increment_count(self.count_unknown, inner_most_package_name)
             self.verification_results.update({str(java_file): "unknown"})
             self.total_unknown = self.total_unknown + 1
