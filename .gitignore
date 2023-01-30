@@ -10,7 +10,7 @@ src/main/python/*.json
 *.pyc
 
 # Test logs
-logs/test/
+# logs/test/
 
 # Fuzzing related
 fuzzer-out/
