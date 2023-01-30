@@ -16,7 +16,8 @@ logs/test/
 fuzzer-out/
 bin/
 bin-instr/
-# *_fuzzing.json
+*_fuzzing.json
+*_qfuzz.json
 *QFuzzDriver.java
 
 # Intellij
