@@ -242,7 +242,7 @@ if __name__ == "__main__":
                 )
                 run_command(command=command, dry=args.dry)
         elif args.experiment == "test":
-            timeout = 5
+            timeout = 10
             command = brbo2_command(
                 input=args.input,
                 qfuzz=args.qfuzz,
@@ -253,7 +253,7 @@ if __name__ == "__main__":
                 log_file=log_directory / f"timeout{timeout}_{run_id}.txt",
                 mode="qfuzz",
                 seed_directory=seed_directory,
-                max_int=qfuzz_max_int,
-                min_int=qfuzz_min_int,
+                max_int=1000,
+                min_int=4,
             )
             run_command(command=command, dry=args.dry)
