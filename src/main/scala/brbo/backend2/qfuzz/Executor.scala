@@ -119,6 +119,8 @@ object Executor {
         logger.info(s"Inputs: $inputs")
         inputs
     })
+    logger.info(s"Remove existing Json files")
+    removeExistingInputs(sourceFilePath)
     val inputFilePath: String = freshInputFilePath(sourceFilePath)
     val listOfInputValues = listOfInputs.flatMap({
       inputs =>
@@ -211,6 +213,13 @@ object Executor {
         .toList
         .sorted
     jsonFiles.last
+  }
+
+  private def removeExistingInputs(sourceFilePath: String): Unit = {
+    val directory = inputFileDirectory(sourceFilePath)
+    FileUtils.listFiles(new File(directory), Array("json"), true)
+      .asScala
+      .foreach(file => Files.deleteIfExists(file.toPath))
   }
 
   private def freshInputFilePath(sourceFilePath: String): String = {
