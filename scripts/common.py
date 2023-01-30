@@ -74,7 +74,7 @@ def run_command(command, cwd=os.getcwd(), dry=False, printOutput=True, timeout=N
     return result.stdout.strip(), execution_time
 
 
-def qfuzz_command(timeout, input, qfuzz, deps, mode, seed):
+def qfuzz_command(timeout, input, qfuzz, deps, mode, seed, max_int, min_int):
     command = [
         WITH_DEPENDENCY_SCRIPT if deps else NO_DEPENDENCY_SCRIPT,
         "fuzz",
@@ -87,6 +87,10 @@ def qfuzz_command(timeout, input, qfuzz, deps, mode, seed):
         # "--dry",
         "--qfuzz",
         str(qfuzz),
+        "--max-int",
+        str(max_int),
+        "--min-int",
+        str(min_int),
     ]
     if mode == "naive":
         command.append("--naive")

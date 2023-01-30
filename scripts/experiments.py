@@ -8,7 +8,17 @@ from datetime import datetime
 
 
 def brbo2_command(
-    input, qfuzz, brbo, icra, dry, timeout, log_file, mode, seed_directory
+    input,
+    qfuzz,
+    brbo,
+    icra,
+    dry,
+    timeout,
+    log_file,
+    mode,
+    seed_directory,
+    max_int,
+    min_int,
 ):
     brbo2_command = f"""python3 scripts/brbo2.py \
       --input {input} \
@@ -19,7 +29,9 @@ def brbo2_command(
       --log {log_file} \
       --mode {mode} \
       {f"--seed {seed_directory}" if seed_directory else ""} \
-      {"--dry" if dry else ""}"""
+      {"--dry" if dry else ""} \
+      --max-int {str(max_int)} \
+      --min-int {str(min_int)}"""
     return brbo2_command.split()
 
 
@@ -127,6 +139,8 @@ if __name__ == "__main__":
     print_args(args)
 
     qfuzz_timeout_in_seconds = 180
+    qfuzz_max_int = 50
+    qfuzz_min_int = 4
     seed_directory = log_directory / "seeds"
     seed_directory.mkdir(parents=True, exist_ok=True)
     for i in range(args.repeat):
@@ -173,6 +187,8 @@ if __name__ == "__main__":
                 log_file=log_directory / f"select_{run_id}.txt",
                 mode="qfuzz",
                 seed_directory=seed_directory,
+                max_int=qfuzz_max_int,
+                min_int=qfuzz_min_int,
             )
             run_command(command=selective_amortization, dry=args.dry)
         elif args.experiment == "qfuzz" or args.experiment == "all":
@@ -186,6 +202,8 @@ if __name__ == "__main__":
                 log_file=log_directory / f"naive_{run_id}.txt",
                 mode="naive",
                 seed_directory=seed_directory,
+                max_int=qfuzz_max_int,
+                min_int=qfuzz_min_int,
             )
             run_command(command=naive_qfuzz, dry=args.dry)
 
@@ -199,6 +217,8 @@ if __name__ == "__main__":
                 log_file=log_directory / f"qfuzz_{run_id}.txt",
                 mode="qfuzz",
                 seed_directory=seed_directory,
+                max_int=qfuzz_max_int,
+                min_int=qfuzz_min_int,
             )
             run_command(command=modified_qfuzz, dry=args.dry)
         elif args.experiment == "timeout" or args.experiment == "all":
@@ -217,6 +237,8 @@ if __name__ == "__main__":
                     log_file=log_directory / f"timeout{timeout}_{run_id}.txt",
                     mode="qfuzz",
                     seed_directory=seed_directory,
+                    max_int=qfuzz_max_int,
+                    min_int=qfuzz_min_int,
                 )
                 run_command(command=command, dry=args.dry)
         elif args.experiment == "test":
@@ -231,5 +253,7 @@ if __name__ == "__main__":
                 log_file=log_directory / f"timeout{timeout}_{run_id}.txt",
                 mode="qfuzz",
                 seed_directory=seed_directory,
+                max_int=qfuzz_max_int,
+                min_int=qfuzz_min_int,
             )
             run_command(command=command, dry=args.dry)

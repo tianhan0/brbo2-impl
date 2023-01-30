@@ -88,6 +88,18 @@ if __name__ == "__main__":
         default=None,
         help="The file that contains the seed for QFuzz.",
     )
+    parser.add_argument(
+        "--min-int",
+        type=int,
+        default=4,
+        help="The max integer for QFuzz to find inputs from.",
+    )
+    parser.add_argument(
+        "--max-int",
+        type=int,
+        default=12,
+        help="The min integer for QFuzz to find inputs from.",
+    )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
     if Path(args.log).suffix != ".txt":
@@ -113,6 +125,8 @@ if __name__ == "__main__":
                 deps=True,
                 mode=args.mode,
                 seed=args.seed,
+                max_int=args.max_int,
+                min_int=args.min_int,
             ),
             dry=args.dry,
             timeout=f"{int(args.timeout)+3}s",
