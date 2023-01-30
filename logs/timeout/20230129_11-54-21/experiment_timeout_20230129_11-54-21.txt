@@ -1,0 +1,15 @@
+2023-01-29 11:54:21,934 INFO     Arguments:
+2023-01-29 11:54:21,935 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-01-29 11:54:21,935 INFO     experiment	timeout
+2023-01-29 11:54:21,935 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-01-29 11:54:21,935 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-01-29 11:54:21,935 INFO     icra	/root/Documents/workspace/icra/icra
+2023-01-29 11:54:21,935 INFO     dry	False
+2023-01-29 11:54:21,935 INFO     repeat	2
+2023-01-29 11:54:21,935 INFO     Begin 00 run
+2023-01-29 11:54:21,935 INFO     Input seed: [51, 118, 56, 75, 200, 140, 21, 106, 118, 55, 200, 111, 244, 225, 185, 168, 28, 127, 65, 41, 183, 108, 211, 18, 9, 150, 23, 74, 206, 37, 137, 157, 41, 151, 205, 222, 126, 234, 106, 117, 20, 208, 130, 204, 185, 156, 251, 134, 135, 97]
+2023-01-29 11:54:21,935 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/timeout/20230129_11-54-21/seeds/seed_00.txt
+2023-01-29 11:54:21,935 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 300 --log /root/Documents/workspace/brbo2-impl/logs/timeout/20230129_11-54-21/timeout300_00.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/timeout/20230129_11-54-21/seeds`
+2023-01-29 15:35:08,205 INFO     Done. Execution time: 13246.26977467537 seconds
+2023-01-29 15:35:08,206 INFO     Output: 
+2023-01-29 15:35:08,206 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 240 --log /root/Documents/workspace/brbo2-impl/logs/timeout/20230129_11-54-21/timeout240_00.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/timeout/20230129_11-54-21/seeds`
