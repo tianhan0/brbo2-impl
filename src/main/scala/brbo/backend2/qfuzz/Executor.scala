@@ -41,6 +41,8 @@ object Executor {
 
     val INPUT_SEED_DIRECTORY = arguments.getInputDirectory
 
+    logger.info(s"Step 0: Remove existing Json files")
+    removeExistingInputs(sourceFilePath)
     logger.info(s"Step 1: Prepare a QFuzz driver. Naive mode? ${arguments.getNaive}")
     val driverFileContents = DriverGenerator.run(
       program = program,
@@ -119,8 +121,6 @@ object Executor {
         logger.info(s"Inputs: $inputs")
         inputs
     })
-    logger.info(s"Remove existing Json files")
-    removeExistingInputs(sourceFilePath)
     val inputFilePath: String = freshInputFilePath(sourceFilePath)
     val listOfInputValues = listOfInputs.flatMap({
       inputs =>
