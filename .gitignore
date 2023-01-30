@@ -9,6 +9,9 @@ src/main/python/*.json
 
 *.pyc
 
+# Test logs
+logs/test/
+
 # Fuzzing related
 fuzzer-out/
 bin/
