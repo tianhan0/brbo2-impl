@@ -139,7 +139,7 @@ if __name__ == "__main__":
     print_args(args)
 
     qfuzz_timeout_in_seconds = 180
-    qfuzz_max_int = 50
+    qfuzz_max_int = 12
     qfuzz_min_int = 4
     seed_directory = log_directory / "seeds"
     seed_directory.mkdir(parents=True, exist_ok=True)
