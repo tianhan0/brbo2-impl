@@ -18,8 +18,8 @@ public abstract class TemplateEngineMultiTrace extends Common {
         R = R + chunk;
       }
     } else {
-      for (int i = 0; i < arrayLength(text); i++) {
-        chunk = arrayRead(text, i);
+      for (int j = 0; j < arrayLength(text); j++) {
+        chunk = arrayRead(text, j);
         R = R + chunk;
       }
     }
