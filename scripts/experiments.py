@@ -138,7 +138,6 @@ if __name__ == "__main__":
     )
     print_args(args)
 
-    qfuzz_timeout_in_seconds = 180
     qfuzz_max_int = 12
     qfuzz_min_int = 4
     seed_directory = log_directory / "seeds"
@@ -155,6 +154,7 @@ if __name__ == "__main__":
             binary_file.write(immutable_bytes)
 
         if args.experiment == "verifiability" or args.experiment == "all":
+            qfuzz_timeout_in_seconds = 180
             worst_case = brbo_command(
                 input=args.input,
                 brbo=args.brbo,
@@ -192,6 +192,7 @@ if __name__ == "__main__":
             )
             run_command(command=selective_amortization, dry=args.dry)
         elif args.experiment == "qfuzz" or args.experiment == "all":
+            qfuzz_timeout_in_seconds = 240
             naive_qfuzz = brbo2_command(
                 input=args.input,
                 qfuzz=args.qfuzz,
