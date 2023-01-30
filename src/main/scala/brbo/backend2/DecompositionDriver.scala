@@ -4,7 +4,7 @@ import brbo.BrboMain
 import brbo.backend2.DecompositionDriver._
 import brbo.backend2.interpreter.Interpreter
 import brbo.backend2.interpreter.Interpreter.Trace
-import brbo.backend2.learning.Classifier.GroupID
+import brbo.backend2.learning.Classifier.{GroupID, TraceTables}
 import brbo.backend2.learning.SegmentClustering.printSegments
 import brbo.backend2.learning._
 import brbo.common.ast._
@@ -74,19 +74,21 @@ class DecompositionDriver(arguments: DecompositionArguments,
       case DecompositionDriver.UserProvidedTrace => userProvidedTraces
       case _ => throw new Exception
     }
-    // TraceClustering.run(traces = selectedTraces, debugMode = debugMode)
-
-    logger.info(s"Step 3: Select representative traces")
-    val representatives = TraceSelection.selectRepresentatives(
-      traces = selectedTraces,
-      inputTrace = inputTraces,
-    )
-    logger.info(s"Step 4.0: Decompose ${representatives.size} selected traces")
-    val decomposedPrograms = representatives.zipWithIndex.map({
-      case ((traceRepresentative, similarTraces), index) =>
-        decomposeTrace(traceRepresentative, index, similarTraces, stepId = 4),
+    val clusteredTraces: List[List[Trace]] = TraceClustering.run(traces = selectedTraces, debugMode = debugMode, stepId = 3)
+    val traceTables: List[TraceTables] = clusteredTraces.zipWithIndex.map({
+      case (cluster, index) =>
+        logger.info(s"Step 3: Select representative traces for cluster $index")
+        val representatives = TraceSelection.selectRepresentatives(
+          traces = cluster,
+          inputTrace = inputTraces,
+        )
+        val traceTables = representatives.zipWithIndex.map({
+          case ((traceRepresentative, similarTraces), index) =>
+            decomposeTrace(traceRepresentative, index, similarTraces, stepId = 4),
+        })
+        traceTables.head
     })
-    decomposedPrograms.head
+    generalize(traceTables, stepId = 4)
   }
 
   private def selectTraces(userProvidedTraces: List[Trace],
@@ -115,7 +117,7 @@ class DecompositionDriver(arguments: DecompositionArguments,
     )
   }
 
-  private def decomposeTrace(trace: Trace, index: Int, similarTraces: Iterable[Trace], stepId: Int): BrboProgram = {
+  private def decomposeTrace(trace: Trace, index: Int, similarTraces: Iterable[Trace], stepId: Int): TraceTables = {
     logger.info(s"Step $stepId.1: Decompose $index-th representative trace")
     val representativeTraceString =
       if (debugMode)
@@ -150,11 +152,15 @@ class DecompositionDriver(arguments: DecompositionArguments,
       features = features,
       resetPlaceHolderIndices = resetPlaceHolderIndices,
     )
-    // logger.traceOrError(s"Step 3.2: Generated tables:\n${tables.print()}")
-    logger.info(s"Step $stepId.4: Generate classifiers on the tables")
-    val programTables = Classifier.toProgramTables(traceTables.tables, traceTables.features)
+    // logger.traceOrError(s"Step $stepId.2: Generated tables:\n${traceTables.print()}")
+    traceTables
+  }
+
+  private def generalize(traceTables: Iterable[TraceTables], stepId: Int): BrboProgram = {
+    logger.info(s"Step $stepId.1: Generate classifiers on the tables")
+    val programTables = Classifier.toProgramTables(traceTables.flatMap({ traceTable => traceTable.tables }).toMap, traceTables.head.features)
     val classifierResults = programTables.generateClassifiers(debugMode)
-    logger.info(s"Step $stepId.5: Generate program transformations")
+    logger.info(s"Step $stepId.2: Generate program transformations")
     val transformation: Map[Command, BrboAst] = classifierResults.toTransformation
     logger.info(Classifier.printTransformation(transformation))
     val newBody = BrboAstUtils.replaceCommands(instrumentedProgram.mainFunction.body, transformation, omitResetPlaceHolders = true)
