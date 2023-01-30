@@ -9,7 +9,7 @@ object TraceClustering {
   private val logger = MyLogger.createLogger(TraceClustering.getClass, debugMode = false)
   private val SUBSTITUTION_PENALTY = 100
 
-  def run(traces: List[Interpreter.Trace], debugMode: Boolean, stepId: Int): List[List[Trace]] = {
+  def run(traces: List[Interpreter.Trace], debugMode: Boolean, stepId: Int, preserveTraceOrder: Boolean): List[List[Trace]] = {
     logger.info(s"Step $stepId: Cluster similar traces: ${traces.length} traces")
     val costTraces: List[CostTrace] = traces.map(t => t.costTrace)
 
@@ -48,11 +48,16 @@ object TraceClustering {
 
     val clusters: Iterable[List[((CostTrace, Trace), Int)]] = (labelMap - (-1)).values
     logger.info(s"Step $stepId.4: Found ${clusters.size} trace clusters")
+    val traceIds = traces.zipWithIndex.toMap
     clusters.zipWithIndex
       .map({
         case (list, index) =>
           logger.info(s"Trace cluster $index")
-          list.map({ case ((_, trace), _) => logger.info(s"Trace inputs:\n${trace.printInputs()}"); trace })
+          val traces = list.map({ case ((_, trace), _) => logger.info(s"Trace inputs:\n${trace.printInputs()}"); trace })
+          if (preserveTraceOrder)
+            traces.sortWith({ case (left, right) => traceIds(left) < traceIds(right) })
+          else
+            traces
       })
       .toList
   }

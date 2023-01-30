@@ -74,7 +74,12 @@ class DecompositionDriver(arguments: DecompositionArguments,
       case DecompositionDriver.UserProvidedTrace => userProvidedTraces
       case _ => throw new Exception
     }
-    val clusteredTraces: List[List[Trace]] = TraceClustering.run(traces = selectedTraces, debugMode = debugMode, stepId = 3)
+    val clusteredTraces: List[List[Trace]] = TraceClustering.run(
+      traces = selectedTraces,
+      debugMode = debugMode,
+      stepId = 3,
+      preserveTraceOrder = true
+    )
     val traceTables: List[TraceTables] = clusteredTraces.zipWithIndex.map({
       case (cluster, index) =>
         logger.info(s"Step 3: Select representative traces for cluster $index")
