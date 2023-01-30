@@ -10,6 +10,7 @@ from common import (
     configure_logging,
     sbt_package,
     interpret_brbo_output,
+    get_trace_clusters,
 )
 
 
@@ -113,7 +114,7 @@ if __name__ == "__main__":
     sbt_package(git_version=args.version, dry=args.dry)
 
     java_files = get_files(args.input, suffix="java")
-    measurements = common.TimeMeasurement()
+    measurements = common.Measurement()
     brbo_root = Path(args.brbo).expanduser()
     for java_file in java_files:
         logging.info(f"Process file `{java_file}`")
@@ -137,7 +138,7 @@ if __name__ == "__main__":
         logging.info(f"Remove the expected decomposition `{str(decomposed_file)}`")
         decomposed_file.unlink(missing_ok=True)
 
-        _, decomposition_time = run_command(
+        decomposition_result, decomposition_time = run_command(
             command=common.decomposition_command(
                 threads=4,
                 input=java_file,
@@ -161,6 +162,7 @@ if __name__ == "__main__":
 
         measurements.update(
             verification_result=interpret_brbo_output(brbo_output),
+            trace_clusters=get_trace_clusters(decomposition_result),
             java_file=java_file,
             fuzzing_time=fuzzing_time,
             decomposition_time=decomposition_time,

@@ -75,7 +75,7 @@ if __name__ == "__main__":
 
     java_files = get_files(args.input, suffix="java")
     brbo_root = Path(args.brbo).expanduser()
-    measurements = common.TimeMeasurement()
+    measurements = common.Measurement()
     for java_file in java_files:
         logging.info(f"Process file `{java_file}`")
 

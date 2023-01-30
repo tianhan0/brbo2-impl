@@ -170,7 +170,16 @@ def interpret_brbo_output(brbo_output):
         return VerificationResult.UNKNOWN
 
 
-class TimeMeasurement:
+def get_trace_clusters(decomposition_output) -> int:
+    if "Found 0 trace clusters" in decomposition_output:
+        return 0
+    elif "Found 1 trace clusters" in decomposition_output:
+        return 1
+    elif "Found 2 trace clusters" in decomposition_output:
+        return 2
+
+
+class Measurement:
     def __init__(self):
         self.per_file_execution_time = {}
         self.total_time = 0
@@ -181,10 +190,12 @@ class TimeMeasurement:
         self.total_verified = 0
         self.total_not_verified = 0
         self.total_unknown = 0
+        self.trace_clusters = {}
 
     def update(
         self,
         verification_result,
+        trace_clusters,
         java_file,
         fuzzing_time=0,
         decomposition_time=0,
@@ -210,6 +221,7 @@ class TimeMeasurement:
         self.total_time = (
             self.total_time + fuzzing_time + decomposition_time + verification_time
         )
+        self.trace_clusters.update({str(java_file): trace_clusters})
 
     def print(self):
         logging.info(
@@ -227,6 +239,7 @@ class TimeMeasurement:
             f"Number of not verified programs: {pretty_print(self.count_not_verified)}"
         )
         logging.info(f"Number of unknown programs: {pretty_print(self.count_unknown)}")
+        logging.info(f"Number of trace clusters: {pretty_print(self.trace_clusters)}")
 
     def write(self, log_file):
         short_names = {
@@ -234,16 +247,17 @@ class TimeMeasurement:
             for file_name in self.per_file_execution_time.keys()
         }
         output_contents = {
-            "time_measurements": self.per_file_execution_time,
-            "verification_results": self.verification_results,
-            "short_names": short_names,
-            "verified_programs": self.count_verified,
-            "not_programs": self.count_not_verified,
-            "unknown_programs": self.count_unknown,
             "total_time": self.total_time,
             "total_verified": self.total_verified,
             "total_not_verified": self.total_not_verified,
             "total_unknown": self.total_unknown,
+            "trace_clusters": self.trace_clusters,
+            "verified_programs": self.count_verified,
+            "not_programs": self.count_not_verified,
+            "unknown_programs": self.count_unknown,
+            "time_measurements": self.per_file_execution_time,
+            "verification_results": self.verification_results,
+            "short_names": short_names,
         }
         with open(log_file, "w") as output_file:
             logging.info(f"Write into {log_file}")
