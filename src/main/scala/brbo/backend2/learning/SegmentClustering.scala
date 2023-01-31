@@ -130,7 +130,7 @@ class SegmentClustering(sumWeight: Int,
         try {
           val groupString = s"group ${printSegments(group.segments)}"
           val concreteIndices: List[Set[Int]] = group.segments.map(segment => getArrayConcreteIndices(segment, trace))
-          logger.info(s"Concrete array indices $concreteIndices inside group groupString")
+          logger.info(s"Concrete array indices $concreteIndices inside $groupString")
           if (concreteIndices.toSet.size == 1) {
             if (concreteIndices.head.size >= MAX_SEGMENT_LENGTH) {
               logger.info(s"Kept $groupString")
