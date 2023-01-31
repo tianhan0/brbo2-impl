@@ -5,6 +5,7 @@ import scipy.stats as stats
 import numpy
 import csv
 import tempfile
+import os
 from pathlib import Path
 from common import print_args, get_files, pretty_print, configure_logging
 
@@ -158,10 +159,20 @@ class Data:
         LOG.info(f"Trace clusters: {pretty_print(total_trace_clusters)}")
 
 
-def _get_json_files(mode, input_directory):
+def _keep_n_latest(files, latest):
+    sorted_files = sorted(files, key=lambda file: os.path.getctime(file), reverse=True)
+    if latest:
+        return sorted_files[:latest]
+    else:
+        return sorted_files
+
+
+def _get_json_files(mode, input_directory, latest):
     if mode == "qfuzz":
         naive_logs = get_files(path=input_directory, prefix="naive", suffix="json")
+        naive_logs = _keep_n_latest(files=naive_logs, latest=latest)
         qfuzz_logs = get_files(path=input_directory, prefix="qfuzz", suffix="json")
+        qfuzz_logs = _keep_n_latest(files=qfuzz_logs, latest=latest)
         return {"naive": naive_logs, "qfuzz": qfuzz_logs}
     elif mode == "timeout":
         return {}
@@ -200,6 +211,12 @@ if __name__ == "__main__":
         required=True,
         help="The json file or the directory containing json files to be processed.",
     )
+    parser.add_argument(
+        "--latest",
+        type=int,
+        default=None,
+        help="The latest N log files to process, based on their file creation time.",
+    )
     # parser.add_argument(
     #     "--output",
     #     type=str,
@@ -221,7 +238,9 @@ if __name__ == "__main__":
     table = {}
     measurements = {}
     file_names = set()
-    log_files = _get_json_files(mode=args.mode, input_directory=args.input)
+    log_files = _get_json_files(
+        mode=args.mode, input_directory=args.input, latest=args.latest
+    )
     for log_name, json_files in log_files.items():
         LOG.info(f"Summarize logs for `{log_name}` under mode `{args.mode}`")
         data = Data()
