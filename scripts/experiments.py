@@ -128,18 +128,18 @@ if __name__ == "__main__":
         help="The number of times to repeat the experiment.",
     )
     parser.add_argument(
-        "--timeout",
+        "--qtimeout",
         type=int,
         help="The timeout for Qfuzz in seconds.",
     )
     parser.add_argument(
-        "--min-int",
+        "--qmin-int",
         type=int,
         default=4,
         help="The max integer for QFuzz to find inputs from.",
     )
     parser.add_argument(
-        "--max-int",
+        "--qmax-int",
         type=int,
         default=12,
         help="The min integer for QFuzz to find inputs from.",
@@ -155,9 +155,9 @@ if __name__ == "__main__":
     )
     print_args(args)
 
-    qfuzz_timeout_in_seconds = args.timeout
-    qfuzz_max_int = args.max_int
-    qfuzz_min_int = args.min_int
+    qfuzz_timeout_in_seconds = args.qtimeout
+    qfuzz_max_int = args.qmax_int
+    qfuzz_min_int = args.qmin_int
     seed_directory = log_directory / "seeds"
     seed_directory.mkdir(parents=True, exist_ok=True)
     for i in range(args.repeat):
