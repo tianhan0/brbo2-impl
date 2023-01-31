@@ -1,6 +1,6 @@
 #!/bin/sh
 
-rsync --archive --compress --progress --executability \
+rsync --archive --compress --executability \
   --human-readable \
   --exclude target/ \
   --exclude output/ \
@@ -12,7 +12,7 @@ rsync --archive --compress --progress --executability \
   --exclude scripts/ \
   --recursive root@134.209.201.43:/root/Documents/workspace/brbo2-impl/ $HOME/Documents/workspace/brbo2-impl/
 
-rsync --archive --compress --progress --executability \
+rsync --archive --compress --executability \
   --human-readable \
   --exclude target/ \
   --exclude output/ \
