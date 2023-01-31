@@ -3,6 +3,8 @@ import logging
 import json
 import scipy.stats as stats
 import numpy
+import csv
+import tempfile
 from pathlib import Path
 from common import print_args, get_files, pretty_print, configure_logging
 
@@ -16,7 +18,7 @@ def _update(dictionary, file_name, new_data_point):
 
 
 # Assume the dictionary is a map from keys to a list of numbers
-def transform_data(dictionary, mode):
+def _transform_data(dictionary, mode):
     # https://www.geeksforgeeks.org/how-to-calculate-confidence-intervals-in-python/
     result = {}
     for key, value in dictionary.items():
@@ -33,7 +35,9 @@ def transform_data(dictionary, mode):
                 confidence=0.95, loc=numpy.mean(value), scale=stats.sem(value)
             )
         elif mode == "mean":
-            new_value = numpy.mean(value)
+            # Return a list here, such that all dictionaries are of the same shape: str -> list of numbers
+            # Such that we can uniformly work on the dictionaries (e.g., printing into csv)
+            new_value = [numpy.mean(value)]
         else:
             raise AssertionError(f"Unknown mode: {mode}")
         result.update({key: new_value})
@@ -90,17 +94,19 @@ class Data:
         )
 
     def transform_data(self):
-        total_fuzz_time = transform_data(
+        total_fuzz_time = _transform_data(
             dictionary=self.total_fuzz_time, mode="confidence_interval"
         )
-        total_decompose_time = transform_data(
+        total_decompose_time = _transform_data(
             dictionary=self.total_decompose_time, mode="confidence_interval"
         )
-        total_verification_time = transform_data(
+        total_verification_time = _transform_data(
             dictionary=self.total_verification_time, mode="confidence_interval"
         )
-        total_verification_results = transform_data(
-            dictionary=self.total_verification_results, mode="mean"
+        total_verification_results = _transform_data(
+            dictionary=self.total_verification_results,
+            mode="mean"
+            # dictionary=self.total_verification_results, mode="confidence_interval"
         )
         return (
             total_fuzz_time,
@@ -121,13 +127,47 @@ class Data:
         LOG.info(f"Verification time: {pretty_print(total_verification_time)}")
         LOG.info(f"Verification results: {pretty_print(total_verification_results)}")
 
+    def print_to_csv(self, log_name):
+        (
+            total_fuzz_time,
+            total_decompose_time,
+            total_verification_time,
+            total_verification_results,
+        ) = self.transform_data()
+        LOG.info(f"Fuzz time ({log_name})")
+        self._dict_to_csv(total_fuzz_time)
+        LOG.info(f"Decompose time ({log_name})")
+        self._dict_to_csv(total_decompose_time)
+        LOG.info(f"Verification time ({log_name})")
+        self._dict_to_csv(total_verification_time)
+        LOG.info(f"Verification results ({log_name})")
+        self._dict_to_csv(total_verification_results)
+
+    def _dict_to_csv(self, time_dict):
+        with tempfile.NamedTemporaryFile() as csv_file:
+            with open(csv_file.name, "w") as csv_file:
+                writer = csv.writer(csv_file)
+                for file_name, measurements in time_dict.items():
+                    writer.writerow([file_name, *measurements])
+            with open(csv_file.name, "r") as csv_file:
+                csv_file_contents = csv_file.read()
+                print(csv_file_contents)
+
+
+def _get_json_files(mode, input_directory):
+    if mode == "qfuzz":
+        naive_logs = get_files(path=input_directory, prefix="naive", suffix="json")
+        qfuzz_logs = get_files(path=input_directory, prefix="qfuzz", suffix="json")
+        return {"naive": naive_logs, "qfuzz": qfuzz_logs}
+    elif mode == "timeout":
+        return {}
+
 
 if __name__ == "__main__":
     """
     Usage: ~/brbo2-impl$ python3 scripts/data.py \
-      --input output/logs/verifiability/brbo2/ \
-      --output output/logs/verifiability/brbo2.json \
-      --mode verifiability
+      --input logs/qfuzz/ \
+      --mode qfuzz
     """
     parser = argparse.ArgumentParser(
         description="Process data measurements from running brbo2 into tables in the paper."
@@ -138,12 +178,12 @@ if __name__ == "__main__":
         required=True,
         help="The json file or the directory containing json files to be processed.",
     )
-    parser.add_argument(
-        "--output",
-        type=str,
-        required=True,
-        help="The CSV file to write results to.",
-    )
+    # parser.add_argument(
+    #     "--output",
+    #     type=str,
+    #     required=True,
+    #     help="The CSV file to write results to.",
+    # )
     parser.add_argument(
         "--mode",
         choices=["verifiability", "qfuzz", "timeout"],
@@ -155,27 +195,30 @@ if __name__ == "__main__":
     configure_logging(filename=None)
     print_args(args)
 
-    json_files = get_files(path=args.input, prefix="", suffix="json")
-    data = Data()
-    for json_file in json_files:
-        with open(json_file, "r") as json_file:
-            LOG.info(f"Read from {args.input}")
-            json_data = json.loads(json_file.read())
-            time_measurements = json_data["time_measurements"]
-            verification_results = json_data["verification_results"]
+    for log_name, json_files in _get_json_files(
+        mode=args.mode, input_directory=args.input
+    ).items():
+        LOG.info(f"Summarize logs for `{log_name}` under mode `{args.mode}`")
+        data = Data()
+        for json_file in json_files:
+            with open(json_file, "r") as file:
+                LOG.info(f"Read from {json_file}")
+                json_data = json.loads(file.read())
+                time_measurements = json_data["time_measurements"]
+                verification_results = json_data["verification_results"]
 
-            for file_name, time_measurement in time_measurements.items():
-                data.insert_time_measurement(
-                    file_name=file_name, time_measurement=time_measurement
-                )
+                for file_name, time_measurement in time_measurements.items():
+                    data.insert_time_measurement(
+                        file_name=file_name, time_measurement=time_measurement
+                    )
 
-            for file_name, verification_result in verification_results.items():
-                data.insert_verification_result(
-                    file_name=file_name, verification_result=verification_result
-                )
+                for file_name, verification_result in verification_results.items():
+                    data.insert_verification_result(
+                        file_name=file_name, verification_result=verification_result
+                    )
+        # data.pretty_print()
+        data.print_to_csv(log_name=log_name)
 
-    # data.print_raw()
-    data.pretty_print()
     """
     json_object = json.dumps(output, indent=2)
     with open(args.output, "w") as output_file:
