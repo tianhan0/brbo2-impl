@@ -35,17 +35,33 @@ def _transform_data(dictionary, mode):
                 confidence=0.95, loc=numpy.mean(value), scale=stats.sem(value)
             )
         elif mode == "mean":
-            # Return a list here, such that all dictionaries are of the same shape: str -> list of numbers
-            # Such that we can uniformly work on the dictionaries (e.g., printing into csv)
             new_value = [numpy.mean(value)]
         else:
             raise AssertionError(f"Unknown mode: {mode}")
-        result.update({key: new_value})
+        # Return a list here, such that all dictionaries are of the same shape: str -> list of numbers
+        # Such that we can uniformly work on the dictionaries (e.g., printing into csv)
+        result.update({key: list(new_value)})
     return result
 
 
 def _simplify_filename(file_name: str):
     return Path(file_name).stem
+
+
+def _to_csv(dictOrList):
+    with tempfile.NamedTemporaryFile() as csv_file:
+        with open(csv_file.name, "w") as csv_file:
+            writer = csv.writer(csv_file)
+            if type(dictOrList) is dict:
+                for file_name, measurements in dictOrList.items():
+                    measurements = [
+                        f"{measurement:.2f}" for measurement in measurements
+                    ]
+                    writer.writerow([file_name, *measurements])
+            elif type(dictOrList) is list:
+                writer.writerow(dictOrList)
+        with open(csv_file.name, "r") as csv_file:
+            return csv_file.read()
 
 
 class Data:
@@ -56,7 +72,6 @@ class Data:
         self.total_verification_results = {}
 
     def insert_time_measurement(self, file_name, time_measurement):
-        file_name = _simplify_filename(file_name)
         _update(
             dictionary=self.total_fuzz_time,
             file_name=file_name,
@@ -74,7 +89,6 @@ class Data:
         )
 
     def insert_verification_result(self, file_name, verification_result):
-        file_name = _simplify_filename(file_name)
         if verification_result == "verified":
             verification_result = 1
         else:
@@ -127,33 +141,6 @@ class Data:
         LOG.info(f"Verification time: {pretty_print(total_verification_time)}")
         LOG.info(f"Verification results: {pretty_print(total_verification_results)}")
 
-    def print_to_csv(self, log_name):
-        (
-            total_fuzz_time,
-            total_decompose_time,
-            total_verification_time,
-            total_verification_results,
-        ) = self.transform_data()
-        LOG.info(f"Fuzz time ({log_name})")
-        self._dict_to_csv(total_fuzz_time)
-        LOG.info(f"Decompose time ({log_name})")
-        self._dict_to_csv(total_decompose_time)
-        LOG.info(f"Verification time ({log_name})")
-        self._dict_to_csv(total_verification_time)
-        LOG.info(f"Verification results ({log_name})")
-        self._dict_to_csv(total_verification_results)
-
-    def _dict_to_csv(self, time_dict):
-        with tempfile.NamedTemporaryFile() as csv_file:
-            with open(csv_file.name, "w") as csv_file:
-                writer = csv.writer(csv_file)
-                for file_name, measurements in time_dict.items():
-                    measurements = [f"{measurement:.2f}" for measurement in measurements]
-                    writer.writerow([file_name, *measurements])
-            with open(csv_file.name, "r") as csv_file:
-                csv_file_contents = csv_file.read()
-                print(csv_file_contents)
-
 
 def _get_json_files(mode, input_directory):
     if mode == "qfuzz":
@@ -162,6 +149,22 @@ def _get_json_files(mode, input_directory):
         return {"naive": naive_logs, "qfuzz": qfuzz_logs}
     elif mode == "timeout":
         return {}
+
+
+def _build_csv_header(log_names):
+    csv_header = ["program names"]
+    for log_name in log_names:
+        csv_header.append(f"fuzz time ({log_name})")
+        csv_header.append("")
+    for log_name in log_names:
+        csv_header.append(f"decompose time ({log_name})")
+        csv_header.append("")
+    for log_name in log_names:
+        csv_header.append(f"verification time ({log_name})")
+        csv_header.append("")
+    for log_name in log_names:
+        csv_header.append(f"verification results ({log_name})")
+    return csv_header
 
 
 if __name__ == "__main__":
@@ -196,9 +199,12 @@ if __name__ == "__main__":
     configure_logging(filename=None)
     print_args(args)
 
-    for log_name, json_files in _get_json_files(
-        mode=args.mode, input_directory=args.input
-    ).items():
+    # A map from file names to the measurements under different configurations
+    table = {}
+    measurements = {}
+    file_names = set()
+    log_files = _get_json_files(mode=args.mode, input_directory=args.input)
+    for log_name, json_files in log_files.items():
         LOG.info(f"Summarize logs for `{log_name}` under mode `{args.mode}`")
         data = Data()
         for json_file in json_files:
@@ -212,13 +218,50 @@ if __name__ == "__main__":
                     data.insert_time_measurement(
                         file_name=file_name, time_measurement=time_measurement
                     )
+                    file_names.add(file_name)
 
                 for file_name, verification_result in verification_results.items():
                     data.insert_verification_result(
                         file_name=file_name, verification_result=verification_result
                     )
-        # data.pretty_print()
-        data.print_to_csv(log_name=log_name)
+        measurements.update({log_name: data})
+
+    csv_header = _build_csv_header(log_names=measurements.keys())
+    for file_name in sorted(file_names):
+        fuzz_time = []
+        decompose_time = []
+        verification_time = []
+        verification_results = []
+        for log_name, measurement in measurements.items():
+            (
+                total_fuzz_time,
+                total_decompose_time,
+                total_verification_time,
+                total_verification_results,
+            ) = measurement.transform_data()
+            fuzz_time_entry = total_fuzz_time.get(file_name, [])
+            fuzz_time.extend(fuzz_time_entry)
+
+            decompose_time_entry = total_decompose_time.get(file_name, [])
+            decompose_time.extend(decompose_time_entry)
+
+            verification_time_entry = total_verification_time.get(file_name, [])
+            verification_time.extend(verification_time_entry)
+
+            verification_result_entry = total_verification_results.get(file_name, [])
+            verification_results.extend(verification_result_entry)
+        table.update(
+            {
+                _simplify_filename(file_name): [
+                    *fuzz_time,
+                    *decompose_time,
+                    *verification_time,
+                    *verification_results,
+                ]
+            }
+        )
+    print(_to_csv(dictOrList=csv_header))
+    print(_to_csv(dictOrList=table))
 
     """
     json_object = json.dumps(output, indent=2)
