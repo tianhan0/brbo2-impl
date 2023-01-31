@@ -1,0 +1,29 @@
+2023-01-30 22:56:11,723 INFO     Arguments:
+2023-01-30 22:56:11,723 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-01-30 22:56:11,723 INFO     experiment	qfuzz
+2023-01-30 22:56:11,724 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-01-30 22:56:11,724 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-01-30 22:56:11,724 INFO     icra	/root/Documents/workspace/icra/icra
+2023-01-30 22:56:11,724 INFO     dry	False
+2023-01-30 22:56:11,724 INFO     repeat	2
+2023-01-30 22:56:11,724 INFO     qtimeout	60
+2023-01-30 22:56:11,724 INFO     qmin_int	4
+2023-01-30 22:56:11,724 INFO     qmax_int	50
+2023-01-30 22:56:11,724 INFO     Begin 00 run
+2023-01-30 22:56:11,724 INFO     Input seed: [220, 172, 136, 118, 50, 16, 163, 167, 72, 151, 211, 24, 142, 224, 176, 167, 102, 216, 175, 186, 31, 156, 1, 164, 221, 235, 8, 197, 127, 208, 81, 174, 214, 175, 87, 47, 72, 185, 43, 160, 67, 216, 65, 194, 105, 128, 36, 234, 105, 99]
+2023-01-30 22:56:11,724 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230130_22-56-11/seeds/seed_00.txt
+2023-01-30 22:56:11,724 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230130_22-56-11/naive_00.txt --mode naive --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230130_22-56-11/seeds --max-int 50 --min-int 4`
+2023-01-30 23:59:45,283 INFO     Done. Execution time: 3813.5588483810425 seconds
+2023-01-30 23:59:45,283 INFO     Output: 
+2023-01-30 23:59:45,284 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230130_22-56-11/qfuzz_00.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230130_22-56-11/seeds --max-int 50 --min-int 4`
+2023-01-31 01:01:48,110 INFO     Done. Execution time: 3722.8257944583893 seconds
+2023-01-31 01:01:48,110 INFO     Output: 
+2023-01-31 01:01:48,110 INFO     Begin 01 run
+2023-01-31 01:01:48,110 INFO     Input seed: [107, 245, 234, 68, 31, 211, 214, 71, 173, 74, 155, 255, 223, 162, 15, 78, 51, 86, 183, 154, 43, 178, 222, 220, 138, 171, 169, 238, 119, 44, 228, 64, 185, 69, 178, 169, 32, 87, 223, 200, 133, 183, 139, 113, 118, 155, 207, 203, 251, 240]
+2023-01-31 01:01:48,110 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230130_22-56-11/seeds/seed_01.txt
+2023-01-31 01:01:48,111 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230130_22-56-11/naive_01.txt --mode naive --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230130_22-56-11/seeds --max-int 50 --min-int 4`
+2023-01-31 02:01:46,898 INFO     Done. Execution time: 3598.787117242813 seconds
+2023-01-31 02:01:46,898 INFO     Output: 
+2023-01-31 02:01:46,898 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230130_22-56-11/qfuzz_01.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230130_22-56-11/seeds --max-int 50 --min-int 4`
+2023-01-31 03:44:05,754 INFO     Done. Execution time: 6138.855174779892 seconds
+2023-01-31 03:44:05,754 INFO     Output: 
