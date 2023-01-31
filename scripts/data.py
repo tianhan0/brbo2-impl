@@ -3,7 +3,10 @@ import logging
 import json
 import scipy.stats as stats
 import numpy
-from common import print_args, get_files, pretty_print
+from pathlib import Path
+from common import print_args, get_files, pretty_print, configure_logging
+
+LOG = logging.getLogger(__name__)
 
 # Assume the dictionary is a map from keys to a list of numbers
 def _update(dictionary, file_name, new_data_point):
@@ -37,6 +40,10 @@ def transform_data(dictionary, mode):
     return result
 
 
+def _simplify_filename(file_name: str):
+    return Path(file_name).stem
+
+
 class Data:
     def __init__(self):
         self.total_fuzz_time = {}
@@ -45,6 +52,7 @@ class Data:
         self.total_verification_results = {}
 
     def insert_time_measurement(self, file_name, time_measurement):
+        file_name = _simplify_filename(file_name)
         _update(
             dictionary=self.total_fuzz_time,
             file_name=file_name,
@@ -62,6 +70,7 @@ class Data:
         )
 
     def insert_verification_result(self, file_name, verification_result):
+        file_name = _simplify_filename(file_name)
         if verification_result == "verified":
             verification_result = 1
         else:
@@ -73,12 +82,10 @@ class Data:
         )
 
     def print_raw(self):
-        logging.info(f"Fuzz time:\n{pretty_print(self.total_fuzz_time)}")
-        logging.info(f"Decompose time:\n{pretty_print(self.total_decompose_time)}")
-        logging.info(
-            f"Verification time:\n{pretty_print(self.total_verification_time)}"
-        )
-        logging.info(
+        LOG.info(f"Fuzz time:\n{pretty_print(self.total_fuzz_time)}")
+        LOG.info(f"Decompose time:\n{pretty_print(self.total_decompose_time)}")
+        LOG.info(f"Verification time:\n{pretty_print(self.total_verification_time)}")
+        LOG.info(
             f"Verification results:\n{pretty_print(self.total_verification_results)}"
         )
 
@@ -101,6 +108,18 @@ class Data:
             total_verification_time,
             total_verification_results,
         )
+
+    def pretty_print(self):
+        (
+            total_fuzz_time,
+            total_decompose_time,
+            total_verification_time,
+            total_verification_results,
+        ) = self.transform_data()
+        LOG.info(f"Fuzz time: {pretty_print(total_fuzz_time)}")
+        LOG.info(f"Decompose time: {pretty_print(total_decompose_time)}")
+        LOG.info(f"Verification time: {pretty_print(total_verification_time)}")
+        LOG.info(f"Verification results: {pretty_print(total_verification_results)}")
 
 
 if __name__ == "__main__":
@@ -133,13 +152,14 @@ if __name__ == "__main__":
     )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
+    configure_logging(filename=None)
     print_args(args)
 
     json_files = get_files(path=args.input, prefix="", suffix="json")
     data = Data()
     for json_file in json_files:
         with open(json_file, "r") as json_file:
-            logging.info(f"Read from {args.input}")
+            LOG.info(f"Read from {args.input}")
             json_data = json.loads(json_file.read())
             time_measurements = json_data["time_measurements"]
             verification_results = json_data["verification_results"]
@@ -155,16 +175,7 @@ if __name__ == "__main__":
                 )
 
     # data.print_raw()
-    (
-        total_fuzz_time,
-        total_decompose_time,
-        total_verification_time,
-        total_verification_results,
-    ) = data.transform_data()
-    logging.info(f"Fuzz time: {pretty_print(total_fuzz_time)}")
-    logging.info(f"Decompose time: {pretty_print(total_decompose_time)}")
-    logging.info(f"Verification time: {pretty_print(total_verification_time)}")
-    logging.info(f"Verification results: {pretty_print(total_verification_results)}")
+    data.pretty_print()
     """
     json_object = json.dumps(output, indent=2)
     with open(args.output, "w") as output_file:
