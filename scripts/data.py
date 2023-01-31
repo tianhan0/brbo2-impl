@@ -21,7 +21,9 @@ def _update(dictionary, file_name, new_data_point):
 def _transform_data(dictionary, mode):
     # https://www.geeksforgeeks.org/how-to-calculate-confidence-intervals-in-python/
     result = {}
-    for key, value in dictionary.items():
+    for key, values in dictionary.items():
+        # Sometimes the values are missing
+        values = [item if item else 0 for item in values]
         if mode == "confidence_interval":
             """
             new_value = stats.t.interval(
@@ -32,10 +34,10 @@ def _transform_data(dictionary, mode):
             )
             """
             new_value = stats.norm.interval(
-                confidence=0.95, loc=numpy.mean(value), scale=stats.sem(value)
+                confidence=0.95, loc=numpy.mean(values), scale=stats.sem(values)
             )
         elif mode == "mean":
-            new_value = [numpy.mean(value)]
+            new_value = [numpy.mean(values)]
         else:
             raise AssertionError(f"Unknown mode: {mode}")
         # Return a list here, such that all dictionaries are of the same shape: str -> list of numbers
@@ -61,7 +63,7 @@ def _to_csv(dictOrList):
             elif type(dictOrList) is list:
                 writer.writerow(dictOrList)
         with open(csv_file.name, "r") as csv_file:
-            return csv_file.read()
+            return csv_file.read().strip()
 
 
 class Data:
@@ -70,6 +72,7 @@ class Data:
         self.total_decompose_time = {}
         self.total_verification_time = {}
         self.total_verification_results = {}
+        self.total_trace_clusters = {}
 
     def insert_time_measurement(self, file_name, time_measurement):
         _update(
@@ -99,6 +102,13 @@ class Data:
             new_data_point=verification_result,
         )
 
+    def insert_trace_cluster(self, file_name, trace_cluster):
+        _update(
+            dictionary=self.total_trace_clusters,
+            file_name=file_name,
+            new_data_point=trace_cluster,
+        )
+
     def print_raw(self):
         LOG.info(f"Fuzz time:\n{pretty_print(self.total_fuzz_time)}")
         LOG.info(f"Decompose time:\n{pretty_print(self.total_decompose_time)}")
@@ -122,11 +132,15 @@ class Data:
             mode="mean"
             # dictionary=self.total_verification_results, mode="confidence_interval"
         )
+        total_trace_clusters = _transform_data(
+            dictionary=self.total_trace_clusters, mode="mean"
+        )
         return (
             total_fuzz_time,
             total_decompose_time,
             total_verification_time,
             total_verification_results,
+            total_trace_clusters,
         )
 
     def pretty_print(self):
@@ -135,11 +149,13 @@ class Data:
             total_decompose_time,
             total_verification_time,
             total_verification_results,
+            total_trace_clusters,
         ) = self.transform_data()
         LOG.info(f"Fuzz time: {pretty_print(total_fuzz_time)}")
         LOG.info(f"Decompose time: {pretty_print(total_decompose_time)}")
         LOG.info(f"Verification time: {pretty_print(total_verification_time)}")
         LOG.info(f"Verification results: {pretty_print(total_verification_results)}")
+        LOG.info(f"Trace clusters: {pretty_print(total_trace_clusters)}")
 
 
 def _get_json_files(mode, input_directory):
@@ -164,6 +180,8 @@ def _build_csv_header(log_names):
         csv_header.append("")
     for log_name in log_names:
         csv_header.append(f"verification results ({log_name})")
+    for log_name in log_names:
+        csv_header.append(f"trace clusters ({log_name})")
     return csv_header
 
 
@@ -213,6 +231,9 @@ if __name__ == "__main__":
                 json_data = json.loads(file.read())
                 time_measurements = json_data["time_measurements"]
                 verification_results = json_data["verification_results"]
+                trace_clusters = (
+                    json_data["trace_clusters"] if "trace_clusters" in json_data else {}
+                )
 
                 for file_name, time_measurement in time_measurements.items():
                     data.insert_time_measurement(
@@ -224,6 +245,11 @@ if __name__ == "__main__":
                     data.insert_verification_result(
                         file_name=file_name, verification_result=verification_result
                     )
+
+                for file_name, trace_cluster in trace_clusters.items():
+                    data.insert_trace_cluster(
+                        file_name=file_name, trace_cluster=trace_cluster
+                    )
         measurements.update({log_name: data})
 
     csv_header = _build_csv_header(log_names=measurements.keys())
@@ -232,12 +258,14 @@ if __name__ == "__main__":
         decompose_time = []
         verification_time = []
         verification_results = []
+        trace_clusters = []
         for log_name, measurement in measurements.items():
             (
                 total_fuzz_time,
                 total_decompose_time,
                 total_verification_time,
                 total_verification_results,
+                total_trace_clusters,
             ) = measurement.transform_data()
             fuzz_time_entry = total_fuzz_time.get(file_name, [])
             fuzz_time.extend(fuzz_time_entry)
@@ -250,6 +278,9 @@ if __name__ == "__main__":
 
             verification_result_entry = total_verification_results.get(file_name, [])
             verification_results.extend(verification_result_entry)
+
+            trace_cluster_entry = total_trace_clusters.get(file_name, [])
+            trace_clusters.extend(trace_cluster_entry)
         table.update(
             {
                 _simplify_filename(file_name): [
@@ -257,9 +288,11 @@ if __name__ == "__main__":
                     *decompose_time,
                     *verification_time,
                     *verification_results,
+                    *trace_clusters,
                 ]
             }
         )
+    LOG.info("Summarize the logs into a CSV table:")
     print(_to_csv(dictOrList=csv_header))
     print(_to_csv(dictOrList=table))
 
