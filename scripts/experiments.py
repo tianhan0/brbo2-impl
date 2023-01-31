@@ -127,6 +127,23 @@ if __name__ == "__main__":
         default=3,
         help="The number of times to repeat the experiment.",
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        help="The timeout for Qfuzz in seconds.",
+    )
+    parser.add_argument(
+        "--min-int",
+        type=int,
+        default=4,
+        help="The max integer for QFuzz to find inputs from.",
+    )
+    parser.add_argument(
+        "--max-int",
+        type=int,
+        default=12,
+        help="The min integer for QFuzz to find inputs from.",
+    )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
 
@@ -138,8 +155,9 @@ if __name__ == "__main__":
     )
     print_args(args)
 
-    qfuzz_max_int = 12
-    qfuzz_min_int = 4
+    qfuzz_timeout_in_seconds = args.timeout
+    qfuzz_max_int = args.max_int
+    qfuzz_min_int = args.min_int
     seed_directory = log_directory / "seeds"
     seed_directory.mkdir(parents=True, exist_ok=True)
     for i in range(args.repeat):
@@ -154,7 +172,6 @@ if __name__ == "__main__":
             binary_file.write(immutable_bytes)
 
         if args.experiment == "verifiability" or args.experiment == "all":
-            qfuzz_timeout_in_seconds = 180
             worst_case = brbo_command(
                 input=args.input,
                 brbo=args.brbo,
@@ -192,7 +209,6 @@ if __name__ == "__main__":
             )
             run_command(command=selective_amortization, dry=args.dry)
         elif args.experiment == "qfuzz" or args.experiment == "all":
-            qfuzz_timeout_in_seconds = 240
             naive_qfuzz = brbo2_command(
                 input=args.input,
                 qfuzz=args.qfuzz,
