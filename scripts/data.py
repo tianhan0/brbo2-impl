@@ -148,6 +148,7 @@ class Data:
             with open(csv_file.name, "w") as csv_file:
                 writer = csv.writer(csv_file)
                 for file_name, measurements in time_dict.items():
+                    measurements = [f"{measurement:.2f}" for measurement in measurements]
                     writer.writerow([file_name, *measurements])
             with open(csv_file.name, "r") as csv_file:
                 csv_file_contents = csv_file.read()
