@@ -69,6 +69,9 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |import java.util.ArrayList;
         |import java.util.Arrays;
         |import java.util.List;
+        |import java.util.HashSet;
+        |import java.util.Set;
+        |import com.google.common.collect.Sets;
         |
         |public class TestQFuzzDriver {
         |  public final static int ARRAY_SIZE = 5;
@@ -115,10 +118,12 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    boolean c;
         |    try {
         |      a = values.get(0);
+        |
         |      for (int i = 0; i < ARRAY_SIZE && 1 + i < values.size(); i++) {
         |        array[i] = values.get(1 + i);
         |      }
         |      b = values.get(6);
+        |
         |      c = values.get(7) > 16383;
         |    } catch (IndexOutOfBoundsException exception) {
         |      long[] actualObservations = new long[0];
@@ -157,6 +162,31 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    long[] actualObservations = new long[useCount];
         |    System.arraycopy(observations, 0, actualObservations, 0, actualObservations.length);
         |    System.out.println("observations: " + Arrays.toString(actualObservations));
+        |
+        |    // Find the sums of all segments
+        |    Set<Long> segmentSums = new HashSet<Long>();
+        |    Set<Long> observationSet = new HashSet<Long>();
+        |    for (long actualObservation: actualObservations) {
+        |      observationSet.add(actualObservation);
+        |    }
+        |    for (int size = 1; size <= ARRAY_SIZE; size++) {
+        |      Set<Set<Long>> subsets = Sets.combinations(observationSet, size);
+        |      for (Set<Long> subset: subsets) {
+        |        long sum = 0;
+        |        for (Long element: subset) {
+        |          sum += element;
+        |        }
+        |        segmentSums.add(sum);
+        |      }
+        |    }
+        |    actualObservations = new long[segmentSums.size()];
+        |    int i = 0;
+        |    for (Long sum: segmentSums) {
+        |      actualObservations[i] = sum;
+        |      i++;
+        |    }
+        |    System.out.println("observations (sums): " + Arrays.toString(actualObservations));
+        |
         |
         |    PartitionSet clusters = PartitionSet.createFromObservations(epsilon, actualObservations, clusterAlgorithm);
         |    // Give feedback to fuzzer: Number of clusters, min distance between clusters

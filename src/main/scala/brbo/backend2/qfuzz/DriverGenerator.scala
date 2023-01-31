@@ -75,6 +75,9 @@ object DriverGenerator {
        |import java.util.ArrayList;
        |import java.util.Arrays;
        |import java.util.List;
+       |import java.util.HashSet;
+       |import java.util.Set;
+       |import com.google.common.collect.Sets;
        |
        |public class ${driverClassName(program.className)} {
        |  public final static int ARRAY_SIZE = ${generatorParameters.arraySize};
@@ -152,6 +155,30 @@ object DriverGenerator {
        |    long[] actualObservations = new long[useCount];
        |    System.arraycopy(observations, 0, actualObservations, 0, actualObservations.length);
        |    System.out.println("observations: " + Arrays.toString(actualObservations));
+       |
+       |    // Find the sums of all segments
+       |    Set<Long> segmentSums = new HashSet<Long>();
+       |    Set<Long> observationSet = new HashSet<Long>();
+       |    for (long actualObservation: actualObservations) {
+       |      observationSet.add(actualObservation);
+       |    }
+       |    for (int size = 1; size <= ARRAY_SIZE; size++) {
+       |      Set<Set<Long>> subsets = Sets.combinations(observationSet, size);
+       |      for (Set<Long> subset: subsets) {
+       |        long sum = 0;
+       |        for (Long element: subset) {
+       |          sum += element;
+       |        }
+       |        segmentSums.add(sum);
+       |      }
+       |    }
+       |    actualObservations = new long[segmentSums.size()];
+       |    int i = 0;
+       |    for (Long sum: segmentSums) {
+       |      actualObservations[i] = sum;
+       |      i++;
+       |    }
+       |    System.out.println("observations (sums): " + Arrays.toString(actualObservations));
        |
        |    $resetActualObservations
        |    PartitionSet clusters = PartitionSet.createFromObservations(epsilon, actualObservations, clusterAlgorithm);

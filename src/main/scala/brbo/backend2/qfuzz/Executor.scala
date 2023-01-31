@@ -27,6 +27,7 @@ object Executor {
     val logger = MyLogger.createLogger(Executor.getClass, debugMode = arguments.getDebugMode)
 
     val QFUZZ_PATH = arguments.getQFuzzPath
+    val GUAVA_JAR_PATH = s"${System.getProperty("user.dir")}/lib/deps/guava-31.1-jre.jar"
     val KELINCI_JAR_PATH = s"$QFUZZ_PATH/tool/instrumentor/build/libs/kelinci.jar"
     val AFL_PATH = s"$QFUZZ_PATH/tool/afl-2.51b-qfuzz/afl-fuzz"
     val INTERFACE_C_PATH = s"$QFUZZ_PATH/tool/fuzzerside/interface"
@@ -63,13 +64,13 @@ object Executor {
     BrboMain.executeCommandWithLogger(
       // IMPORTANT: Avoid using quotes when specifying class path
       // To debug, add "-verbose" option and check the class paths
-      command = s"""javac -cp .:$KELINCI_JAR_PATH $driverFilePath -d $BINARY_PATH""",
+      command = s"""javac -cp .:$KELINCI_JAR_PATH:$GUAVA_JAR_PATH $driverFilePath -d $BINARY_PATH""",
       logger
     )
     logger.info(s"Step 2.2: Instrument the QFuzz driver")
     prepareDirectory(INSTRUMENTED_BINARY_PATH)
     BrboMain.executeCommandWithLogger(
-      command = s"""java -cp .:$KELINCI_JAR_PATH edu.cmu.sv.kelinci.instrumentor.Instrumentor -mode LABELS -i $BINARY_PATH -o $INSTRUMENTED_BINARY_PATH -skipmain""",
+      command = s"""java -cp .:$KELINCI_JAR_PATH:$GUAVA_JAR_PATH edu.cmu.sv.kelinci.instrumentor.Instrumentor -mode LABELS -i $BINARY_PATH -o $INSTRUMENTED_BINARY_PATH -skipmain""",
       logger
     )
 
@@ -78,7 +79,7 @@ object Executor {
       case "kelinci" => Future {
         logger.info(s"Step 3: Run Kelinci server. Timeout: $KELINCI_TIMEOUT_IN_SECONDS sec.")
         val driverFullyQualifiedClassName = DriverGenerator.driverFullyQualifiedClassName(program.className)
-        val command = s"""java -cp .:$KELINCI_JAR_PATH:$INSTRUMENTED_BINARY_PATH edu.cmu.sv.kelinci.Kelinci -K 100 $driverFullyQualifiedClassName @@"""
+        val command = s"""java -cp .:$KELINCI_JAR_PATH:$GUAVA_JAR_PATH:$INSTRUMENTED_BINARY_PATH edu.cmu.sv.kelinci.Kelinci -K 100 $driverFullyQualifiedClassName @@"""
         logger.info(s"Execute `$command`")
         val kelinciOutput = BrboMain.executeCommand(command = command, timeout = KELINCI_TIMEOUT_IN_SECONDS)
         val outputDirectory = s"${BrboMain.OUTPUT_DIRECTORY}/fuzz"
