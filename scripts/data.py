@@ -43,7 +43,10 @@ def _transform_data(dictionary, mode):
             raise AssertionError(f"Unknown mode: {mode}")
         # Return a list here, such that all dictionaries are of the same shape: str -> list of numbers
         # Such that we can uniformly work on the dictionaries (e.g., printing into csv)
-        result.update({key: list(new_value)})
+        new_value = list(new_value)
+        # We should not see negative numbers for any of our measurement
+        new_value = [item if item >= 0 else 0 for item in new_value]
+        result.update({key: new_value})
     return result
 
 
