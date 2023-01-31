@@ -165,7 +165,7 @@ object DriverGenerator {
        |      i++;
        |    }
        |    int MAX_SEGMENT_LENGTH = ARRAY_SIZE; // TODO: Update this if the relation changes
-       |    for (int size = 1; size <= MAX_SEGMENT_LENGTH; size++) {
+       |    for (int size = 1; size <= MAX_SEGMENT_LENGTH && size <= indexList.size(); size++) {
        |      Set<Set<Integer>> subsets = Sets.combinations(new HashSet<>(indexList), size);
        |      for (Set<Integer> subset: subsets) {
        |        long sum = 0;
