@@ -158,22 +158,25 @@ object DriverGenerator {
        |
        |    // Find the sums of all segments
        |    Set<Long> segmentSums = new HashSet<Long>();
-       |    Set<Long> observationSet = new HashSet<Long>();
+       |    List<Integer> indexList = new ArrayList<Integer>();
+       |    int i = 0;
        |    for (long actualObservation: actualObservations) {
-       |      observationSet.add(actualObservation);
+       |      indexList.add(i);
+       |      i++;
        |    }
-       |    for (int size = 1; size <= ARRAY_SIZE; size++) {
-       |      Set<Set<Long>> subsets = Sets.combinations(observationSet, size);
-       |      for (Set<Long> subset: subsets) {
+       |    int MAX_SEGMENT_LENGTH = ARRAY_SIZE; // TODO: Update this if the relation changes
+       |    for (int size = 1; size <= MAX_SEGMENT_LENGTH; size++) {
+       |      Set<Set<Integer>> subsets = Sets.combinations(new HashSet<>(indexList), size);
+       |      for (Set<Integer> subset: subsets) {
        |        long sum = 0;
-       |        for (Long element: subset) {
-       |          sum += element;
+       |        for (Integer index: subset) {
+       |          sum += actualObservations[index];
        |        }
        |        segmentSums.add(sum);
        |      }
        |    }
        |    actualObservations = new long[segmentSums.size()];
-       |    int i = 0;
+       |    i = 0;
        |    for (Long sum: segmentSums) {
        |      actualObservations[i] = sum;
        |      i++;
