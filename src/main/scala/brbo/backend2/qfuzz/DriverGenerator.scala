@@ -10,7 +10,7 @@ import brbo.frontend.TargetProgram
 
 object DriverGenerator {
   // Longer array sizes are more likely to cause collisions between array elements.
-  val ARRAY_SIZE = 5
+  val ARRAY_SIZE = 7
   val BOOLEAN_SEPARATOR = 10 // TODO: This should be the average between the min and the max
   val HALF_MAX_VALUE: Int = java.lang.Short.MAX_VALUE / 2
   val MIN_LOOP_ITERATIONS = 2
