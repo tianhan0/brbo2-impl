@@ -242,10 +242,6 @@ class Measurement:
         logging.info(f"Number of trace clusters: {pretty_print(self.trace_clusters)}")
 
     def write(self, log_file):
-        short_names = {
-            file_name: str(Path(file_name).stem)
-            for file_name in self.per_file_execution_time.keys()
-        }
         output_contents = {
             "total_time": self.total_time,
             "total_verified": self.total_verified,
@@ -257,7 +253,6 @@ class Measurement:
             "unknown_programs": self.count_unknown,
             "time_measurements": self.per_file_execution_time,
             "verification_results": self.verification_results,
-            "short_names": short_names,
         }
         with open(log_file, "w") as output_file:
             logging.info(f"Write into {log_file}")
