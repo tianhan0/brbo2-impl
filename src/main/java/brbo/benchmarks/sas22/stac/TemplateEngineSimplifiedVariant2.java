@@ -2,7 +2,7 @@ package brbo.benchmarks.sas22.stac;
 
 import brbo.benchmarks.Common;
 
-public abstract class TemplateEngineSimplified2 extends Common {
+public abstract class TemplateEngineSimplifiedVariant2 extends Common {
   void execute(int[] text) {
     if (arrayLength(text) <= 1) {
       return;
