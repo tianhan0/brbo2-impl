@@ -133,34 +133,29 @@ object DriverGenerator {
        |    long[] observations = new long[MAX_NUMBER_OF_USES_TO_TRACK];
        |    ${program.className} program = new ${program.className}();
        |    Mem.clear(true);
-       |    int useCount = 0;
-       |    long lastMemInstrCost = 0L;
-       |    int iThUse = 1;
-       |    for (; iThUse <= MAX_NUMBER_OF_USES_TO_TRACK; iThUse++) {
+       |    int DEFAULT_USE_COST = 0;
+       |    int useCost = DEFAULT_USE_COST;
+       |    for (int iThUse = 1; iThUse <= MAX_NUMBER_OF_USES_TO_TRACK; iThUse++) {
        |      // In the i-th iteration, we collect accumulated resource consumption up to the secret[i]-th uses
        |      Mem.clear(false);
-       |      useCount = program.${TargetProgram.MAIN_FUNCTION}(${program.mainFunction.parameters.map({ identifier => identifier.name }).mkString(", ")}, iThUse);
-       |      if (iThUse <= useCount)
-       |        System.out.printf("iThUse: %d; cost: %d; useCount: %d\\n", iThUse, Mem.instrCost, useCount);
-       |      long thisCost = 0L;
-       |      if (iThUse == 1) {
-       |        thisCost = Mem.instrCost;
-       |      } else {
-       |        thisCost = Mem.instrCost - lastMemInstrCost;
-       |      }
-       |      assert (thisCost >= 0);
-       |      observations[iThUse - 1] = thisCost;
-       |      lastMemInstrCost = Mem.instrCost;
+       |      // Instead of relying on the instrumentation for measuring the use costs, we directly count them.
+       |      useCost = program.${TargetProgram.MAIN_FUNCTION}(${program.mainFunction.parameters.map({ identifier => identifier.name }).mkString(", ")}, iThUse);
+       |      if (useCost != DEFAULT_USE_COST)
+       |        System.out.printf("iThUse: %d; cost: %d; useCost: %d\\n", iThUse, Mem.instrCost, useCost);
+       |      observations[iThUse - 1] = useCost;
        |    }
-       |    long[] actualObservations = new long[useCount];
-       |    System.arraycopy(observations, 0, actualObservations, 0, actualObservations.length);
-       |    System.out.println("observations: " + Arrays.toString(actualObservations));
+       |    List<Long> observationList = new ArrayList<>();
+       |    for (long observation: observations) {
+       |      if (observation != DEFAULT_USE_COST)
+       |        observationList.add(observation);
+       |    }
+       |    System.out.println("observations: " + Arrays.toString(observationList.toArray()));
        |
        |    // Find the sums of all segments
-       |    Set<Long> segmentSums = new HashSet<Long>();
-       |    List<Integer> indexList = new ArrayList<Integer>();
+       |    Set<Long> segmentSums = new HashSet<>();
+       |    List<Integer> indexList = new ArrayList<>();
        |    int INDEX = 0;
-       |    for (long actualObservation: actualObservations) {
+       |    for (long actualObservation: observationList) {
        |      indexList.add(INDEX);
        |      INDEX++;
        |    }
@@ -170,12 +165,12 @@ object DriverGenerator {
        |      for (Set<Integer> subset: subsets) {
        |        long sum = 0;
        |        for (Integer index: subset) {
-       |          sum += actualObservations[index];
+       |          sum += observationList.get(index);
        |        }
        |        segmentSums.add(sum);
        |      }
        |    }
-       |    actualObservations = new long[segmentSums.size()];
+       |    long[] actualObservations = new long[segmentSums.size()];
        |    INDEX = 0;
        |    for (Long sum: segmentSums) {
        |      actualObservations[INDEX] = sum;

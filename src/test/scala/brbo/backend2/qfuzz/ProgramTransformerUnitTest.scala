@@ -68,9 +68,10 @@ object ProgramTransformerUnitTest {
          |  int execute(int n, int INDEX_VARIABLE)
          |  {
          |    int USE_COUNT = 0;
+         |    int USE = 0;
          |    if (n < 5)
          |    {
-         |      return USE_COUNT;
+         |      return USE;
          |    }
          |    else
          |    {
@@ -80,12 +81,11 @@ object ProgramTransformerUnitTest {
          |    int i = 0;
          |    while (i < n)
          |    {
-         |      use(5);
+         |      USE = 5;
          |      USE_COUNT = USE_COUNT + 1;
-         |      INDEX_VARIABLE = INDEX_VARIABLE - 1;
-         |      if (INDEX_VARIABLE == 0)
+         |      if (INDEX_VARIABLE == USE_COUNT)
          |      {
-         |        return USE_COUNT;
+         |        return USE;
          |      }
          |      else
          |      {
@@ -93,7 +93,7 @@ object ProgramTransformerUnitTest {
          |      }
          |      i = i + 1;
          |    }
-         |    return USE_COUNT;
+         |    return USE;
          |  }
          |  int arrayRead(int[] array, int index) { return array[index]; }
          |  int arrayLength(int[] array) { return array.length; }
@@ -133,10 +133,11 @@ object ProgramTransformerUnitTest {
          |  int execute(int[] array, int INDEX_VARIABLE)
          |  {
          |    int USE_COUNT = 0;
+         |    int USE = 0;
          |    int x = arrayLength(array);
          |    x = arraySum(array);
          |    x = arrayRead(array, 3);
-         |    return USE_COUNT;
+         |    return USE;
          |  }
          |  int arrayRead(int[] array, int index) { return array[index]; }
          |  int arrayLength(int[] array) { return array.length; }
@@ -179,9 +180,10 @@ object ProgramTransformerUnitTest {
         |  int execute(int n, int INDEX_VARIABLE)
         |  {
         |    int USE_COUNT = 0;
+        |    int USE = 0;
         |    if (n < 5)
         |    {
-        |      return USE_COUNT;
+        |      return USE;
         |    }
         |    else
         |    {
@@ -194,7 +196,7 @@ object ProgramTransformerUnitTest {
         |      // use R 5
         |      i = i + 1;
         |    }
-        |    return USE_COUNT;
+        |    return USE;
         |  }
         |  int arrayRead(int[] array, int index) { return array[index]; }
         |  int arrayLength(int[] array) { return array.length; }
@@ -228,7 +230,6 @@ object ProgramTransformerUnitTest {
         |      i = i + 1;
         |    }
         |  }
-        |}
-        |""".stripMargin),
+        |}""".stripMargin),
   )
 }

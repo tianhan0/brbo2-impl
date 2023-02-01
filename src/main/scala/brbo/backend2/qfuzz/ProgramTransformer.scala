@@ -11,8 +11,9 @@ object ProgramTransformer {
   private val indexVariable = Identifier(name = "INDEX_VARIABLE", typ = BrboType.INT)
   // This variable tracks the number of use commands that are executed per run.
   private val useCountVariable = Identifier(name = "USE_COUNT", typ = BrboType.INT)
-  private val returnUseCountVariable = Return(expression = Some(useCountVariable))
-  private val specialVariables = List(indexVariable, useCountVariable)
+  private val useVariable = Identifier(name = "USE", typ = BrboType.INT)
+  private val returnUseVariable = Return(expression = Some(useVariable))
+  private val specialVariables = List(indexVariable, useVariable, useCountVariable)
 
   def transform(program: BrboProgram, loopIterationMultiplier: Int, mode: DriverGenerator.Mode): BrboProgram = {
     val mainFunction = program.mainFunction
@@ -29,22 +30,25 @@ object ProgramTransformer {
           case use: Use =>
             mode match {
               case DriverGenerator.Modified =>
-                val newUse = generateCallUse(use)
+                val newUse = generateUseAssignment(use)
+                val returnIfEqual = ITE(Equal(indexVariable, useCountVariable), returnUseVariable, Skip())
                 val incrementUseCountVariable = Assignment(useCountVariable, Addition(useCountVariable, Number(1)))
-                val decrementIndexVariable = Assignment(indexVariable, Subtraction(indexVariable, Number(1)))
-                val returnIfZero = ITE(Equal(indexVariable, Number(0)), returnUseCountVariable, Skip())
-                (use.asInstanceOf[Command], Block(List(newUse, incrementUseCountVariable, decrementIndexVariable, returnIfZero)))
+                (use.asInstanceOf[Command], Block(List(newUse, incrementUseCountVariable, returnIfEqual)))
               case DriverGenerator.Naive =>
                 (use.asInstanceOf[Command], Comment(use.printToIR()))
               case _ => throw new Exception
             }
           case _return: Return =>
-            (_return.asInstanceOf[Command], returnUseCountVariable)
+            (_return.asInstanceOf[Command], returnUseVariable)
         }).toMap
     val newBody = BrboAstUtils.replaceCommands(mainFunctionBody, replacements = replacements, omitResetPlaceHolders = false)
 
-    val newBody2 = BrboAstUtils.insert(newBody, toInsert = List(VariableDeclaration(useCountVariable, Number(0))), operation = PrependOperation)
-    val newBody3 = BrboAstUtils.insert(newBody2, toInsert = List(returnUseCountVariable), operation = AppendOperation)
+    val declarations = List(
+      VariableDeclaration(useCountVariable, Number(0)),
+      VariableDeclaration(useVariable, Number(0)),
+    )
+    val newBody2 = BrboAstUtils.insert(newBody, toInsert = declarations, operation = PrependOperation)
+    val newBody3 = BrboAstUtils.insert(newBody2, toInsert = List(returnUseVariable), operation = AppendOperation)
     val newMainFunction = BrboFunction(
       identifier = mainFunction.identifier,
       returnType = BrboType.INT, // Return the number of uses in a run
@@ -60,6 +64,14 @@ object ProgramTransformer {
       boundAssertions = program.boundAssertions,
       otherFunctions = useFunction(loopIterationMultiplier) :: program.otherFunctions
     )
+  }
+
+  private def generateUseAssignment(use: Use): BrboAst = {
+    val assignment = Assignment(useVariable, use.update)
+    use.condition match {
+      case Bool(true, _) => assignment
+      case _ => ITE(use.condition, assignment, Skip())
+    }
   }
 
   private def generateCallUse(use: Use): BrboAst = {
