@@ -105,6 +105,8 @@ object Executor {
       }
     })
     Await.result(future, Duration.Inf)
+    logger.info(s"Show running java processes")
+    BrboMain.executeCommandWithLogger(command = "ps -ef | grep java", logger = logger)
     val pathCostFileContents = BrboMain.readFromFile(s"$FUZZ_OUT_DIRECTORY/afl/path_costs.csv")
     logger.info(s"QFuzz output:\n$pathCostFileContents")
     val rankedInputFiles = {
