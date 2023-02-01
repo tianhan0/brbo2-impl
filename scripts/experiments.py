@@ -72,15 +72,18 @@ def brbo_command(input, brbo, icra, dry, timeout, mode, log_file):
     return brbo_command.split()
 
 
-def generate_byte_array():
-    byte_array = list(numpy.random.randint(256, size=50))
-    # range = list(numpy.random.randint(256, size=1))[0]
-    # byte_array = list(numpy.random.randint(low=range, high=range+1, size=50))
+def generate_byte_array(uniform):
+    if uniform:
+        # range = list(numpy.random.randint(256, size=1))[0]
+        # byte_array = list(numpy.random.randint(low=range, high=range+1, size=50))
+        byte_array = list(numpy.random.randint(1, size=50))
+    else:
+        byte_array = list(numpy.random.randint(256, size=50))
     return byte_array
 
 
-def generate_seed():
-    byte_array = generate_byte_array()
+def generate_seed(uniform):
+    byte_array = generate_byte_array(uniform=uniform)
     logging.info(f"Generate input seed: {byte_array}")
     immutable_bytes = bytes(bytearray(byte_array))
     return immutable_bytes
@@ -156,6 +159,12 @@ if __name__ == "__main__":
         default=12,
         help="The min integer for QFuzz to find inputs from.",
     )
+    parser.add_argument(
+        "--uniform-seed",
+        action="store_true",
+        default=False,
+        help="Whether to generate input seeds composed of an array of the same elements.",
+    )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
 
@@ -178,7 +187,7 @@ if __name__ == "__main__":
         run_id = "{:02d}".format(i)
         logging.info(f"Begin {run_id} run")
 
-        seed = generate_seed()
+        seed = generate_seed(uniform=args.uniform_seed)
         seeds.append(seed)
         # Overwrite the seed from the last run, such that later runs cannot use seeds from the previous runs.
         logging.info(f"Write into seed file {shared_seed_file}")
