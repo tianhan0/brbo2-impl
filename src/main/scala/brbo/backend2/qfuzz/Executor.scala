@@ -79,7 +79,7 @@ object Executor {
       case "kelinci" => Future {
         logger.info(s"Step 3: Run Kelinci server. Timeout: $KELINCI_TIMEOUT_IN_SECONDS sec.")
         val driverFullyQualifiedClassName = DriverGenerator.driverFullyQualifiedClassName(program.className)
-        val command = s"""timeout ${KELINCI_TIMEOUT_IN_SECONDS + 1}s java -cp .:$KELINCI_JAR_PATH:$GUAVA_JAR_PATH:$INSTRUMENTED_BINARY_PATH edu.cmu.sv.kelinci.Kelinci -K 100 $driverFullyQualifiedClassName @@"""
+        val command = s"""timeout --kill-after ${KELINCI_TIMEOUT_IN_SECONDS}s ${KELINCI_TIMEOUT_IN_SECONDS}s java -cp .:$KELINCI_JAR_PATH:$GUAVA_JAR_PATH:$INSTRUMENTED_BINARY_PATH edu.cmu.sv.kelinci.Kelinci -K 100 $driverFullyQualifiedClassName @@"""
         logger.info(s"Execute `$command`")
         val kelinciOutput = BrboMain.executeCommand(command = command, timeout = KELINCI_TIMEOUT_IN_SECONDS)
         val outputDirectory = s"${BrboMain.OUTPUT_DIRECTORY}/fuzz"
@@ -93,7 +93,7 @@ object Executor {
         BrboMain.executeCommandWithLogger(command = "sleep 3", logger)
         val timeout = Duration(length = AFL_TIMEOUT_IN_SECONDS, unit = TimeUnit.SECONDS).toMillis
         BrboMain.executeCommandWithLogger(
-          command = s"""timeout ${AFL_TIMEOUT_IN_SECONDS + 1}s $AFL_PATH -i $INPUT_SEED_DIRECTORY -o $FUZZ_OUT_DIRECTORY -c quantify -K 100 -S afl -t $timeout $INTERFACE_C_PATH -K 100 @@""",
+          command = s"""timeout --kill-after ${AFL_TIMEOUT_IN_SECONDS}s ${AFL_TIMEOUT_IN_SECONDS}s $AFL_PATH -i $INPUT_SEED_DIRECTORY -o $FUZZ_OUT_DIRECTORY -c quantify -K 100 -S afl -t $timeout $INTERFACE_C_PATH -K 100 @@""",
           logger,
           environment = Map(
             "AFL_SKIP_CPUFREQ" -> "1",
