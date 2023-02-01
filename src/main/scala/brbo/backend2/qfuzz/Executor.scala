@@ -105,11 +105,10 @@ object Executor {
       }
     })
     Await.result(future, Duration.Inf)
-    val runningJavaProcesses = {
-      val runningProcesses = BrboMain.executeCommand(command = "ps -ef").split("\n")
-      runningProcesses.filter(process => process.contains("java")).mkString("\n")
-    }
-    logger.info(s"Running Java processes:\n$runningJavaProcesses")
+    logger.info(s"Running Java processes:\n${runningJavaProcesses()}")
+    logger.info(s"Kill kelinci servers")
+    killRunningKelinciProcess()
+    logger.info(s"Running Java processes:\n${runningJavaProcesses()}")
     val pathCostFileContents = BrboMain.readFromFile(s"$FUZZ_OUT_DIRECTORY/afl/path_costs.csv")
     logger.info(s"QFuzz output:\n$pathCostFileContents")
     val rankedInputFiles = {
@@ -162,6 +161,23 @@ object Executor {
     FileUtils.deleteDirectory(new File(FUZZ_OUT_DIRECTORY))
     FileUtils.deleteDirectory(new File(BINARY_PATH))
     FileUtils.deleteDirectory(new File(INSTRUMENTED_BINARY_PATH))
+  }
+
+  private def runningProcesses(): List[String] =
+    BrboMain.executeCommand(command = "ps -ef").split("\n").toList
+
+  private def runningJavaProcesses(): String = {
+    runningProcesses().filter(process => process.contains("java")).mkString("\n")
+  }
+
+  private def killRunningKelinciProcess(): Unit = {
+    val kelinciProcesses =
+      runningProcesses()
+        .filter(process => process.contains("kelinci.jar"))
+        .map({ line => line.split("\t")(1) })
+    kelinciProcesses.foreach({
+      pid => BrboMain.executeCommand(command = s"kill $pid")
+    })
   }
 
   private def getInputSeeds(seed_directory: String): List[String] = {
