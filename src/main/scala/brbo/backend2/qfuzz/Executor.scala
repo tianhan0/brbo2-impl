@@ -106,9 +106,6 @@ object Executor {
     })
     Await.result(future, Duration.Inf)
     logger.info(s"Running Java processes:\n${runningJavaProcesses()}")
-    logger.info(s"Kill kelinci servers")
-    killRunningKelinciProcess()
-    logger.info(s"Running Java processes:\n${runningJavaProcesses()}")
     val pathCostFileContents = BrboMain.readFromFile(s"$FUZZ_OUT_DIRECTORY/afl/path_costs.csv")
     logger.info(s"QFuzz output:\n$pathCostFileContents")
     val rankedInputFiles = {
@@ -161,6 +158,10 @@ object Executor {
     FileUtils.deleteDirectory(new File(FUZZ_OUT_DIRECTORY))
     FileUtils.deleteDirectory(new File(BINARY_PATH))
     FileUtils.deleteDirectory(new File(INSTRUMENTED_BINARY_PATH))
+
+    logger.info(s"Step 8: Kill kelinci servers")
+    killRunningKelinciProcess()
+    logger.info(s"Running Java processes:\n${runningJavaProcesses()}")
   }
 
   private def runningProcesses(): List[String] =
