@@ -82,6 +82,7 @@ object Executor {
         val command = s"""timeout --kill-after ${KELINCI_TIMEOUT_IN_SECONDS}s ${KELINCI_TIMEOUT_IN_SECONDS}s java -cp .:$KELINCI_JAR_PATH:$GUAVA_JAR_PATH:$INSTRUMENTED_BINARY_PATH edu.cmu.sv.kelinci.Kelinci -K 100 $driverFullyQualifiedClassName @@"""
         logger.info(s"Execute `$command`")
         val kelinciOutput = BrboMain.executeCommand(command = command, timeout = KELINCI_TIMEOUT_IN_SECONDS)
+        logger.info(s"Kelinci log (truncated):\n${kelinciOutput.slice(from = kelinciOutput.length - 3000, until = kelinciOutput.length)}")
         val outputDirectory = s"${BrboMain.OUTPUT_DIRECTORY}/fuzz"
         Files.createDirectories(Paths.get(outputDirectory))
         BrboMain.writeToFile(s"$outputDirectory/kelinci_output.txt", kelinciOutput)
