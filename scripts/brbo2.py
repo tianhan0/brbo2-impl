@@ -1,5 +1,6 @@
 import argparse
 import logging
+import sys
 from pathlib import Path
 import common
 from common import (
@@ -111,7 +112,10 @@ if __name__ == "__main__":
     configure_logging(filename=args.log)
     print_args(args)
 
-    sbt_package(git_version=args.version, dry=args.dry)
+    sbt_package_output = sbt_package(git_version=args.version, dry=args.dry)
+    if "[success]" not in sbt_package_output:
+        logging.error(f"Failed to run `sbt package`")
+        sys.exit(-1)
 
     java_files = get_files(args.input, suffix="java")
     measurements = common.Measurement()

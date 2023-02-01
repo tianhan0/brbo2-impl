@@ -309,4 +309,5 @@ def sbt_package(git_version, dry, cwd=os.getcwd()):
         command=["git", "checkout", commit_hash], cwd=cwd, printOutput=False, dry=dry
     )
     logging.info(f"Build a new version: {commit_hash}")
-    run_command(command=["sbt", "package"], cwd=cwd, dry=dry)
+    output, _ = run_command(command=["sbt", "package"], cwd=cwd, dry=dry)
+    return output

@@ -1,6 +1,7 @@
 import argparse
 import logging
 import common
+import sys
 from common import (
     run_command,
     print_args,
@@ -71,7 +72,12 @@ if __name__ == "__main__":
     configure_logging(filename=args.log)
     print_args(args)
 
-    sbt_package(git_version=args.version, dry=args.dry, cwd=Path(args.brbo))
+    sbt_package_output = sbt_package(
+        git_version=args.version, dry=args.dry, cwd=Path(args.brbo)
+    )
+    if "[success]" not in sbt_package_output:
+        logging.error(f"Failed to run `sbt package`")
+        sys.exit(-1)
 
     java_files = get_files(args.input, suffix="java")
     brbo_root = Path(args.brbo).expanduser()
