@@ -168,6 +168,7 @@ if __name__ == "__main__":
             decomposition_time=decomposition_time,
             verification_time=verification_time,
         )
+        measurements.print_concise()
 
     measurements.print()
     measurements.write(log_file=Path(args.log).with_suffix(".json"))

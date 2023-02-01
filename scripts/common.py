@@ -241,6 +241,11 @@ class Measurement:
         logging.info(f"Number of unknown programs: {pretty_print(self.count_unknown)}")
         logging.info(f"Number of trace clusters: {pretty_print(self.trace_clusters)}")
 
+    def print_concise(self):
+        logging.info(
+            f"So far # of verified, not verified, unknown: {self.total_verified}, {self.total_not_verified}, {self.total_unknown}"
+        )
+
     def write(self, log_file):
         output_contents = {
             "total_time": self.total_time,
@@ -249,7 +254,7 @@ class Measurement:
             "total_unknown": self.total_unknown,
             "trace_clusters": self.trace_clusters,
             "verified_programs": self.count_verified,
-            "not_programs": self.count_not_verified,
+            "not_verified_programs": self.count_not_verified,
             "unknown_programs": self.count_unknown,
             "time_measurements": self.per_file_execution_time,
             "verification_results": self.verification_results,
