@@ -171,10 +171,14 @@ object Executor {
   }
 
   private def killRunningKelinciProcess(): Unit = {
-    val kelinciProcesses =
+    val kelinciProcesses: List[String] =
       runningProcesses()
         .filter(process => process.contains("kelinci.jar"))
-        .map({ line => line.split("\t")(1) })
+        .flatMap({
+          line =>
+            val symbols = line.split(" ")
+            symbols.find(symbol => symbol.matches("[0-9]+"))
+        })
     kelinciProcesses.foreach({
       pid => BrboMain.executeCommand(command = s"kill $pid")
     })
