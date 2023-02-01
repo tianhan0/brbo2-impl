@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import numpy
+import shutil
 from pathlib import Path
 from common import run_command, print_args, configure_logging
 from datetime import datetime
@@ -186,6 +187,11 @@ if __name__ == "__main__":
     for i in range(args.repeat):
         run_id = "{:02d}".format(i)
         logging.info(f"Begin {run_id} run")
+        logging.info(f"Remove the previously generated drivers")
+        driver_directory = (
+            Path(os.getcwd()) / "src" / "main" / "java" / "brbo" / "fuzz" / "drivers"
+        )
+        shutil.rmtree(path=driver_directory, ignore_errors=True)
 
         seed = generate_seed(uniform=args.uniform_seed)
         seeds.append(seed)
