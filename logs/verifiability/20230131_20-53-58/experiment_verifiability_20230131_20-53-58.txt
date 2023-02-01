@@ -1,0 +1,25 @@
+2023-01-31 20:53:58,983 INFO     Arguments:
+2023-01-31 20:53:58,983 INFO     input	src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java
+2023-01-31 20:53:58,983 INFO     experiment	verifiability
+2023-01-31 20:53:58,983 INFO     brbo	/Users/tianhanlu/Documents/workspace/brbo-impl/
+2023-01-31 20:53:58,983 INFO     qfuzz	/Users/tianhanlu/Documents/workspace/qfuzz/
+2023-01-31 20:53:58,983 INFO     icra	/Users/tianhanlu/Documents/workspace/icra/icra
+2023-01-31 20:53:58,983 INFO     dry	True
+2023-01-31 20:53:58,983 INFO     repeat	2
+2023-01-31 20:53:58,983 INFO     qtimeout	None
+2023-01-31 20:53:58,983 INFO     qmin_int	4
+2023-01-31 20:53:58,983 INFO     qmax_int	12
+2023-01-31 20:53:58,983 INFO     Begin 00 run
+2023-01-31 20:53:58,985 INFO     Generate input seed: [96, 30, 224, 61, 61, 34, 71, 140, 224, 241, 255, 238, 41, 55, 213, 103, 55, 122, 27, 65, 124, 161, 215, 21, 32, 251, 247, 69, 69, 28, 123, 79, 105, 153, 211, 146, 253, 87, 191, 237, 225, 206, 37, 168, 200, 212, 249, 20, 15, 137]
+2023-01-31 20:53:58,985 INFO     Write into seed file /Users/tianhanlu/Documents/workspace/brbo2-impl/logs/verifiability/20230131_20-53-58/seeds/seed.txt
+2023-01-31 20:53:58,985 INFO     Under `tianhanlu@/Users/tianhanlu/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java --brbo /Users/tianhanlu/Documents/workspace/brbo-impl/ --icra /Users/tianhanlu/Documents/workspace/icra/icra --timeout 60 --mode worst --log /Users/tianhanlu/Documents/workspace/brbo2-impl/logs/verifiability/20230131_20-53-58/worst_00.txt --version issta23 --dry`
+2023-01-31 20:53:58,985 INFO     Under `tianhanlu@/Users/tianhanlu/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java --brbo /Users/tianhanlu/Documents/workspace/brbo-impl/ --icra /Users/tianhanlu/Documents/workspace/icra/icra --timeout 60 --mode fully --log /Users/tianhanlu/Documents/workspace/brbo2-impl/logs/verifiability/20230131_20-53-58/fully_00.txt --version issta23 --dry`
+2023-01-31 20:53:58,985 INFO     Under `tianhanlu@/Users/tianhanlu/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java --qfuzz /Users/tianhanlu/Documents/workspace/qfuzz/ --brbo /Users/tianhanlu/Documents/workspace/brbo-impl/ --icra /Users/tianhanlu/Documents/workspace/icra/icra --timeout None --log /Users/tianhanlu/Documents/workspace/brbo2-impl/logs/verifiability/20230131_20-53-58/select_00.txt --mode qfuzz --seed /Users/tianhanlu/Documents/workspace/brbo2-impl/logs/verifiability/20230131_20-53-58/seeds --dry --max-int 12 --min-int 4`
+2023-01-31 20:53:58,985 INFO     Begin 01 run
+2023-01-31 20:53:58,985 INFO     Generate input seed: [166, 68, 220, 254, 34, 169, 190, 154, 152, 89, 130, 64, 122, 229, 157, 86, 29, 234, 239, 155, 213, 109, 160, 240, 102, 206, 119, 212, 34, 230, 169, 24, 240, 65, 37, 25, 182, 156, 139, 114, 7, 81, 44, 65, 70, 186, 13, 77, 81, 211]
+2023-01-31 20:53:58,985 INFO     Write into seed file /Users/tianhanlu/Documents/workspace/brbo2-impl/logs/verifiability/20230131_20-53-58/seeds/seed.txt
+2023-01-31 20:53:58,985 INFO     Under `tianhanlu@/Users/tianhanlu/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java --brbo /Users/tianhanlu/Documents/workspace/brbo-impl/ --icra /Users/tianhanlu/Documents/workspace/icra/icra --timeout 60 --mode worst --log /Users/tianhanlu/Documents/workspace/brbo2-impl/logs/verifiability/20230131_20-53-58/worst_01.txt --version issta23 --dry`
+2023-01-31 20:53:58,985 INFO     Under `tianhanlu@/Users/tianhanlu/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java --brbo /Users/tianhanlu/Documents/workspace/brbo-impl/ --icra /Users/tianhanlu/Documents/workspace/icra/icra --timeout 60 --mode fully --log /Users/tianhanlu/Documents/workspace/brbo2-impl/logs/verifiability/20230131_20-53-58/fully_01.txt --version issta23 --dry`
+2023-01-31 20:53:58,985 INFO     Under `tianhanlu@/Users/tianhanlu/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/stac/TemplateEngine2.java --qfuzz /Users/tianhanlu/Documents/workspace/qfuzz/ --brbo /Users/tianhanlu/Documents/workspace/brbo-impl/ --icra /Users/tianhanlu/Documents/workspace/icra/icra --timeout None --log /Users/tianhanlu/Documents/workspace/brbo2-impl/logs/verifiability/20230131_20-53-58/select_01.txt --mode qfuzz --seed /Users/tianhanlu/Documents/workspace/brbo2-impl/logs/verifiability/20230131_20-53-58/seeds --dry --max-int 12 --min-int 4`
+2023-01-31 20:53:58,985 INFO     Write into seed file /Users/tianhanlu/Documents/workspace/brbo2-impl/logs/verifiability/20230131_20-53-58/seeds/seed_0.txt
+2023-01-31 20:53:58,985 INFO     Write into seed file /Users/tianhanlu/Documents/workspace/brbo2-impl/logs/verifiability/20230131_20-53-58/seeds/seed_1.txt
