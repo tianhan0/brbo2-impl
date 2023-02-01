@@ -160,7 +160,7 @@ object Executor {
     FileUtils.deleteDirectory(new File(INSTRUMENTED_BINARY_PATH))
 
     logger.info(s"Step 8: Kill kelinci servers")
-    killRunningKelinciProcess()
+    killRunningKelinciProcess(logger = logger)
     logger.info(s"Running Java processes:\n${runningJavaProcesses()}")
   }
 
@@ -171,7 +171,7 @@ object Executor {
     runningProcesses().filter(process => process.contains("java")).mkString("\n")
   }
 
-  private def killRunningKelinciProcess(): Unit = {
+  private def killRunningKelinciProcess(logger: MyLogger): Unit = {
     val kelinciProcesses: List[String] =
       runningProcesses()
         .filter(process => process.contains("kelinci.jar"))
@@ -181,7 +181,7 @@ object Executor {
             symbols.find(symbol => symbol.matches("[0-9]+"))
         })
     kelinciProcesses.foreach({
-      pid => BrboMain.executeCommand(command = s"kill $pid")
+      pid => BrboMain.executeCommandWithLogger(command = s"kill $pid", logger = logger)
     })
   }
 
