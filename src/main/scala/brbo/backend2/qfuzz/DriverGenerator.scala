@@ -152,7 +152,7 @@ object DriverGenerator {
        |    System.out.println("observations: " + Arrays.toString(observationList.toArray()));
        |
        |    // Find the sums of all segments
-       |    Set<Long> segmentSums = new HashSet<>();
+       |    List<Long> segmentSums = new ArrayList<>();
        |    List<Integer> indexList = new ArrayList<>();
        |    int INDEX = 0;
        |    for (long actualObservation: observationList) {
@@ -173,6 +173,10 @@ object DriverGenerator {
        |    long[] actualObservations = new long[segmentSums.size()];
        |    INDEX = 0;
        |    for (Long sum: segmentSums) {
+       |      // Kelinci can only send these many observations to afl.
+       |      if (INDEX >= 65536) {
+       |        break;
+       |      }
        |      actualObservations[INDEX] = sum;
        |      INDEX++;
        |    }
