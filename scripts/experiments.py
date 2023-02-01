@@ -79,6 +79,18 @@ def generate_byte_array():
     return byte_array
 
 
+def generate_seed():
+    byte_array = generate_byte_array()
+    logging.info(f"Generate input seed: {byte_array}")
+    immutable_bytes = bytes(bytearray(byte_array))
+    return immutable_bytes
+
+
+def write_bytes(seed_file, bytes):
+    with open(seed_file, "wb") as binary_file:
+        binary_file.write(bytes)
+
+
 if __name__ == "__main__":
     """
     Usage: ~/brbo2-impl$ python3 scripts/experiments.py \
@@ -160,17 +172,17 @@ if __name__ == "__main__":
     qfuzz_min_int = args.qmin_int
     seed_directory = log_directory / "seeds"
     seed_directory.mkdir(parents=True, exist_ok=True)
+    shared_seed_file = seed_directory / f"seed.txt"
+    seeds = []
     for i in range(args.repeat):
         run_id = "{:02d}".format(i)
         logging.info(f"Begin {run_id} run")
-        seed_file = seed_directory / f"seed_{run_id}.txt"
-        with open(seed_file, "wb") as binary_file:
-            byte_array = generate_byte_array()
-            logging.info(f"Input seed: {byte_array}")
-            immutable_bytes = bytes(bytearray(byte_array))
-            logging.info(f"Write into seed file {seed_file}")
-            binary_file.write(immutable_bytes)
 
+        seed = generate_seed()
+        seeds.append(seed)
+        # Overwrite the seed from the last run, such that later runs cannot use seeds from the previous runs.
+        logging.info(f"Write into seed file {shared_seed_file}")
+        write_bytes(seed_file=shared_seed_file, bytes=seed)
         if args.experiment == "verifiability" or args.experiment == "all":
             worst_case = brbo_command(
                 input=args.input,
@@ -274,3 +286,9 @@ if __name__ == "__main__":
                 min_int=4,
             )
             run_command(command=command, dry=args.dry)
+
+    shared_seed_file.unlink(missing_ok=True)
+    for run_id, seed in enumerate(seeds):
+        seed_file = seed_directory / f"seed_{run_id}.txt"
+        logging.info(f"Write into seed file {seed_file}")
+        write_bytes(seed_file=seed_file, bytes=seed)
