@@ -177,6 +177,9 @@ if __name__ == "__main__":
     )
     print_args(args)
 
+    logging.info(f"Kill running java processes")
+    run_command(command=["killall", "-9", "java"], dry=args.dry)
+
     qfuzz_timeout_in_seconds = args.qtimeout
     qfuzz_max_int = args.qmax_int
     qfuzz_min_int = args.qmin_int
