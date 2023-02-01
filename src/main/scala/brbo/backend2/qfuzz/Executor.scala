@@ -106,9 +106,12 @@ object Executor {
     Await.result(future, Duration.Inf)
     val pathCostFileContents = BrboMain.readFromFile(s"$FUZZ_OUT_DIRECTORY/afl/path_costs.csv")
     logger.info(s"QFuzz output:\n$pathCostFileContents")
-    val rankedInputFiles = rankedInputFileNames(pathCostFileContents)
-    if (rankedInputFiles.size == 1)
-      logger.warn(s"No interesting inputs. Using the input seed.")
+    val rankedInputFiles = {
+      val generatedInputFiles = rankedInputFileNames(pathCostFileContents)
+      if (generatedInputFiles.isEmpty)
+        logger.warn(s"No interesting inputs. Using the input seed.")
+      generatedInputFiles ::: getInputSeeds(INPUT_SEED_DIRECTORY)
+    }
     logger.info(s"Ranked input files:\n${rankedInputFiles.mkString("\n")}")
     logger.warn(s"Must ensure the input seed provide sufficient amounts of data to be parsed as inputs")
 
@@ -155,6 +158,11 @@ object Executor {
     FileUtils.deleteDirectory(new File(INSTRUMENTED_BINARY_PATH))
   }
 
+  private def getInputSeeds(seed_directory: String): List[String] = {
+    FileUtils.listFiles(new File(seed_directory), null, true).asScala
+      .toList.map(file => file.getAbsolutePath)
+  }
+
   private def deduplicate(inputs: List[List[BrboValue]]): List[List[BrboValue]] = {
     def toString(list: List[BrboValue]): String = list.map(v => v.printToIR()).mkString(", ")
 
@@ -166,7 +174,7 @@ object Executor {
     val lines = pathCostFileContents.split("\n").filter({
       line => line != "Time(sec); File; #Partitions; MinDelta; AvgPartitionValues"
     })
-    val allInputs = lines.map({
+    val inputFiles = lines.map({
       line =>
         var score = 0
         // Inputs that create new partitions w.r.t. the total runtime "cost"
@@ -188,9 +196,7 @@ object Executor {
     }).map({
       case (fileName, _) => fileName
     })
-    val generatedInputs = allInputs.filter(fileName => !fileName.contains("orig:")).toList
-    val inputSeed = allInputs.filter(fileName => fileName.contains("orig:"))
-    generatedInputs ::: inputSeed.toList
+    inputFiles.filter(fileName => !fileName.contains("orig:")).toList
   }
 
   private def readExistingInputs(inputFilePath: String): List[List[BrboValue]] = {
