@@ -93,7 +93,7 @@ object ProgramTransformerUnitTest {
          |      }
          |      i = i + 1;
          |    }
-         |    return USE;
+         |    return 0;
          |  }
          |  int arrayRead(int[] array, int index) { return array[index]; }
          |  int arrayLength(int[] array) { return array.length; }
@@ -137,7 +137,7 @@ object ProgramTransformerUnitTest {
          |    int x = arrayLength(array);
          |    x = arraySum(array);
          |    x = arrayRead(array, 3);
-         |    return USE;
+         |    return 0;
          |  }
          |  int arrayRead(int[] array, int index) { return array[index]; }
          |  int arrayLength(int[] array) { return array.length; }
@@ -196,7 +196,7 @@ object ProgramTransformerUnitTest {
         |      // use R 5
         |      i = i + 1;
         |    }
-        |    return USE;
+        |    return 0;
         |  }
         |  int arrayRead(int[] array, int index) { return array[index]; }
         |  int arrayLength(int[] array) { return array.length; }

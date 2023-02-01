@@ -48,7 +48,10 @@ object ProgramTransformer {
       VariableDeclaration(useVariable, Number(0)),
     )
     val newBody2 = BrboAstUtils.insert(newBody, toInsert = declarations, operation = PrependOperation)
-    val newBody3 = BrboAstUtils.insert(newBody2, toInsert = List(returnUseVariable), operation = AppendOperation)
+    // If reaching here, then the given index is not reached. We must not return the last use cost here.
+    // Otherwise, every large index will result in returning the last use cost.
+    val lastReturn = Return(expression = Some(Number(0)))
+    val newBody3 = BrboAstUtils.insert(newBody2, toInsert = List(lastReturn), operation = AppendOperation)
     val newMainFunction = BrboFunction(
       identifier = mainFunction.identifier,
       returnType = BrboType.INT, // Return the number of uses in a run

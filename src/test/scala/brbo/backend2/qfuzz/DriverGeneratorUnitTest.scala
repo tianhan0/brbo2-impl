@@ -214,7 +214,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    {
         |      ;
         |    }
-        |    return USE;
+        |    return 0;
         |  }
         |  int arrayRead(int[] array, int index) { return array[index]; }
         |  int arrayLength(int[] array) { return array.length; }
