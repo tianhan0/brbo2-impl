@@ -174,7 +174,7 @@ object DriverGenerator {
        |    INDEX = 0;
        |    for (Long sum: segmentSums) {
        |      // Kelinci can only send these many observations to afl.
-       |      if (INDEX >= 65536 / 8) {
+       |      if (INDEX >= 100) {
        |        break;
        |      }
        |      actualObservations[INDEX] = sum;
