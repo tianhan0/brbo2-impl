@@ -91,7 +91,7 @@ object Executor {
         // Ensure kelinci server starts first
         // Remember to use https://github.com/litho17/qfuzz/commit/5dbe56efc6a9d9f77c320f1a8f801f6c4d6400e3
         BrboMain.executeCommandWithLogger(command = "sleep 3", logger)
-        val timeout = Duration(length = arguments.getAflTimeoutInSeconds, unit = TimeUnit.SECONDS).toMillis
+        val timeout = Duration(length = AFL_TIMEOUT_IN_SECONDS, unit = TimeUnit.SECONDS).toMillis
         BrboMain.executeCommandWithLogger(
           command = s"""timeout ${AFL_TIMEOUT_IN_SECONDS + 1}s $AFL_PATH -i $INPUT_SEED_DIRECTORY -o $FUZZ_OUT_DIRECTORY -c quantify -K 100 -S afl -t $timeout $INTERFACE_C_PATH -K 100 @@""",
           logger,
