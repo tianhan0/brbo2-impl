@@ -1,0 +1,22 @@
+2023-02-01 16:54:28,185 INFO     Arguments:
+2023-02-01 16:54:28,186 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-02-01 16:54:28,186 INFO     experiment	qfuzz
+2023-02-01 16:54:28,186 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-02-01 16:54:28,186 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-02-01 16:54:28,186 INFO     icra	/root/Documents/workspace/icra/icra
+2023-02-01 16:54:28,186 INFO     dry	False
+2023-02-01 16:54:28,186 INFO     repeat	2
+2023-02-01 16:54:28,186 INFO     qtimeout	180
+2023-02-01 16:54:28,186 INFO     qmin_int	4
+2023-02-01 16:54:28,186 INFO     qmax_int	12
+2023-02-01 16:54:28,186 INFO     uniform_seed	False
+2023-02-01 16:54:28,186 INFO     Kill running java processes
+2023-02-01 16:54:28,186 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `killall -9 java`
+2023-02-01 16:54:28,192 INFO     Done. Execution time: 0.005784273147583008 seconds
+2023-02-01 16:54:28,192 INFO     Output: java: no process found
+
+2023-02-01 16:54:28,193 INFO     Begin 00 run
+2023-02-01 16:54:28,193 INFO     Remove the previously generated drivers
+2023-02-01 16:54:28,195 INFO     Generate input seed: [218, 50, 37, 72, 237, 127, 100, 17, 89, 146, 219, 82, 164, 198, 34, 193, 233, 86, 52, 42, 137, 166, 84, 115, 102, 130, 32, 18, 120, 183, 244, 93, 33, 158, 73, 224, 57, 154, 170, 199, 148, 110, 151, 59, 92, 82, 206, 54, 142, 126]
+2023-02-01 16:54:28,195 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230201_16-54-28/seeds/seed.txt
+2023-02-01 16:54:28,195 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 180 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230201_16-54-28/naive_00.txt --mode naive --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230201_16-54-28/seeds --max-int 12 --min-int 4`
