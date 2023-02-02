@@ -159,7 +159,7 @@ class DriverGeneratorUnitTest extends AnyFlatSpec {
         |    System.out.println("observations: " + Arrays.toString(observationList.toArray()));
         |
         |    // Find the sums of all segments
-        |    List<Long> segmentSums = new ArrayList<>();
+        |    Set<Long> segmentSums = new HashSet<>();
         |    List<Integer> indexList = new ArrayList<>();
         |    int INDEX = 0;
         |    for (long actualObservation: observationList) {
