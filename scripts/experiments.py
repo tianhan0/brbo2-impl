@@ -248,22 +248,6 @@ if __name__ == "__main__":
             )
             run_command(command=selective_amortization, dry=args.dry)
         elif args.experiment == "qfuzz" or args.experiment == "all":
-            naive_qfuzz = brbo2_command(
-                input=args.input,
-                qfuzz=args.qfuzz,
-                brbo=args.brbo,
-                icra=args.icra,
-                dry=args.dry,
-                timeout=qfuzz_timeout_in_seconds,
-                log_file=log_directory / f"naive_{run_id}.txt",
-                mode="naive",
-                seed_directory=seed_directory,
-                max_int=qfuzz_max_int,
-                min_int=qfuzz_min_int,
-                loose_bound=args.loose_bound,
-            )
-            run_command(command=naive_qfuzz, dry=args.dry)
-
             modified_qfuzz = brbo2_command(
                 input=args.input,
                 qfuzz=args.qfuzz,
@@ -279,6 +263,22 @@ if __name__ == "__main__":
                 loose_bound=args.loose_bound,
             )
             run_command(command=modified_qfuzz, dry=args.dry)
+
+            naive_qfuzz = brbo2_command(
+                input=args.input,
+                qfuzz=args.qfuzz,
+                brbo=args.brbo,
+                icra=args.icra,
+                dry=args.dry,
+                timeout=qfuzz_timeout_in_seconds,
+                log_file=log_directory / f"naive_{run_id}.txt",
+                mode="naive",
+                seed_directory=seed_directory,
+                max_int=qfuzz_max_int,
+                min_int=qfuzz_min_int,
+                loose_bound=args.loose_bound,
+            )
+            run_command(command=naive_qfuzz, dry=args.dry)
         elif args.experiment == "timeout" or args.experiment == "all":
             # 30: If shorter fuzzing results in worse inputs.
             # 60: The standard configuration.
