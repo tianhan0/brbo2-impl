@@ -76,6 +76,7 @@ object Executor {
       truncateLogLines = None,
     )
 
+    killRunningKelinciProcess(logger = logger)
     val commands = List("kelinci", "afl")
     val future = Future.traverse(commands)({
       case "kelinci" => Future {
@@ -162,9 +163,7 @@ object Executor {
     FileUtils.deleteDirectory(new File(BINARY_PATH))
     FileUtils.deleteDirectory(new File(INSTRUMENTED_BINARY_PATH))
 
-    logger.info(s"Step 8: Kill kelinci servers")
     killRunningKelinciProcess(logger = logger)
-    logger.info(s"Running Java processes:\n${runningJavaProcesses()}")
   }
 
   private def runningProcesses(): List[String] =
@@ -175,6 +174,7 @@ object Executor {
   }
 
   private def killRunningKelinciProcess(logger: MyLogger): Unit = {
+    logger.info(s"Kill kelinci servers")
     val kelinciProcesses: List[String] =
       runningProcesses()
         .filter(process => process.contains("kelinci.jar"))
@@ -184,8 +184,9 @@ object Executor {
             symbols.find(symbol => symbol.matches("[0-9]+"))
         })
     kelinciProcesses.foreach({
-      pid => BrboMain.executeCommandWithLogger(command = s"kill $pid", logger = logger, truncateLogLines = None)
+      pid => BrboMain.executeCommandWithLogger(command = s"kill -9 $pid", logger = logger, truncateLogLines = None)
     })
+    logger.info(s"Running Java processes after the kill:\n${runningJavaProcesses()}")
   }
 
   private def getInputSeeds(seed_directory: String): List[String] = {
