@@ -1,0 +1,25 @@
+2023-02-02 10:57:06,955 INFO     Arguments:
+2023-02-02 10:57:06,955 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-02-02 10:57:06,955 INFO     experiment	qfuzz
+2023-02-02 10:57:06,955 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-02-02 10:57:06,955 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-02-02 10:57:06,955 INFO     icra	/root/Documents/workspace/icra/icra
+2023-02-02 10:57:06,955 INFO     dry	False
+2023-02-02 10:57:06,955 INFO     repeat	2
+2023-02-02 10:57:06,955 INFO     qtimeout	180
+2023-02-02 10:57:06,955 INFO     qmin_int	4
+2023-02-02 10:57:06,955 INFO     qmax_int	12
+2023-02-02 10:57:06,955 INFO     uniform_seed	False
+2023-02-02 10:57:06,955 INFO     Kill running java processes
+2023-02-02 10:57:06,955 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `killall -9 java`
+2023-02-02 10:57:06,962 INFO     Done. Execution time: 0.006491661071777344 seconds
+2023-02-02 10:57:06,962 INFO     Output: java: no process found
+
+2023-02-02 10:57:06,962 INFO     Begin 00 run
+2023-02-02 10:57:06,962 INFO     Remove the previously generated drivers
+2023-02-02 10:57:06,963 INFO     Generate input seed: [59, 14, 88, 227, 233, 21, 43, 138, 135, 171, 207, 138, 31, 231, 173, 230, 112, 217, 92, 178, 16, 234, 230, 65, 10, 103, 52, 18, 183, 187, 18, 149, 63, 38, 213, 233, 19, 200, 1, 3, 188, 180, 104, 139, 197, 222, 239, 184, 37, 214]
+2023-02-02 10:57:06,963 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230202_10-57-06/seeds/seed.txt
+2023-02-02 10:57:06,963 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 180 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230202_10-57-06/naive_00.txt --mode naive --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230202_10-57-06/seeds --max-int 12 --min-int 4`
+2023-02-02 13:31:41,761 INFO     Done. Execution time: 9274.797585487366 seconds
+2023-02-02 13:31:41,761 INFO     Output: 
+2023-02-02 13:31:41,761 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 180 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230202_10-57-06/qfuzz_00.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230202_10-57-06/seeds --max-int 12 --min-int 4`
