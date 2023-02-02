@@ -164,6 +164,8 @@ if __name__ == "__main__":
             dry=args.dry,
         )
 
+        if "Infer bound `true` for variable" in brbo_output:
+            logging.info(f"One verification fail reason: Inferred invariant `true`")
         measurements.update(
             verification_result=interpret_brbo_output(brbo_output),
             trace_clusters=get_trace_clusters(decomposition_result),
