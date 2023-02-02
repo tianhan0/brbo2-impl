@@ -119,8 +119,8 @@ def decomposition_command(threads, samples, input, deps):
     ]
 
 
-def verification_command(file, icra, deps, timeout, mode):
-    return [
+def verification_command(file, icra, deps, timeout, mode, loose_bound):
+    command = [
         WITH_DEPENDENCY_SCRIPT if deps else NO_DEPENDENCY_SCRIPT,
         "--directory",
         str(file),
@@ -131,6 +131,9 @@ def verification_command(file, icra, deps, timeout, mode):
         "--icra-timeout",
         str(timeout),
     ]
+    if loose_bound:
+        command.append("--less-precise")
+    return command
 
 
 # Translate the java file into a brbo compatible form

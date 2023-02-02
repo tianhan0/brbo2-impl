@@ -103,6 +103,12 @@ if __name__ == "__main__":
         default=12,
         help="The min integer for QFuzz to find inputs from.",
     )
+    parser.add_argument(
+        "--loose-bound",
+        default=False,
+        action="store_true",
+        help="Verify the less precise bounds (as opposed to the most precise bounds).",
+    )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
     if Path(args.log).suffix != ".txt":
@@ -159,6 +165,7 @@ if __name__ == "__main__":
                 deps=True,
                 timeout=60,
                 mode="transparent",
+                loose_bound=args.loose_bound,
             ),
             cwd=brbo_root,
             dry=args.dry,

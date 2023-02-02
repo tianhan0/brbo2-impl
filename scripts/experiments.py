@@ -20,6 +20,7 @@ def brbo2_command(
     seed_directory,
     max_int,
     min_int,
+    loose_bound,
 ):
     brbo2_command = f"""python3 scripts/brbo2.py \
       --input {input} \
@@ -32,7 +33,8 @@ def brbo2_command(
       {f"--seed {seed_directory}" if seed_directory else ""} \
       {"--dry" if dry else ""} \
       --max-int {str(max_int)} \
-      --min-int {str(min_int)}"""
+      --min-int {str(min_int)} \
+      {f"--loose-bound" if loose_bound else ""}"""
     return brbo2_command.split()
 
 
@@ -166,6 +168,12 @@ if __name__ == "__main__":
         default=False,
         help="Whether to generate input seeds composed of an array of the same elements.",
     )
+    parser.add_argument(
+        "--loose-bound",
+        default=False,
+        action="store_true",
+        help="Verify the less precise bounds (as opposed to the most precise bounds).",
+    )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
 
@@ -236,6 +244,7 @@ if __name__ == "__main__":
                 seed_directory=seed_directory,
                 max_int=qfuzz_max_int,
                 min_int=qfuzz_min_int,
+                loose_bound=args.loose_bound,
             )
             run_command(command=selective_amortization, dry=args.dry)
         elif args.experiment == "qfuzz" or args.experiment == "all":
@@ -251,6 +260,7 @@ if __name__ == "__main__":
                 seed_directory=seed_directory,
                 max_int=qfuzz_max_int,
                 min_int=qfuzz_min_int,
+                loose_bound=args.loose_bound,
             )
             run_command(command=naive_qfuzz, dry=args.dry)
 
@@ -266,6 +276,7 @@ if __name__ == "__main__":
                 seed_directory=seed_directory,
                 max_int=qfuzz_max_int,
                 min_int=qfuzz_min_int,
+                loose_bound=args.loose_bound,
             )
             run_command(command=modified_qfuzz, dry=args.dry)
         elif args.experiment == "timeout" or args.experiment == "all":
@@ -286,6 +297,7 @@ if __name__ == "__main__":
                     seed_directory=seed_directory,
                     max_int=qfuzz_max_int,
                     min_int=qfuzz_min_int,
+                    loose_bound=args.loose_bound,
                 )
                 run_command(command=command, dry=args.dry)
         elif args.experiment == "test":
@@ -302,6 +314,7 @@ if __name__ == "__main__":
                 seed_directory=seed_directory,
                 max_int=1000,
                 min_int=4,
+                loose_bound=args.loose_bound,
             )
             run_command(command=command, dry=args.dry)
 

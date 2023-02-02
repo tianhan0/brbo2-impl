@@ -65,6 +65,12 @@ if __name__ == "__main__":
         default="issta23",
         help="Build and run the brbo jar file (with `sbt package`) with the specified git commit hash.",
     )
+    parser.add_argument(
+        "--loose-bound",
+        default=False,
+        action="store_true",
+        help="Verify the less precise bounds (as opposed to the most precise bounds).",
+    )
     parser.set_defaults(dry=False)
     args = parser.parse_args()
     if Path(args.log).suffix != ".txt":
@@ -107,6 +113,7 @@ if __name__ == "__main__":
                 deps=True,
                 timeout=args.timeout,
                 mode=mode,
+                loose_bound=args.loose_bound,
             ),
             cwd=brbo_root,
             dry=args.dry,
