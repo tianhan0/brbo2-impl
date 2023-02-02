@@ -298,7 +298,7 @@ object BrboMain {
   private def readLastNLines(file: File, n: Option[Int]): String = {
     n match {
       case Some(n) =>
-        val reader = new ReversedLinesFileReader(file, StandardCharsets.UTF_8)
+        val reader = new ReversedLinesFileReader(file, 4096, StandardCharsets.UTF_8)
         var result = List[String]()
         Range(0, n).foreach({
           _ => result = reader.readLine() :: result
