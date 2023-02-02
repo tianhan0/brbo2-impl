@@ -9,6 +9,7 @@ import brbo.common.cfg.ControlFlowGraph
 import brbo.common.commandline._
 import brbo.common.string.StringFormatUtils
 import brbo.frontend.{BasicProcessor, TargetProgram}
+import org.apache.commons.io.input.ReversedLinesFileReader
 import org.apache.commons.io.{FileUtils, FilenameUtils}
 
 import java.io.{File, FileWriter}
@@ -224,7 +225,7 @@ object BrboMain {
   }
 
   def diffFiles(file1: Path, file2: Path): String =
-    executeCommand(s"diff -u ${file1.toString} ${file2.toString}", environment = Map())
+    executeCommand(s"diff -u ${file1.toString} ${file2.toString}", environment = Map(), truncateLogLines = None)
 
   def readFromFile(path: String): String = {
     val source = scala.io.Source.fromFile(path)
@@ -244,10 +245,16 @@ object BrboMain {
   def executeCommandWithLogger(command: String,
                                logger: MyLogger,
                                environment: Map[String, String] = Map(),
+                               truncateLogLines: Option[Int], // Last N lines to read
                                timeout: Int = 5): Unit = {
     logger.info(s"Execute `$command`")
     val output = {
-      val output = executeCommand(command, environment, timeout)
+      val output = executeCommand(
+        command = command,
+        environment = environment,
+        timeout = timeout,
+        truncateLogLines = truncateLogLines
+      )
       // if (output.length > 10000) s"${output.slice(0, 10000)}\nThe output has been truncated."
       // else output
       output
@@ -257,6 +264,7 @@ object BrboMain {
 
   def executeCommand(command: String,
                      environment: Map[String, String] = Map(),
+                     truncateLogLines: Option[Int], // Last N lines to read
                      timeout: Int = 5): String = {
     val outputPath = Paths.get(s"$OUTPUT_DIRECTORY/cmd")
     Files.createDirectories(outputPath)
@@ -272,16 +280,31 @@ object BrboMain {
     // val environmentString = processBuilder.environment().asScala.map({ case (key, value) => s"$key: $value" })
     // println(environmentString.mkString("\n"))
     try {
-      if (!process.waitFor(timeout, TimeUnit.SECONDS))
+      if (!process.waitFor(timeout, TimeUnit.SECONDS)) {
+        MyLogger.sharedLogger.info(s"Executing a command times out after $timeout seconds")
         process.destroyForcibly()
-      val stdout = FileUtils.readFileToString(new File(stdoutFile.toAbsolutePath.toString), StandardCharsets.UTF_8)
-      val stderr = FileUtils.readFileToString(new File(stderrFile.toAbsolutePath.toString), StandardCharsets.UTF_8)
+      }
+      val stdout = readLastNLines(new File(stdoutFile.toAbsolutePath.toString), truncateLogLines)
+      val stderr = readLastNLines(new File(stderrFile.toAbsolutePath.toString), truncateLogLines)
       stdout + "\n" + stderr
     } catch {
       case e: Exception => s"Ran into an exception:\n${e.toString}"
     } finally {
       Files.deleteIfExists(stderrFile)
       Files.deleteIfExists(stdoutFile)
+    }
+  }
+
+  private def readLastNLines(file: File, n: Option[Int]): String = {
+    n match {
+      case Some(n) =>
+        val reader = new ReversedLinesFileReader(file, StandardCharsets.UTF_8)
+        var result = List[String]()
+        Range(0, n).foreach({
+          _ => result = reader.readLine() :: result
+        })
+        result.mkString("\n")
+      case None => FileUtils.readFileToString(file, StandardCharsets.UTF_8)
     }
   }
 }

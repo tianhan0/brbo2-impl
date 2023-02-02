@@ -65,13 +65,15 @@ object Executor {
       // IMPORTANT: Avoid using quotes when specifying class path
       // To debug, add "-verbose" option and check the class paths
       command = s"""javac -cp .:$KELINCI_JAR_PATH:$GUAVA_JAR_PATH $driverFilePath -d $BINARY_PATH""",
-      logger
+      logger = logger,
+      truncateLogLines = None,
     )
     logger.info(s"Step 2.2: Instrument the QFuzz driver")
     prepareDirectory(INSTRUMENTED_BINARY_PATH)
     BrboMain.executeCommandWithLogger(
       command = s"""java -cp .:$KELINCI_JAR_PATH:$GUAVA_JAR_PATH edu.cmu.sv.kelinci.instrumentor.Instrumentor -mode LABELS -i $BINARY_PATH -o $INSTRUMENTED_BINARY_PATH -skipmain""",
-      logger
+      logger = logger,
+      truncateLogLines = None,
     )
 
     val commands = List("kelinci", "afl")
@@ -81,7 +83,7 @@ object Executor {
         val driverFullyQualifiedClassName = DriverGenerator.driverFullyQualifiedClassName(program.className)
         val command = s"""timeout --kill-after ${KELINCI_TIMEOUT_IN_SECONDS}s ${KELINCI_TIMEOUT_IN_SECONDS}s java -cp .:$KELINCI_JAR_PATH:$GUAVA_JAR_PATH:$INSTRUMENTED_BINARY_PATH edu.cmu.sv.kelinci.Kelinci -K 100 $driverFullyQualifiedClassName @@"""
         logger.info(s"Execute `$command`")
-        val kelinciOutput = BrboMain.executeCommand(command = command, timeout = KELINCI_TIMEOUT_IN_SECONDS)
+        val kelinciOutput = BrboMain.executeCommand(command = command, timeout = KELINCI_TIMEOUT_IN_SECONDS, truncateLogLines = Some(100))
         logger.info(s"Kelinci log (truncated):\n${kelinciOutput.slice(from = kelinciOutput.length - 2000, until = kelinciOutput.length)}")
         val outputDirectory = s"${BrboMain.OUTPUT_DIRECTORY}/fuzz"
         Files.createDirectories(Paths.get(outputDirectory))
@@ -91,16 +93,17 @@ object Executor {
         logger.info(s"Step 4: Run AFL. Output directory: $FUZZ_OUT_DIRECTORY. Timeout: $AFL_TIMEOUT_IN_SECONDS sec.")
         // Ensure kelinci server starts first
         // Remember to use https://github.com/litho17/qfuzz/commit/5dbe56efc6a9d9f77c320f1a8f801f6c4d6400e3
-        BrboMain.executeCommandWithLogger(command = "sleep 3", logger)
+        BrboMain.executeCommandWithLogger(command = "sleep 3", logger, truncateLogLines = None)
         val timeout = Duration(length = AFL_TIMEOUT_IN_SECONDS, unit = TimeUnit.SECONDS).toMillis
         BrboMain.executeCommandWithLogger(
           command = s"""timeout --kill-after ${AFL_TIMEOUT_IN_SECONDS}s ${AFL_TIMEOUT_IN_SECONDS}s $AFL_PATH -i $INPUT_SEED_DIRECTORY -o $FUZZ_OUT_DIRECTORY -c quantify -K 100 -S afl -t $timeout $INTERFACE_C_PATH -K 100 @@""",
-          logger,
+          logger = logger,
           environment = Map(
             "AFL_SKIP_CPUFREQ" -> "1",
             "AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES" -> "1",
           ),
-          timeout = AFL_TIMEOUT_IN_SECONDS
+          timeout = AFL_TIMEOUT_IN_SECONDS,
+          truncateLogLines = Some(100),
         )
       }
     })
@@ -165,7 +168,7 @@ object Executor {
   }
 
   private def runningProcesses(): List[String] =
-    BrboMain.executeCommand(command = "ps -ef").split("\n").toList
+    BrboMain.executeCommand(command = "ps -ef", truncateLogLines = None).split("\n").toList
 
   private def runningJavaProcesses(): String = {
     runningProcesses().filter(process => process.contains("java")).mkString("\n")
@@ -181,7 +184,7 @@ object Executor {
             symbols.find(symbol => symbol.matches("[0-9]+"))
         })
     kelinciProcesses.foreach({
-      pid => BrboMain.executeCommandWithLogger(command = s"kill $pid", logger = logger)
+      pid => BrboMain.executeCommandWithLogger(command = s"kill $pid", logger = logger, truncateLogLines = None)
     })
   }
 
