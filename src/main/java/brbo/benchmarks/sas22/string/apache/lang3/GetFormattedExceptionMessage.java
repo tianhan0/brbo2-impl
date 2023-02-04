@@ -10,7 +10,7 @@ abstract public class GetFormattedExceptionMessage extends Common {
     int buffer = 0;
     int R = 0;
     mostPreciseBound(R <= 3 + 6 * arraySum(baseMessage));
-    lessPreciseBound(R <= MAX + MAX * arraySum(baseMessage));
+    lessPreciseBound(R <= MAX + 2 * MAX * arraySum(baseMessage));
     R  = R + 1;
     R = R + 1;
     int chunk = 0;
