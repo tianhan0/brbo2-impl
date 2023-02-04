@@ -187,6 +187,14 @@ def get_trace_inputs(decomposition_output) -> List[str]:
     return re.findall(r"<(.+?)>", decomposition_output)
 
 
+def get_decision_tree_predicate_count(decomposition_output) -> str:
+    lines = re.findall(
+        r"Number of predicates in the program transformations \d+", decomposition_output
+    )
+    numbers = re.findall(r"\d+", lines[0])
+    return numbers[0]
+
+
 class Measurement:
     def __init__(self):
         self.per_file_execution_time = {}
@@ -201,6 +209,7 @@ class Measurement:
         self.trace_clusters = {}
         self.trace_inputs = {}
         self.invariant_inference_failure = {}
+        self.decision_tree_predicate_count = {}
 
     def update(
         self,
@@ -209,9 +218,10 @@ class Measurement:
         fuzzing_time=0,
         decomposition_time=0,
         verification_time=0,
-        invariant_inference_failure=False,
+        invariant_inference_failure=None,
         trace_clusters=-1,
         trace_inputs=[],
+        decision_tree_predicate_count=-1,
     ):
         inner_most_package_name = get_inner_most_package_name(java_file)
         key = str(java_file)
@@ -237,6 +247,7 @@ class Measurement:
         self.trace_clusters.update({key: trace_clusters})
         self.trace_inputs.update({key: trace_inputs})
         self.invariant_inference_failure.update({key: invariant_inference_failure})
+        self.decision_tree_predicate_count.update({key: decision_tree_predicate_count})
 
     def print(self):
         logging.info(
@@ -270,6 +281,7 @@ class Measurement:
             "trace_clusters": self.trace_clusters,
             "trace_inputs": self.trace_inputs,
             "invariant_inference_failure": self.invariant_inference_failure,
+            "decision_tree_predicate_count": self.decision_tree_predicate_count,
             "verified_programs": self.count_verified,
             "not_verified_programs": self.count_not_verified,
             "unknown_programs": self.count_unknown,
