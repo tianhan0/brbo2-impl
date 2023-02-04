@@ -1,0 +1,33 @@
+2023-02-03 13:11:52,137 INFO     Arguments:
+2023-02-03 13:11:52,137 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-02-03 13:11:52,137 INFO     experiment	qfuzz
+2023-02-03 13:11:52,137 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-02-03 13:11:52,138 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-02-03 13:11:52,138 INFO     icra	/root/Documents/workspace/icra/icra
+2023-02-03 13:11:52,138 INFO     dry	False
+2023-02-03 13:11:52,138 INFO     repeat	2
+2023-02-03 13:11:52,138 INFO     qtimeout	180
+2023-02-03 13:11:52,138 INFO     qmin_int	4
+2023-02-03 13:11:52,138 INFO     qmax_int	12
+2023-02-03 13:11:52,138 INFO     uniform_seed	False
+2023-02-03 13:11:52,138 INFO     loose_bound	True
+2023-02-03 13:11:52,138 INFO     Kill running java processes
+2023-02-03 13:11:52,138 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `killall -9 java`
+2023-02-03 13:11:52,144 INFO     Done. Execution time: 0.006315946578979492 seconds
+2023-02-03 13:11:52,144 INFO     Output: java: no process found
+
+2023-02-03 13:11:52,145 INFO     Begin 00 run
+2023-02-03 13:11:52,145 INFO     Remove the previously generated drivers
+2023-02-03 13:11:52,146 INFO     Generate input seed: [119, 134, 164, 194, 104, 9, 38, 156, 62, 107, 180, 207, 130, 34, 134, 102, 123, 100, 42, 80, 92, 199, 9, 22, 145, 193, 100, 173, 187, 111, 213, 239, 119, 123, 32, 161, 131, 67, 92, 126, 241, 248, 218, 220, 94, 144, 207, 85, 86, 21]
+2023-02-03 13:11:52,146 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230203_13-11-52/seeds/seed.txt
+2023-02-03 13:11:52,146 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 180 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230203_13-11-52/qfuzz_00.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230203_13-11-52/seeds --max-int 12 --min-int 4 --loose-bound`
+2023-02-03 15:48:53,607 INFO     Done. Execution time: 9421.461035966873 seconds
+2023-02-03 15:48:53,608 INFO     Output: 
+2023-02-03 15:48:53,608 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 180 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230203_13-11-52/naive_00.txt --mode naive --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230203_13-11-52/seeds --max-int 12 --min-int 4 --loose-bound`
+2023-02-03 18:14:56,881 INFO     Done. Execution time: 8763.273514509201 seconds
+2023-02-03 18:14:56,882 INFO     Output: 
+2023-02-03 18:14:56,882 INFO     Begin 01 run
+2023-02-03 18:14:56,882 INFO     Remove the previously generated drivers
+2023-02-03 18:14:56,884 INFO     Generate input seed: [108, 86, 148, 224, 136, 28, 22, 85, 127, 1, 15, 71, 104, 232, 253, 52, 136, 184, 123, 177, 51, 165, 183, 29, 115, 94, 96, 168, 163, 70, 99, 25, 223, 110, 22, 97, 174, 115, 124, 121, 105, 201, 14, 139, 112, 111, 52, 36, 30, 243]
+2023-02-03 18:14:56,884 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230203_13-11-52/seeds/seed.txt
+2023-02-03 18:14:56,884 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 180 --log /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230203_13-11-52/qfuzz_01.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/qfuzz/20230203_13-11-52/seeds --max-int 12 --min-int 4 --loose-bound`
