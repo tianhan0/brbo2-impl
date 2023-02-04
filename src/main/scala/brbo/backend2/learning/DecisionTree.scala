@@ -20,7 +20,7 @@ object DecisionTree {
   private implicit val leafRawNodeReads: Reads[LeafRawNode] = (
     (JsPath \ "nodeID").read[Int](min(0)) and
       (JsPath \ "classID").read[Int](min(0))
-    ) (LeafRawNode.apply _)
+    )(LeafRawNode.apply _)
 
   private implicit val internalRawNodeReads: Reads[InternalRawNode] = (
     (JsPath \ "nodeID").read[Int](min(0)) and
@@ -28,12 +28,14 @@ object DecisionTree {
       (JsPath \ "rightNodeID").read[Int](min(0)) and
       (JsPath \ "threshold").read[Float] and
       (JsPath \ "featureID").read[Int](min(0))
-    ) (InternalRawNode.apply _)
+    )(InternalRawNode.apply _)
 
   abstract class TreeNode(val id: Int) {
     def print(indent: Int, featureNames: List[String], classNames: List[String]): String
 
     def toAst(features: List[BrboExpr], classes: List[Label], leafType: LeafType): BrboAst
+
+    def predicateCount(): Int
   }
 
   case class LeafNode(override val id: Int, classID: Int) extends TreeNode(id) {
@@ -66,6 +68,8 @@ object DecisionTree {
         case _ => throw new Exception
       }
     }
+
+    override def predicateCount(): Int = 0
   }
 
   case class InternalNode(override val id: Int, left: TreeNode, right: TreeNode, threshold: Float, featureID: Int) extends TreeNode(id) {
@@ -87,6 +91,8 @@ object DecisionTree {
     def getPredicate(features: List[BrboExpr]): BrboExpr = {
       BrboExprUtils.lessThanOrEqualTo(features(featureID), Number(threshold.floor.toInt))
     }
+
+    override def predicateCount(): Int = left.predicateCount() + right.predicateCount()
   }
 
   def parse(string: String): TreeClassifier = {
@@ -113,6 +119,8 @@ object DecisionTree {
     }
 
     def toAst(features: List[BrboExpr], leafType: LeafType): BrboAst = root.toAst(features, labels, leafType)
+
+    def predicateCount(): Int = root.predicateCount()
 
     def classify(store: Store,
                  evaluate: (BrboExpr, Store) => BrboValue,

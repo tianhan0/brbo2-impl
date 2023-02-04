@@ -450,7 +450,7 @@ class SegmentClustering(sumWeight: Int,
                          */
                         removeLastEmptySegmentAfterDecomposition = true,
                       )
-                      stringBuilder.append(Classifier.printTransformation(classifierResults.toTransformation) + "\n")
+                      stringBuilder.append(Classifier.printTransformation(classifierResults.generateTransformation()) + "\n")
                       if (areSimilar) {
                         // Print details for traces whose decomposition yield segments with similar costs
                         stringBuilder.append(s"Decomposed trace:${applicationResult.printDecomposedTrace}\n")

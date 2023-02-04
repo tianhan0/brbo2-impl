@@ -312,7 +312,7 @@ object Classifier {
       s"ClassifierResultsMap (Features: $featureString)\n$resultsString"
     }
 
-    def toTransformation: Map[Command, BrboAst] = {
+    def generateTransformation(): Map[Command, BrboAst] = {
       var transforms: Map[Command, List[BrboAst]] = Map()
       results.foreach({
         case (location, results) =>
@@ -350,6 +350,17 @@ object Classifier {
           else if (asts.size > 1) (command, Block(asts))
           else throw new Exception
       })
+    }
+
+    def predicateCount(): Int = {
+      results.flatMap({
+        case (_, results) =>
+          results.values.map({
+            case ResetResult(_, classifier) => classifier.predicateCount()
+            case UseResult(_, classifier) => classifier.predicateCount()
+            case _ => throw new Exception
+          })
+      }).sum
     }
   }
 

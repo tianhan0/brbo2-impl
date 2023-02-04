@@ -279,7 +279,7 @@ class ClassifierUnitTest extends AnyFlatSpec {
     )
     val programTables = Classifier.toProgramTables(traceTables.tables, traceTables.features)
     val classifierResults = programTables.generateClassifiers(debugMode = false)
-    val transformation = classifierResults.toTransformation.map({
+    val transformation = classifierResults.generateTransformation().map({
       case (command, ast) =>
         s"Transform ${command.printToIR()} into:\n${ast.print(indent = 0, style = CStyle)}"
     }).toList.sorted.mkString("\n\n")

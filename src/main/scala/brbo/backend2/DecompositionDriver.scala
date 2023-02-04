@@ -165,8 +165,9 @@ class DecompositionDriver(arguments: DecompositionArguments,
     logger.info(s"Step $stepId.1: Generate classifiers on the tables")
     val programTables = Classifier.toProgramTables(traceTables.flatMap({ traceTable => traceTable.tables }).toMap, traceTables.head.features)
     val classifierResults = programTables.generateClassifiers(debugMode)
+    logger.info(s"Step $stepId.2: Number of predicates in the program transformations ${classifierResults.predicateCount()}")
     logger.info(s"Step $stepId.2: Generate program transformations")
-    val transformation: Map[Command, BrboAst] = classifierResults.toTransformation
+    val transformation: Map[Command, BrboAst] = classifierResults.generateTransformation()
     logger.info(Classifier.printTransformation(transformation))
     val newBody = BrboAstUtils.replaceCommands(instrumentedProgram.mainFunction.body, transformation, omitResetPlaceHolders = true)
     val newMain = {
