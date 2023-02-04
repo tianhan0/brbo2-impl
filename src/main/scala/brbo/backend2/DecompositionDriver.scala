@@ -129,7 +129,7 @@ class DecompositionDriver(arguments: DecompositionArguments,
         trace.toTable(printStores = true, omitExpressions = true, onlyGhostCommand = false)._1.printAll()
       else
         trace.toTable(printStores = false, omitExpressions = true, onlyGhostCommand = true)._1.printAll()
-    logger.info(s"Step $stepId.1: Trace (length ${trace.length}):\n$representativeTraceString")
+    logger.info(s"Step $stepId.1: Trace (length ${trace.length}, inputs <${trace.printInputsOneLiner()}>):\n$representativeTraceString")
     val decomposition = segmentClustering.decompose(
       trace = trace,
       similarTraces = similarTraces,
