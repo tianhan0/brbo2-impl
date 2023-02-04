@@ -191,8 +191,11 @@ def get_decision_tree_predicate_count(decomposition_output) -> str:
     lines = re.findall(
         r"Number of predicates in the program transformations \d+", decomposition_output
     )
-    numbers = re.findall(r"\d+", lines[0])
-    return numbers[0]
+    if lines:
+        numbers = re.findall(r"\d+", lines[0])
+        return numbers[0]
+    else:
+        return None
 
 
 class Measurement:
