@@ -12,6 +12,7 @@ from common import (
     sbt_package,
     interpret_brbo_output,
     get_trace_clusters,
+    get_trace_inputs,
 )
 
 
@@ -171,15 +172,16 @@ if __name__ == "__main__":
             dry=args.dry,
         )
 
-        if "Infer bound `true` for variable" in brbo_output:
-            logging.info(f"One verification fail reason: Inferred invariant `true`")
+        invariant_inference_failure = "Infer bound `true` for variable" in brbo_output
         measurements.update(
             verification_result=interpret_brbo_output(brbo_output),
-            trace_clusters=get_trace_clusters(decomposition_result),
             java_file=java_file,
             fuzzing_time=fuzzing_time,
             decomposition_time=decomposition_time,
             verification_time=verification_time,
+            trace_clusters=get_trace_clusters(decomposition_result),
+            trace_inputs=get_trace_inputs(decomposition_result),
+            invariant_inference_failure=invariant_inference_failure,
         )
         measurements.print_concise()
 

@@ -7,6 +7,7 @@ import subprocess
 import os
 import resource
 import re
+from typing import List
 from enum import Enum
 from pathlib import Path
 
@@ -182,6 +183,10 @@ def get_trace_clusters(decomposition_output) -> int:
         return 2
 
 
+def get_trace_inputs(decomposition_output) -> List[str]:
+    return re.findall(r"<(.+?)>", decomposition_output)
+
+
 class Measurement:
     def __init__(self):
         self.per_file_execution_time = {}
@@ -194,37 +199,44 @@ class Measurement:
         self.total_not_verified = 0
         self.total_unknown = 0
         self.trace_clusters = {}
+        self.trace_inputs = {}
+        self.invariant_inference_failure = {}
 
     def update(
         self,
         verification_result,
-        trace_clusters,
         java_file,
         fuzzing_time=0,
         decomposition_time=0,
         verification_time=0,
+        invariant_inference_failure=False,
+        trace_clusters=-1,
+        trace_inputs=[],
     ):
         inner_most_package_name = get_inner_most_package_name(java_file)
+        key = str(java_file)
         if verification_result == VerificationResult.VERIFIED:
             _increment_count(self.count_verified, inner_most_package_name)
-            self.verification_results.update({str(java_file): "verified"})
+            self.verification_results.update({key: "verified"})
             self.total_verified = self.total_verified + 1
         elif verification_result == VerificationResult.NOT_VERIFIED:
             _increment_count(self.count_not_verified, inner_most_package_name)
-            self.verification_results.update({str(java_file): "not verified"})
+            self.verification_results.update({key: "not verified"})
             self.total_not_verified = self.total_not_verified + 1
         elif verification_result == VerificationResult.UNKNOWN:
             _increment_count(self.count_unknown, inner_most_package_name)
-            self.verification_results.update({str(java_file): "unknown"})
+            self.verification_results.update({key: "unknown"})
             self.total_unknown = self.total_unknown + 1
 
         self.per_file_execution_time.update(
-            {str(java_file): (fuzzing_time, decomposition_time, verification_time)}
+            {key: (fuzzing_time, decomposition_time, verification_time)}
         )
         self.total_time = (
             self.total_time + fuzzing_time + decomposition_time + verification_time
         )
-        self.trace_clusters.update({str(java_file): trace_clusters})
+        self.trace_clusters.update({key: trace_clusters})
+        self.trace_inputs.update({key: trace_inputs})
+        self.invariant_inference_failure.update({key: invariant_inference_failure})
 
     def print(self):
         logging.info(
@@ -256,6 +268,8 @@ class Measurement:
             "total_not_verified": self.total_not_verified,
             "total_unknown": self.total_unknown,
             "trace_clusters": self.trace_clusters,
+            "trace_inputs": self.trace_inputs,
+            "invariant_inference_failure": self.invariant_inference_failure,
             "verified_programs": self.count_verified,
             "not_verified_programs": self.count_not_verified,
             "unknown_programs": self.count_unknown,
