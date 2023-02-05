@@ -112,17 +112,17 @@ object Executor {
     logger.info(s"Running Java processes:\n${runningJavaProcesses()}")
     val pathCostFileContents = BrboMain.readFromFile(s"$FUZZ_OUT_DIRECTORY/afl/path_costs.csv")
     logger.info(s"QFuzz output:\n$pathCostFileContents")
-    val rankedInputFiles = {
-      val generatedInputFiles = rankedInputFileNames(pathCostFileContents)
-      if (generatedInputFiles.isEmpty)
-        logger.warn(s"No interesting inputs. Using the input seed.")
-      generatedInputFiles ::: getInputSeeds(INPUT_SEED_DIRECTORY)
+    val inputFiles = {
+      val inputFiles = getInputFileNames(pathCostFileContents)
+      if (inputFiles.isEmpty)
+        logger.warn(s"No interesting inputs. Use the input seed.")
+      inputFiles ::: getInputSeeds(INPUT_SEED_DIRECTORY)
     }
-    logger.info(s"Ranked input files:\n${rankedInputFiles.mkString("\n")}")
+    logger.info(s"Ranked input files:\n${inputFiles.mkString("\n")}")
     logger.warn(s"Must ensure the input seed provide sufficient amounts of data to be parsed as inputs")
 
     logger.info(s"Step 5: Parse the QFuzz-generated inputs")
-    val listOfInputs: Iterable[List[Int]] = rankedInputFiles.map({
+    val listOfInputs: Iterable[List[Int]] = inputFiles.map({
       inputFile =>
         val absolutePath = inputFile
         logger.info(s"Read shorts that are between [${arguments.getMinInteger}, ${arguments.getMaxInteger}] from $absolutePath")
@@ -132,7 +132,7 @@ object Executor {
         inputs
     })
     val inputFilePath: String = freshInputFilePath(sourceFilePath)
-    val listOfInputValues = listOfInputs.flatMap({
+    val listOfInputValues: List[List[BrboValue]] = listOfInputs.flatMap({
       inputs =>
         toInputValues(
           inputArray = inputs,
@@ -140,13 +140,14 @@ object Executor {
           parametersInLoopConditions = parametersInLoopConditionals(program.mainFunction),
           generatorParameters = generatorParameters)
     }).toList
+    val sortedListOfInputValues = rankInputs(listOfInputValues)
     if (arguments.getDryRun) {
       logger.info(s"Step 6: Dry run. Not write interesting inputs into Json files")
     } else {
-      if (listOfInputValues.nonEmpty) {
+      if (sortedListOfInputValues.nonEmpty) {
         logger.info(s"Step 6: Write interesting inputs (with descending interestingness) into file $inputFilePath")
         val allInputsJson = JsArray(
-          listOfInputValues.map({
+          sortedListOfInputValues.map({
             inputs =>
               logger.info(s"Interesting input: ${inputs.map(v => v.printToIR()).mkString(", ")}")
               JsArray(inputs.map(input => InputParser.toJson(input)))
@@ -229,6 +230,32 @@ object Executor {
       case (fileName, _) => fileName
     })
     inputFiles.filter(fileName => !fileName.contains("orig:")).toList
+  }
+
+  private def getInputFileNames(pathCostFileContents: String): List[String] = {
+    val lines = pathCostFileContents.split("\n").filter({
+      line => line != "Time(sec); File; #Partitions; MinDelta; AvgPartitionValues"
+    })
+    val inputFiles = lines.map({ line => line.split(";")(1).trim })
+    inputFiles.filter(fileName => !fileName.contains("orig:")).toList
+  }
+
+  private def rankInputs(listOfInputValues: List[List[BrboValue]]): List[List[BrboValue]] = {
+    listOfInputValues.map({
+      inputValues =>
+        val numbers = inputValues.flatMap({ inputValue => extractValue(inputValue) }).toSet
+        (inputValues, numbers.size)
+    }).sortWith({ case ((_, size1), (_, size2)) => size2 > size1 })
+      .map({ case (inputValues, _) => inputValues })
+  }
+
+  private def extractValue(brboValue: BrboValue): Set[Int] = {
+    brboValue match {
+      case BrboArray(values, _, _) => values.flatMap(value => extractValue(value)).toSet
+      case Number(n, _) => Set(n)
+      case Bool(b, _) => if (b) Set(1) else Set(0)
+      case _ => throw new Exception
+    }
   }
 
   private def readExistingInputs(inputFilePath: String): List[List[BrboValue]] = {
