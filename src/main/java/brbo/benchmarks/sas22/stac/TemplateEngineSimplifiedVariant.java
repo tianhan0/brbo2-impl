@@ -16,7 +16,6 @@ public abstract class TemplateEngineSimplifiedVariant extends Common {
       chunk = arrayRead(text, i);
       R = R + chunk;
       R = R + 10;
-      R = R + 30;
     }
   }
 }
