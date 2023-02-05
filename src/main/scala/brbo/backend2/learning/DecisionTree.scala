@@ -92,7 +92,7 @@ object DecisionTree {
       BrboExprUtils.lessThanOrEqualTo(features(featureID), Number(threshold.floor.toInt))
     }
 
-    override def predicateCount(): Int = left.predicateCount() + right.predicateCount()
+    override def predicateCount(): Int = 1 + left.predicateCount() + right.predicateCount()
   }
 
   def parse(string: String): TreeClassifier = {
