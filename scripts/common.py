@@ -8,6 +8,7 @@ import os
 import resource
 import re
 from typing import List
+from typing import Optional
 from enum import Enum
 from pathlib import Path
 
@@ -188,13 +189,13 @@ def get_trace_inputs(decomposition_output) -> List[str]:
     return re.findall(r"<(.+?)>", decomposition_output)
 
 
-def get_decision_tree_predicate_count(decomposition_output) -> str:
+def get_decision_tree_predicate_count(decomposition_output) -> Optional[int]:
     lines = re.findall(
         r"Number of predicates in the program transformations \d+", decomposition_output
     )
     if lines:
         numbers = re.findall(r"\d+", lines[0])
-        return numbers[0]
+        return int(numbers[0])
     else:
         return None
 
