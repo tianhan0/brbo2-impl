@@ -131,7 +131,6 @@ object Executor {
         logger.info(s"Inputs: $inputs")
         inputs
     })
-    val inputFilePath: String = freshInputFilePath(sourceFilePath)
     val listOfInputValues: List[List[BrboValue]] = listOfInputs.flatMap({
       inputs =>
         toInputValues(
@@ -145,6 +144,7 @@ object Executor {
       logger.info(s"Step 6: Dry run. Not write interesting inputs into Json files")
     } else {
       if (sortedListOfInputValues.nonEmpty) {
+        val inputFilePath: String = freshInputFilePath(sourceFilePath)
         logger.info(s"Step 6: Write interesting inputs (with descending interestingness) into file $inputFilePath")
         val allInputsJson = JsArray(
           sortedListOfInputValues.map({
@@ -245,7 +245,7 @@ object Executor {
       inputValues =>
         val numbers = inputValues.flatMap({ inputValue => extractValue(inputValue) }).toSet
         (inputValues, numbers.size)
-    }).sortWith({ case ((_, size1), (_, size2)) => size2 > size1 })
+    }).sortWith({ case ((_, size1), (_, size2)) => size1 > size2 })
       .map({ case (inputValues, _) => inputValues })
   }
 
