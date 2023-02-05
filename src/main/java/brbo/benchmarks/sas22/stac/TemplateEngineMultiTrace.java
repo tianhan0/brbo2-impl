@@ -12,7 +12,7 @@ public abstract class TemplateEngineMultiTrace extends Common {
     lessPreciseBound(R <= MAX * arraySum(text) + MAX);
 
     int chunk = 0;
-    if (choice > 8) {
+    if (choice > BOOLEAN_SEPARATOR) {
       for (int i = 0; i < arrayLength(text); i++) {
         chunk = arrayRead(text, i);
         R = R + chunk;
