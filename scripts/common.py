@@ -184,6 +184,7 @@ def get_trace_clusters(decomposition_output) -> int:
 
 
 def get_trace_inputs(decomposition_output) -> List[str]:
+    # We decided that trace inputs are enclosed by a pair of angle brackets
     return re.findall(r"<(.+?)>", decomposition_output)
 
 
