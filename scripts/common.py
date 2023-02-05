@@ -277,20 +277,21 @@ class Measurement:
         )
 
     def write(self, log_file):
+        # Ranked in the importance for triaging the results
         output_contents = {
-            "total_time": self.total_time,
             "total_verified": self.total_verified,
             "total_not_verified": self.total_not_verified,
             "total_unknown": self.total_unknown,
-            "trace_clusters": self.trace_clusters,
             "trace_inputs": self.trace_inputs,
             "invariant_inference_failure": self.invariant_inference_failure,
             "decision_tree_predicate_count": self.decision_tree_predicate_count,
+            "verification_results": self.verification_results,
+            "trace_clusters": self.trace_clusters,
+            "total_time": self.total_time,
             "verified_programs": self.count_verified,
             "not_verified_programs": self.count_not_verified,
             "unknown_programs": self.count_unknown,
             "time_measurements": self.per_file_execution_time,
-            "verification_results": self.verification_results,
         }
         with open(log_file, "w") as output_file:
             logging.info(f"Write into {log_file}")
