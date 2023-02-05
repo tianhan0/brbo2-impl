@@ -213,7 +213,7 @@ class Measurement:
         self.total_unknown = 0
         self.trace_clusters = {}
         self.trace_inputs = {}
-        self.invariant_inference_failure = {}
+        self.invariant_inference_success = {}
         self.decision_tree_predicate_count = {}
 
     def update(
@@ -223,7 +223,7 @@ class Measurement:
         fuzzing_time=0,
         decomposition_time=0,
         verification_time=0,
-        invariant_inference_failure=None,
+        invariant_inference_success=None,
         trace_clusters=-1,
         trace_inputs=[],
         decision_tree_predicate_count=-1,
@@ -251,7 +251,7 @@ class Measurement:
         )
         self.trace_clusters.update({key: trace_clusters})
         self.trace_inputs.update({key: trace_inputs})
-        self.invariant_inference_failure.update({key: invariant_inference_failure})
+        self.invariant_inference_success.update({key: invariant_inference_success})
         self.decision_tree_predicate_count.update({key: decision_tree_predicate_count})
 
     def print(self):
@@ -284,7 +284,7 @@ class Measurement:
             "total_not_verified": self.total_not_verified,
             "total_unknown": self.total_unknown,
             "trace_inputs": self.trace_inputs,
-            "invariant_inference_failure": self.invariant_inference_failure,
+            "invariant_inference_success": self.invariant_inference_success,
             "decision_tree_predicate_count": self.decision_tree_predicate_count,
             "verification_results": self.verification_results,
             "trace_clusters": self.trace_clusters,
