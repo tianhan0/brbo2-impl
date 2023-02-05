@@ -29,10 +29,16 @@ public abstract class TemplateEngine3 extends Common {
 
     int chunk = 0;
     for (int i = 0; i < ts; i++) {
-      for (int j = 0; j < arrayLength(text); j++) {
+      int j = 0;
+      chunk = arrayRead(text, j);
+      R = R + chunk;
+      R = R + rep;
+      j++;
+      while (j < arrayLength(text)) {
         chunk = arrayRead(text, j);
         R = R + chunk;
         R = R + rep;
+        j++;
       }
       R = R + sep;
     }

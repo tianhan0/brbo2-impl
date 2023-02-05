@@ -22,9 +22,14 @@ public abstract class TemplateEngine2 extends Common {
 
     int chunk = 0;
     for (int i = 0; i < templateds; i++) {
-      for (int j = 0; j < arrayLength(text); j++) {
+      int j = 0;
+      chunk = arrayRead(text, j);
+      R = R + chunk;
+      j++;
+      while (j < arrayLength(text)) {
         chunk = arrayRead(text, j);
         R = R + chunk;
+        j++;
       }
       R = R + separator;
     }
