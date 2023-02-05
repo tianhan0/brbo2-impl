@@ -173,6 +173,9 @@ if __name__ == "__main__":
             dry=args.dry,
         )
 
+        invariant_inference_failure = "Infer bound `true` for variable" in brbo_output
+        if invariant_inference_failure:
+            logging.info(f"Failed to infer invariants")
         measurements.update(
             verification_result=interpret_brbo_output(brbo_output),
             java_file=java_file,
@@ -181,8 +184,7 @@ if __name__ == "__main__":
             verification_time=verification_time,
             trace_clusters=get_trace_clusters(decomposition_result),
             trace_inputs=get_trace_inputs(decomposition_result),
-            invariant_inference_failure="Infer bound `true` for variable"
-            in brbo_output,
+            invariant_inference_failure=invariant_inference_failure,
             decision_tree_predicate_count=get_decision_tree_predicate_count(
                 decomposition_result
             ),
