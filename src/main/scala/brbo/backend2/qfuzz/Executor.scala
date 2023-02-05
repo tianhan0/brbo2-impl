@@ -207,17 +207,18 @@ object Executor {
     })
     val inputFiles = lines.map({
       line =>
+        val fileName = line.split(";")(1).trim
         var score = 0
         // Inputs that create new partitions w.r.t. the total runtime "cost"
-        if (line.contains("+partition"))
+        if (fileName.contains("+partition"))
           score += 8
         // Inputs that have the same number of partition as the max partition seen so far, but the distance between partitions is larger
-        if (line.contains("+delta"))
+        if (fileName.contains("+delta"))
           score += 4
         // Inputs that lead to a new edge in the control flow graph (i.e., it increases the edge coverage)
-        if (line.contains("+cov"))
-          score += 2
-        val fileName = line.split(";")(1).trim
+        if (fileName.contains("+cov"))
+          score += 12
+
         (fileName, score)
     }).sortWith({
       case ((fileName1, score1), (fileName2, score2)) =>
