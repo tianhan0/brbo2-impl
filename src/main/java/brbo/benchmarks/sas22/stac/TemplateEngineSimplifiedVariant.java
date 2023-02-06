@@ -8,14 +8,14 @@ public abstract class TemplateEngineSimplifiedVariant extends Common {
       return;
     }
     int R = 0;
-    mostPreciseBound(R <= arraySum(text) + arraySum(text) * 10 + arraySum(text) * 30);
-    lessPreciseBound(R <= MAX * arraySum(text) + arraySum(text) * 10 + arraySum(text) * 30 + MAX);
+    mostPreciseBound(R <= arraySum(text) + arraySum(text));
+    lessPreciseBound(R <= MAX * arraySum(text) + arraySum(text) * MAX + MAX);
 
     int chunk = 0;
     for (int i = 0; i < arrayLength(text); i++) {
       chunk = arrayRead(text, i);
       R = R + chunk;
-      R = R + 10;
+      R = R + 1;
     }
   }
 }
