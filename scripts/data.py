@@ -170,15 +170,33 @@ def _keep_n_latest(files, latest):
         return sorted_files
 
 
+def _latest_log_files(log_directory, prefix, suffix, latest):
+    logs = get_files(path=log_directory, prefix=prefix, suffix=suffix)
+    return _keep_n_latest(files=logs, latest=latest)
+
+
 def _get_json_files(mode, input_directory, latest):
     if mode == "qfuzz":
-        naive_logs = get_files(path=input_directory, prefix="naive", suffix="json")
-        naive_logs = _keep_n_latest(files=naive_logs, latest=latest)
-        qfuzz_logs = get_files(path=input_directory, prefix="qfuzz", suffix="json")
-        qfuzz_logs = _keep_n_latest(files=qfuzz_logs, latest=latest)
+        naive_logs = _latest_log_files(
+            log_directory=input_directory, prefix="naive", suffix="json", latest=latest
+        )
+        qfuzz_logs = _latest_log_files(
+            log_directory=input_directory, prefix="qfuzz", suffix="json", latest=latest
+        )
         return {"naive": naive_logs, "qfuzz": qfuzz_logs}
     elif mode == "timeout":
         return {}
+    elif mode == "verifiability":
+        worst_logs = _latest_log_files(
+            log_directory=input_directory, prefix="worst", suffix="json", latest=latest
+        )
+        fully_logs = _latest_log_files(
+            log_directory=input_directory, prefix="fully", suffix="json", latest=latest
+        )
+        select_logs = _latest_log_files(
+            log_directory=input_directory, prefix="select", suffix="json", latest=latest
+        )
+        return {"worst": worst_logs, "fully": fully_logs, "select": select_logs}
 
 
 def _build_csv_header(log_names):
