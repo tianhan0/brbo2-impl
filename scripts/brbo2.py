@@ -120,9 +120,18 @@ if __name__ == "__main__":
     configure_logging(filename=args.log)
     print_args(args)
 
+    logging.info(f"Build brbo2 under `{args.version}`")
     sbt_package_output = sbt_package(git_version=args.version, dry=args.dry)
     if "[success]" not in sbt_package_output:
-        logging.error(f"Failed to run `sbt package`")
+        logging.error(f"Failed to build brbo2")
+        sys.exit(-1)
+
+    logging.info(f"Build brbo under the latest of branch `issta23`")
+    sbt_package_output = sbt_package(
+        git_version="issta23", dry=args.dry, cwd=Path(args.brbo)
+    )
+    if "[success]" not in sbt_package_output:
+        logging.error(f"Failed to build brbo")
         sys.exit(-1)
 
     java_files = get_files(args.input, suffix="java")
