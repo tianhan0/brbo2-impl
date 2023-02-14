@@ -6,6 +6,7 @@ import numpy
 import csv
 import tempfile
 import os
+import re
 from pathlib import Path
 from common import print_args, get_files, pretty_print, configure_logging
 
@@ -185,7 +186,25 @@ def _get_json_files(mode, input_directory, latest):
         )
         return {"naive": naive_logs, "qfuzz": qfuzz_logs}
     elif mode == "timeout":
-        return {}
+        log_files = _latest_log_files(
+            log_directory=input_directory,
+            prefix="timeout",
+            suffix="json",
+            latest=latest,
+        )
+        prefixes = []
+        for log_file in log_files:
+            prefixes.extend(re.findall(r"timeout\d+", str(log_file)))
+        prefixes = set(prefixes)
+        return {
+            prefix: _latest_log_files(
+                log_directory=input_directory,
+                prefix=prefix,
+                suffix="json",
+                latest=latest,
+            )
+            for prefix in prefixes
+        }
     elif mode == "verifiability":
         worst_logs = _latest_log_files(
             log_directory=input_directory, prefix="worst", suffix="json", latest=latest
