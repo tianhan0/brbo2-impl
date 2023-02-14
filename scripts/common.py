@@ -337,6 +337,7 @@ def sbt_package(git_version, dry, cwd=os.getcwd()):
             command=["git", "log", '--format="%H"', "-n", "1"],
             printOutput=False,
             dry=dry,
+            cwd=cwd,
         )
     else:
         commit_hash = git_version
