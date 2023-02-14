@@ -1,0 +1,88 @@
+2023-02-13 08:20:32,724 INFO     Arguments:
+2023-02-13 08:20:32,724 INFO     input	src/main/java/brbo/benchmarks/sas22/
+2023-02-13 08:20:32,724 INFO     experiment	verifiability
+2023-02-13 08:20:32,724 INFO     brbo	/root/Documents/workspace/brbo-impl/
+2023-02-13 08:20:32,725 INFO     qfuzz	/root/Documents/workspace/qfuzz/
+2023-02-13 08:20:32,725 INFO     icra	/root/Documents/workspace/icra/icra
+2023-02-13 08:20:32,725 INFO     dry	False
+2023-02-13 08:20:32,725 INFO     repeat	5
+2023-02-13 08:20:32,725 INFO     qtimeout	60
+2023-02-13 08:20:32,725 INFO     qmin_int	1
+2023-02-13 08:20:32,725 INFO     qmax_int	100
+2023-02-13 08:20:32,725 INFO     uniform_seed	True
+2023-02-13 08:20:32,725 INFO     loose_bound	False
+2023-02-13 08:20:32,725 INFO     Kill running java processes
+2023-02-13 08:20:32,725 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `killall -9 java`
+2023-02-13 08:20:32,735 INFO     Done. Execution time: 0.009654760360717773 seconds
+2023-02-13 08:20:32,735 INFO     Output: java: no process found
+
+2023-02-13 08:20:32,735 INFO     Begin 00 run
+2023-02-13 08:20:32,735 INFO     Remove the previously generated drivers
+2023-02-13 08:20:32,736 INFO     Generate input seed: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+2023-02-13 08:20:32,736 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds/seed.txt
+2023-02-13 08:20:32,736 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --mode worst --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/worst_00.txt --version issta23`
+2023-02-13 09:01:51,594 INFO     Done. Execution time: 2478.85786151886 seconds
+2023-02-13 09:01:51,595 INFO     Output: 
+2023-02-13 09:01:51,595 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --mode fully --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/fully_00.txt --version issta23`
+2023-02-13 09:27:18,736 INFO     Done. Execution time: 1527.1407549381256 seconds
+2023-02-13 09:27:18,736 INFO     Output: 
+2023-02-13 09:27:18,737 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/select_00.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds --max-int 100 --min-int 1`
+2023-02-13 10:32:17,339 INFO     Done. Execution time: 3898.6023902893066 seconds
+2023-02-13 10:32:17,340 INFO     Output: 
+2023-02-13 10:32:17,340 INFO     Begin 01 run
+2023-02-13 10:32:17,340 INFO     Remove the previously generated drivers
+2023-02-13 10:32:17,342 INFO     Generate input seed: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+2023-02-13 10:32:17,342 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds/seed.txt
+2023-02-13 10:32:17,343 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --mode worst --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/worst_01.txt --version issta23`
+2023-02-13 11:16:11,089 INFO     Done. Execution time: 2633.7459411621094 seconds
+2023-02-13 11:16:11,089 INFO     Output: 
+2023-02-13 11:16:11,089 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --mode fully --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/fully_01.txt --version issta23`
+2023-02-13 11:43:55,254 INFO     Done. Execution time: 1664.1644179821014 seconds
+2023-02-13 11:43:55,254 INFO     Output: 
+2023-02-13 11:43:55,255 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/select_01.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds --max-int 100 --min-int 1`
+2023-02-13 12:49:11,238 INFO     Done. Execution time: 3915.983289003372 seconds
+2023-02-13 12:49:11,238 INFO     Output: 
+2023-02-13 12:49:11,238 INFO     Begin 02 run
+2023-02-13 12:49:11,239 INFO     Remove the previously generated drivers
+2023-02-13 12:49:11,240 INFO     Generate input seed: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+2023-02-13 12:49:11,241 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds/seed.txt
+2023-02-13 12:49:11,241 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --mode worst --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/worst_02.txt --version issta23`
+2023-02-13 13:31:27,867 INFO     Done. Execution time: 2536.6263127326965 seconds
+2023-02-13 13:31:27,868 INFO     Output: 
+2023-02-13 13:31:27,868 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --mode fully --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/fully_02.txt --version issta23`
+2023-02-13 13:57:05,053 INFO     Done. Execution time: 1537.1846001148224 seconds
+2023-02-13 13:57:05,053 INFO     Output: 
+2023-02-13 13:57:05,054 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/select_02.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds --max-int 100 --min-int 1`
+2023-02-13 15:00:53,979 INFO     Done. Execution time: 3828.9251601696014 seconds
+2023-02-13 15:00:53,979 INFO     Output: 
+2023-02-13 15:00:53,979 INFO     Begin 03 run
+2023-02-13 15:00:53,979 INFO     Remove the previously generated drivers
+2023-02-13 15:00:53,981 INFO     Generate input seed: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+2023-02-13 15:00:53,982 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds/seed.txt
+2023-02-13 15:00:53,982 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --mode worst --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/worst_03.txt --version issta23`
+2023-02-13 15:41:14,303 INFO     Done. Execution time: 2420.3203477859497 seconds
+2023-02-13 15:41:14,303 INFO     Output: 
+2023-02-13 15:41:14,303 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --mode fully --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/fully_03.txt --version issta23`
+2023-02-13 16:07:20,526 INFO     Done. Execution time: 1566.222595691681 seconds
+2023-02-13 16:07:20,526 INFO     Output: 
+2023-02-13 16:07:20,527 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/select_03.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds --max-int 100 --min-int 1`
+2023-02-13 17:10:34,982 INFO     Done. Execution time: 3794.454658269882 seconds
+2023-02-13 17:10:34,982 INFO     Output: 
+2023-02-13 17:10:34,982 INFO     Begin 04 run
+2023-02-13 17:10:34,982 INFO     Remove the previously generated drivers
+2023-02-13 17:10:34,984 INFO     Generate input seed: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+2023-02-13 17:10:34,985 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds/seed.txt
+2023-02-13 17:10:34,985 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --mode worst --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/worst_04.txt --version issta23`
+2023-02-13 17:51:43,331 INFO     Done. Execution time: 2468.345690727234 seconds
+2023-02-13 17:51:43,331 INFO     Output: 
+2023-02-13 17:51:43,331 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo.py --input src/main/java/brbo/benchmarks/sas22/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --mode fully --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/fully_04.txt --version issta23`
+2023-02-13 18:16:38,389 INFO     Done. Execution time: 1495.0571653842926 seconds
+2023-02-13 18:16:38,389 INFO     Output: 
+2023-02-13 18:16:38,389 INFO     Under `root@/root/Documents/workspace/brbo2-impl`: Execute `python3 scripts/brbo2.py --input src/main/java/brbo/benchmarks/sas22/ --qfuzz /root/Documents/workspace/qfuzz/ --brbo /root/Documents/workspace/brbo-impl/ --icra /root/Documents/workspace/icra/icra --timeout 60 --log /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/select_04.txt --mode qfuzz --seed /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds --max-int 100 --min-int 1`
+2023-02-13 19:19:23,830 INFO     Done. Execution time: 3765.440854549408 seconds
+2023-02-13 19:19:23,831 INFO     Output: 
+2023-02-13 19:19:23,831 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds/seed_0.txt
+2023-02-13 19:19:23,831 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds/seed_1.txt
+2023-02-13 19:19:23,831 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds/seed_2.txt
+2023-02-13 19:19:23,831 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds/seed_3.txt
+2023-02-13 19:19:23,832 INFO     Write into seed file /root/Documents/workspace/brbo2-impl/logs/verifiability/20230213_08-20-32/seeds/seed_4.txt
