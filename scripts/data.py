@@ -78,6 +78,7 @@ class Data:
         self.total_verification_time = {}
         self.total_verification_results = {}
         self.total_trace_clusters = {}
+        self.total_decision_tree_predicate_counts = {}
 
     def insert_time_measurement(self, file_name, time_measurement):
         _update(
@@ -114,6 +115,15 @@ class Data:
             new_data_point=trace_cluster,
         )
 
+    def insert_decision_tree_predicate_count(
+        self, file_name, decision_tree_predicate_count
+    ):
+        _update(
+            dictionary=self.total_decision_tree_predicate_counts,
+            file_name=file_name,
+            new_data_point=decision_tree_predicate_count,
+        )
+
     def print_raw(self):
         LOG.info(f"Fuzz time:\n{pretty_print(self.total_fuzz_time)}")
         LOG.info(f"Decompose time:\n{pretty_print(self.total_decompose_time)}")
@@ -140,12 +150,16 @@ class Data:
         total_trace_clusters = _transform_data(
             dictionary=self.total_trace_clusters, mode="mean"
         )
+        total_decision_tree_predicate_counts = _transform_data(
+            dictionary=self.total_decision_tree_predicate_counts, mode="mean"
+        )
         return (
             total_fuzz_time,
             total_decompose_time,
             total_verification_time,
             total_verification_results,
             total_trace_clusters,
+            total_decision_tree_predicate_counts,
         )
 
     def pretty_print(self):
@@ -155,12 +169,16 @@ class Data:
             total_verification_time,
             total_verification_results,
             total_trace_clusters,
+            decision_tree_predicate_counts,
         ) = self.transform_data()
         LOG.info(f"Fuzz time: {pretty_print(total_fuzz_time)}")
         LOG.info(f"Decompose time: {pretty_print(total_decompose_time)}")
         LOG.info(f"Verification time: {pretty_print(total_verification_time)}")
         LOG.info(f"Verification results: {pretty_print(total_verification_results)}")
         LOG.info(f"Trace clusters: {pretty_print(total_trace_clusters)}")
+        LOG.info(
+            f"Decision tree predicate counts: {pretty_print(decision_tree_predicate_counts)}"
+        )
 
 
 def _keep_n_latest(files, latest):
@@ -233,6 +251,8 @@ def _build_csv_header(log_names):
         csv_header.append(f"verification results ({log_name})")
     for log_name in log_names:
         csv_header.append(f"trace clusters ({log_name})")
+    for log_name in log_names:
+        csv_header.append(f"decision tree predicates ({log_name})")
     return csv_header
 
 
@@ -293,6 +313,11 @@ if __name__ == "__main__":
                 trace_clusters = (
                     json_data["trace_clusters"] if "trace_clusters" in json_data else {}
                 )
+                decision_tree_predicate_counts = (
+                    json_data["decision_tree_predicate_count"]
+                    if "decision_tree_predicate_count" in json_data
+                    else {}
+                )
 
                 for file_name, time_measurement in time_measurements.items():
                     data.insert_time_measurement(
@@ -309,6 +334,15 @@ if __name__ == "__main__":
                     data.insert_trace_cluster(
                         file_name=file_name, trace_cluster=trace_cluster
                     )
+
+                for (
+                    file_name,
+                    decision_tree_predicate_count,
+                ) in decision_tree_predicate_counts.items():
+                    data.insert_decision_tree_predicate_count(
+                        file_name=file_name,
+                        decision_tree_predicate_count=decision_tree_predicate_count,
+                    )
         measurements.update({log_name: data})
 
     csv_header = _build_csv_header(log_names=measurements.keys())
@@ -318,6 +352,7 @@ if __name__ == "__main__":
         verification_time = []
         verification_results = []
         trace_clusters = []
+        decision_tree_predicate_counts = []
         for log_name, measurement in measurements.items():
             (
                 total_fuzz_time,
@@ -325,6 +360,7 @@ if __name__ == "__main__":
                 total_verification_time,
                 total_verification_results,
                 total_trace_clusters,
+                total_decision_tree_predicate_counts,
             ) = measurement.transform_data()
             fuzz_time_entry = total_fuzz_time.get(file_name, [])
             fuzz_time.extend(fuzz_time_entry)
@@ -340,6 +376,11 @@ if __name__ == "__main__":
 
             trace_cluster_entry = total_trace_clusters.get(file_name, [])
             trace_clusters.extend(trace_cluster_entry)
+
+            decision_tree_predicate_count_entry = (
+                total_decision_tree_predicate_counts.get(file_name, [])
+            )
+            decision_tree_predicate_counts.extend(decision_tree_predicate_count_entry)
         table.update(
             {
                 _simplify_filename(file_name): [
@@ -348,6 +389,7 @@ if __name__ == "__main__":
                     *verification_time,
                     *verification_results,
                     *trace_clusters,
+                    *decision_tree_predicate_counts,
                 ]
             }
         )
