@@ -1,5 +1,7 @@
 import argparse
 import logging
+import scipy.stats as stats
+import numpy
 from common import print_args, get_files, configure_logging, to_csv
 
 if __name__ == "__main__":
@@ -20,9 +22,15 @@ if __name__ == "__main__":
     configure_logging(filename=None)
     print_args(args)
 
-    counts = {}
+    dictionary = {}
+    lines_of_code = []
     for java_file in get_files(path=args.input, prefix="", suffix="java"):
         file = open(java_file, "r")
         lines = file.readlines()
-        counts.update({java_file.stem: [len(lines)]})
-    print(to_csv(dictOrList=counts))
+        dictionary.update({java_file.stem: [len(lines)]})
+        lines_of_code.append(len(lines))
+    interval = stats.norm.interval(
+        confidence=0.95, loc=numpy.mean(lines_of_code), scale=stats.sem(lines_of_code)
+    )
+    logging.info(f"95% confidence interval is {interval}")
+    print(to_csv(dictOrList=dictionary))
