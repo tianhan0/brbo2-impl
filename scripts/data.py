@@ -3,12 +3,10 @@ import logging
 import json
 import scipy.stats as stats
 import numpy
-import csv
-import tempfile
 import os
 import re
 from pathlib import Path
-from common import print_args, get_files, pretty_print, configure_logging
+from common import print_args, get_files, pretty_print, configure_logging, to_csv
 
 LOG = logging.getLogger(__name__)
 
@@ -53,22 +51,6 @@ def _transform_data(dictionary, mode):
 
 def _simplify_filename(file_name: str):
     return Path(file_name).stem
-
-
-def _to_csv(dictOrList):
-    with tempfile.NamedTemporaryFile() as csv_file:
-        with open(csv_file.name, "w") as csv_file:
-            writer = csv.writer(csv_file)
-            if type(dictOrList) is dict:
-                for file_name, measurements in dictOrList.items():
-                    measurements = [
-                        f"{measurement:.2f}" for measurement in measurements
-                    ]
-                    writer.writerow([file_name, *measurements])
-            elif type(dictOrList) is list:
-                writer.writerow(dictOrList)
-        with open(csv_file.name, "r") as csv_file:
-            return csv_file.read().strip()
 
 
 class Data:
@@ -133,9 +115,7 @@ class Data:
         )
 
     def transform_data(self):
-        total_fuzz_time = _transform_data(
-            dictionary=self.total_fuzz_time, mode="mean"
-        )
+        total_fuzz_time = _transform_data(dictionary=self.total_fuzz_time, mode="mean")
         total_decompose_time = _transform_data(
             dictionary=self.total_decompose_time, mode="mean"
         )
@@ -395,8 +375,8 @@ if __name__ == "__main__":
             }
         )
     LOG.info("Summarize the logs into a CSV table:")
-    print(_to_csv(dictOrList=csv_header))
-    print(_to_csv(dictOrList=table))
+    print(to_csv(dictOrList=csv_header))
+    print(to_csv(dictOrList=table))
 
     """
     json_object = json.dumps(output, indent=2)

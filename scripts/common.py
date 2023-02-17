@@ -7,6 +7,8 @@ import subprocess
 import os
 import resource
 import re
+import csv
+import tempfile
 from typing import List
 from typing import Optional
 from enum import Enum
@@ -347,3 +349,19 @@ def sbt_package(git_version, dry, cwd=os.getcwd()):
     logging.info(f"Build a new version: {commit_hash}")
     output, _ = run_command(command=["sbt", "package"], cwd=cwd, dry=dry)
     return output
+
+
+def to_csv(dictOrList):
+    with tempfile.NamedTemporaryFile() as csv_file:
+        with open(csv_file.name, "w") as csv_file:
+            writer = csv.writer(csv_file)
+            if type(dictOrList) is dict:
+                for file_name, measurements in dictOrList.items():
+                    measurements = [
+                        f"{measurement:.2f}" for measurement in measurements
+                    ]
+                    writer.writerow([file_name, *measurements])
+            elif type(dictOrList) is list:
+                writer.writerow(dictOrList)
+        with open(csv_file.name, "r") as csv_file:
+            return csv_file.read().strip()
