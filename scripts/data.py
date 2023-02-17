@@ -134,13 +134,13 @@ class Data:
 
     def transform_data(self):
         total_fuzz_time = _transform_data(
-            dictionary=self.total_fuzz_time, mode="confidence_interval"
+            dictionary=self.total_fuzz_time, mode="mean"
         )
         total_decompose_time = _transform_data(
-            dictionary=self.total_decompose_time, mode="confidence_interval"
+            dictionary=self.total_decompose_time, mode="mean"
         )
         total_verification_time = _transform_data(
-            dictionary=self.total_verification_time, mode="confidence_interval"
+            dictionary=self.total_verification_time, mode="mean"
         )
         total_verification_results = _transform_data(
             dictionary=self.total_verification_results,
@@ -240,13 +240,13 @@ def _build_csv_header(log_names):
     csv_header = ["program names"]
     for log_name in log_names:
         csv_header.append(f"fuzz time ({log_name})")
-        csv_header.append("")
+        # csv_header.append("")
     for log_name in log_names:
         csv_header.append(f"decompose time ({log_name})")
-        csv_header.append("")
+        # csv_header.append("")
     for log_name in log_names:
         csv_header.append(f"verification time ({log_name})")
-        csv_header.append("")
+        # csv_header.append("")
     for log_name in log_names:
         csv_header.append(f"verification results ({log_name})")
     for log_name in log_names:
