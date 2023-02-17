@@ -213,7 +213,8 @@ def _get_json_files(mode, input_directory, latest):
         prefixes = []
         for log_file in log_files:
             prefixes.extend(re.findall(r"timeout\d+", str(log_file)))
-        prefixes = set(prefixes)
+        prefixes = list(set(prefixes))
+        prefixes.sort(reverse=False)
         return {
             prefix: _latest_log_files(
                 log_directory=input_directory,
